@@ -120,7 +120,13 @@ def parse(raw):
     blocks = SHOTS_BLOCK.findall(text)
     if len(blocks) != 1:
         raise ValueError(f"expected exactly one ```json shots block, found {len(blocks)}")
-    shots = json.loads(blocks[0])
+    try:
+        shots = json.loads(blocks[0])
+    except json.JSONDecodeError:            # Nemotron 3 Ultra (2026-11-04) wrote one JSON value per line: accept lines of lists or objects
+        shots = []
+        for line in filter(str.strip, blocks[0].splitlines()):
+            value = json.loads(line.strip().rstrip(","))
+            shots.extend(value if isinstance(value, list) else [value])
     if not isinstance(shots, list) or not all(isinstance(s, dict) for s in shots):
         raise ValueError("the shot list must be a JSON list of objects")
     ids = [s["id"] for s in shots]

@@ -89,6 +89,12 @@ def test_every_path_returns_the_shape_parse_reads():
         write_pack.parse(write_pack.envelope(text, "length", "openrouter", "m"))
 
 
+def test_parse_accepts_one_json_value_per_line():
+    lines = "\n".join(json.dumps([dict(SHOT, id=f"SHOT-0{n}")]) for n in (1, 2)) + "\n" + json.dumps(dict(SHOT, id="SHOT-03"))
+    _, shots = write_pack.parse(envelope("```json shots\n" + lines + "\n```"))
+    assert [s["id"] for s in shots] == ["SHOT-01", "SHOT-02", "SHOT-03"]
+
+
 def test_the_brief_example_parses():
     brief = write_pack.BRIEF.read_text(encoding="utf-8")
     example = write_pack.SHOTS_BLOCK.search(brief).group(1)
