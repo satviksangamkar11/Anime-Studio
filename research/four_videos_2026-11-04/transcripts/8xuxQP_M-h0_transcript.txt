@@ -1,0 +1,179 @@
+[00:00] Hey everyone, welcome back to my channel.
+[00:02] So today we are using Pika H3 Flex.
+[00:04] So this looks like it's a branch
+[00:07] off of the H3 Minimax video generation.
+[00:10] I haven't done a lot of research on it.
+[00:11] I just saw it inside Comfy UI
+[00:13] when I was checking out some workflows today
+[00:15] and I thought I would give it a try.
+[00:17] So it does use the H3 Minimax video checkpoint
+[00:21] and then it uses a custom LoRa
+[00:23] to give some pretty cool results.
+[00:24] I've actually gotten some really nice videos out of it,
+[00:28] some good AI influencer type stuff.
+[00:30] I really like the image to video model.
+[00:33] It's been really fun.
+[00:34] So the workflow is available in Comfy UI.
+[00:36] This is a free workflow.
+[00:38] You don't have to worry about anything private
+[00:39] or anything like that.
+[00:40] So this is something I created before I started the video.
+[00:42] So this is just a reference image I had from Moss Image.
+[00:45] So I made this with the Moss SFT workflow.
+[00:48] So that's my influencer I made,
+[00:49] just a random JDM type thing.
+[00:52] It's actually not even the right resolution.
+[00:54] So it filled out the rest for me.
+[00:55] It actually looks really good.
+[00:56] Let's just take a look at that quickly.
+[01:04] So this is a really cool workflow
+[01:07] and I'll show you how to get to it
+[01:08] because I know someone's about to ask,
+[01:09] hey, where'd you get the workflow?
+[01:10] But this one is free.
+[01:12] Don't worry about it.
+[01:13] So it was just the Pika H3 Flex reference to video
+[01:16] just inside Comfy UI.
+[01:17] If you don't see that inside your Comfy UI,
+[01:19] you do need to update your install.
+[01:21] So get that done and it will be there.
+[01:23] It's actually maybe a day old or so.
+[01:24] So there's no reason you shouldn't have it.
+[01:26] I'm a little bit behind on this one.
+[01:28] They do have the text to video as well.
+[01:30] And then the first frame and last frame,
+[01:32] which I haven't used yet.
+[01:33] I did use the text to video
+[01:34] and the reference to video.
+[01:35] We'll do both in this video today
+[01:36] just to show you what it's all about.
+[01:38] So this is how I structured the prompt.
+[01:40] So you could add music.
+[01:41] It's got soundscape.
+[01:43] You can do different shots.
+[01:45] You can do kind of a first and last frame.
+[01:47] So if you include two images,
+[01:49] it will hybrid it together and you can create a scene.
+[01:51] So maybe if you wanted to really make an accurate car,
+[01:54] you could change this to some sort of BMW or something,
+[01:57] whatever that's referencing.
+[01:58] And then you'd actually have a fully accurate car there.
+[02:01] And then, so this is just the text to video I was using.
+[02:04] So here's what you need to install.
+[02:06] It's really just this Laura,
+[02:07] the Pica H3 Fleck that you install.
+[02:10] So nothing too crazy.
+[02:11] All the same H3 stuff that you're used to.
+[02:13] This didn't turn out quite as good,
+[02:16] but still pretty good.
+[02:21] So for just the text prompt,
+[02:22] I thought it looked pretty good.
+[02:23] Kind of fun.
+[02:24] Doesn't take a long time to generate either.
+[02:26] So pretty fun.
+[02:26] Doesn't take too long to generate.
+[02:28] Do you find it to look a lot better than Minimax H3?
+[02:31] Maybe I'm wrong.
+[02:32] You can let me know in the comments if you prefer it.
+[02:34] But we'll just do a couple here.
+[02:36] So I'll tell you how I got this done
+[02:38] and got these results.
+[02:39] So when you actually open the workflow,
+[02:41] I'm just gonna do this for you here.
+[02:42] So when you open the workflow,
+[02:43] it does give you an example prompt.
+[02:45] And what you wanna do is bring that over to chat GPT,
+[02:48] paste it in, and then let them know,
+[02:49] hey, here's the structure of the prompt I'm gonna do.
+[02:52] I'm gonna paste an image after this
+[02:54] and tell you what I wanted to do,
+[02:55] and then create me a prompt based on the image and my idea.
+[02:59] So that's all I did for this one.
+[03:01] So you can see here, there's the image.
+[03:03] And I said, we want to do a video of this woman
+[03:05] posing for flash photography shoot in front of the car.
+[03:07] So like a JDM style photo shoot.
+[03:09] So we'll do one more here.
+[03:10] I'll give it another influencer that I have,
+[03:12] just another Moss image.
+[03:14] So let's just see what I have in my output folder.
+[03:16] So let's take this girl, let's try some movement.
+[03:18] So she'll do a photo shoot and squat
+[03:21] and then give the peace sign.
+[03:22] So I've done that movement before in some of my older videos
+[03:25] and it's a good test to see if it keeps the body structure
+[03:29] and the facial consistency.
+[03:31] Okay, there we go.
+[03:32] And we'll come back to our workflow.
+[03:35] Now they do want the INT8 version in their workflow.
+[03:38] I'm just using the BF16 because I do have it installed
+[03:41] and I'm too lazy to install the other one,
+[03:42] but it will be a little bit faster if you use the INT8,
+[03:46] but probably a little bit less quality,
+[03:48] but I have a 5090, so no big deal.
+[03:50] I'm going to bypass that image.
+[03:52] We're just going to use one image for this.
+[03:54] Okay, and grab my prompt.
+[03:56] Does have it as widescreen for the video,
+[03:57] even though this is a perfect square one by one,
+[04:00] but we'll just leave it as is.
+[04:01] Just a little five second video.
+[04:04] Yeah, pretty simple.
+[04:05] Oh, and one more thing,
+[04:06] make sure you do enable chroma sampling.
+[04:08] It was off by default.
+[04:10] I selected auto, works out pretty well.
+[04:12] So I'm going to run this, then fast forward
+[04:13] and we can take a look.
+[04:15] Okay, so our generation is done.
+[04:18] It's looking pretty good.
+[04:19] Probably not perfect, need some refinement.
+[04:21] Also the resolution is a little bit low,
+[04:23] so I don't expect a ton of face detail,
+[04:25] but let's take a look.
+[04:33] I mean, that did exactly what I wanted it to.
+[04:35] That was super quick.
+[04:36] It took about three or four minutes.
+[04:38] It wasn't long at all.
+[04:41] You could play with this a lot more
+[04:42] and get a lot more detail by adding things.
+[04:44] So if you added a facial reference photo,
+[04:46] so something super up close on top of this as well,
+[04:49] I believe that would help lock in
+[04:51] the facial identity as well.
+[04:53] I'm curious if you guys have tried this
+[04:54] and where you found it to be strong or where it was lacking.
+[04:58] Maybe I should do another video on this.
+[05:00] Let me know in the comments below
+[05:01] if there's something else I should do.
+[05:02] Let's move over to the text to video
+[05:05] and see if we can get something cool out of this.
+[05:07] So once again, I just fed ChatGPT the documents,
+[05:10] came up with a nice JDM prompt for me.
+[05:13] We'll do five seconds just to compare.
+[05:14] I had it on seven before.
+[05:15] Now the text to image is quite a bit faster
+[05:18] than the image to text.
+[05:19] That's usually how it works, so no surprise there.
+[05:22] We'll run this and I expect this to pop out
+[05:24] in maybe two to three minutes,
+[05:25] so we'll fast forward to the result.
+[05:28] All right, so that finished looking pretty good.
+[05:31] I really love the car detail,
+[05:33] especially in these text to video ones
+[05:35] with no reference at all,
+[05:37] just coming off of our prompt here
+[05:38] so you can take a look here.
+[05:41] Toyota Chaser, that's so cool.
+[05:42] Inside the parking garage, pretty awesome.
+[05:44] Let's take a look though.
+[05:52] So obviously there's some flaws,
+[05:54] but we're just here to have fun
+[05:55] and play around with the model today.
+[05:57] So I hope you enjoyed this.
+[05:58] Let me know if you've used it,
+[06:00] how have you used it, and how can I improve?
+[06:01] If you have any cool workflows
+[06:03] you want me to cover as well,
+[06:04] let me know in the comments and I'll try to get to it.
+[06:06] Anyways, guys, have a good day.

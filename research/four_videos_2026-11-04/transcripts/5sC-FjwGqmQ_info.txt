@@ -1,0 +1,35 @@
+MiniMax H3 - Pika H3 Flex + Nvidia Regen 2K Upscale ComfyUI Walkthrough|Benji’s AI Playground|20261102|835
+Pika H3 Flex in ComfyUI: I run Pika's fine-tune of MiniMax H3 side by side with the LightX2V turbo LoRA on identical prompts, then push the winner through split sigma sampling and a 2K latent upscale.
+
+Pika post-trained MiniMax H3 on their own footage and shipped it as LoRA adapters that load on the H3 base you already run in ComfyUI. In this video I test the Pika H3 Flex Turbo LoRA (2, 4 and 8 step files) against the LightX2V turbo LoRA we usually use: same prompts, same step counts, side by side. Then I take the high action scenes through a split sigma pipeline and finish everything with a latent upscale pass to 1080p.
+
+This one is for anyone already running MiniMax H3 in ComfyUI who wants to know whether a fine-tune is worth the download, and for reference-to-video users who care about face consistency at distance. No new architecture, no new install: the adapters drop into your existing models folder.
+
+Why it matters: distilled H3 runs went from twenty-plus steps to a handful, but not every fine-tune wins everywhere. In my tests Pika keeps faces readable in far and mid shots where the usual turbo LoRA pixelates, while the old turbo still owns talking-hand motion. I show both failures and both wins, plus the upscale LoRA stack that stopped fighting the Pika adapter.
+
+Resources:
+- Freebie workflow attached in the description: https://www.patreon.com/aifuturetech/posts/174179682?utm_source=youtube&utm_medium=video&utm_campaign=202611
+- Pika H3 Flex (official adapters): https://huggingface.co/Pika-Labs/Pika-H3-Flex
+- Pika H3 Flex Turbo LoRA (2/4/8 step): https://huggingface.co/akhaliq/Pika-H3-Flex-Turbo-LoRA
+- ComfyUI tutorial and template workflows: https://docs.comfy.org/tutorials/video/pika/pika-h3-flex
+- Comfy-format BF16 LoRAs: https://huggingface.co/Comfy-Org/MiniMax-H3/tree/main/loras
+- MiniMax H3 Singularity V2 (base used in this video): https://huggingface.co/WarmBloodAban/Minimax-h3_Singularity
+
+
+Chapter : 
+00:00 - Introduction to Pika H3 Flex
+00:59 - Hugging Face models & setup
+02:56 - Reference image outfit test
+03:43 - Pika H3 Flex vs Light X2V comparison
+05:54 - Face consistency & dialogue test
+08:13 - High-action scenes & split sigma sampling
+10:57 - Upscaling: Latent upscale vs Nvidia Regen 2K
+13:17 - Final sample showcase & conclusion
+
+Calliope - Local-first Agentic Idea-to-video Studio 
+https://github.com/benjiyaya/Calliope
+
+If You Like tutorial like this, You Can Support Our Work In Patreon:
+https://www.patreon.com/c/aifuturetech
+
+#PikaH3Flex #MiniMaxH3 #ComfyUI #AIVideo #TurboLoRA

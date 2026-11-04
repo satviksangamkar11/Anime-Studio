@@ -1,0 +1,111 @@
+[00:00] A 5-second video at roughly 1 megapixel generated on an RTX 4090 in about 30 seconds and a 10-second
+[00:07] video takes only about a minute. Minimax H3 has another new acceleration model called Pika H3
+[00:14] Flex. After testing it, I think this is a very high-quality model. But speed is not even what
+[00:20] impressed me most. Take a look at the character's face. We supplied a character sheet, then generated
+[00:27] a completely different scene. As she raises her hand and adjusts her hair, her facial features stay
+[00:33] very close to the reference. The model handles movement well too. Watch this woman throwing
+[00:39] punches and pulling her hands back. The movement flows smoothly, and the details of the gloves
+[00:45] and arms come through clearly. I also gave it a storyboard to test how well it follows references.
+[00:51] As you can see, it uses the scenes and camera angles in the storyboard to create a dance video
+[00:57] with multiple cuts, while keeping the character consistent across those cuts. Today, we'll start
+[01:02] with the official workflow and modify it step by step to bring generation speed up to an incredible
+[01:09] level. The Comfy UI team has already provided compatible models and workflows for Pika H3 Flex,
+[01:16] so you can use it directly in Comfy UI. First, update Comfy UI, then open the model download
+[01:23] page. There are two main Pika Loris here. One is called FL2VA, which is primarily for generating
+[01:31] videos from first and last frames. The other is REF2VA, which is for reference generation. You can
+[01:38] also find the official tutorial and basic workflows on the page below. We'll add attention
+[01:44] acceleration to the basic workflow, replace the VAE, and finally switch to two-stage sampling.
+[01:51] That will get us to the generation speeds I showed at the beginning. For convenience, I have
+[01:56] also built the workflows on Running Hub. It is an excellent online platform for Comfy UI,
+[02:02] and it tends to add support quickly whenever new models and extensions appear. Running Hub also
+[02:08] gives Comfy UI creators a place to exchange ideas, find inspiration, and explore example workflows.
+[02:15] Let's walk through the basic workflow first. This one generates video from first and last frames.
+[02:22] The structure is straightforward, and it should look familiar if you have used H3 before. For the
+[02:28] main model, we're using the first and last frame video model provided by the Comfy UI team. Then
+[02:35] we load the Pika FL2VA Laura we just downloaded and set its strength to 1. The sampling settings
+[02:42] are the main thing to watch here. The basic workflow uses the LCM sampler with six sampling
+[02:49] steps, but those six steps are defined using manually specified sigmas. Our reference image
+[02:56] shows a woman cooking in a kitchen. The video is set to 5 seconds with a 16 by 9 aspect ratio
+[03:03] in a 1.0 megapixel setting. The actual output resolution is 1,376 by 768. Let's benchmark the
+[03:13] speed to clarify the hardware. I am using an RTX 4090. As usual, I'll generate four videos in a row.
+[03:21] The first run may include model loading and extra preparation time, so we'll focus on the last three.
+[03:27] Those runs take around 125 seconds each, just over two minutes. Now let's look at the quality.
+[03:34] Overall, it is quite good. She is cooking, the ingredients move inside the pan,
+[03:39] and both the steam and the kitchen lighting look convincing. There is another small detail worth
+[03:45] noticing. The exhaust fan in the window behind her is rotating. Keep that in mind once we speed up
+[03:51] the workflow, we can come back and see whether all these details are still there. Right now though,
+[03:57] we're spending about two minutes to generate a five second video, so we have not reached the speed
+[04:03] from the opening yet. Let's add our first set of acceleration settings. Compared with the previous
+[04:08] workflow, we have mainly added two nodes. The first is sage attention patch, using the sage
+[04:15] attention patch for H3. The second enables sparse attention, which I have set to saw attention.
+[04:23] Everything else stays the same. Let's generate again. As you can see, the time drops to around
+[04:29] 50 seconds. Going from 125 seconds to 50 is already a substantial improvement. Next, let's make another
+[04:38] small speed improvement by replacing the VAE. This one is called SolVA. It comes from the Comfy UI
+[04:46] model repository and is an experimental version provided by Quijet that speeds up video encoding
+[04:52] and decoding. Make sure you update Comfy UI to the latest version before using it. An older version
+[04:58] may produce decoding errors. Let's check the speed again. This time, we're down to about 47 seconds,
+[05:06] saving a few more seconds. We should also check what we lose by speeding things up. The overall
+[05:12] image still looks good, and the woman's cooking movement is preserved. But look at the exhaust fan
+[05:18] in the window. Its rotation is no longer as noticeable as before. We can apply the same
+[05:24] acceleration settings to reference generation. Let's look at that workflow. The overall structure
+[05:30] does not change much. We replace the peak of Laura with the reference generation Laura and change the
+[05:36] conditioning node to reference to video. We keep Sage attention, Sol attention, and SolVA enabled.
+[05:44] In this example, we're generating a woman in a dress performing a sword dance beside a flowering
+[05:50] tree in a bamboo grove. First, check the speed. A five-second video takes about 45 seconds. Now,
+[05:57] look at the result. As she turns and swings the sword, her skirt moves with her body, and her
+[06:04] sword-holding posture remains continuous. The hairstyle and dress from the reference image
+[06:10] carry over into a new setting. Overall, the result looks good. If you have watched my earlier videos,
+[06:17] you probably know that a single-stage sampling workflow is not the fastest option. Two-stage
+[06:23] sampling is faster, so let's push the speed further. I'll use reference generation as the
+[06:29] example here, but the first and last frame workflow can use the same acceleration approach.
+[06:35] The main change is in the sampling section. We replace the conventional sampling node with
+[06:40] Self-Lift's progressive sampling node. We have used this node many times before. It does three
+[06:46] things. First, it samples at a lower resolution, then it upscales the latent. Finally, it continues
+[06:53] sampling to fill in the details. There are a few settings to watch. First, we switch from the
+[06:59] official LCM sampler to Euler. This node only accepts the Euler sampler, so we need to make
+[07:05] that change. Second, I replace the manually specified Sigma schedule with Simple while
+[07:11] keeping the total at six sampling steps. Why change the Sigma schedule? If we keep the official
+[07:18] manual Sigmas when configuring two-stage sampling, the beginning of the video shows noticeable
+[07:24] flickering. Switching to Simple resolves that issue, and the generated quality holds up well.
+[07:30] Let's check the generation time. A five-second video now takes about 29 seconds. That is the
+[07:36] speed I mentioned at the beginning, roughly 30 seconds to generate five seconds of video.
+[07:41] Next, let's change the duration to 10 seconds. This takes around 61 seconds, so we can generate
+[07:48] a 10-second video in about a minute. To reproduce this speed, make sure you are using the two-stage
+[07:55] sampling workflow. Now let's look at some of the model's other strengths, starting with character
+[08:00] consistency. Quite a few H3 models struggle with this. Take these two videos, both generated with
+[08:07] Fast 3 Omni. The clothing and hair steels are clearly different. One woman has long black hair,
+[08:14] and the other has short blonde hair. But when you focus on their faces, don't they look strangely
+[08:20] familiar? This is a common issue with reference generation models. They can follow a character's
+[08:26] overall appearance, but they do not always preserve the individual facial features.
+[08:31] Now look at Pika H3 Flex. It seems to avoid that problem here. Our reference character is a woman
+[08:38] with long hair and a distinctive face shape. Let's put the reference image beside the generated
+[08:43] video. Pay attention to her eyes, nose, and overall face shape. They look very close to the reference
+[08:51] to see whether this was just the lucky result. I tried several more examples. Here is a woman with
+[08:57] bangs wearing a black dress. In the video, she raises her hand to adjust her hair, and the angle
+[09:04] of her head changes. Even so, you can clearly recognize her as the person in the reference
+[09:10] image. In the next example, we use the same character from the sword dance, but place her near
+[09:16] a window, combing her hair. Character consistency remains strong. Finally, look at this example with
+[09:23] the purple dress. The scene and movement are similar to the other examples, but the differences
+[09:29] go beyond clothing color. Each face still matches its own reference. For me, that makes character
+[09:36] consistency one of Pika H3 Flex's most important strengths. Let's make the reference a little more
+[09:42] complex by giving it a storyboard. This one shows a woman dancing on a rooftop at night. It contains
+[09:49] six panels, ranging from wide shots to closer views of the character with several different camera
+[09:55] angles. We want the model to use that storyboard to guide the character, setting, and shot changes,
+[10:01] then turn them into a continuous video. Look at the result. The rooftop at night, her blue hair,
+[10:07] and her outfit are all preserved well. The camera moves in from a distance, then cuts to different
+[10:14] angles. You can clearly see the storyboard's influence. Even after several cuts, the character
+[10:20] does not noticeably change. Her hairstyle, clothing, and main physical features remain
+[10:25] consistent. The dance also includes a fair amount of movement, with turns, arm swings, and moving
+[10:32] hair. Overall, it handles those well. Finally, let's test fast action. Both of these videos use
+[10:38] the same reference character, and both show a woman boxing. In the first prompt, I describe
+[10:44] punches at a normal pace. Watch her extend each punch and pull it back. The movement of the gloves
+[10:50] and arms is clear, and the outlines of her head and hair stay relatively stable. At this speed,
+[10:57] the overall result is good. In the second prompt, I explicitly ask for fast continuous punches.
+[11:04] The action does speed up, but notice what happens to her hair and the edges of her body. They become
+[11:10] a little soft, especially during continuous rapid movement. The outlines do not hold together as
+[11:17] firmly as they did in the previous clip. So when using this model, I would generally aim for a
+[11:23] normal movement pace and be a little more cautious with extremely fast action. To wrap up, the two
+[11:29] things I like most about Pika H3 Flex are its generation speed and its consistency with reference
+[11:36] characters. In this video, we also started with the official workflow and built up this much faster
+[11:43] version step by step. That is all for today. Give it a try for yourself. Follow me, and let's get
+[11:50] better at understanding AI together.

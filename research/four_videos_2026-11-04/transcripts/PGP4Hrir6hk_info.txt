@@ -1,0 +1,49 @@
+Master Pika H3 Flex: 5s Hd video in 30s Fast Renders & Insane character consistency|Veteran AI|20261103|713
+Can you really render a 10-second MiniMax H3 video at 1.0 Megapixels in just 60 seconds on an RTX 4090? 🚀 Pika just dropped Pika H3 Flex, delivering an unprecedented balance between blazing generation speed and hyper-accurate character consistency!
+In this tutorial, we modify the official baseline workflow step-by-step—adding SageAttention, Sol-Attn, Kijai’s experimental Sol VAE, and the SelfLift Progressive Sampler—to smash render times from 125s down to just 30s for a 5-second clip! More importantly, we test whether Pika H3 Flex finally solves the dreaded "generic plastic AI face" problem across multiple complex scenarios.
+🔥 Speed Benchmarks in this Video (RTX 4090):
+• ⏱️ Official Baseline: ~125s (5s clip)
+• ⚡ Stage 1 (Sage + Sol-Attn): ~50s
+• 🚀 Stage 2 (+ Sol VAE): ~47s
+• 🏎️ Stage 3 (SelfLift 2-Stage Sampling): ~29s (5s clip) / ~61s (10s clip)
+🔥 What you'll master in this tutorial:
+• 🧠 The Pika H3 Flex Architecture: Exploring the FL2VA (I2V / First-Last Frame) and Ref2VA (Ref-to-Video) LoRAs.
+• 👤 Flawless Character Likeness: Locking specific facial bone structures and hairstyles across completely new scenes and outfits.
+• 🥊 Dynamic Action & Combat: Stress testing boxing combos, rapid punching, and hair physics.
+• 🎬 6-Panel Storyboard Test: Converting a 6-grid dance storyboard into a continuous, multi-camera sequence with zero character drift.
+• ⚙️ The SelfLift Anti-Flicker Fix: Why switching from manual sigmas to Euler + Simple eliminates opening frame flickering.
+
+#runninghub #PikaH3Flex #PikaAI #MiniMaxH3 #ComfyUI #AIVideo #SpeedUpAI #CharacterConsistency #SelfLift #SolAttn #SageAttention #AIFilmmaking #GenerativeAI #RunningHub #AITutorial #VideoGeneration
+
+------------------------------------------------------------------------------------------------------------------------
+resource
+https://huggingface.co/Comfy-Org/MiniMax-H3/tree/main/lora
+https://huggingface.co/Pika-Labs/Pika-H3-Flex
+https://docs.comfy.org/tutorials/video/pika/pika-h3-flex
+
+1：pika_h3_flex_fl2va
+https://www.runninghub.ai/zh-cn/post/2117085837866684418/?inviteCode=kol02-rh021
+
+2：pika_h3_flex_ref2va
+https://www.runninghub.ai/zh-cn/post/2117153481216139265/?inviteCode=kol02-rh021
+
+3：pika_h3_flex_fl2va_sol_attn
+https://www.runninghub.ai/zh-cn/post/2117088501236826113/?inviteCode=kol02-rh021
+
+4：pika_h3_flex_ref2va_sol_atten
+https://www.runninghub.ai/zh-cn/post/2117094885589688322/?inviteCode=kol02-rh021
+
+5：pika_h3_flex_fl2va_2stage_sampling
+https://www.runninghub.ai/zh-cn/post/2117151265058050049/?inviteCode=kol02-rh021
+
+6：pika_h3_flex_ref2va_2stage_latentupscale
+https://www.runninghub.ai/zh-cn/post/2117100808910524418/?inviteCode=kol02-rh021
+
+
+RunningHub Fan Benefit: Sign up and get 1,000 free compute points.
+https://www.runninghub.ai/?utm_source=kol02-RH021
+
+workflow and prompt engineering download：
+https://github.com/amao2001/ganloss-latent-space/tree/main/workflow/2026-11-03%20pika%20h3%20flex
+
+------------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,128 @@
+[00:00] Pika just released their own fine tune of Minimax H3, and they named it H3 Flex.
+[00:06] It's a post-train of the H3 bass, and the part that matters most is speed.
+[00:11] They distilled the sampler from 50 steps down to 6, so a 5-second clip finishes in about a minute
+[00:17] on a single card instead of the usual several. The audio comes out in the same generation pass as
+[00:23] well, so the dialogue, the effects, and the music line up with the picture without a second model.
+[00:30] It's built for reference work too. You can feed it up to 12 images, video clips, or voice samples,
+[00:36] and direct several shots inside one prompt, which is how I kept these two characters looking the same
+[00:41] across scenes that have nothing in common. Two things to know first. It ships already
+[00:47] distilled, so stacking another speed LoRa on top breaks the output, and the license is Minimax's
+[00:54] community one. Now let's see what it actually does. So first, let's check out the files we
+[01:01] need to run this model locally. Pika Labs published the fine tune on Hugging Face,
+[01:06] and it's worth going through that page once so you understand what a fine-tuned release like
+[01:11] this actually contains. But we don't need the files from that repo because that's the full model,
+[01:17] around 210 gigabytes of base weights. We already run Minimax H3 locally in Comfy UI,
+[01:24] and Comfy has converted Pika's fine-tuned adapters and republished them on Hugging Face
+[01:30] in Comfy UI format. One of those repos is the Pika H3 Flex Turbo LoRa, and this is the one
+[01:37] converted for low sampling steps, with separate files for two steps, four steps, and eight steps.
+[01:44] That flexibility is the interesting part, because you can pick the sampling count that matches how
+[01:50] fast you need the render. And notice, this is already a Turbo LoRa, so you do not stack another
+[01:56] Turbo LoRa on top of it in the Comfy UI workflow. I'm going to use the Pika Labs Turbo LoRa from
+[02:02] this repo. The official Comfy UI page also has the documentation, the example workflows,
+[02:09] and the file list, including where to download everything. And the Comfy UI Hugging Face repo
+[02:16] released the BF16 versions of Pika H3 Flex for text to video and for reference to video,
+[02:23] so both files are sitting right there as I'm highlighting.
+[02:28] Now, this is all very similar to what the official Pika repo released, but the file size is a little
+[02:34] larger here. These are 3.9 gigabyte files, and I assume there is more detail left in this
+[02:40] extraction of the LoRa, so that's the one I'm using. I load it into the LoRa models folder,
+[02:46] and for the rest of the files, just follow whatever you normally do to run Minimax H3 in Comfy UI.
+[02:53] That's good enough. Okay, so here's an example of a very simple way to run this model.
+[03:00] I'm trying an outfit try-on style test, where I put multiple clothing items into one reference
+[03:05] image. Below that, I have the text prompt, and it already includes the conditions. By default,
+[03:13] I keep two reference image slots wired in case I need them, but for this demo, I'm using just one.
+[03:20] The text prompt here is a short one on purpose, because I'm testing a 15 second clip.
+[03:26] And the output comes out like this. The set of outfits on the model, shot from multiple camera
+[03:32] angles, far shot and close up, so I can see how the Pika Labs fine-tuned model performs compared
+[03:39] with a normal Minimax H3 run. And now, I'm going to build a second route for the model.
+[03:47] One route uses the normal Light X2V Turbo LoRa for reference to video that we usually run with.
+[03:54] The other route uses the Pika H3 Flex Turbo 8-step HD model. Both routes run the same number of steps,
+[04:01] and each one gets its own sampler group and its own video combine node for the output.
+[04:08] Remember to set the video output format. This run is only to preview how the model behaves.
+[04:15] I keep the sampler as basic as possible, nothing special, because I want to judge the raw video
+[04:22] output. Both routes are set to eight steps, and I run them together so the two videos show side by
+[04:28] side. While that runs, we can look at the Pika H3 Flex files. There are four files that I personally
+[04:37] prefer to download from the hugging face upload because I want to test the difference between the
+[04:42] 8-step and the 4-step version of each extracted LoRa. In this video, I'm using the 8-step HD,
+[04:49] since that obviously gets the most out of the extracted LoRa data. I put them in the
+[04:54] Models folder under LoRas, together in their own subfolder. Back to the generation,
+[05:02] both outputs are done. The left one is the Pika H3 Flex run, and the right one is the
+[05:08] 4-step Turbo LoRa we usually run with, both at eight steps with the same text prompt.
+[05:14] So, the motions are the same, as you'd expect from a shared prompt, but you can see the difference
+[05:20] in color and lighting. The Pika H3 LoRa is doing better here, especially in the walking scene.
+[05:27] This clip has multiple shots, and when the character walks on the street, the lighting
+[05:32] looks more natural, and on the rooftop for that one or two seconds, you get a more natural look
+[05:38] as well. The motions are pretty similar between the two, and basically what I'm seeing is that
+[05:43] the Pika H3 LoRa, although it is a Turbo LoRa, does give you something a little different from
+[05:49] the normal Turbo 4-step LoRa we used to run with. Getting to the next test, I'm also referencing
+[05:57] characters here, so let's check the face consistency. I want to see if there's any awkward
+[06:02] part, or if a face drifts off the chart and stops matching the reference image. The next one is a
+[06:08] two-person scene. It's a podcast-style footage with the two characters I created in a previous
+[06:14] video, so there's a big difference between them in both face identity and outfit. We generated two
+[06:20] video outputs for this as well, so let's check both and see how similar each character stays.
+[06:28] Basically, I'm seeing that both video loras stay pretty close on character-style consistency.
+[06:34] The first one is the Pika H3 Flex LoRa, and the second is the Turbo 4-step LoRa we run as usual,
+[06:41] synced up together. The hardest part wasn't quitting, it was the quiet after. No,
+[06:49] the quiet is where you actually rebuild. Okay, you win that one. The hardest part wasn't quitting,
+[06:58] it was the quiet after. No, the quiet is where you actually rebuild. Okay, you win that one.
+[07:06] You hear the same exchange in both clips. Both are pretty close on the emotions. On the Pika side,
+[07:13] I'm seeing the character's fingers moving randomly at one point, and I'm not a big fan of that kind
+[07:18] of motion. On the Turbo 4-step side, I like how the talking looks. It's more confirmative of how
+[07:25] people actually talk. So, for these talking motions, I prefer the Light X2V Turbo LoRa here.
+[07:32] But there is a catch with Light X2V compared with the Pika Turbo LoRa. Some far shots and
+[07:39] mid shots from Light X2V always come out with a pixelated face in the first sampler,
+[07:44] and that always needs a second sampling pass to resample at high resolution. With the Pika Turbo
+[07:50] LoRa, the resolution is the same, but the face is more clear. It still needs enhancement for
+[07:56] resolution and character detail, but you see fewer pixelated faces in far and mid-range shots
+[08:03] compared with Light X2V. I think there's a reason behind every fine-tuned model,
+[08:09] but it's not always winning on every kind of footage. The next example uses two characters again,
+[08:16] more of a 3D cartoonish look, and I'm doing sci-fi styles with these two in high action scenes.
+[08:22] Obviously, one sampling pass like this is not enough to generate good footage for this kind
+[08:27] of high action, but we can still test it and see the raw output. The model file I'm using here is
+[08:34] Singularity Reference to Video V2, and right here, I'm using a longer text prompt that describes
+[08:40] all 15 seconds, what the motions do in each one or two seconds of the fight scene.
+[08:45] From the single sampler, we can see the Pika H3 LoRa output is less pixelated across the two
+[08:53] characters, and the Light X2V Turbo LoRa, when it comes to high action scenes, is unable to
+[08:59] handle most of the motions in a normal way. So, that's what a fine-tuned model is for. It gets
+[09:06] better and better with the video graphics each time. For high action scenes, I think we should
+[09:11] not use just one sampler. We should split the sigmas and play with different sampling.
+[09:18] In the modified version, the high sigma half lays down the actual noise in the first six steps,
+[09:24] and the Pika H3 LoRa generates the detail in the low sigma half of six steps. It's the same concept
+[09:31] as the high and low noise split applied here with split sigmas, and since the Pika H3 LoRa is built
+[09:38] around six to eight steps, that's the core of it. Even if you add more steps, the sampling quality
+[09:44] won't climb any higher. So, I set six steps for each of the high and low noise samplers to test
+[09:51] it. You can try different numbers here. The total is 12 steps, and you can divide that into six or
+[09:58] eight per sampler however you like. I'm currently testing 50-50, six steps each, just to start
+[10:04] balanced. And of course, if you want the full eight steps of the Pika H3 LoRa, you can turn
+[10:10] each sampler up to eight, which is 16 steps in total. For the first try, I just used six to see
+[10:17] what we get. And right here, we got the video output. The resolution is 0.8 megapixels at 24
+[10:26] fps, 15 seconds of video. Some of the motions, the exchange of punches, the jumps, read much more
+[10:34] clearly, especially that character's kick sweeping the ground. The armor on the character's bodies
+[10:40] comes out in more solid color instead of pixelated noise moving around each character. I'm going to
+[10:47] push even higher than 0.8 megapixels because the first sampling output is only the base of the
+[10:53] video, and we need something that goes further, which is where the 2K regenerator comes in.
+[11:01] For the video upscale, I put it in another group, the one I used in the previous video
+[11:06] for the Minimax latent upscale. It uses latent upscale with its own sampling steps to raise
+[11:12] the resolution. I tried 480p in the first sampler here, and then I come back and try 1.5,
+[11:20] which is 1.5 megapixels. You can go even higher for the video output, but in this test,
+[11:27] I'm trying 1.5 to see how it runs. And obviously, some of the fast high action moments still don't
+[11:34] do well in certain actions, but overall, how things move reads more clearly. If we go back to normal,
+[11:41] same two characters, and run something with normal action scenes, the picture is different.
+[11:47] Running high action like this is pretty risky. You cannot control too much of how these two
+[11:52] characters move, and sometimes, you just get something unexpected. So, to play it safe with
+[11:59] this video model, cinematic shots are the ideal use for AI models like this, and for high action
+[12:05] scenes, I'd prefer running a video-to-video method instead. That would be better.
+[12:10] So, after the case sampler pass with the high and low noise split, the 0.8 megapixel output
+[12:18] already looks pretty nice. From there, I tried two upscale methods. The first is the normal
+[12:24] latent upscale without the NVIDIA Regenerate 2K at 2.0 megapixels, which comes out at 1080p.
+[12:33] The second is the NVIDIA Regenerate 2K group we talked about last video,
+[12:38] this time with the three-step sampling from the research paper set to its native 2K output.
+[12:44] I still think the latent upscale without Regenerate 2K looks better. The color is more solid, and the
+[12:51] hair, especially this character's white hair, holds together even in this semi-3D realism style.
+[12:58] The 2K pass keeps the detail but goes blurish, and it's not the upscale quality I expect.
+[13:04] Maybe I'm spoiled by using Topaz day to day. So, my preference stays the same.
+[13:10] Latent upscale to 1080p, then another upscaler to 2K or 4K only if I need it.
+[13:17] That's all for this test. I'll see you guys in the next one.
+[13:34] Then why stand out here? Because it's honest.
+[13:41] Third one this week, they're not failures. Then what are they? Someone's testing.
+[13:48] If they're testing, you should leave the tower. I don't leave. I know.
+[13:53] So I'll stay. Then stay for the coffee.

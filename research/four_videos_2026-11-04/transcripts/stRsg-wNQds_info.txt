@@ -1,0 +1,46 @@
+MiniMax H3 Just Got WAY FASTER! New Molmo2 Text Encoder + Motion Tests|Ok Todd AI|20261104|1183
+MiniMax H3 speed is significantly improved with the new Molmo2 text encoder. I test these motion updates to optimize your workflow.
+
+This video walks through the latest updates to the MiniMax H3 model, focusing on how the integration of the Molmo2 text encoder impacts generation speed and overall responsiveness. I demonstrate the practical differences by running several motion tests, comparing the new encoder performance against previous versions to see where the gains are most noticeable.
+
+Free workflow:  https://www.dropbox.com/scl/fi/hkojsgteneyrtfkrupn8c/Ep49-Deno_MiniMax_H3_R2V_Turbo_8plus2.json?rlkey=ati3s3c94905qtgorig0zpxi1&st=pi291aqs&dl=1
+
+That workflow also includes the custom node for motion speed dials as well as the De-Rope section to the far right.
+
+Molmo2 HuggingFace repo:  https://huggingface.co/Alissonerdx/Molmo2-8B-Minimax-H3
+and Github:
+https://github.com/alisson-anjos/ComfyUI-Molmo2-H3
+
+Motion Speed Dials Custom Node:  https://github.com/matlowai/ComfyUI-Dials
+
+__________________________________________________________________
+Time Stamps
+
+0:00 - 2:21 - Introducing Molmo2, Motion Dials, and D-RoPE Tests
+2:22 - 3:34 - Molmo2 vs My Previous Text Encoder: Size and Speed
+3:35 - 5:08 - Speed Test: A Six-Second Video in Two and a Half Minutes
+5:09 - 6:35 - Troubleshooting the Molmo2 Installation Error
+6:36 - 7:34 - Fixing the Python File Indentation
+7:35 - 8:18 - Connecting Molmo2 to the Existing Workflow
+8:19 - 8:49 - Switching to the Smaller MiniMax H3 VAE
+8:50 - 9:47 - How Motion Dials Control Movement Speed
+9:48 - 10:58 - Cartoon Test: Clean Motion and Consistent Characters
+10:59 - 12:49 - Singing Tests: Matching Lyrics, Audio, and Lip Sync
+12:50 - 13:52 - Realistic Skin and Sampler Comparisons
+13:53 - 15:15 - Running Tests: Comparing Motion Dial Settings
+15:16 - 16:06 - D-RoPE: Better Motion, but Changed Faces
+16:07 - 17:46 - Sword Fight Tests: Motion Speed, Blur, and D-RoPE
+17:47 - 18:33 - Fifteen-Second Talking Head Test and Skin Quality
+18:34 - 19:40 - Updated Step Settings, Downloads, and Final Thoughts
+__________________________________________________________________
+
+Some of my must have computer tools:
+Logitech MX Master 4 Mouse - https://link.amazon/B05yEOQV3
+Apple Airpods Pro 3 Headphones - https://link.amazon/B00sML41Z
+Nvidia Graphics Card 4070 TI Super 16gb Vram - https://link.amazon/B0gCGmjPm
+Samsung 4K M7 Smart Monitor - https://link.amazon/B0egSfFaE
+Wolfbox Compressed Air Electronic Duster - https://link.amazon/B0cerJd5t
+FlexiSpot 72x30 Adjustable Standing Desk - https://link.amazon/B05QhWRDA
+FlexiKing Office Chair - https://link.amazon/B0fGxJpZ7
+Apple Ipad Pro with Lidar Scanner - https://link.amazon/B0cbqNcH0
+Apple Pencil Pro - https://link.amazon/B0gx54RwT

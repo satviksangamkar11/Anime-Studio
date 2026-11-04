@@ -1,0 +1,80 @@
+Pika H3 Flex Makes MiniMax H3 Look BETTER?!|smallzero|20261102|370
+Today we're testing **Pika H3 Flex inside ComfyUI**, a new AI video workflow that uses the MiniMax H3 video model alongside a custom LoRA.
+
+I actually stumbled across this workflow while browsing ComfyUI and figured I'd give it a try. I hadn't done much research beforehand, but after playing with it, I've gotten some surprisingly good results.
+
+And you know me, I had to test it with AI influencers and JDM cars.
+
+For this video, we're looking at both **image-to-video and text-to-video generation**, using a free workflow available directly inside ComfyUI.
+
+I started with some AI influencer images I previously generated using MOSS Image SFT, then used Pika H3 Flex to animate them into JDM-inspired photography scenes.
+
+The results are pretty cool, especially considering we're running this locally.
+
+**In this video, I'm testing:**
+
+- Pika H3 Flex with MiniMax H3
+- Image-to-video using MOSS Image references
+- JDM car meets and automotive photography
+- AI influencer motion and pose consistency
+- Squatting, posing, and hand gestures
+- Text-to-video without reference images
+- Toyota Chaser generation inside a parking garage
+- Prompt creation using ChatGPT
+- BF16 vs INT8 model options
+- Chroma sampling settings in ComfyUI
+
+One thing I really like is how simple the workflow is to get started with.
+
+If you're on an updated version of ComfyUI, you should be able to find the **Pika H3 Flex reference-to-video workflow** in the workflow templates. There's also a text-to-video version and a first-frame/last-frame option.
+
+You'll need the Pika H3 Flex LoRA and the corresponding MiniMax H3 model files.
+
+For my testing, I'm using the BF16 version rather than INT8, mainly because I already had it installed and I'm running everything on my RTX 5090.
+
+I'm also using ChatGPT to help structure prompts based on the workflow's example format. I simply give it a reference image, explain the motion I want, and let it create a suitable prompt.
+
+For one of the tests, I have an AI influencer posing in front of a JDM car, squatting down, and giving a peace sign.
+
+The model actually follows the motion surprisingly well.
+
+It's not perfect, and the resolution could definitely be higher, but for a quick local generation, I'm pretty happy with the result.
+
+Then we switch over to text-to-video and generate a Toyota Chaser scene inside a parking garage.
+
+The car details are probably my favorite part of that test.
+
+Overall, **I think Pika H3 Flex has a lot of potential**, and from these initial generations, I actually prefer some of the results to standard MiniMax H3.
+
+Of course, this is just an early test, and I'd love to hear whether you agree.
+
+Have you tried Pika H3 Flex? Are you getting better results with INT8 or BF16? And have you experimented with multiple reference images or first-frame/last-frame generation?
+
+Let me know in the comments, and if you've got any interesting ComfyUI workflows you'd like me to cover, send them my way!
+
+**Join the SmallZero community:** https://smallzero.io
+
+Thanks for watching!
+
+#ComfyUI #PikaH3Flex #MiniMaxH3 #AIVideo #SmallZero
+
+Join our community: https://smallzero.io
+Skool: https://www.skool.com/small-zero-ai-5861/ 
+Twitter: https://x.com/Smallzero
+
+####
+
+Disclaimer:
+
+The content on this channel is provided for educational and informational purposes only. While I strive to share accurate and up-to-date information about artificial intelligence tools, software, and workflows, I am not responsible for how you choose to use this information.
+
+0:00 Testing Pika H3 Flex in ComfyUI
+0:32 MOSS Image Influencer & JDM Video Results
+1:04 Where to Find the Free ComfyUI Workflow
+1:26 Text-to-Video & Reference-to-Video Features
+1:59 Installing the H3 Flex LoRA & First Results
+2:38 Creating Better Prompts With ChatGPT
+3:09 AI Influencer Motion Test & BF16 Settings
+4:01 Chroma Sampling & Image-to-Video Results
+4:57 Switching to Text-to-Video
+5:28 Toyota Chaser Generation & Final Thoughts

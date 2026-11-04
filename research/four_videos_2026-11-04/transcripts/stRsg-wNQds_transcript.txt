@@ -1,0 +1,477 @@
+[00:00] OK, so today we're going to talk about a couple of things.
+[00:03] The title of this video is talking all about this right
+[00:06] here, MOMO2 as a new text encoder.
+[00:09] And so I'm going to show you that and show you
+[00:12] how awesome that is.
+[00:14] Basically, I've just turned this one off completely.
+[00:16] So I'm going to walk you through that,
+[00:18] because I did run into a mistake when
+[00:20] I was trying to install it.
+[00:22] And I want to show you how I figured out
+[00:24] how to fix it, or chat figured it out.
+[00:26] I would have never figured it out.
+[00:28] But I want to show you that.
+[00:29] I really, really wanted this video to be not just this,
+[00:34] but I also wanted it to be all about the dials and motion.
+[00:38] But I just wasn't satisfied with where it ended up.
+[00:42] So I'm going to show you that as well,
+[00:44] because I feel like I'm 80% of the way there,
+[00:47] but I'm going out of town tomorrow,
+[00:48] and I'm just not going to have time to get to it.
+[00:51] So I want you to look at this, and I'm
+[00:52] hoping that others are successful.
+[00:54] I was searching to see.
+[00:55] I've only found one video on this, which
+[00:58] is this one right here.
+[01:01] AI Ninja talked about it, and so he had this workflow, which
+[01:04] I just grabbed this out of his workflow.
+[01:07] But I totally recommend you looking at this workflow
+[01:10] that he talks about here, because this
+[01:12] is a good one that helped me out.
+[01:14] So I'm going to show you how that works.
+[01:16] And then also, I want to show you this right here.
+[01:20] So ever since, I don't know, probably a couple of months
+[01:23] ago, AI moved so fast, but a couple of months ago,
+[01:26] I watched this deroping video from Machine Delusions.
+[01:29] I can't remember his actual name, but he's with Comfy.
+[01:31] And he was talking about how deroping
+[01:33] would help fix the blurring.
+[01:36] And so I was able to get this from that same video.
+[01:38] So this same AI Ninja, he had a whole section
+[01:41] of his workflow that was just devoted to this.
+[01:43] So I was able to grab this whole thing off here.
+[01:46] And it works really good.
+[01:48] There's one problem, and that's why
+[01:50] I didn't put it in the title.
+[01:51] I'm not happy with it, and it's the faces.
+[01:54] So it fixes the action, but it's messing up the faces.
+[01:58] So for this lady here, if I put her into here,
+[02:01] it would change the face, and it would make her look different.
+[02:04] So I was thinking, I might, after this,
+[02:08] go into the face refiner.
+[02:10] But that's so many steps, and I just
+[02:12] don't think people want to do all that.
+[02:13] So that's why I'm going to show you this,
+[02:16] and I'll leave it in the workflow.
+[02:18] But I'm just letting you know that I'm not there yet,
+[02:22] 80% there, but I'm not there yet.
+[02:24] But this, this is what I want to talk about first,
+[02:26] because this is why you clicked on it.
+[02:28] So let me go to right here.
+[02:31] So what I have been using is just my clip, my text encoder.
+[02:35] And so my text encoder is right here.
+[02:37] I've been using the Int8 version one,
+[02:39] because I have a 40 series card.
+[02:41] So this Int8, even though it's much bigger, 26 gigabytes,
+[02:45] it's faster for me than this one.
+[02:48] That's 15.
+[02:49] But this new one that's installed, this Momo,
+[02:53] it's only 9 gigabytes right there.
+[02:56] And so what it has done for me, I've been tracking it,
+[03:00] because I was getting pretty good speeds
+[03:02] with this workflow already.
+[03:03] But what it has done is it allows me,
+[03:05] and this is a low resolution, but still, like I said,
+[03:08] testing is so important that if I can test something,
+[03:10] get it where I want it, then I don't
+[03:12] mind letting it run for a while afterward.
+[03:14] I was able to do a 15 second clip.
+[03:16] And it was only, you know, so it ended up
+[03:18] being this resolution here, 1088 by 608.
+[03:21] It ended up only taking five minutes.
+[03:24] So what that means is that, I think it was this one right
+[03:26] here, even though I put it above it, but a six second clip.
+[03:29] And we're going to test it right now, just so you can see.
+[03:31] But a six second clip, I was getting it in no time at all.
+[03:35] So that's what I've done here, is
+[03:37] I've got this really short prompt and this,
+[03:40] and I've got it set to six.
+[03:41] So let's just run it, and let's see how fast it can do it.
+[03:44] Now, I do have this lore on.
+[03:45] I'm still not sold on that.
+[03:47] I really don't like this one.
+[03:48] I know everybody's going to be mad at me.
+[03:50] But I really don't like this realism people one.
+[03:52] It messes up the motion for me so much.
+[03:54] So I'm going to leave this on.
+[03:56] And all this does, I'll get into it more in a little bit.
+[03:58] But it just makes the motion a little bit smoother.
+[04:00] It speeds it up just a little bit.
+[04:02] So I'll talk more about that in a second.
+[04:04] But I will leave this one on.
+[04:05] And so that may slow it down just a little bit.
+[04:08] But let's go ahead and test it and see how quick we can get it.
+[04:11] So we've got this.
+[04:12] It's a six-second video.
+[04:13] And it's at a low resolution.
+[04:15] So let's run it and see.
+[04:16] All right, so that was it right there.
+[04:18] So it's done in two and a half minutes.
+[04:20] And so let's see how it did.
+[04:23] Wow.
+[04:24] That was fast.
+[04:26] I didn't think my video would be already done.
+[04:29] OK, so it's all right.
+[04:31] You know, her speech could be better.
+[04:32] But anyways, that is blazing speed for me.
+[04:36] I'm using a 16-gigabyte card.
+[04:38] So that's fantastic.
+[04:39] Because that way, you know, it takes two minutes.
+[04:41] And then I can be like, OK, her speech is messed up.
+[04:43] I can try a new seed, run it again.
+[04:45] If it's still wrong, then I can be like, OK,
+[04:46] my prompt is messed up.
+[04:48] And so it's just something froze up on me.
+[04:50] So I had to come back to it.
+[04:52] But anyways, what I'm saying is, because I'm
+[04:54] using this guy here, that's what makes this go so much faster.
+[04:58] So easily before I was doing it, and it
+[05:01] was taking three and a half minutes or four minutes
+[05:03] to do it, that's huge.
+[05:05] That's a huge speed up.
+[05:06] All right, so this right here, I got this from this video here.
+[05:11] And this is the video that he talked about it.
+[05:13] Whoops, didn't mean to pull that aside.
+[05:15] This is the video that he talked about it right here.
+[05:17] So I was having an issue right here
+[05:20] where it was saying value error, this config is already
+[05:22] used by a Transformers model.
+[05:24] And so I was almost convinced that the problem was
+[05:28] that the transformer I had was too up-to-date
+[05:31] and that it was going to make me go back with my transformer.
+[05:35] Every time I would run it, it would get to right
+[05:38] to this node right here.
+[05:40] And as soon as it hit the clip, that's
+[05:41] when I would get the error.
+[05:43] So if you don't get that, then maybe they've already
+[05:45] fixed it, because this is the dials.
+[05:49] It's from the same person that face swapped things.
+[05:52] So he's really, really on top of it.
+[05:55] But this right here, I posted a link right here
+[05:58] for where you can watch the video,
+[06:00] and then also where you can download it right there.
+[06:04] So he talks about exactly how to download it.
+[06:07] And I don't know if he goes into the fix that I had to do,
+[06:10] but I'm going to show you that now,
+[06:12] just in case you run into that same problem.
+[06:14] So the issue that I was having, because I went to chat,
+[06:17] and let me see where it was.
+[06:19] It was this one here.
+[06:21] I went to chat, and I had it examine all my information.
+[06:25] And I was just running through all different tests.
+[06:27] It was checking my Python file.
+[06:29] It was going through everything.
+[06:30] And then finally, it came to this right here.
+[06:34] Let me find it.
+[06:35] Yep, right here.
+[06:36] So it said, at the very end of this file,
+[06:39] there were three spaces before this.
+[06:42] So I'm going to show you that now.
+[06:44] So in the text encoders file, once you've installed everything,
+[06:48] you go into the model, and then text encoders file,
+[06:50] and then this MOMO 8B, blah, blah, blah, blah, blah.
+[06:54] And it's this modeling MOMO2py file.
+[06:59] So I had to edit it.
+[07:00] You could edit it in just plain Notepad,
+[07:02] or if you got Notepad Plus, or whatever.
+[07:04] But all the way down at the bottom, 1764, right here,
+[07:09] there were three spaces.
+[07:11] So boom, boom, boom.
+[07:12] And so all I had to do was just backspace
+[07:15] so that the A went all the way to the edge here,
+[07:18] and then save it.
+[07:19] And that was it.
+[07:20] That's all I had to do.
+[07:21] I just had to fix that one little issue there,
+[07:23] and then everything worked just fine.
+[07:26] So I'm hoping for you that you don't have that issue.
+[07:29] But if you do, then that's how to fix it.
+[07:32] And so hopefully, that helps you out a little bit.
+[07:34] Now, if you're using this workflow that I'm using,
+[07:36] one thing to keep in mind is, you see,
+[07:39] I've got it plugged in to this clip here,
+[07:41] and I also had it plugged in to this clip here.
+[07:45] But this clip is something that Dino created to speed it up.
+[07:48] So that's why I was already getting faster speeds
+[07:51] than a normal workflow.
+[07:53] But because Dino made this, he didn't have this.
+[07:56] And so I just bypassed this, and it works just fine.
+[07:59] So that's all.
+[08:00] Just connect that to your normal clip,
+[08:02] and then I set clip, because I think it connects somewhere
+[08:05] else over here.
+[08:06] Oh, no, no, no.
+[08:07] I set clip because it connects to my D roping over here.
+[08:10] That's why I did that.
+[08:12] So anyways, so that is that part of it.
+[08:15] And so that's pretty quick.
+[08:16] And you can do that and be working pretty good.
+[08:19] Also, another thing that I changed is the VAE.
+[08:24] This is a new VAE that is on the Minimax Hugging Face.
+[08:28] Yeah, right here.
+[08:29] So comfy.org Minimax H3.
+[08:31] And this is a new one that they just popped out.
+[08:33] And so I've been using this one.
+[08:35] It's a lot smaller.
+[08:36] So once again, smaller for my 16 gigabyte card,
+[08:39] makes it run faster.
+[08:40] So that's another thing that you can do.
+[08:42] So if you just do those two things there,
+[08:44] that should really help speed up your generations.
+[08:47] All right, so that's that.
+[08:48] So now let's move on to these dials.
+[08:51] So for the dials, it's a custom node here.
+[08:54] And this really helps show what you can do.
+[08:57] So that's the D roping.
+[08:59] But this right here.
+[09:00] So a dial sets a negative 2, person or animal or whatever,
+[09:03] barely moving, if at all.
+[09:05] Base is normal.
+[09:06] And then 2 is ultra fast.
+[09:08] So let me come over to DaVinci and I'll
+[09:11] show you some of my tests.
+[09:12] So like I said, I still haven't gotten it perfect.
+[09:16] But I'll show you some of my tests and see where it goes.
+[09:19] Now, I will say, I really think that Minimax
+[09:22] does way better with cartoon and other things
+[09:26] than it does with realistic.
+[09:27] But I'm going to show you a couple.
+[09:29] So I'm going to show you a cartoon.
+[09:30] I'm going to show you a singing one.
+[09:32] Because somebody had asked if you could match Minimax
+[09:34] to the voice with the workflow that I'm using.
+[09:37] And yeah, you can.
+[09:38] So I'm going to show you that.
+[09:39] And then I'll just show you a couple others
+[09:42] and kind of walk you through what I was able to do.
+[09:44] So let's watch this first one.
+[09:48] You're going down.
+[09:49] Yeah, bring it on.
+[09:51] Well, actually, I wish we could just sing instead.
+[09:58] Really?
+[09:59] You want to?
+[10:00] OK, so the reason I left this in here
+[10:02] is because, yeah, I know, when you freeze frame.
+[10:05] But I mean, if you're watching any Pixar movie or anything
+[10:07] in your freeze frame, you're going to get blurry in between.
+[10:09] But what I like about this is it's so clean.
+[10:13] Like, look at this.
+[10:14] As I go by, it's so clean.
+[10:16] And so that's where I want my realistic videos to get to.
+[10:20] Yeah, look at that.
+[10:21] I click, I click, I click.
+[10:23] So that's what I'm working toward.
+[10:25] And if I had gotten to that point with this video,
+[10:27] then that would have been my lead.
+[10:29] Because that's really my struggle with my 16 gigabyte.
+[10:32] I know I keep mentioning that.
+[10:34] But everybody's always like, what graphics card?
+[10:36] So that's why I tell you a billion times.
+[10:38] So I haven't gotten to that point yet.
+[10:39] But I feel like I'm closer today than I was yesterday.
+[10:42] So I keep finding new stuff.
+[10:44] And so hopefully soon, I'll find it.
+[10:47] But yeah, with cartoons, I feel like if all I was making
+[10:50] was cartoons and Pixar, then I'd be set.
+[10:53] Like, this thing would be locked down.
+[10:55] But I keep wanting to strive to get realistic.
+[10:59] That's what I really want to get.
+[11:00] So this one here, I'm going to play it through
+[11:02] and then we'll talk about it.
+[11:03] It's not really in order,
+[11:05] but this is just three bits of a song that I created.
+[11:08] And it's just some AI song.
+[11:09] All the words I left unspoken, didn't scare me anymore.
+[11:19] Maybe I don't need the answer.
+[11:25] Woke up with a window.
+[11:31] I can't lie, missing the legs of feet.
+[11:34] Oh, I danced a set to fade.
+[11:38] So maybe I can take my time.
+[11:54] All right, so that's it.
+[11:55] So the first one, this one worked really well.
+[11:58] This one stuck to the lyrics, just like I told it.
+[12:01] And it did really good.
+[12:02] On these other two, as you could tell,
+[12:04] like her speech went a little garbled and everything.
+[12:07] And so what that just tells me is like,
+[12:09] you've really got to have the lyrics lined up with the audio.
+[12:13] So it takes time, basically.
+[12:15] It's not like you can just throw in a song and say,
+[12:18] match up to this song.
+[12:20] And so I was able to do it with the first one,
+[12:22] but then the second one, I was gonna go back
+[12:24] and then I said, you know what?
+[12:25] No, I'm just gonna show the generations that I got,
+[12:27] just so you can see what it gets.
+[12:28] And then of course, with this one is hilarious.
+[12:30] I don't know why she's dancing with the pillow,
+[12:32] but that's just what it gave me.
+[12:34] That just shows it is possible to be able to
+[12:37] make a music video and lip sync and do all that.
+[12:40] But am I willing to put in the time to do it?
+[12:43] Not yet, but someone will be, someone will be.
+[12:46] So I know I've seen other people that have done it as well.
+[12:49] So that's just for another time.
+[12:50] This one, I'm just gonna show it
+[12:53] because it was still a little plasticky
+[12:54] and I feel like I've gotten past that.
+[12:57] I don't feel like this one was really plasticky.
+[12:59] I feel like this video did really good,
+[13:01] but this just shows that every once in a while,
+[13:04] I'm still gonna get that.
+[13:06] Two months, please be safe.
+[13:08] I will save my side of the bed.
+[13:15] Okay, so a little plasticky.
+[13:17] But one thing I wanted to mention on this one
+[13:19] is that, let me go back to company.
+[13:22] I was trying out a couple of different ones
+[13:24] because in the comments, one person said that
+[13:26] instead of using Euler and Simple,
+[13:29] that I should use LMC and Beta.
+[13:31] I didn't find that that worked good for me.
+[13:33] I didn't like it.
+[13:34] Like this part here at the very end,
+[13:36] it totally changed when I used those other two.
+[13:39] It totally changed how this looked.
+[13:41] And it wasn't just the seed.
+[13:42] Like the seed didn't change or anything,
+[13:44] but I just wasn't happy.
+[13:45] So this one I was much happier with.
+[13:47] I feel like, like I said,
+[13:49] the skin could be a little bit better,
+[13:50] but it achieved what I was going for with that one.
+[13:53] Okay, now for this one,
+[13:54] this is where I was testing the dials.
+[13:57] Let's go back real quick.
+[13:58] And I know we're bouncing all over the place,
+[14:00] but hopefully this makes a little sense.
+[14:02] I tested a bunch of these things.
+[14:03] So I would test like 0.5 and then negative five
+[14:06] and then one, and then the fight scene.
+[14:09] I'm not gonna show you all those,
+[14:10] but man, I tested the fight scene
+[14:12] with swords like so many different ways.
+[14:14] So I'll show you a few of those.
+[14:16] And then I was just constantly trying new things
+[14:19] to see if I could get it just like I wanted to
+[14:21] with little blur.
+[14:22] And I just could get there.
+[14:23] I could not get there.
+[14:24] So let's watch these.
+[14:33] Okay, so that was at negative 0.5.
+[14:36] So let's watch that again.
+[14:40] Okay, so you couldn't even call it running.
+[14:46] Like couldn't even at all.
+[14:47] All right, so let's go to this next one.
+[14:56] Okay, so that one was point.
+[14:58] No, that wasn't point.
+[14:59] That was one right there.
+[15:00] So you can see the difference.
+[15:01] Obviously the running is good.
+[15:03] The motion is not bad.
+[15:05] Yeah, it's a little blurry, but the motion is not bad.
+[15:07] I could see all the fingers and everything.
+[15:10] So I feel like it's better.
+[15:12] It's much better to me.
+[15:14] Now this one right here,
+[15:15] this is where I put the D rope in.
+[15:17] And as you can see, the quality of this is great.
+[15:20] It's just the face.
+[15:22] It totally changed the face.
+[15:24] And so that's what's killing me.
+[15:25] But if it hadn't totally changed the face
+[15:27] and everything else is really great.
+[15:28] So let's watch that.
+[15:36] All right, so you see, man, I mean, it's awesome.
+[15:40] It's absolutely awesome.
+[15:41] So once I can fix the face and get it matched closer,
+[15:44] let's watch it one more time.
+[15:45] It's short.
+[15:53] I mean, I just, I am so satisfied with that.
+[15:55] I think that is like, I'll say 95% there
+[15:58] because everything with the motion on the body was excellent.
+[16:01] It just changed the character.
+[16:03] And so I've got to figure out how to fix that.
+[16:06] So if somebody's got to work around for that,
+[16:07] please let me know.
+[16:08] All right, so that worked great.
+[16:10] Now these fight scenes,
+[16:11] none of these fight scenes worked good to me at all,
+[16:13] but I'll show them to you.
+[16:22] Okay, so obviously that was not really a fight scene.
+[16:25] That would be like a super slow sparring,
+[16:27] but that was negative 0.5 is what we're seeing with that.
+[16:29] Now this one, I believe this one is two.
+[16:32] This one is just there on speed.
+[16:41] So that's two.
+[16:43] So you can see why they call it zoomies
+[16:44] because it's basically worthless.
+[16:45] It's just way too fast.
+[16:47] Nothing makes sense.
+[16:55] Okay, so obviously I know that the fighting is not good.
+[16:58] And I think that just has to do with my prompting,
+[17:01] but that was at 0.5.
+[17:03] And so I feel like it was better.
+[17:06] But once again, faces not great, those kinds of things.
+[17:09] So I really got to work on my prompting
+[17:11] and my work on the fights.
+[17:13] I just, I'm not there, I'm not there.
+[17:15] And then this was one, I just did a D rope on it.
+[17:18] So it's not the same fight.
+[17:20] This is just like the camera's not moving for this,
+[17:22] but we'll watch it.
+[17:30] So once again, with this D rope, the bodies do much better.
+[17:34] So yeah, I know they're a little blurry.
+[17:35] I can see their hands and it's not just a garbled mess.
+[17:39] Yeah, the sword does some non-physically things,
+[17:42] but D rope is where it's at.
+[17:43] If I could just figure out the face.
+[17:45] Yeah, so that's great.
+[17:47] That looks great right there.
+[17:48] All right, and then this last one,
+[17:50] this is the 15 second one I did.
+[17:51] So let me go back here just to show you.
+[17:53] So I was able to do right here, a 15 second clip,
+[17:57] and it only took me about six minutes to do.
+[18:00] So that's pretty solid.
+[18:01] So this isn't anything groundbreaking,
+[18:03] but I'll just show you this one as well.
+[18:04] I opened the windows this morning
+[18:06] and actually put my phone down for a bit,
+[18:09] made some coffee, sat here, didn't do anything useful.
+[18:15] It was nice actually.
+[18:17] I think I needed a morning like that.
+[18:19] Okay, so the only reason I show you that
+[18:20] is because I feel like the skin is pretty good.
+[18:24] So let me know if you feel like it's not,
+[18:25] but I feel like for me, I feel like it's getting better.
+[18:29] So I'm really happy with this workflow.
+[18:30] I think it's growing and I know it's a crazy mess,
+[18:34] but it's like my testing.
+[18:35] So if you get this and you don't need all my notes
+[18:37] and testing on these things,
+[18:39] because one of the things that I found
+[18:41] is I actually really like changing this to 10.
+[18:43] So I changed my steps to 10
+[18:44] and I changed the split to seven or eight right here.
+[18:47] And actually I've been doing it at eight.
+[18:49] So 10 here, eight here, and then just two on this side.
+[18:52] And it takes longer, but the quality is better.
+[18:54] And so since I'm speeding myself up
+[18:56] with using these other things over here,
+[18:58] then I don't mind changing this
+[19:00] to grow a little bit on there.
+[19:02] So anyways, hopefully this helps, gives you something.
+[19:05] Maybe it was just a bunch of just random ramblings,
+[19:07] but I will say, go and download this.
+[19:10] I think that's the key, that will help so much,
+[19:13] especially for low VRAM cards, it is worth it.
+[19:16] And hopefully it works right away when you install it,
+[19:19] but if it doesn't, then go back and watch the workaround.
+[19:22] And if that doesn't work, then let me know
+[19:24] and I'll see what I can do to try to help you with that.
+[19:28] But I think that's about it for today.
+[19:30] So like I said, I'm going on vacation for a little bit,
+[19:33] so I'll be gone for a bit, but I'll be taking notes
+[19:37] and getting ideas for videos to make as soon as I get back.
+[19:40] All right, I'll see y'all later.
