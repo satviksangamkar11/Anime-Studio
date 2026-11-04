@@ -1,0 +1,15 @@
+# never commit keys or secrets
+secrets/
+*.env
+.env*
+*key*.txt
+*token*
+kaggle.json
+access_token
+# generated / large
+__pycache__/
+.pytest_cache/
+*.pyc
+director/kaggle_batches/
+results/
+*.mp4
