@@ -14,6 +14,8 @@ Shot list: JSON list of shots, each
   camera        one camera move
   sound         soundscape line ("" = quiet ambience); H3 audio is replaced in the edit unless kept on purpose
   seed          optional (default 42)
+A RICH shot (SPEC_v2.2.md, has "beats") is compiled into the same prompt from its beats, camera and light; its keyframes
+come from keyframes.start/end; main() also writes <id>.direction.json with the full rich spec.
 Usage: python h3_director.py shots.json out_dir"""
 import json
 import math
@@ -28,6 +30,7 @@ PRESET = {   # Wan2GP's own "Pika H3 Flex ... Pruned 6 Steps" presets (shared/de
 }
 LORA_URL = "https://huggingface.co/DeepBeepMeep/MiniMax-H3/resolve/main/loras/"
 KEEP = "Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text."
+DEFAULT_STYLE = "Modern Japanese anime cel look with 2.5D layered depth and painted backgrounds."
 
 
 def frames_for(seconds):
@@ -39,16 +42,50 @@ def frames_for(seconds):
     return frames
 
 
+def is_rich(shot):
+    return "beats" in shot
+
+
+def start_of(shot):
+    return shot.get("start") or (shot.get("keyframes") or {}).get("start")
+
+
+def end_of(shot):
+    return shot.get("end") or (shot.get("keyframes") or {}).get("end")
+
+
+def action_of(shot):
+    return shot["beats"][0]["acting"] if is_rich(shot) else shot["action"]
+
+
+def beat_line(b):
+    line = f"{b['t'][0]:g}-{b['t'][1]:g}s: {b['acting']}"
+    return f"{line}; {b['secondary']}" if b.get("secondary") else line
+
+
+def body_for(shot, seconds):
+    if not is_rich(shot):
+        return f"[Shot 1] A {seconds:.1f}-second single take. {shot['style']} {shot['world']} {shot['action']} Camera: {shot['camera']}. {KEEP}"
+    cam, light = shot["camera"], shot["light"]
+    beats = " ".join(beat_line(b) for b in shot["beats"])
+    return (f"[Shot 1] A {seconds:.1f}-second single take. {shot.get('style') or DEFAULT_STYLE} {beats} "
+            f"Camera: {cam['move']}, {cam['lens_mm']}mm lens, {cam['start_framing']}->{cam['end_framing']} framing. "
+            f"Light: {light['key']}; {light['rim']}; {light['mood']}. {KEEP}")
+
+
 def prompt_for(shot):
-    seconds = frames_for(shot["seconds"]) / FPS
-    body = (f"[Shot 1] A {seconds:.1f}-second single take. {shot['style']} {shot['world']} {shot['action']} "
-            f"Camera: {shot['camera']}. {KEEP}")
+    body = body_for(shot, frames_for(shot["seconds"]) / FPS)
     sound = shot.get("sound") or "Quiet natural ambience only, no speech."
     if shot["mode"] == "fl2va":
         return f"integrated_multimodal_description: {body}\noverall_soundscape: {sound}\nnon_diegetic_music: N/A"
     subjects = "\n".join(shot["subjects"])
-    return (f"subject_definitions:\n{subjects}\nsummary:\n[reference generation] {shot['action'].split(';')[0]}\n"
+    return (f"subject_definitions:\n{subjects}\nsummary:\n[reference generation] {action_of(shot).split(';')[0]}\n"
             f"detailed_description:\n{body}\noverall_soundscape: {sound}\nnon_diegetic_music: N/A")
+
+
+def compile_direction(shot):
+    """The full rich spec, kept unchanged next to the settings as <id>.direction.json."""
+    return shot
 
 
 def settings_for(shot):
@@ -56,18 +93,18 @@ def settings_for(shot):
         raise ValueError(f"{shot['id']}: mode must be fl2va or ref2va")
     if shot["mode"] == "ref2va" and not (shot.get("refs") and shot.get("subjects")):
         raise ValueError(f"{shot['id']}: ref2va needs refs and subjects")
-    if shot["mode"] == "fl2va" and not shot.get("start"):
+    if shot["mode"] == "fl2va" and not start_of(shot):
         raise ValueError(f"{shot['id']}: fl2va needs a start keyframe")
     model, lora, video_prompt_type = PRESET[shot["mode"]]
-    image_prompt_type = ("S" if shot.get("start") else "") + ("E" if shot.get("end") else "")
+    image_prompt_type = ("S" if start_of(shot) else "") + ("E" if end_of(shot) else "")
     s = {"model_type": model, "settings_version": 2.73, "activated_loras": [LORA_URL + lora], "loras_multipliers": "1.0",
          "sample_solver": "pika_renoise", "num_inference_steps": 6, "guidance_phases": 1, "guidance_scale": 1, "flow_shift": 12,
          "custom_sigmas": "", "skip_steps_cache_type": "", "custom_settings": {"audio_refinement": "none"},
          "prompt": prompt_for(shot), "image_mode": 0, "video_length": frames_for(shot["seconds"]), "sliding_window_size": FRAMES_MAX,
          "resolution": RES[shot.get("aspect", "9:16")], "image_prompt_type": image_prompt_type, "video_prompt_type": video_prompt_type,
          "audio_prompt_type": "", "seed": shot.get("seed", 42)}
-    if shot.get("start"): s["image_start"] = shot["start"]
-    if shot.get("end"): s["image_end"] = shot["end"]
+    if start_of(shot): s["image_start"] = start_of(shot)
+    if end_of(shot): s["image_end"] = end_of(shot)
     if shot["mode"] == "ref2va":   # the handler's own Ref2VA defaults (update_default_settings), set explicitly for headless runs
         s.update({"image_refs": list(shot["refs"]), "image_refs_relative_size": 100, "remove_background_images_ref": 0})
     return s
@@ -77,6 +114,8 @@ def main(shots_path, out_dir):
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     for shot in json.loads(Path(shots_path).read_text(encoding="utf-8")):
         (out / f"settings_{shot['id']}.json").write_text(json.dumps(settings_for(shot), indent=1, ensure_ascii=False), encoding="utf-8")
+        if is_rich(shot):
+            (out / f"{shot['id']}.direction.json").write_text(json.dumps(compile_direction(shot), indent=1, ensure_ascii=False), encoding="utf-8")
         print(shot["id"], frames_for(shot["seconds"]), "frames")
 
 

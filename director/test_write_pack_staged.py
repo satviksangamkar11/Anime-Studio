@@ -1,0 +1,158 @@
+"""Staged writer (write_pack --staged) with fake callers: no network, no model call."""
+import json
+import re
+import urllib.request
+
+import pytest
+
+import write_pack
+
+SHOT = {"id": "SHOT-01", "episode": 1, "mode": "fl2va", "seconds": 4, "aspect": "9:16", "start": "keyframes/SHOT-01-FRAME-A.png",
+        "end": "keyframes/SHOT-01-FRAME-B.png", "refs": [], "subjects": [], "style": "Flat 2D cel anime.", "world": "River at dawn.",
+        "action": "0-2s a bird falls.", "camera": "tilt down", "sound": "boiling water hiss"}
+BIBLE = {"palette": {"sky": "#aabbcc"}, "characters": ["CHAR-KRISHNA"]}
+CANNED = {
+    "1": "# Gate 1\n\nEpisode 1: the river\nEpisode 2: the serpent\n",
+    "2": "# Gate 2\n\n```json bible\n" + json.dumps(BIBLE) + "\n```",
+    "3e1": "# Episode 1 shots\n\n```json shots\n" + json.dumps([SHOT]) + "\n```\n",
+    "3e2": "# Episode 2 shots\n\n```json shots\n" + json.dumps([dict(SHOT, id="SHOT-02", episode=2)]) + "\n```\n",
+    "5": "# Gate 5\n\nCaptions and QA.\n",
+}
+
+
+def envelope(text, via="claude", model="opus"):
+    return write_pack.envelope(text, "stop", via, model)
+
+
+def stage_of(prompt):
+    return re.search(r"Stage (\S+) only", prompt.rsplit("## THIS STAGE", 1)[1]).group(1)
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    def boom(*args, **kwargs):
+        raise AssertionError("network call in a test")
+    monkeypatch.setattr(write_pack, "call_nvidia", boom)
+    monkeypatch.setattr(urllib.request, "urlopen", boom)
+
+
+@pytest.fixture
+def story(tmp_path):
+    path = tmp_path / "story.md"
+    path.write_text("Kaliya story\n", encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def fake_claude(monkeypatch):
+    calls = []
+
+    def fake(prompt, model, effort):
+        name = stage_of(prompt)
+        calls.append({"name": name, "model": model, "prompt": prompt})
+        return envelope(CANNED[name])
+    monkeypatch.setattr(write_pack, "call_claude", fake)
+    return calls
+
+
+def staged(story, out, *extra):
+    return write_pack.main([str(story), str(out), "--staged", *extra])
+
+
+def test_staged_run_writes_pack_bible_and_merged_shots(tmp_path, story, fake_claude):
+    out = tmp_path / "pack"
+    staged(story, out, "--via", "claude")
+    assert [c["name"] for c in fake_claude] == ["1", "2", "3e1", "3e2", "5"]
+    pack = (out / "PACK.md").read_text(encoding="utf-8")
+    positions = [pack.index(CANNED[n].strip()[:20]) for n in ("1", "2", "3e1", "3e2", "5")]
+    assert positions == sorted(positions)
+    assert json.loads((out / "bible.json").read_text(encoding="utf-8")) == BIBLE
+    shots = json.loads((out / "shots.json").read_text(encoding="utf-8"))
+    assert [s["id"] for s in shots] == ["SHOT-01", "SHOT-02"]
+    for n in ("1", "2", "3e1", "3e2", "5"):
+        assert (out / f"stage_{n}_raw.json").exists()
+
+
+def test_a_second_run_makes_no_calls(tmp_path, story, fake_claude, monkeypatch):
+    out = tmp_path / "pack"
+    staged(story, out)
+    before = (out / "shots.json").read_text(encoding="utf-8")
+    monkeypatch.setattr(write_pack, "call_claude", lambda *a: pytest.fail("resume must not call the model"))
+    staged(story, out)
+    assert (out / "shots.json").read_text(encoding="utf-8") == before
+
+
+def test_each_stage_gets_the_brief_the_story_and_earlier_saved_text(tmp_path, story, fake_claude):
+    staged(story, tmp_path / "pack")
+    prompts = {c["name"]: c["prompt"] for c in fake_claude}
+    assert all("Kaliya story" in p and write_pack.staged_brief().read_text(encoding="utf-8") in p for p in prompts.values())
+    assert CANNED["1"].strip() in prompts["2"] and CANNED["1"].strip() not in prompts["1"]
+    assert CANNED["3e1"].strip() in prompts["3e2"] and CANNED["2"].strip() in prompts["3e2"]
+    assert CANNED["3e2"].strip() not in prompts["3e1"]
+
+
+def test_the_raw_answer_is_saved_before_parsing_and_resume_redoes_only_the_bad_stage(tmp_path, story, fake_claude, monkeypatch):
+    out = tmp_path / "pack"
+    good = CANNED["3e1"]
+    monkeypatch.setitem(CANNED, "3e1", "no shots block here")
+    with pytest.raises(ValueError):
+        staged(story, out)
+    assert (out / "stage_3e1_raw.json").exists()                 # saved although it did not parse
+    monkeypatch.setitem(CANNED, "3e1", good)
+    (out / "stage_3e1_raw.json").unlink()                        # the owner deletes the bad answer to redo it
+    fake_claude.clear()
+    staged(story, out)
+    assert [c["name"] for c in fake_claude] == ["3e1", "3e2", "5"]
+
+
+def test_stage_routing_per_stage_via_and_model(tmp_path, story, monkeypatch):
+    seen = []
+
+    def claude(prompt, model, effort):
+        seen.append(("claude", stage_of(prompt), model))
+        return envelope(CANNED[stage_of(prompt)], "claude", model)
+
+    def nvidia(prompt, model):
+        seen.append(("nvidia", stage_of(prompt), model))
+        return envelope(CANNED[stage_of(prompt)], "nvidia", model)
+    monkeypatch.setattr(write_pack, "call_claude", claude)
+    monkeypatch.setattr(write_pack, "call_nvidia", nvidia)
+    staged(story, tmp_path / "pack", "--model", "sonnet", "--stage-via", "2=nvidia,3=claude", "--stage-model", "3=haiku")
+    assert seen == [("claude", "1", "sonnet"), ("nvidia", "2", write_pack.DEFAULT_MODEL["nvidia"]),
+                    ("claude", "3e1", "haiku"), ("claude", "3e2", "haiku"), ("claude", "5", "sonnet")]
+
+
+def test_stage_map_exact_name_beats_the_gate_number():
+    table = write_pack.parse_stage_map("3=claude,3e2=nvidia", write_pack.check_via)
+    assert write_pack.stage_setting(table, "3e1", "x") == "claude"
+    assert write_pack.stage_setting(table, "3e2", "x") == "nvidia"
+    assert write_pack.stage_setting({}, "5", "openrouter") == "openrouter"
+    with pytest.raises(ValueError):
+        write_pack.parse_stage_map("9=claude", write_pack.check_via)
+    with pytest.raises(ValueError):
+        write_pack.parse_stage_map("2=gpt", write_pack.check_via)
+
+
+def test_a_paid_openrouter_stage_is_refused_before_any_call(tmp_path, story, monkeypatch):
+    monkeypatch.setattr(write_pack, "openrouter_is_free", lambda model, catalog=None: False)
+    monkeypatch.setattr(write_pack, "OPENROUTER_KEY", tmp_path / "no_such_key_file.txt")
+    with pytest.raises(ValueError, match="paid"):
+        staged(story, tmp_path / "pack", "--via", "openrouter", "--model", "x/paid")
+
+
+def test_stage_1_names_episodes_from_lines_or_a_json_block():
+    assert write_pack.episodes_from("Episode 2: b\nEp 1 - a\nEpisode 2 again\n") == [1, 2]
+    assert write_pack.episodes_from("intro\n```json episodes\n[3, 4]\n```\n") == [3, 4]
+    with pytest.raises(ValueError):
+        write_pack.episodes_from("no episodes named here")
+
+
+def test_bible_parse_is_tolerant_and_strict_about_its_block():
+    assert write_pack.bible_from('{"a": 1}\n{"b": 2}') == {"a": 1, "b": 2}
+    assert write_pack.parse_bible(envelope("x\n```json bible\n" + json.dumps(BIBLE) + "\n```"))[1] == BIBLE
+    with pytest.raises(ValueError):
+        write_pack.parse_bible(envelope("```json bible\n{}\n```\nthanks"))         # must end with the block
+    with pytest.raises(ValueError):
+        write_pack.parse_bible(envelope("```json bible\n{}\n```\n```json bible\n{}\n```"))
+    with pytest.raises(ValueError):
+        write_pack.bible_from("[1, 2]")

@@ -1,0 +1,443 @@
+{
+  "project": "kaliya_mardan",
+  "version": "2.2",
+  "status": "draft for owner review; hex values are design targets, not measured from a reference",
+  "palette": {
+    "rule": "Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge.",
+    "earth": {
+      "ground_ochre": "#C98B4B",
+      "dust_earth": "#A9743F",
+      "cowdung_plaster": "#B9955E",
+      "ash_sand_black": "#2A2622",
+      "shade_green": "#3F5532",
+      "kadamba_leaf": "#5E7A3A",
+      "grass_dry": "#A6A04E",
+      "neem_dark": "#34452B",
+      "sky_haze": "#E9C98F",
+      "paper_cream": "#F3E6C8"
+    },
+    "water": {
+      "yamuna_deep": "#2F6B73",
+      "yamuna_light": "#7FA9A3",
+      "purified_clear": "#6FA7B0",
+      "poisoned_dark": "#1F3A3E"
+    },
+    "miasma": {
+      "violet_fume": "#5B3E6B",
+      "sick_green": "#6E7F4A",
+      "rule": "muted, low-saturation fume layers only; no glowing neon vapour"
+    },
+    "cloth_and_ornament": {
+      "pitambara_gold": "#E8B531",
+      "pitambara_shade": "#B07A1E",
+      "kali_kamli_black": "#1C1A1E",
+      "nilambara_indigo": "#3B5A8C",
+      "shridama_dhoti": "#E8DCC4",
+      "saffron_brown": "#A65C2A",
+      "madhumangal_gamcha": "#8A3B2E",
+      "yashoda_saree": "#7A3A2B",
+      "yashoda_border": "#D8B26A",
+      "nanda_angavastram": "#D9C7A0",
+      "gopi_ghagra_red": "#A3322E",
+      "gopi_odhni_mustard": "#C99A3A",
+      "gopi_lehenga_green": "#3F6B4A",
+      "naga_scale_teal": "#3E6E6A",
+      "naga_jewel_gold": "#C7A24B",
+      "garuda_rust": "#B9542E",
+      "garuda_feather_gold": "#D9A441",
+      "kaliya_obsidian": "#1B1A22",
+      "kaliya_hood_underside": "#4B3A3F",
+      "kaliya_venom_vein": "#6F8F3A",
+      "sindoor_red": "#B8322A",
+      "tulsi_green": "#4E7D3F"
+    },
+    "divine_light": {
+      "rule": "Warm gold only where a scene light falls on a gold garment or the river surface (sun, dawn). Never a halo by default. Purification may use one clear sunlit gold bloom, once per episode at most.",
+      "hex": "#F6D27A",
+      "max_per_shot": 1
+    },
+    "skin_range": "Indian complexions varied by character (see characters). No lightened skin on any character; Krishna is cloud-dark indigo-grey."
+  },
+  "line": {
+    "weight_px_on_1080_wide": {"hero_contour": "4-6", "interior": "2-3", "far_figure": "1-2"},
+    "colour": "warm dark brown-black #1E1A17 on skin and cloth; deep indigo #1B2538 on Krishna and Kaliya bodies; never pure #000000",
+    "rule": "variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates"
+  },
+  "shading": {
+    "tones": "2 cel tones plus one hard core-shadow plane; the shade is 20-30 percent darker than the base, hue-shifted toward the ground colour",
+    "reflected_bounce": "warm ground bounce on the underside of arms and cloth (sand or grass colour), never cool blue bounce on skin",
+    "rule": "no gradient airbrush on figures; gradients allowed only in painted backgrounds"
+  },
+  "rim_light": {
+    "allowed_when": "a visible low sun or a bright water surface sits behind or beside the figure in that shot",
+    "colour": "matches the motivating light (gold at dawn, pale sky-blue over water, never neon)",
+    "width_px_on_1080": "2-3",
+    "limit": "at most one rim-lit figure per shot; never on faces during dialogue or acting beats",
+    "forbidden": "constant rim on every character, neon edge, rim that has no source in the frame"
+  },
+  "characters": [
+    {
+      "id": "CHAR-KRISHNA",
+      "name": "Bala Krishna (about 7-8 years old)",
+      "role": "protagonist, the child who subdues the serpent",
+      "proportions_heads": 5.5,
+      "proportion_rule": "child proportions: large head, short limbs, round belly, no adult chest or hip width",
+      "silhouette_markers": ["wild curls with one peacock feather", "tribhanga (triple-bend) stance when posed, hip and head counter-bent", "tight wrestler's sash of the black blanket knotted at the waist"],
+      "skin": {"treatment": "flat cloud-dark indigo-grey; base #33415E, core shade #1F2A40, light #56688A, warm ochre cheek bloom #C9A77A used sparingly for face readability", "forbidden": "saturated cyan or electric blue; glossy plastic; airbrushed glow"},
+      "eyes": {"shape": "large almond, heavy upper lid, soft lower lid line; children keep eyes big but not sparkling", "iris": "dark brown-black with one small catch-light; no star or heart sparkles", "expression_rule": "emotion is shown with the lids and the lower lid, not with a sparkle overlay"},
+      "hair": {"base_colour": "#1C1A1E", "style": "wild dark curls pushed back, one peacock feather tucked at the side (PROP-MOR-MUKUT), no spiky anime fringe", "physics": "curls spring back in 2-3 frames when he turns; feather lags the head by one beat"},
+      "costume": [
+        {"piece": "golden pitambara (dhoti) tied at the waist", "colour_hex": "#E8B531", "shade_hex": "#B07A1E", "physics": {"running": "hem flicks outward, knot stays tied, the dhoti pleats fan on each stride", "wind": "pleats lift and drop with one-beat lag; the hem edge stays crisp", "water": "gold cloth darkens and clings to the thighs, then drags as a heavy sheet; never floats", "turning": "pleats swing out radially and settle on the new facing"}},
+        {"piece": "black Kali Kamli (blanket) tied as a wrestler's sash", "colour_hex": "#1C1A1E", "physics": {"running": "sash ends bounce at the hip, a single trailing end", "wind": "ends stream sideways and snap back when the wind drops", "water": "soaked and heavy, pulls the waist down, dark and sheeting", "turning": "tail sweeps around the body in a clean arc, ends remain tied"}},
+        {"piece": "Srivatsa mark and bare upper torso", "colour_hex": "#33415E", "physics": {"running": "no cloth; chest mark stays fixed", "wind": "none", "water": "beads of water roll off the shoulders", "turning": "mark is a fixed body detail; no physics"}}
+      ],
+      "jewellery": [{"piece": "small gold bangles and anklets", "colour_hex": "#C7A24B", "physics": {"running": "chime with a one-frame delay on each step, rhythmic", "water": "bangles slide down the wrist", "turning": "swing outward then settle"}}],
+      "recurring_attributes": ["peacock feather in the curls", "black Kali Kamli sash", "Srivatsa mark on the chest", "flute (PROP-FLUTE) when the scene allows music", "small lotus-foot footprint seal motif only in purification frames"],
+      "forbidden_drift": [
+        "generic anime protagonist hero with spiky cyan hair and a blue body",
+        "saturated electric blue skin or any cyan rim",
+        "adult heroic proportions (8 heads) or adult muscle definition",
+        "modern belt, armour, buckle or fabric not in the costume list",
+        "sparkle eyes, star eyes, sweat drops used as a default",
+        "crown or halo drawn as a default (feather only unless the scene is a divine vision)",
+        "pale or lightened skin"
+      ]
+    },
+    {
+      "id": "CHAR-BALARAMA",
+      "name": "Balarama (Dau, elder brother)",
+      "role": "older brother; stops the Brajvasis and gives Krishna the signal",
+      "proportions_heads": 6.5,
+      "proportion_rule": "older boy, broader shoulders than Krishna, still child proportions (not adult 7.5)",
+      "silhouette_markers": ["broad, planted stance", "white conch-shell necklace or plain shoulder cloth", "arm held out flat to stop a crowd"],
+      "skin": {"treatment": "warm light-brown Indian complexion; base #B07A4E, shade #7E5234, light #C99A6D", "forbidden": "pale skin, blue skin"},
+      "eyes": {"shape": "round-almond, calm lids, brows sit flatter than Krishna's", "iris": "dark brown with one catch-light", "expression_rule": "restraint; even when angry the eyes stay level"},
+      "hair": {"base_colour": "#2A1F18", "style": "tied-back knot with a few loose strands", "physics": "knot stays put; loose strands lift in wind only"},
+      "costume": [
+        {"piece": "blue nilambara (dhoti and shoulder cloth)", "colour_hex": "#3B5A8C", "shade_hex": "#26395C", "physics": {"running": "dhoti shortens to a tucked knee-length fold, not flared", "wind": "shoulder cloth lifts behind him, heavy weight", "water": "heavy wet cloth, drops straight down", "turning": "shoulder cloth swings slowly, one beat behind"}}
+      ],
+      "recurring_attributes": ["plough (hala) shown only as a background prop, not held", "conch necklace"],
+      "forbidden_drift": [
+        "Balarama drawn as an adult warrior with a hero physique",
+        "cyan or royal-purple robes instead of nilambara indigo",
+        "hard angry eyes as a default (anger is held in restraint)",
+        "Krishna's sash or feather on Balarama"
+      ]
+    },
+    {
+      "id": "CHAR-YASHODA",
+      "name": "Yashoda (mother)",
+      "role": "Krishna's mother; rushes to the bank, weeps and holds back",
+      "proportions_heads": 7,
+      "proportion_rule": "adult woman, slender with soft shoulders, head 7 heads",
+      "silhouette_markers": ["saree pallu drawn over the head or shoulder", "gold nose ring and forehead tilak", "hands cupping the face or grabbing the pallu when frightened"],
+      "skin": {"treatment": "warm Indian complexion, base #B98256, shade #8A5A3A, light #D9A67A", "forbidden": "pale skin, glossy highlights on the face"},
+      "eyes": {"shape": "long kohl-lined almond, lower lid line drawn with a soft kajal line", "iris": "dark brown with a catch-light", "expression_rule": "grief and fear show in the brows and the lower lid, not in tears on every frame"},
+      "hair": {"base_colour": "#1C1A1E", "style": "centre parting, low bun with a flower, a few strands at the temple", "physics": "bun stays fixed; the pallu lifts sharply in wind or running"},
+      "costume": [
+        {"piece": "deep red-brown saree with a gold-border", "colour_hex": "#7A3A2B", "border_hex": "#D8B26A", "physics": {"running": "saree pleats swing and the pallu flies off the shoulder", "wind": "pallu streams sideways, weighted at the end", "water": "saree goes dark and clings to the legs, pulls at each step", "turning": "pallu wraps the body and unwraps; pleats fan out"}}
+      ],
+      "jewellery": [{"piece": "nose ring, gold bangles", "colour_hex": "#C7A24B", "physics": {"running": "bangles jingle", "turning": "nose ring stays fixed"}}],
+      "recurring_attributes": ["gold nose ring", "pallu over head", "red-brown sindoor line in the parting"],
+      "forbidden_drift": [
+        "modern hairstyle or blunt cut",
+        "glamour styling or heavy makeup beyond kajal",
+        "Yashoda drawn as a young girl"
+      ]
+    },
+    {
+      "id": "CHAR-NANDA",
+      "name": "Nanda (foster father, cowherd chief)",
+      "role": "Krishna's foster father; holds back the crowd on the bank",
+      "proportions_heads": 7.5,
+      "proportion_rule": "adult man, solid build, slightly heavier, 7.5 heads",
+      "silhouette_markers": ["white turban or cloth head wrap", "angavastram (shoulder cloth) over the shoulder", "walking staff or tall lathi"],
+      "skin": {"treatment": "warm Indian complexion, base #B07A4E, shade #7E5234, light #C99A6D", "forbidden": "pale skin, action-hero musculature"},
+      "eyes": {"shape": "broad almond, lower lids soft from age", "iris": "dark brown", "expression_rule": "authority in the jaw and brow, not in narrowed eyes"},
+      "hair": {"base_colour": "#C8C2B6", "style": "grey-streaked hair under the turban, short beard", "physics": "turban stays fixed"},
+      "costume": [
+        {"piece": "dhoti in cream with saffron border", "colour_hex": "#D9C7A0", "border_hex": "#B0622A", "physics": {"running": "dhoti hitched up to the knee, border stays visible", "wind": "angavastram lifts and billows", "water": "cloth clings and drags heavy", "turning": "angavastram swings over the shoulder"}}
+      ],
+      "recurring_attributes": ["turban", "lathi (staff)", "angavastram"],
+      "forbidden_drift": [
+        "Nanda as a young warrior",
+        "modern glasses or watch",
+        "rich royal robes (he is a cowherd chief, not a king)"
+      ]
+    },
+    {
+      "id": "CHAR-SHRIDAMA",
+      "name": "Shridama (sakha, playmate)",
+      "role": "Krishna's friend in the ball game; demands the ball, then runs in fear",
+      "proportions_heads": 5.5,
+      "proportion_rule": "child proportions like Krishna, slightly taller and thinner",
+      "silhouette_markers": ["off-white dhoti", "cloth ball (kanduk) in hand or near hand", "wide-open mouth in fear"],
+      "skin": {"treatment": "warm brown Indian complexion, base #A87A4E, shade #7A5233, light #C99A6D", "forbidden": "pale skin, comic-sized eyes"},
+      "eyes": {"shape": "round-almond, brows raised in fear", "iris": "dark brown", "expression_rule": "the Maya-driven fury shows as a fixed hard stare; the fear shows in wide white rim, no sparkle"},
+      "hair": {"base_colour": "#1C1A1E", "style": "short cropped hair, slightly longer at the crown", "physics": "hair jumps on a sudden turn"},
+      "costume": [
+        {"piece": "off-white dhoti with a saffron-brown edge", "colour_hex": "#E8DCC4", "border_hex": "#A65C2A", "physics": {"running": "dhoti tucked up, one end flaps", "wind": "flap of the loose end", "water": "soaks and turns grey-brown, clings", "turning": "end whips out and settles"}}
+      ],
+      "recurring_attributes": ["cloth ball (kanduk, PROP-KANDUK)", "plain cloth wrapped on the head sometimes"],
+      "forbidden_drift": ["adult proportions", "a comic-relief face on the fury beat", "a neon-coloured ball"]
+    },
+    {
+      "id": "CHAR-MADHUMANGAL",
+      "name": "Madhumangal (sakha)",
+      "role": "a second playmate who runs with the group and cries out the chant",
+      "proportions_heads": 5.5,
+      "proportion_rule": "child proportions, a little rounder than Shridama",
+      "silhouette_markers": ["red-brown gamcha (towel) on the shoulder", "plain white dhoti", "one hand held to the mouth in fear"],
+      "skin": {"treatment": "warm brown Indian complexion, base #A87A4E, shade #7A5233, light #C99A6D", "forbidden": "pale skin"},
+      "eyes": {"shape": "round, large for the age", "iris": "dark brown", "expression_rule": "fear in the upper lid, no sparkles"},
+      "hair": {"base_colour": "#1C1A1E", "style": "short tuft at the top", "physics": "tuft bounces on the run"},
+      "costume": [
+        {"piece": "plain white dhoti", "colour_hex": "#EDE6D6", "physics": {"running": "hitched up in a short knot", "wind": "hem flutters", "water": "soaks and goes grey, clings", "turning": "cloth swings open then settles"}},
+        {"piece": "red-brown gamcha over the shoulder", "colour_hex": "#8A3B2E", "physics": {"running": "end flaps behind", "wind": "stream out sideways", "water": "heavy and dark", "turning": "swings a half-turn behind the body"}}
+      ],
+      "recurring_attributes": ["gamcha on the shoulder"],
+      "forbidden_drift": ["adult proportions", "modern shorts or sports clothes", "comic exaggerated tears"]
+    },
+    {
+      "id": "CHAR-KALIYA",
+      "name": "Kaliya (serpent king of the poisoned pool)",
+      "role": "colossal many-hooded serpent; coils, strikes, bleeds, surrenders",
+      "proportions_heads": null,
+      "proportion_rule": "not measured in heads. The hood fan shows 7-9 visible hoods, each about 1.5 Krishna heads wide, so scale is read from Krishna standing on a hood. Never give an exact hood count.",
+      "silhouette_markers": ["a fan of 7-9 visible hoods rising above the water", "coils that wrap the body in thick rings", "forked tongue flicks in the strike beats", "venom-vein markings along the hoods"],
+      "skin": {"treatment": "obsidian scales, flat #1B1A22 with lighter scale edges #3A3640; underside of the hoods #4B3A3F; muted olive venom veins #6F8F3A and violet #5B3E6B", "forbidden": "neon green glow, glossy bioluminescence, cartoon monster teeth"},
+      "eyes": {"shape": "large round serpent eyes with a slit pupil", "iris": "dull amber #8A6A2E", "expression_rule": "pain and surrender read through the lowered hood and the slack coils, not through a grin"},
+      "hair": {"base_colour": "none", "style": "no hair; the hoods and head crest", "physics": "hood skin ripples when it rises and drops"},
+      "costume": [
+        {"piece": "scale skin and hood frills", "colour_hex": "#1B1A22", "physics": {"running": "not applicable; coils slither in a wave", "wind": "hood frills lift and flatten", "water": "water runs off the scales in sheets; the coils drag heavy", "turning": "the hoods swing as one fan, then separate"}}
+      ],
+      "recurring_attributes": ["visible hood fan of 7-9 hoods", "footprint seal on the hoods after purification (lotus footprint motif)", "coils around the Kadamba trunk in the bank scenes"],
+      "forbidden_drift": [
+        "an exact hood count or a count shown as a crowd of 100 hoods",
+        "a neon glow or a cartoon grin",
+        "a humanoid face on the body (the serpent is a serpent)",
+        "a dragon silhouette with wings"
+      ]
+    },
+    {
+      "id": "CHAR-NAGAPATNI",
+      "name": "Naga-Patni (serpent wife)",
+      "role": "Kaliya's wives; see Krishna underwater; plead and bow; one leads the argument",
+      "proportions_heads": 7,
+      "proportion_rule": "human upper body 7 heads; the lower body is a serpent tail that coils into the water, length set by the frame",
+      "silhouette_markers": ["upper torso with jewelled ornaments", "serpent tail ending in a coil", "hood motif framing the head (small, not a full hood fan)"],
+      "skin": {"treatment": "teal-scaled upper arms and shoulders over warm skin: base #6B8F88 for the scale patch, human skin #B98256 at the face", "forbidden": "full scales over the face, glossy plastic"},
+      "eyes": {"shape": "long almond with heavy lids", "iris": "dark brown", "expression_rule": "terror becomes captivated devotion through the lids and the parted lips"},
+      "hair": {"base_colour": "#1C1A1E", "style": "long hair in a jewelled braid", "physics": "braid swings in the water and drifts"},
+      "costume": [
+        {"piece": "jewelled necklaces and waist cloth in teal and gold", "colour_hex": "#3E6E6A", "accent_hex": "#C7A24B", "physics": {"running": "not applicable; serpent tail slides", "wind": "veils lift", "water": "veils and braid drift in the current", "turning": "tail turns in a slow coil"}}
+      ],
+      "recurring_attributes": ["jewelled braid", "gold ornaments", "serpent tail"],
+      "forbidden_drift": ["Western mermaid look", "glowing jewels as a neon effect", "an exact count of wives on screen"]
+    },
+    {
+      "id": "CHAR-NAGA-CHILD",
+      "name": "Naga child (the small serpent children)",
+      "role": "small serpent children placed in front to awaken Krishna's compassion",
+      "proportions_heads": 4,
+      "proportion_rule": "child proportions with a short serpent tail; keep the head 4 heads of the body",
+      "silhouette_markers": ["small human head and shoulders", "short serpent tail", "mouth open in cries"],
+      "skin": {"treatment": "teal-scaled small patches, base #6B8F88, human skin #B98256 on face and hands", "forbidden": "monster faces, sharp fangs in the face"},
+      "eyes": {"shape": "round, large for the age", "iris": "dark brown", "expression_rule": "fear and pleading in the brows"},
+      "hair": {"base_colour": "#1C1A1E", "style": "short tuft", "physics": "tuft bobs"},
+      "costume": [
+        {"piece": "small jewelled band at the chest", "colour_hex": "#C7A24B", "physics": {"running": "not applicable", "wind": "none; the band stays flat", "water": "wet and dark", "turning": "stays fixed on the chest"}}
+      ],
+      "recurring_attributes": ["small jewelled band", "short serpent tail"],
+      "forbidden_drift": ["scary faces on the children", "more than the visible few children"]
+    },
+    {
+      "id": "CHAR-GARUDA",
+      "name": "Garuda (divine eagle, flashback only)",
+      "role": "carries the Amrit Kalash in the flashback (KATHAVACHAK_VARIATION)",
+      "proportions_heads": 7,
+      "proportion_rule": "a winged divine being, human-length torso with eagle head and wings; wings spread over the frame",
+      "silhouette_markers": ["hooked beak eagle head", "broad wings held wide", "the Amrit Kalash held in the talons or against the chest"],
+      "skin": {"treatment": "rust-brown feathers #B9542E with gold feather edges #D9A441; human skin tones on the torso #B98256", "forbidden": "anthropomorphic cartoon bird"},
+      "eyes": {"shape": "sharp round eagle eye with a heavy brow ridge", "iris": "amber #C4903A", "expression_rule": "dignity and urgency read through the eye and wing angle"},
+      "hair": {"base_colour": "none", "style": "feathered crest", "physics": "feathers ripple in wind"},
+      "costume": [
+        {"piece": "feathered wings and a gold waist cloth", "colour_hex": "#B9542E", "accent_hex": "#D9A441", "physics": {"running": "not applicable; wings beat", "wind": "primary feathers split and stream", "water": "feathers mat and drip", "turning": "wings swing wide and close"}}
+      ],
+      "recurring_attributes": ["Amrit Kalash (PROP-AMRIT-KALASH)", "gold feather edges"],
+      "forbidden_drift": ["a cartoon bird face", "a modern eagle emblem", "Garuda shown as a comic animal"]
+    },
+    {
+      "id": "CHAR-GOPI",
+      "name": "Gopi (cowherd women and girls)",
+      "role": "crowd on the bank; weep, rush to the water, hold back",
+      "proportions_heads": 7,
+      "proportion_rule": "adult women 7 heads; girls 6 heads",
+      "silhouette_markers": ["ghagra skirt with odhni over the head", "water pots (matka) on the hip in the village scenes", "hands cupped to the mouth in cries"],
+      "skin": {"treatment": "warm Indian complexion, base #B98256, shade #8A5A3A, light #D9A67A", "forbidden": "pale skin, sexualised styling"},
+      "eyes": {"shape": "long almond with kajal", "iris": "dark brown", "expression_rule": "grief and devotion read through the brows and the parted lips"},
+      "hair": {"base_colour": "#1C1A1E", "style": "oiled hair in a low braid with a flower", "physics": "braid swings on a turn"},
+      "costume": [
+        {"piece": "ghagra skirt in red (or green), odhni scarf in mustard", "colour_hex": "#A3322E", "accent_hex": "#C99A3A", "physics": {"running": "ghagra flares out in pleats; odhni streams behind", "wind": "odhni lifts sideways and billows", "water": "ghagra turns dark and clings, odhni heavy", "turning": "pleats fan out and settle"}}
+      ],
+      "recurring_attributes": ["ghagra and odhni", "matka (water pot) in the village", "flower in the braid"],
+      "forbidden_drift": ["a modern saree or western dress", "identical faces on all gopis (vary face and costume)", "exact count of gopis on screen"]
+    }
+  ],
+  "props": [
+    {"id": "PROP-KALI-KAMLI", "name": "Kali Kamli", "description": "black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006)", "colour_hex": "#1C1A1E", "physics_notes": "heavy wool, folds hold their shape; wet = darker and sheeting", "forbidden_drift": "a modern belt or cloth sash with a logo"},
+    {"id": "PROP-KANDUK", "name": "Kanduk (cloth ball)", "description": "small cloth ball of the ball game (EVENT-005); the ball flies into the river", "colour_hex": "#B8322A", "physics_notes": "soft; lands with a dull thud, bounces once", "forbidden_drift": "a glossy rubber sports ball"},
+    {"id": "PROP-AMRIT-KALASH", "name": "Amrit Kalash (pot of nectar)", "description": "a golden pot of amrit carried by Garuda in the flashback (KATHAVACHAK_VARIATION); golden drops sink into the bark", "colour_hex": "#D9A441", "physics_notes": "drops fall with a single bead of light, muted; no spray effects", "forbidden_drift": "a glowing magic orb or a glowing aura"},
+    {"id": "PROP-MOR-MUKUT", "name": "Peacock feather (mor pankh) and mukut", "description": "design decision: child Krishna wears a single peacock feather in his curls (source). A full peacock mukut only in divine-vision frames (EVENT-007 underwater vision, purification). Canon-neutral: UNVERIFIED as a scene-level choice for the owner", "colour_hex": "#2F6B73", "physics_notes": "feather lags the head one beat; eye-spot stays readable", "forbidden_drift": "a crown on the child in ordinary scenes"},
+    {"id": "PROP-FLUTE", "name": "Flute (vamshi)", "description": "bamboo flute, shown only in the bank or village scenes when music is the beat", "colour_hex": "#A8763E", "physics_notes": "held in one hand; never played during the poison or the dance beats", "forbidden_drift": "a modern silver flute"}
+  ],
+  "environments": [
+    {
+      "id": "ENV-KADAMBA-BANK",
+      "name": "Kadamba bank with the lone surviving tree",
+      "geography": "a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right",
+      "day_key": "dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves",
+      "night_key": "not used in the story; avoid",
+      "composition": {
+        "fg": "kadamba leaves and the trunk, out of focus, painted dark green #34452B",
+        "mid": "figures on the sand edge, cel-shaded",
+        "bg": "flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F"
+      },
+      "canon_notes": "CANON: EVENT-001 withered shore; COMMENTARY and KATHAVACHAK: lone tree (EVENT-003)"
+    },
+    {
+      "id": "ENV-KALIYA-DAH-POISONED",
+      "name": "Kaliya-dah (poisoned pool)",
+      "geography": "a dark pool at the Yamuna bend; black water #1F3A3E, dead roots at the edge, birds fallen on the surface, toxic fumes rising in muted violet and sick green layers",
+      "day_key": "hazed daylight, sun dulled by miasma, colour drained toward grey-violet",
+      "night_key": "not used",
+      "composition": {
+        "fg": "dead roots and fallen birds, sharp focus, dark ash colour",
+        "mid": "the water surface and the coiled serpent body",
+        "bg": "fume bands in flat violet #5B3E6B and sick green #6E7F4A, high horizon"
+      },
+      "canon_notes": "CANON: EVENT-001 boiling pool, fumes, birds falling, scorched sand, cows collapsing"
+    },
+    {
+      "id": "ENV-KALIYA-DAH-PURIFIED",
+      "name": "Yamuna after purification",
+      "geography": "the same bend, clear water in #6FA7B0 with a sunlit surface, green grass back on the bank, the tree still standing; Krishna rises to the sunlit bank",
+      "day_key": "clear morning sun from behind the bank; one controlled golden bloom at most (divine light, #F6D27A)",
+      "night_key": "not used",
+      "composition": {
+        "fg": "grass blades in #A6A04E, sharp",
+        "mid": "Krishna on the bank with the water",
+        "bg": "flat bands: sky #E9C98F, far trees #5E7A3A, water #2F6B73"
+      },
+      "canon_notes": "CANON: EVENT-015 purified river and the bank, KATHAVACHAK for the water colour"
+    },
+    {
+      "id": "ENV-CAVERN",
+      "name": "Underwater cavern of the Naga-Patnis",
+      "geography": "a dim underwater cave in the pool floor, serpent coils and jewelled palaces at the lower right, light from a single surface shaft",
+      "day_key": "cloud-dark light from above, blue-green but low saturation, a single shaft of pale light on Krishna",
+      "night_key": "not used",
+      "composition": {
+        "fg": "coils and rock, dark #1B1A22 with lighter edges",
+        "mid": "Krishna and the Naga-Patnis",
+        "bg": "palace arches as flat silhouettes, #3E6E6A and #C7A24B accents"
+      },
+      "canon_notes": "CANON: EVENT-007 (ŚB 10.16.9 vision). Light is a motivated shaft, not a neon glow."
+    },
+    {
+      "id": "ENV-BRAJ-VILLAGE",
+      "name": "Braj village and cowherd settlement",
+      "geography": "mud-plastered houses with cow-dung plaster #B9955E, a neem tree, a tulsi courtyard, earthen pots, cows and the village well; the river visible through the gaps",
+      "day_key": "warm midday or late afternoon, soft shade under the neem",
+      "night_key": "lamp light only, warm #E8B531 at low intensity, rare",
+      "composition": {
+        "fg": "tulsi plant or a cooking pot, out of focus",
+        "mid": "the family or crowd, cel-shaded",
+        "bg": "flat plaster walls in ochre bands, one tree, a distant river strip"
+      },
+      "canon_notes": "KATHAVACHAK for the village look; the village is an invented but Braj-typical settlement"
+    },
+    {
+      "id": "ENV-VRINDAVAN-FOREST",
+      "name": "Vrindavan forest and grassland",
+      "geography": "kadamba, tamal and banyan trees, dry grass, a path to the river, cows grazing",
+      "day_key": "dappled midday shade, sky haze #E9C98F, leaves #5E7A3A",
+      "night_key": "not used",
+      "composition": {
+        "fg": "grass and leaves, out of focus",
+        "mid": "the boys and the cows",
+        "bg": "tree bands in flat green #34452B, far hills in haze"
+      },
+      "canon_notes": "KATHAVACHAK for the ball game location"
+    }
+  ],
+  "iconography": {
+    "rules": [
+      "Identity: Krishna is a child of about 7-8, wearing a golden pitambara and the black Kali Kamli, with the Srivatsa mark on the chest (ŚB 10.16.9 lists the golden pitambara and the Srivatsa mark).",
+      "Symbols are used only when the scene names them. The peacock feather and flute are attributes; a full divine crown is reserved for divine-vision frames.",
+      "Krishna's feet and the lotus-foot footprint are shown only where the source names them (ŚB 10.16.35-37, footprint seal on the hoods after the purification).",
+      "Garuda's Amrit Kalash and the golden drops are a KATHAVACHAK_VARIATION: shown in the flashback only, flagged in the edit notes."
+    ],
+    "restrictions": [
+      "No invented supernatural effects: no lightning beams, no energy aura, no magic circles",
+      "No glowing neon venom; poison is dark fume and dead colour",
+      "No haloes drawn by default",
+      "No exact counts of hoods, gopis or serpents shown as a crowd of many; give a visible number and suggest the rest by depth and shadow",
+      "Kaliya is a serpent, never a dragon or humanoid monster"
+    ]
+  },
+  "composition_grammar": {
+    "source_painting_traits": "high or aerial horizon, flat colour fields, several narrative moments in one frame, layered planes, figures set in a rhythmic stance (tribhanga for Krishna), ornamented borders",
+    "translation_to_2_5d": "fg = blurred foreground foliage or sand (depth cue); mid = the cel-shaded acting layer; bg = flat painted bands with aerial haze; keep the horizon high on water scenes and place the tribhanga pose against a flat band of colour"
+  },
+  "references": [
+    {
+      "title": "Krishna Subdues the Serpent Kaliya in the Yamuna River: Illustration from a Bhagavata Purana Series (Met)",
+      "url": "https://www.metmuseum.org/art/collection/search/74677",
+      "shows": "Pahari (Guler or Kangra) ink and wash, Bhagavata Purana series. From search snippet only: attribution follower of Nainsukh, ca. 1780.",
+      "status": "UNVERIFIED (fetch returned HTTP 429 twice; facts from the search snippet, not from the page)"
+    },
+    {
+      "title": "Krishna Quells the Serpent Kaliya, from a Bhagavata Purana (Cleveland Museum of Art, 2018.141)",
+      "url": "https://www.clevelandart.org/art/2018.141",
+      "shows": "Mewar, c. 1710, gum tempera and gold on paper. Krishna dances on the many heads in a poisoned pool, serpent-tailed women flank him, onlookers on a yellow shore, figures leaping from a tree and a cliff, the royal residence at lower right.",
+      "status": "opened"
+    },
+    {
+      "title": "Krishna Quells the Serpent Kaliya, from a Bhagavata Purana (Cleveland Museum of Art, 314446)",
+      "url": "https://www.clevelandart.org/art/314446",
+      "shows": "Same object record as 2018.141 (title, c. 1710, Mewar, scene description): used for the flat-colour and pool-composition notes.",
+      "status": "opened"
+    },
+    {
+      "title": "Toei Animation corporate page: production process (planning, production, editing)",
+      "url": "https://corp.toei-anim.co.jp/en/company/animation_production.html",
+      "shows": "Three stages: planning (theme, audience, structure, character and item design, setting, script), production (storyboarding, key animation, colours, in-betweens, backgrounds, CG and effects; about 3,000-4,500 drawings per TV episode), editing (sound, BGM, sequencing). Used for the pipeline order only.",
+      "status": "opened"
+    },
+    {
+      "title": "Narthaki: Abhinaya and bhava (classical Indian acting)",
+      "url": "https://narthaki.com/info/articles/art436.html",
+      "shows": "Abhinaya is the acting that makes an emotion felt; bhava divided into sthayi (eight), vyabhicari (33 transitory states, e.g. nirveda, glani, sanka), sattvika (eight involuntary states, e.g. stambham, swedam, romancam); eight rasas of the Natyashastra. The article does not name the eight sthayi bhavas.",
+      "status": "opened"
+    },
+    {
+      "title": "imp-art.org: bhava article",
+      "url": "https://imp-art.org/article/bhava/",
+      "shows": "Expected to cover the same bhava categories; the fetch returned HTTP 403.",
+      "status": "UNVERIFIED (not read)"
+    },
+    {
+      "title": "Natyashastra eight sthayi bhavas (rati, hasa, shoka, krodha, utsaha, bhaya, jugupsa, vismaya)",
+      "url": "none",
+      "shows": "The names used in acting_library.py come from general knowledge of the Natyashastra list, not from a source opened in this run.",
+      "status": "UNVERIFIED (check against a primary translation before use)"
+    },
+    {
+      "title": "Bhagavata Purana Canto 10, Chapter 16 (ŚB 10.16)",
+      "url": "none (source text as given in stories/kaliya_mardan/SOURCE.md)",
+      "shows": "The canon for every CANON event (EVENT-001 to EVENT-015).",
+      "status": "taken from the owner's SOURCE.md; not re-checked in this run"
+    }
+  ]
+}

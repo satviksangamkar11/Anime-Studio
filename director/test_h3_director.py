@@ -1,6 +1,9 @@
+import json
+
 import pytest
 
-from h3_director import frames_for, settings_for
+from h3_director import compile_direction, frames_for, main, settings_for
+from test_shot_schema import RICH
 
 FL = {"id": "SHOT-04", "mode": "fl2va", "seconds": 5, "start": "a.png", "end": "b.png", "style": "Flat 2D cel anime.",
       "world": "Riverbank at dawn.", "action": "0-2s he steps forward; 2-5s he looks up.", "camera": "slow crane down"}
@@ -34,3 +37,32 @@ def test_ref2va_needs_refs_and_names_subjects():
 def test_fl2va_needs_a_start_frame():
     with pytest.raises(ValueError):
         settings_for(dict(FL, start=None))
+
+
+def test_rich_shot_compiles_beats_camera_and_light_into_the_prompt():
+    s = settings_for(RICH)
+    p = s["prompt"]
+    assert p.startswith("integrated_multimodal_description: [Shot 1] A 5.9-second single take. Modern Japanese anime")
+    for code in ("0-0.8s: ", "0.8-1.6s: ", "1.6-3.4s: ", "3.4-5.2s: "):
+        assert code in p
+    assert p.index("0-0.8s") < p.index("0.8-1.6s") < p.index("3.4-5.2s")
+    assert "0.8-1.6s: lowers centre of gravity, knees bend, shoulders tilt forward; sash still settling" in p
+    assert "Camera: track down with the fall, 24mm lens, full body->water surface framing." in p
+    assert "Light: low morning sun from screen left; warm gold on Krishna; earthy Braj daylight." in p
+    assert "no style change; no on-screen text.\noverall_soundscape: branch creak" in p
+
+
+def test_rich_shot_keyframes_map_to_the_start_and_end_frames():
+    s = settings_for(RICH)
+    assert s["image_start"] == "keyframes/SHOT-07-FRAME-A.png" and s["image_end"] == "keyframes/SHOT-07-FRAME-B.png"
+    assert s["image_prompt_type"] == "SE" and s["video_length"] == 141 and s["resolution"] == "480x832"
+
+
+def test_compile_direction_keeps_the_rich_spec(tmp_path):
+    assert compile_direction(RICH) == RICH
+    shots = tmp_path / "shots.json"
+    shots.write_text(json.dumps([RICH]), encoding="utf-8")
+    main(str(shots), str(tmp_path / "out"))
+    out = tmp_path / "out"
+    assert json.loads((out / "settings_SHOT-07.json").read_text(encoding="utf-8"))["video_length"] == 141
+    assert json.loads((out / "SHOT-07.direction.json").read_text(encoding="utf-8")) == RICH
