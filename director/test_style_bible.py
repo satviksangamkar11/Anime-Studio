@@ -46,7 +46,7 @@ def test_character_has_proportions_physics_and_drift(bible, char_id):
 
 def test_krishna_not_generic_hero(bible):
     krishna = next(c for c in bible["characters"] if c["id"] == "CHAR-KRISHNA")
-    assert krishna["proportions_heads"] == 5.5
+    assert krishna["proportions_heads"] == 4.5   # owner-approved identity master, 2026-11-05
     assert any("generic" in d for d in krishna["forbidden_drift"])
     assert "cyan" not in krishna["skin"]["treatment"].split(";")[0]
 

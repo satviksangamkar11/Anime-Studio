@@ -80,27 +80,39 @@
       "id": "CHAR-KRISHNA",
       "name": "Bala Krishna (about 7-8 years old)",
       "role": "protagonist, the child who subdues the serpent",
-      "proportions_heads": 5.5,
+      "proportions_heads": 4.5,
       "proportion_rule": "child proportions: large head, short limbs, round belly, no adult chest or hip width",
-      "silhouette_markers": ["wild curls with one peacock feather", "tribhanga (triple-bend) stance when posed, hip and head counter-bent", "tight wrestler's sash of the black blanket knotted at the waist"],
-      "skin": {"treatment": "flat cloud-dark indigo-grey; base #33415E, core shade #1F2A40, light #56688A, warm ochre cheek bloom #C9A77A used sparingly for face readability", "forbidden": "saturated cyan or electric blue; glossy plastic; airbrushed glow"},
-      "eyes": {"shape": "large almond, heavy upper lid, soft lower lid line; children keep eyes big but not sparkling", "iris": "dark brown-black with one small catch-light; no star or heart sparkles", "expression_rule": "emotion is shown with the lids and the lower lid, not with a sparkle overlay"},
-      "hair": {"base_colour": "#1C1A1E", "style": "wild dark curls pushed back, one peacock feather tucked at the side (PROP-MOR-MUKUT), no spiky anime fringe", "physics": "curls spring back in 2-3 frames when he turns; feather lags the head by one beat"},
+      "silhouette_markers": ["bouncy black curls with one peacock feather and a pearl string", "tribhanga (triple-bend) stance when posed, hip and head counter-bent", "tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it"],
+      "skin": {"treatment": "soft cloud-blue skin, lighter than the old indigo-grey; flat cel tones: base #AFCCEA, light #B3D1F7, core shadow #7990B9 (sampled from the approved identity master, KRISHNA_IDENTITY_MASTER__v01__edit2_candA.png, skin areas); a soft warm cheek blush kept light", "forbidden": "saturated cyan or electric blue; dark indigo-grey skin; white or pale-grey skin; glossy plastic; airbrushed glow"},
+      "eyes": {"shape": "large round-almond eyes with heavy upper lid and a soft lower lid line; lively, not wide-staring", "iris": "dark brown-black with one bright catch-light; a soft sparkle in the eye is allowed, star or heart shapes are not", "expression_rule": "playful and mischievous: one lid a little lower, eyes lit with a sparkle; emotion shows in the lids, the brows and the smile"},
+      "expression_default": "playful and mischievous: a warm smile with one cheek lifted, sparkling eyes, head tipped slightly",
+      "hair": {"base_colour": "#1C1A1E", "style": "properly curly, bouncy black ringlets pushed back from the face, a pearl string woven through the curls, one peacock feather tucked at the side (PROP-MOR-MUKUT), no spiky anime fringe", "physics": "curls spring back in 2-3 frames when he turns; feather lags the head by one beat"},
+      "forehead_mark": "Vaishnava U-shaped tilak: two pale cream-yellow lines from the nose bridge to the hairline, joined in a narrow U, a red centre line, a small leaf shape at the bridge",
       "costume": [
         {"piece": "golden pitambara (dhoti) tied at the waist", "colour_hex": "#E8B531", "shade_hex": "#B07A1E", "physics": {"running": "hem flicks outward, knot stays tied, the dhoti pleats fan on each stride", "wind": "pleats lift and drop with one-beat lag; the hem edge stays crisp", "water": "gold cloth darkens and clings to the thighs, then drags as a heavy sheet; never floats", "turning": "pleats swing out radially and settle on the new facing"}},
         {"piece": "black Kali Kamli (blanket) tied as a wrestler's sash", "colour_hex": "#1C1A1E", "physics": {"running": "sash ends bounce at the hip, a single trailing end", "wind": "ends stream sideways and snap back when the wind drops", "water": "soaked and heavy, pulls the waist down, dark and sheeting", "turning": "tail sweeps around the body in a clean arc, ends remain tied"}},
-        {"piece": "Srivatsa mark and bare upper torso", "colour_hex": "#33415E", "physics": {"running": "no cloth; chest mark stays fixed", "wind": "none", "water": "beads of water roll off the shoulders", "turning": "mark is a fixed body detail; no physics"}}
+        {"piece": "Srivatsa mark on the chest, upper body uncovered", "colour_hex": "#33415E", "physics": {"running": "no cloth; chest mark stays fixed", "wind": "none", "water": "beads of water roll off the shoulders", "turning": "mark is a fixed body detail; no physics"}}
       ],
-      "jewellery": [{"piece": "small gold bangles and anklets", "colour_hex": "#C7A24B", "physics": {"running": "chime with a one-frame delay on each step, rhythmic", "water": "bangles slide down the wrist", "turning": "swing outward then settle"}}],
-      "recurring_attributes": ["peacock feather in the curls", "black Kali Kamli sash", "Srivatsa mark on the chest", "flute (PROP-FLUTE) when the scene allows music", "small lotus-foot footprint seal motif only in purification frames"],
+      "jewellery": [
+        {"piece": "layered pearl necklaces, two or three strands over the chest", "physics": {"running": "strands bounce on the chest", "water": "pearls cling wet", "turning": "strands swing outward then settle"}},
+        {"piece": "pearl ear studs", "physics": {"running": "fixed, no swing", "turning": "fixed"}},
+        {"piece": "small gold armlets, bangles and anklets", "colour_hex": "#C7A24B", "physics": {"running": "chime with a one-frame delay on each step, rhythmic", "water": "bangles slide down the wrist", "turning": "swing outward then settle"}}
+      ],
+      "attached_props": ["PROP-FLUTE"],
+      "flute_carry": "bamboo bansuri (PROP-FLUTE) tucked in the black sash at the hip; in his hand in close-ups",
+      "recurring_attributes": ["peacock feather in the curls (PROP-MOR-MUKUT)", "pearl string in the hair and layered pearl necklaces", "pearl ear studs", "Vaishnava U-tilak on the forehead", "black Kali Kamli sash", "Srivatsa mark on the chest", "bamboo bansuri (PROP-FLUTE) tucked in the sash, in hand in close-ups", "small lotus-foot footprint seal motif only in purification frames"],
       "forbidden_drift": [
         "generic anime protagonist hero with spiky cyan hair and a blue body",
         "saturated electric blue skin or any cyan rim",
+        "dark indigo-grey skin (the old look)",
+        "white or pale-grey skin",
         "adult heroic proportions (8 heads) or adult muscle definition",
         "modern belt, armour, buckle or fabric not in the costume list",
-        "sparkle eyes, star eyes, sweat drops used as a default",
+        "star or heart eye sparkles, sweat drops used as a default",
         "crown or halo drawn as a default (feather only unless the scene is a divine vision)",
-        "pale or lightened skin"
+        "no tilak on the forehead",
+        "pearls left out (the pearl string, layered necklaces and ear studs are required)",
+        "bansuri left out (it stays tucked in the sash)"
       ]
     },
     {

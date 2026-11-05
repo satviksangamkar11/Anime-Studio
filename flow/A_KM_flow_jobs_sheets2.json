@@ -1,0 +1,158 @@
+[
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_TURNAROUND",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_TURNAROUND__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri tucked in the sash; gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Character turnaround sheet on a neutral grey background (#808080), one image, four full-body panels in a row at the same height and scale: Panel 1 front view; Panel 2 three-quarter view; Panel 3 side view; Panel 4 back view. Same character, same costume and colours in all four panels, same 5.5-head proportions. Every panel shows the same approved look: properly curly bouncy black ringlets with one peacock feather and a pearl string in the hair; layered pearl necklaces and pearl ear studs; golden pitambara; black Kali Kamli sash; a bamboo bansuri tucked in the sash; gold anklets and armlets; the playful face with a warm mischievous smile; flat cloud-blue skin (lighter, never indigo-grey, never cyan). The Vaishnava U-shaped tilak shows on the forehead in the front and three-quarter panels. Variable ink line, hard shadow planes, no rim light on this sheet. Avoid: adult proportions; a crown; a belt or buckle. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of four full-body panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "9f2f5c5b47e58186556608adba3fa4e283964f497b5b9ab7ece22617a871dcba",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_ACTING_SHEET",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_ACTING_SHEET__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri tucked in the sash; gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Character expression sheet on a neutral grey background (#808080), four head-and-shoulders panels in a row: Panel 1 neutral; Panel 2 resolve (eyes lift and lock, brows level, mouth a firm closed line, chin level); Panel 3 mischief (one eyelid lowered, a playful sideways smile, eyes sparkling); Panel 4 joyful laugh (open happy laugh, eyes bright and crinkled). Same face, same hair with the peacock feather and pearl string, same pearl necklaces and the same Vaishnava U-shaped tilak on the forehead in all four panels; the same playful, mischievous face as the approved look. Flat cloud-blue skin, variable ink line, hard shadow planes. Emotion is shown with the brows, eyelids and mouth; no star or heart eyes, no sweat drops, no glow. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of four head-and-shoulders panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "a4216019d3af959416dd8f81d55502edea7c52a1a9994b1ae9ca9d85a4b9dd7e",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_ACTION_POSES",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_ACTION_POSES__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri tucked in the sash; gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Action pose sheet on a neutral grey background (#808080), five full-body panels in a row: Panel 1 grip (one hand closing on a branch, toes curling); Panel 2 deep crouch (knees bent, arms swung back); Panel 3 launch (body leaning out, arms forward); Panel 4 mid-air arc (body arched, sash and curls trailing behind); Panel 5 head-first dive (body straight, arms together, head down). Same character and same costume in every panel; tribhanga stance where posed. Every panel shows the same approved look: properly curly bouncy black ringlets with one peacock feather and a pearl string in the hair; layered pearl necklaces and pearl ear studs; golden pitambara; black Kali Kamli sash; a bamboo bansuri tucked in the sash; gold anklets and armlets; the playful face with a warm mischievous smile; flat cloud-blue skin (lighter, never indigo-grey, never cyan). Flat cloud-blue skin, variable ink line, hard shadow planes. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of five full-body panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "10e4de397cf5b51d02d906cf05c1fab380a4f510b34d3353435ef936ce4ae164",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_COSTUME_DETAIL",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_COSTUME_DETAIL__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri tucked in the sash; gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Costume and jewellery detail sheet on a neutral grey background (#808080), six panels in a row: Panel 1 golden pitambara folds at the waist (#E8B531, shade #B07A1E); Panel 2 black Kali Kamli knotted as a tight wrestler's sash (#1C1A1E) with the loose ends hanging; Panel 3 one peacock feather tucked in the bouncy black curls at the side (eye-spot in teal #2F6B73), with the pearl string in the hair, no crown; Panel 4 layered pearl necklaces and pearl ear studs; Panel 5 Vaishnava U-shaped tilak close-up on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge), playful eyes; Panel 6 bamboo bansuri tucked in the black sash. No belt, no buckle, no logo. Flat cloud-blue skin, variable ink line, hard shadow planes. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of six detail panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "cf4734a8585b468309a9b59d280dbb2ff4b13b3c82c03821a494bcc2da5bc8d2",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ }
+]

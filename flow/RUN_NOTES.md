@@ -59,3 +59,18 @@ Scripts in Granth are called read-only from here; their outputs go to the anime 
 
 ## Next
 Owner approves the identity master, then the other sheets and plates. Then build stage 2 (after replacing the placeholders) and run the Flow agents per the Granth brief, with these paths.
+
+## Rebuild 2: approved Krishna identity master (2026-11-05)
+Owner approved `KRISHNA_IDENTITY_MASTER__v01__edit2_candA.png`. Changes:
+- Job file: `D:\aai work\anime_studio\flow\A_KM_flow_jobs_sheets2.json` (4 jobs: KRISHNA_TURNAROUND, KRISHNA_ACTING_SHEET, KRISHNA_ACTION_POSES, KRISHNA_COSTUME_DETAIL; all `__v01`, generate, x2, cap 8). Spec: `A_KM_image_spec_sheets2.json`. Built with `granthstudio\scripts\flow\build_jobs_v2.py --series` pointing at `flow_series_kaliya.json`. Each job chips: `CHAR-KRISHNA`, then `STYLE_CHIP_SHEET__v01`. No props or place chips. No unaccepted-sheet warning.
+- Series: CHAR-KRISHNA sentence rewritten to the approved look; sheet `references\CHAR-KRISHNA__identity_master.png` (copy of the approved image); accepted true.
+- Style: chip `STYLE_CHIP_SHEET__v01` (sheet `references\STYLE_CHIP_SHEET.png`), accepted true.
+- Place ENV-KADAMBA-BANK: chip `ENV_KADAMBA_BANK_DAWN__v01`, sheet `references\ENV-KADAMBA-BANK.png`, accepted true.
+- Place ENV-KALIYA-DAH-POISONED: sheet `references\ENV-KALIYA-DAH-POISONED.png` (a copy of ENV_WATER_SURFACE_HIGH__v01__candB), accepted FALSE. The owner has not picked A or B yet; swap the sheet once chosen.
+- Director bible `director\style\kaliya_mardan.json` CHAR-KRISHNA: lighter cloud-blue skin (sampled base #AFCCEA, light #B3D1F7, shadow #7990B9), playful eyes, pearls, U-tilak, bansuri (PROP-FLUTE attached), dark indigo-grey / no tilak / missing pearls or flute added to forbidden drift. Director tests: 306 passed.
+- Not run: no Flow, no browser, no model calls, no network. Nothing under `granthstudio\` edited. Nothing committed.
+
+Open points:
+- PROP-FLUTE's own rule says it shows only in bank or village scenes when music is the beat. Krishna now carries it tucked in the sash, as in the approved look. Owner to confirm, or the prop rule needs an update.
+- Chip names for the two places and the style chip must match the exact Flow asset names when uploaded. ENV-KADAMBA-BANK's chip name changed to `ENV_KADAMBA_BANK_DAWN__v01`.
+- The earlier phase1a KRISHNA_TURNAROUND, ACTING, ACTION_POSES and COSTUME_DETAIL jobs in `A_KM_flow_jobs_phase1a.json` are superseded by the sheets2 file. Do not run them.

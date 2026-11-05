@@ -1,0 +1,76 @@
+{
+ "adhyay": 1,
+ "_note": "Kaliya Mardan Phase 1A sheets, rebuild 2: the four Krishna sheets after the approved identity master (edit2_candA). Chips: CHAR-KRISHNA then STYLE_CHIP_SHEET__v01. Built by Granth build_jobs_v2.py with --series pointing to the anime series file.",
+ "slot_order": {
+  "REF": [
+   "KRISHNA_IDENTITY_MASTER",
+   "KRISHNA_TURNAROUND",
+   "KRISHNA_ACTING_SHEET",
+   "KRISHNA_ACTION_POSES",
+   "KRISHNA_COSTUME_DETAIL",
+   "STYLE_CHIP_SHEET"
+  ],
+  "PLATE": [
+   "ENV_KADAMBA_BANK_DAWN",
+   "ENV_WATER_SURFACE_HIGH"
+  ]
+ },
+ "shots": [
+  {
+   "shot_id": "KRISHNA_TURNAROUND",
+   "scene": "REF",
+   "method": "generate",
+   "characters": [
+    "CHAR-KRISHNA"
+   ],
+   "place": null,
+   "action": "Character turnaround sheet on a neutral grey background (#808080), one image, four full-body panels in a row at the same height and scale: Panel 1 front view; Panel 2 three-quarter view; Panel 3 side view; Panel 4 back view. Same character, same costume and colours in all four panels, same 5.5-head proportions. Every panel shows the same approved look: properly curly bouncy black ringlets with one peacock feather and a pearl string in the hair; layered pearl necklaces and pearl ear studs; golden pitambara; black Kali Kamli sash; a bamboo bansuri tucked in the sash; gold anklets and armlets; the playful face with a warm mischievous smile; flat cloud-blue skin (lighter, never indigo-grey, never cyan). The Vaishnava U-shaped tilak shows on the forehead in the front and three-quarter panels. Variable ink line, hard shadow planes, no rim light on this sheet. Avoid: adult proportions; a crown; a belt or buckle.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of four full-body panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_ACTING_SHEET",
+   "scene": "REF",
+   "method": "generate",
+   "characters": [
+    "CHAR-KRISHNA"
+   ],
+   "place": null,
+   "action": "Character expression sheet on a neutral grey background (#808080), four head-and-shoulders panels in a row: Panel 1 neutral; Panel 2 resolve (eyes lift and lock, brows level, mouth a firm closed line, chin level); Panel 3 mischief (one eyelid lowered, a playful sideways smile, eyes sparkling); Panel 4 joyful laugh (open happy laugh, eyes bright and crinkled). Same face, same hair with the peacock feather and pearl string, same pearl necklaces and the same Vaishnava U-shaped tilak on the forehead in all four panels; the same playful, mischievous face as the approved look. Flat cloud-blue skin, variable ink line, hard shadow planes. Emotion is shown with the brows, eyelids and mouth; no star or heart eyes, no sweat drops, no glow.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of four head-and-shoulders panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_ACTION_POSES",
+   "scene": "REF",
+   "method": "generate",
+   "characters": [
+    "CHAR-KRISHNA"
+   ],
+   "place": null,
+   "action": "Action pose sheet on a neutral grey background (#808080), five full-body panels in a row: Panel 1 grip (one hand closing on a branch, toes curling); Panel 2 deep crouch (knees bent, arms swung back); Panel 3 launch (body leaning out, arms forward); Panel 4 mid-air arc (body arched, sash and curls trailing behind); Panel 5 head-first dive (body straight, arms together, head down). Same character and same costume in every panel; tribhanga stance where posed. Every panel shows the same approved look: properly curly bouncy black ringlets with one peacock feather and a pearl string in the hair; layered pearl necklaces and pearl ear studs; golden pitambara; black Kali Kamli sash; a bamboo bansuri tucked in the sash; gold anklets and armlets; the playful face with a warm mischievous smile; flat cloud-blue skin (lighter, never indigo-grey, never cyan). Flat cloud-blue skin, variable ink line, hard shadow planes.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of five full-body panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_COSTUME_DETAIL",
+   "scene": "REF",
+   "method": "generate",
+   "characters": [
+    "CHAR-KRISHNA"
+   ],
+   "place": null,
+   "action": "Costume and jewellery detail sheet on a neutral grey background (#808080), six panels in a row: Panel 1 golden pitambara folds at the waist (#E8B531, shade #B07A1E); Panel 2 black Kali Kamli knotted as a tight wrestler's sash (#1C1A1E) with the loose ends hanging; Panel 3 one peacock feather tucked in the bouncy black curls at the side (eye-spot in teal #2F6B73), with the pearl string in the hair, no crown; Panel 4 layered pearl necklaces and pearl ear studs; Panel 5 Vaishnava U-shaped tilak close-up on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge), playful eyes; Panel 6 bamboo bansuri tucked in the black sash. No belt, no buckle, no logo. Flat cloud-blue skin, variable ink line, hard shadow planes.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of six detail panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  }
+ ]
+}
