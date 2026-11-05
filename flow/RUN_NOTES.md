@@ -101,3 +101,12 @@ Anime copies of the download queue and filer live in `D:\aai work\anime_studio\f
 - Status (read-only): `C:\Python314\python.exe "D:\aai work\anime_studio\flow\scripts\download_queue.py" status --root "D:\aai work\flow_outputs\anime_kaliya" --adhyay 1`
 - Collect (files every PENDING item whose exact-title 2K is in Downloads): `C:\Python314\python.exe "D:\aai work\anime_studio\flow\scripts\download_queue.py" collect --root "D:\aai work\flow_outputs\anime_kaliya" --adhyay 1 --downloads "C:\Users\Satvik\Downloads"`
 - Exit code of status and collect is 0 only when nothing is pending. Owner OK is still needed before the download pass runs.
+
+## Keyframes B (END frames), 2026-11-05
+- Made as NEW generations with the A tile attached as chip @LEAP-0xA__v01 (never Flow edits of A tiles).
+- Kept: LEAP-01B 25ebfc1b, LEAP-03B f9d684f2 and LEAP-04B 22550c87 (coordinator overruled Luna: wide-shot sash/flute; head-first dive from above shows feet up), LEAP-05B e2a147b6.
+- LEAP-02B: 4 Nano Banana 2.1 generations drew flat toes. Fix = Flow edit on a spare 02B candidate tile. Owner order: use Nano Banana Pro for the 02B fix (exception to the one-model rule, this shot only). Kept: Pro edit on spare tile e3e487da (front-foot toes curled over the bark), coordinator-checked by zoom; Luna not run (no capture). All 5 B frames queued.
+- Owner review round (2026-11-05 evening): LEAP-01A (candB) and LEAP-01B (try3_candA) edited to DARK poisoned water (Nano Banana 2.1 edit, water plate attached; same tile ids) - owner FINAL. LEAP-03: A = candA_edit1 (bce62f79) + dark water, B regenerated with Nano Banana Pro. LEAP-04A = candC2 + fix, 04B regenerated from it (Pro); LEAP-05B regenerated with the river extended (Pro).
+- Final ids: 03A bce62f79 (+ bansuri tucked by a 2.1 edit), 03B 5294210f, 04A 00cfdd7c (C2 + fix), 04B 009554a2 (Pro candA; candB grew while falling away from the camera), 05A 033c928f (Pro, matches 05B camera), 05B 30cb1c15. Old tiles renamed OLD-0xX-v01 so the @ picker stays unique (never reuse a "LEAP-..." prefix for old tiles).
+- Phase 2 DONE 2026-11-05: all 18 downloaded at 2K and filed (status 0 pending, 18 filed). The browser pane drops downloads; method in HANDOFF_2026-11-05.md ("How the 2K download works").
+- Queue: the 5 LEAP-0xA entries had Granth's project URL; replaced with the anime project id (backup in session scratchpad).
