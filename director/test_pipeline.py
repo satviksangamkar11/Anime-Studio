@@ -51,7 +51,7 @@ def test_build_embeds_images_and_rewrites_paths(tmp_path):
     assert "__" + "IMAGES__" not in script and "__" + "SETTINGS__" not in script
     blob = script.split('json.loads(base64.b64decode("')[2].split('")')[0]
     settings = json.loads(base64.b64decode(blob))["SHOT-01"]
-    assert settings["image_start"] == "/kaggle/working/Wan2GP/inputs/keyframes__SHOT-01-FRAME-A.jpg" and settings["video_length"] == 107
+    assert settings["image_start"] == "/kaggle/working/Wan2GP/inputs/keyframes__SHOT-01-FRAME-A.png" and settings["video_length"] == 107
     assert meta["machine_shape"] == "NvidiaTeslaT4" and meta["is_private"] == "true" and meta["id"].endswith("/anime-ep1-test")
 
 
@@ -59,10 +59,10 @@ def test_same_named_files_from_two_folders_stay_apart(tmp_path):
     for folder, colour in (("a", "red"), ("b", "blue")):
         (tmp_path / folder).mkdir()
         Image.new("RGB", (8, 8), colour).save(tmp_path / folder / "F.png")
-    shots = [dict(SHOT, id="S1", start="a/F.png", end=None), dict(SHOT, id="S2", start="b/F.png", end=None)]
+    shots = [dict(SHOT, id="SHOT-01", start="a/F.png", end=None), dict(SHOT, id="SHOT-02", start="b/F.png", end=None)]
     script, _ = run_kaggle.build(shots, tmp_path, "t")
     images = json.loads(base64.b64decode(script.split('json.loads(base64.b64decode("')[1].split('")')[0]))
-    assert sorted(images) == ["a__F.jpg", "b__F.jpg"] and images["a__F.jpg"] != images["b__F.jpg"]
+    assert sorted(images) == ["a__F.png", "b__F.png"] and images["a__F.png"] != images["b__F.png"]
 
 
 def test_parse_accepts_a_fence_on_the_json_line_and_refuses_a_bare_object():

@@ -156,3 +156,42 @@ def test_bible_parse_is_tolerant_and_strict_about_its_block():
         write_pack.parse_bible(envelope("```json bible\n{}\n```\n```json bible\n{}\n```"))
     with pytest.raises(ValueError):
         write_pack.bible_from("[1, 2]")
+
+
+def test_an_untagged_json_bible_block_is_accepted():
+    assert write_pack.parse_bible(envelope("# Gate 2\n\n```json\n" + json.dumps(BIBLE) + "\n```"))[1] == BIBLE
+
+
+def test_untagged_bible_fallback_takes_the_last_object_and_a_tagged_block_wins():
+    last = envelope("```json\n{\"a\": 1}\n```\nnotes\n```json\n{\"b\": 2}\n```")
+    assert write_pack.parse_bible(last)[1] == {"b": 2}
+    tagged = envelope("```json\n{\"b\": 2}\n```\n```json bible\n" + json.dumps(BIBLE) + "\n```")
+    assert write_pack.parse_bible(tagged)[1] == BIBLE
+    with pytest.raises(ValueError, match="found 0"):
+        write_pack.parse_bible(envelope("```json\n[1, 2]\n```"))
+
+
+def test_an_untagged_json_shots_block_is_accepted_when_no_shots_block_exists():
+    assert write_pack.parse(envelope("notes\n```json\n" + json.dumps([SHOT]) + "\n```"))[1] == [SHOT]
+
+
+def test_untagged_shots_fallback_takes_the_last_list_of_objects():
+    text = envelope("```json\n" + json.dumps([dict(SHOT, id="SHOT-09")]) + "\n```\n```json\n{\"x\": 1}\n```\n```json\n" + json.dumps([SHOT]) + "\n```")
+    assert write_pack.parse(text)[1] == [SHOT]
+    with pytest.raises(ValueError, match="found 0"):
+        write_pack.parse(envelope("```json\n{\"x\": 1}\n```"))
+
+
+def test_episodes_that_restart_their_shot_numbers_merge_into_unique_ids(tmp_path, story, fake_claude, monkeypatch):
+    ep1 = [dict(SHOT, id="SHOT-01", episode=1), dict(SHOT, id="SHOT-02", episode=1, cut_in="match on action from SHOT-01")]
+    ep2 = [dict(SHOT, id="SHOT-01", episode=2),
+           dict(SHOT, id="SHOT-02", episode=2, cut_in="match on action from SHOT-01", start="keyframes/SHOT-02-FRAME-A.png")]
+    monkeypatch.setitem(CANNED, "3e1", "```json shots\n" + json.dumps(ep1) + "\n```")
+    monkeypatch.setitem(CANNED, "3e2", "```json shots\n" + json.dumps(ep2) + "\n```")
+    staged(story, tmp_path / "pack")
+    shots = json.loads((tmp_path / "pack" / "shots.json").read_text(encoding="utf-8"))
+    assert [s["id"] for s in shots] == ["SHOT-001", "SHOT-002", "SHOT-003", "SHOT-004"]
+    assert [s["source_id"] for s in shots] == ["SHOT-01", "SHOT-02", "SHOT-01", "SHOT-02"]
+    assert shots[1]["cut_in"] == "match on action from SHOT-001"
+    assert shots[3]["cut_in"] == "match on action from SHOT-003"
+    assert shots[3]["start"] == "keyframes/SHOT-004-FRAME-A.png"

@@ -6,7 +6,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from h3_director import FPS, frames_for
+from h3_director import FPS, frames_for_shot
 from layout_validator import check_layout
 from shot_schema import validate_shots
 
@@ -21,7 +21,7 @@ def check(pack_dir):
     per_ep = defaultdict(float)
     issues = []
     for s in shots:
-        per_ep[s.get("episode")] += frames_for(s["seconds"]) / FPS
+        per_ep[s.get("episode")] += (s["edit_frames"] if "edit_frames" in s else frames_for_shot(s)) / FPS   # the kept part counts
         text = " ".join(str(s.get(k, "")) for k in ("style", "world", "action", "camera", "sound"))
         text += " ".join(b.get("acting", "") for b in s.get("beats", []))   # rich shots carry their prompt in beats
         if BANNED.search(text):

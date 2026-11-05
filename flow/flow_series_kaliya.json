@@ -1,0 +1,73 @@
+{
+ "_note": "Kaliya Mardan (anime) series data for Granth's Flow image system v2 (build_jobs_v2.py, review_shot.py, neighbour_sheet.py). Same format as granthstudio config/flow_series.json. Sentences and texts are built from director/style/kaliya_mardan.json and director/style_bible.py (flow_sheet_prompt, prompt_block). Owner approval needed before any sheet is accepted. Sheets live under outputs_root/adhyay_01/references/. Chips = the exact Flow asset names (character id, place id, sheet name) once the asset is uploaded.",
+ "version": 1,
+ "flow_project": "6a7ab793-d05f-476d-91a2-aaeb00c234a0",
+ "outputs_root": "D:/aai work/flow_outputs/anime_kaliya",
+ "downloads_dir": "C:/Users/Satvik/Downloads",
+ "model": {
+  "name": "Nano Banana 2.1",
+  "fallback": null,
+  "count": "x2",
+  "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+  "download": "2K Upscaled",
+  "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+ },
+ "style": {
+  "chip": null,
+  "chip_sheet": {"sheet_adhyay": 1, "sheet": "STYLE_CHIP_SHEET.png", "accepted": false},
+  "text": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette.",
+  "_note": "ONE style entry. chip stays null until STYLE_CHIP_SHEET is accepted and uploaded under the chip name; then set chip to that exact name. Until then no style image is attached (the Granth lesson: a style picture leaks its content)."
+ },
+ "tail": "Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+ "forbidden_words": [
+  "loincloth",
+  "naked",
+  "\\bbare\\b",
+  "Maharaj",
+  "bandi",
+  "digambar",
+  "bare-chested"
+ ],
+ "characters": {
+  "CHAR-KRISHNA": {
+   "name": "Bala Krishna (about 7-8 years old)",
+   "sheet_adhyay": 1,
+   "sheet": "KRISHNA_IDENTITY_MASTER.png",
+   "accepted": false,
+   "sentence": "Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin"
+  }
+ },
+ "places": {
+  "ENV-KADAMBA-BANK": {
+   "chip": "ENV-KADAMBA-BANK",
+   "sheet_adhyay": 1,
+   "sheet": "ENV_KADAMBA_BANK_DAWN.png",
+   "accepted": false,
+   "text": "the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze"
+  },
+  "ENV-KALIYA-DAH-POISONED": {
+   "chip": "ENV-KALIYA-DAH-POISONED",
+   "sheet_adhyay": 1,
+   "sheet": "ENV_WATER_SURFACE_HIGH.png",
+   "accepted": false,
+   "text": "a dark pool at the Yamuna bend seen from high above: black water, dead roots at the edge, muted violet and sick green fume bands in flat layers, hazed daylight with the sun dulled by miasma, colour drained toward grey-violet; no glowing neon vapour"
+  }
+ },
+ "props": {
+  "PROP-KALI-KAMLI": {
+   "chip": "KRISHNA_COSTUME_DETAIL",
+   "sheet_adhyay": 1,
+   "sheet": "KRISHNA_COSTUME_DETAIL.png",
+   "accepted": false,
+   "sentence": "the black Kali Kamli blanket tied as a tight wrestler's sash at his waist with its loose ends, exactly as in the attached costume detail sheet; never a belt or a logo sash"
+  },
+  "PROP-MOR-MUKUT": {
+   "chip": "KRISHNA_COSTUME_DETAIL",
+   "sheet_adhyay": 1,
+   "sheet": "KRISHNA_COSTUME_DETAIL.png",
+   "accepted": false,
+   "sentence": "the single peacock feather tucked in his curls at the side, exactly as in the attached costume detail sheet; no crown"
+  }
+ },
+ "_chip_note": "Chip names for characters and places are the ids above; they must be the exact Flow asset names. The costume detail sheet is one image used for both prop entries. Chip names are not yet checked in Flow (no Flow session has run for this series)."
+}

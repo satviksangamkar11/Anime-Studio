@@ -1,0 +1,306 @@
+[
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_IDENTITY_MASTER",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_IDENTITY_MASTER__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KRISHNA"
+  ],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin. Character identity master sheet on a neutral grey background (#808080), one image, three panels in a row: Panel 1 face close-up three-quarter view; Panel 2 full body front view; Panel 3 full body back view. Same character, same costume and colours in all three panels. Silhouette: wild curls with one peacock feather; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist. Eyes: large almond, heavy upper lid, soft lower lid line, dark brown-black iris with one small catch-light, no star or heart sparkles. Costume: golden pitambara (#E8B531, shade #B07A1E) tied at the waist; black Kali Kamli (#1C1A1E) as a wrestler's sash. Style: 2D cel-shaded Indian classical anime character, variable ink line, hard shadow planes, no airbrush gradients on the figure, no glow. Avoid: generic anime protagonist hero with spiky cyan hair and a blue body; adult heroic proportions; modern belt, armour or buckle; crown or halo; pale or lightened skin. Original design. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of three panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "93b0d2abd2e8954da269eef73828b134426f443e4d4301791293c0092eb33603",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\KRISHNA_IDENTITY_MASTER.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_TURNAROUND",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_TURNAROUND__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KRISHNA"
+  ],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin. Character turnaround sheet on a neutral grey background (#808080), one image, four full-body panels in a row at the same height and scale: Panel 1 front view; Panel 2 three-quarter view; Panel 3 side view; Panel 4 back view. Same character, same costume and colours in all four panels, same 5.5-head proportions. Wild curls with one peacock feather in every panel; golden pitambara and black Kali Kamli sash in every panel. Flat cloud-dark indigo-grey skin, variable ink line, hard shadow planes, no rim light on this sheet. Avoid: adult proportions; a crown; a belt or buckle. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of four panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "b6a222b42ea7f27804cf5698d20f9cb38b72db7fd8af463cddd42669d475416c",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\KRISHNA_IDENTITY_MASTER.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_ACTING_SHEET",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_ACTING_SHEET__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KRISHNA"
+  ],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin. Character expression sheet on a neutral grey background (#808080), four head-and-shoulders panels in a row: Panel 1 neutral; Panel 2 resolve (eyes lift and lock, brows level, mouth a firm closed line, chin level); Panel 3 mischief (one eyelid lowered, a small sideways smile); Panel 4 smile (soft, lids relaxed). Same face, same hair with the feather, same costume in all four panels. Emotion is shown with the brows and the lower lid only; no sparkle eyes, no star eyes, no sweat drops, no glow. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of four head-and-shoulders panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "f2f621dac5bc732cc8336be555226992d84930ab8c91f6b71dfe76834009de11",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\KRISHNA_IDENTITY_MASTER.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_ACTION_POSES",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_ACTION_POSES__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KRISHNA"
+  ],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin. Action pose sheet on a neutral grey background (#808080), five full-body panels in a row: Panel 1 grip (one hand closing on a branch, toes curling); Panel 2 deep crouch (knees bent, arms swung back); Panel 3 launch (body leaning out, arms forward); Panel 4 mid-air arc (body arched, sash and curls trailing behind); Panel 5 head-first dive (body straight, arms together, head down). Same character and same costume in every panel; tribhanga stance where posed. Flat cloud-dark indigo-grey skin, variable ink line, hard shadow planes. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of five full-body panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "f92b58295a9aff1da8e5f003bda081a278f25f6b483040640db02d9b158d5fbb",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\KRISHNA_IDENTITY_MASTER.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "KRISHNA_COSTUME_DETAIL",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "KRISHNA_COSTUME_DETAIL__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KRISHNA"
+  ],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, 5.5 heads tall with child proportions (large head, short limbs, round belly), flat cloud-dark indigo-grey skin, wild dark curls pushed back with one peacock feather tucked at the side, golden pitambara tied at the waist, black Kali Kamli blanket tied as a tight wrestler's sash knotted at the waist, upper torso uncovered with the Srivatsa mark on the chest, exactly as in his character sheet; never a generic anime hero, never an adult, never saturated blue skin. Costume detail sheet on a neutral grey background (#808080), four panels: Panel 1 golden pitambara folds at the waist (#E8B531, shade #B07A1E); Panel 2 black Kali Kamli knotted as a tight wrestler's sash (#1C1A1E) with the loose ends hanging; Panel 3 one peacock feather tucked in the wild curls at the side (eye-spot in teal #2F6B73), no crown; Panel 4 the Srivatsa mark on the upper chest. No belt, no buckle, no logo. Show only these people and no others. Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow. Landscape 16:9 frame, a sheet of four detail panels. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "752774515c8d3844d387f75ef8d3b16b5d92fd4f0b31610328b1d05ebdfa4930",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\KRISHNA_IDENTITY_MASTER.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "STYLE_CHIP_SHEET",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "STYLE_CHIP_SHEET__v01",
+  "characters": [],
+  "people_count": 0,
+  "props": [],
+  "chips": [],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. No people in the picture. A style study of the look, no people and no figures: a dawn river bank painted in flat colour bands with aerial haze, one dark kadamba trunk in the foreground out of focus, a few cel-shaded ash-sand shapes on the bank, one hard core-shadow plane on the trunk, motivated low sun from screen left. Indian classical iconography in the ornament border of the frame, flat colour, no text. Light: dawn sun low from screen left, sky haze, cool green shade under the leaves. Landscape 16:9 frame. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "ba8b33f4a2c3f153dedc1f3fc81d078d6f1fa535f35351ba43117595e83aceae",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "ENV_KADAMBA_BANK_DAWN",
+  "scene": "PLATE",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "ENV_KADAMBA_BANK_DAWN__v01",
+  "characters": [],
+  "people_count": 0,
+  "props": [],
+  "chips": [
+   "ENV-KADAMBA-BANK"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. No people in the picture. Setting: the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze. Empty plate with no people and no animals: the bank is empty, the sand edge is clear, the lone kadamba tree leans over the water on the left, its leaves in the foreground, the far bank and the Braj village far behind on the upper right. Light: dawn sun low from screen left, sky haze, cool green shade under the leaves. Landscape 16:9 frame, wide establishing plate. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "7e905461f6849383bb5799f7457d7a6be12ed4dfc4418af3d7a02c722e37aba6",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV_KADAMBA_BANK_DAWN.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "ENV_WATER_SURFACE_HIGH",
+  "scene": "PLATE",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "ENV_WATER_SURFACE_HIGH__v01",
+  "characters": [],
+  "people_count": 0,
+  "props": [],
+  "chips": [
+   "ENV-KALIYA-DAH-POISONED"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. No people in the picture. Setting: a dark pool at the Yamuna bend seen from high above: black water, dead roots at the edge, muted violet and sick green fume bands in flat layers, hazed daylight with the sun dulled by miasma, colour drained toward grey-violet; no glowing neon vapour. High angle plate looking down at the water surface of the dark pool: black water filling the frame, dead roots at the lower edge, a few fallen birds on the surface, faint violet and sick green fume bands at the top. No people, no serpents in the frame. Light: hazed daylight, the sun dulled by miasma, colour drained toward grey-violet. Landscape 16:9 frame, high angle plate. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "0bb768c544ef9e993d6ad8188c94b45ddcb223fe5560a3bf4422dcf20d252033",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV_WATER_SURFACE_HIGH.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ }
+]

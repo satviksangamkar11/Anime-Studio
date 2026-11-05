@@ -35,6 +35,7 @@ BRIEF_V22 = HERE / "MASTER_PROMPT_v2.2.md"                # staged mode reads th
 SHOTS_BLOCK = re.compile(r"```json shots\s*\n(.*?)\s*```", re.DOTALL)
 BIBLE_BLOCK = re.compile(r"```json bible\s*\n(.*?)\s*```", re.DOTALL)
 EPISODES_BLOCK = re.compile(r"```json episodes\s*\n(.*?)\s*```", re.DOTALL)
+UNTAGGED_JSON = re.compile(r"```json[ \t]*\n(.*?)\s*```", re.DOTALL)   # a ```json block with no tag word
 EPISODE_LINE = re.compile(r"^[ \t>#*_-]*(?:Episode|Ep\.?)\s*(\d+)\b", re.IGNORECASE | re.MULTILINE)
 VIAS = ("claude", "nvidia", "openrouter")
 TIMEOUT_S = 3600
@@ -202,10 +203,25 @@ def answer_text(raw):
     return answer["result"]
 
 
+def untagged_last(text, want):
+    """The last untagged ```json block whose JSON value passes want(), or None."""
+    for block in reversed(UNTAGGED_JSON.findall(text)):
+        try:
+            value = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if want(value):
+            return block
+    return None
+
+
 def parse(raw):
     """(pack_text, shots) from the saved answer; raises ValueError when the shot list is missing or invalid."""
     text = answer_text(raw)
     blocks = SHOTS_BLOCK.findall(text)
+    if not blocks:                              # no tagged block: accept an untagged list of objects
+        fallback = untagged_last(text, lambda v: isinstance(v, list) and all(isinstance(s, dict) for s in v))
+        blocks = [fallback] if fallback else []
     if len(blocks) != 1:
         raise ValueError(f"expected exactly one ```json shots block, found {len(blocks)}")
     shots = shots_from(blocks[0])
@@ -221,6 +237,9 @@ def parse_bible(raw):
     """(text, bible) from a stage 2 answer: exactly one ```json bible block, and the answer ends with it."""
     text = answer_text(raw)
     blocks = BIBLE_BLOCK.findall(text)
+    if not blocks:                              # no tagged block: accept an untagged JSON object
+        fallback = untagged_last(text, lambda v: isinstance(v, dict))
+        blocks = [fallback] if fallback else []
     if len(blocks) != 1:
         raise ValueError(f"expected exactly one ```json bible block, found {len(blocks)}")
     if not text.rstrip().endswith("```"):
@@ -256,6 +275,35 @@ def check_via(value):
     return value
 
 
+SHOT_MENTION = re.compile(r"\bSHOT-\d{2,3}[A-Z]?\b")
+
+
+def merge_episodes(per_episode):
+    """One shot list in film order. When ids repeat across episodes (each episode numbers from SHOT-01), every shot gets
+    SHOT-001, SHOT-002 ... and its model id as source_id; cut_in / cut_out / keyframe paths follow within their episode."""
+    flat = [s for ep in per_episode for s in ep]
+    if len({s["id"] for s in flat}) == len(flat):
+        return flat
+    if len(flat) > 999:
+        raise ValueError(f"{len(flat)} shots: the SHOT-NNN id rule allows 999")
+    merged, number = [], 0
+    for ep in per_episode:
+        new_ids = {}
+        for s in ep:
+            number += 1
+            new_ids[s["id"]] = f"SHOT-{number:03d}"
+        for s in ep:
+            fixed = dict(s, id=new_ids[s["id"]], source_id=s["id"])
+            for key in ("cut_in", "cut_out", "start", "end"):
+                if isinstance(fixed.get(key), str):
+                    fixed[key] = SHOT_MENTION.sub(lambda m: new_ids.get(m.group(0), m.group(0)), fixed[key])
+            if isinstance(fixed.get("keyframes"), dict):
+                fixed["keyframes"] = {k: SHOT_MENTION.sub(lambda m: new_ids.get(m.group(0), m.group(0)), v) if isinstance(v, str)
+                                      else v for k, v in fixed["keyframes"].items()}
+            merged.append(fixed)
+    return merged
+
+
 def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model):
     """Stages 1, 2, 3e<N> per episode, 5. Writes PACK.md, bible.json, shots.json; returns the merged shots."""
     brief = staged_brief().read_text(encoding="utf-8")
@@ -279,15 +327,13 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
     done.append(("1", text1))
     text2, bible = parse_bible(raw_for("2"))
     done.append(("2", text2))
-    shots, episodes = [], episodes_from(text1)
+    per_episode, episodes = [], episodes_from(text1)
     for ep in episodes:
         text, ep_shots = parse(raw_for(f"3e{ep}"))
         done.append((f"3e{ep}", text))
-        shots.extend(ep_shots)
+        per_episode.append(ep_shots)
     done.append(("5", answer_text(raw_for("5"))))
-    ids = [s["id"] for s in shots]
-    if len(ids) != len(set(ids)):
-        raise ValueError("duplicate shot ids across episodes")
+    shots = merge_episodes(per_episode)
     (out / "PACK.md").write_text("\n\n".join(text for _, text in done), encoding="utf-8")
     (out / "bible.json").write_text(json.dumps(bible, indent=1, ensure_ascii=False), encoding="utf-8")
     (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")

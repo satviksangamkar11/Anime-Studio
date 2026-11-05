@@ -3,26 +3,43 @@
   validate_shots(shots, bible_ids=None) -> the same plus unique ids and episode numbers
 Warnings start with 'WARN:'. Beats cover 0..seconds with a 0.05 s tolerance.
 bible_ids: set of known CHAR/PROP/ENV ids; when given, unknown cast, prop and set ids are reported."""
-from h3_director import frames_for
+from h3_director import FPS, check_shot_id, end_of, frames_for_shot, safe_path, start_of, subject_problems
 
 TOL = 0.05
-REQUIRED = ("id", "scene", "mode", "seconds", "aspect", "purpose", "cast", "props", "set", "beats",
+REQUIRED = ("id", "scene", "mode", "aspect", "purpose", "cast", "props", "set", "beats",
             "camera", "layers", "light", "compositing", "keyframes", "sound")
 
 
 def validate_shot(shot, bible_ids=None):
+    if not isinstance(shot, dict):
+        return ["?: shot must be an object"]
     sid = shot.get("id", "?")
     out = []
+    for key in ("cast", "props"):   # shape first: the checks below read these entries as objects with string ids
+        entries = shot.get(key)
+        if entries is not None and not (isinstance(entries, list) and all(isinstance(e, dict) and isinstance(e.get("id"), str) for e in entries)):
+            out.append(f"{sid}: {key} must be a list of objects with string ids")
+    if out:
+        return out
     for k in REQUIRED:
         if shot.get(k) in (None, ""):
             out.append(f"{sid}: missing {k}")
+    try:
+        check_shot_id(shot.get("id"))
+    except ValueError as e:
+        out.append(f"{sid}: {e}")
     secs = shot.get("seconds")
     secs_ok = isinstance(secs, (int, float)) and not isinstance(secs, bool) and secs > 0
     if secs is not None and not secs_ok:
         out.append(f"{sid}: seconds must be a positive number")
-    elif secs_ok:
+    if secs in (None, "") and shot.get("render_frames") in (None, ""):
+        out.append(f"{sid}: missing seconds or render_frames")
+    length = secs if secs_ok else None
+    if secs_ok or "render_frames" in shot:
         try:
-            frames_for(secs)
+            frames = frames_for_shot(shot)
+            if "render_frames" in shot:   # the render length governs; beats must fit it, not `seconds`
+                length = frames / FPS
         except ValueError as e:
             out.append(f"{sid}: {e}")
     mode = shot.get("mode")
@@ -30,8 +47,18 @@ def validate_shot(shot, bible_ids=None):
         out.append(f"{sid}: mode {mode!r} must be fl2va or ref2va")
     if mode == "ref2va" and not (shot.get("refs") and shot.get("subjects")):
         out.append(f"{sid}: ref2va needs refs and subjects")
-    if mode == "fl2va" and not (shot.get("keyframes") or {}).get("start"):
-        out.append(f"{sid}: fl2va needs keyframes.start")
+    if mode == "ref2va" and shot.get("refs") and shot.get("subjects"):
+        out += [f"{sid}: {p}" for p in subject_problems(shot["refs"], shot["subjects"])]
+    if mode == "fl2va" and not (start_of(shot) or end_of(shot)):
+        out.append(f"{sid}: fl2va needs a keyframe (start or end)")
+    if mode == "fl2va" and shot.get("refs"):
+        out.append(f"{sid}: fl2va takes start and end frames only; use mode ref2va for references")
+    for p in [start_of(shot), end_of(shot), *(shot.get("refs") or [])]:
+        if p:
+            try:
+                safe_path(p)
+            except ValueError as e:
+                out.append(f"{sid}: {e}")
 
     beats = shot.get("beats") or []
     prev = 0.0
@@ -48,10 +75,10 @@ def validate_shot(shot, bible_ids=None):
             out.append(f"{sid}: beat {i} has no acting")
         if b.get("hold") and not (b.get("bhava") or b.get("purpose")):
             out.append(f"{sid}: hold beat {i} has no emotional purpose")
-    if secs_ok and not beats:
+    if length is not None and not beats:
         out.append(f"{sid}: no beats")
-    elif beats and secs_ok and abs(prev - secs) > TOL:
-        out.append(f"{sid}: beats end at {prev}, shot is {secs} s")
+    elif beats and length is not None and abs(prev - length) > TOL:
+        out.append(f"{sid}: beats end at {prev}, shot is {round(length, 2)} s")
 
     primary = sum(1 for b in beats if b.get("primary") is True)
     if primary > 1:
@@ -70,10 +97,13 @@ def validate_shot(shot, bible_ids=None):
 
 def validate_shots(shots, bible_ids=None):
     out = []
-    ids = [s.get("id") for s in shots]
-    for dup in sorted({i for i in ids if ids.count(i) > 1}):
+    ids = [s.get("id") if isinstance(s, dict) else None for s in shots]
+    for dup in sorted({i for i in ids if ids.count(i) > 1}, key=str):
         out.append(f"{dup}: duplicate id")
     for s in shots:
+        if not isinstance(s, dict):
+            out += validate_shot(s)
+            continue
         if s.get("episode") in (None, ""):
             out.append(f"{s.get('id', '?')}: missing episode")
         out += validate_shot(s, bible_ids)

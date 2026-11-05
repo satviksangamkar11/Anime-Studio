@@ -79,8 +79,9 @@ def test_ref2va_needs_refs_and_subjects():
     assert validate_shot(ok) == []
 
 
-def test_fl2va_needs_the_start_keyframe():
-    assert any("fl2va needs keyframes.start" in p for p in validate_shot(edit(keyframes={"end": "b.png"})))
+def test_fl2va_needs_a_start_or_end_keyframe():
+    assert validate_shot(edit(keyframes={"end": "b.png"})) == []
+    assert any("fl2va needs a keyframe" in p for p in validate_shot(edit(keyframes={})))
 
 
 def test_seconds_must_fit_one_h3_window():

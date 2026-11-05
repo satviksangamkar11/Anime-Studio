@@ -1,0 +1,106 @@
+{
+ "adhyay": 1,
+ "_note": "Kaliya Mardan Phase 1A, STAGE 1 = reference sheets and plates only (no people chips except CHAR-KRISHNA after the identity master is accepted). Order = sheets first, then plates. Method 'generate' is used for the no-reference sheets because Granth's builder accepts only generate or edit. The 10 keyframes are in A_KM_image_spec_phase1a_keyframes.json (stage 2, after the sheets are accepted).",
+ "slot_order": {
+  "REF": ["KRISHNA_IDENTITY_MASTER", "KRISHNA_TURNAROUND", "KRISHNA_ACTING_SHEET", "KRISHNA_ACTION_POSES", "KRISHNA_COSTUME_DETAIL", "STYLE_CHIP_SHEET"],
+  "PLATE": ["ENV_KADAMBA_BANK_DAWN", "ENV_WATER_SURFACE_HIGH"]
+ },
+ "shots": [
+  {
+   "shot_id": "KRISHNA_IDENTITY_MASTER",
+   "scene": "REF",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": null,
+   "action": "Character identity master sheet on a neutral grey background (#808080), one image, three panels in a row: Panel 1 face close-up three-quarter view; Panel 2 full body front view; Panel 3 full body back view. Same character, same costume and colours in all three panels. Silhouette: wild curls with one peacock feather; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist. Eyes: large almond, heavy upper lid, soft lower lid line, dark brown-black iris with one small catch-light, no star or heart sparkles. Costume: golden pitambara (#E8B531, shade #B07A1E) tied at the waist; black Kali Kamli (#1C1A1E) as a wrestler's sash. Style: 2D cel-shaded Indian classical anime character, variable ink line, hard shadow planes, no airbrush gradients on the figure, no glow. Avoid: generic anime protagonist hero with spiky cyan hair and a blue body; adult heroic proportions; modern belt, armour or buckle; crown or halo; pale or lightened skin. Original design.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of three panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_TURNAROUND",
+   "scene": "REF",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": null,
+   "action": "Character turnaround sheet on a neutral grey background (#808080), one image, four full-body panels in a row at the same height and scale: Panel 1 front view; Panel 2 three-quarter view; Panel 3 side view; Panel 4 back view. Same character, same costume and colours in all four panels, same 5.5-head proportions. Wild curls with one peacock feather in every panel; golden pitambara and black Kali Kamli sash in every panel. Flat cloud-dark indigo-grey skin, variable ink line, hard shadow planes, no rim light on this sheet. Avoid: adult proportions; a crown; a belt or buckle.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of four panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_ACTING_SHEET",
+   "scene": "REF",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": null,
+   "action": "Character expression sheet on a neutral grey background (#808080), four head-and-shoulders panels in a row: Panel 1 neutral; Panel 2 resolve (eyes lift and lock, brows level, mouth a firm closed line, chin level); Panel 3 mischief (one eyelid lowered, a small sideways smile); Panel 4 smile (soft, lids relaxed). Same face, same hair with the feather, same costume in all four panels. Emotion is shown with the brows and the lower lid only; no sparkle eyes, no star eyes, no sweat drops, no glow.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of four head-and-shoulders panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_ACTION_POSES",
+   "scene": "REF",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": null,
+   "action": "Action pose sheet on a neutral grey background (#808080), five full-body panels in a row: Panel 1 grip (one hand closing on a branch, toes curling); Panel 2 deep crouch (knees bent, arms swung back); Panel 3 launch (body leaning out, arms forward); Panel 4 mid-air arc (body arched, sash and curls trailing behind); Panel 5 head-first dive (body straight, arms together, head down). Same character and same costume in every panel; tribhanga stance where posed. Flat cloud-dark indigo-grey skin, variable ink line, hard shadow planes.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of five full-body panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "KRISHNA_COSTUME_DETAIL",
+   "scene": "REF",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": null,
+   "action": "Costume detail sheet on a neutral grey background (#808080), four panels: Panel 1 golden pitambara folds at the waist (#E8B531, shade #B07A1E); Panel 2 black Kali Kamli knotted as a tight wrestler's sash (#1C1A1E) with the loose ends hanging; Panel 3 one peacock feather tucked in the wild curls at the side (eye-spot in teal #2F6B73), no crown; Panel 4 the Srivatsa mark on the upper chest. No belt, no buckle, no logo.",
+   "light": "Light: flat even light on the grey sheet, no cast shadow, no rim light, no glow.",
+   "reference_sentence": "Landscape 16:9 frame, a sheet of four detail panels.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "STYLE_CHIP_SHEET",
+   "scene": "REF",
+   "method": "generate",
+   "characters": [],
+   "place": null,
+   "action": "A style study of the look, no people and no figures: a dawn river bank painted in flat colour bands with aerial haze, one dark kadamba trunk in the foreground out of focus, a few cel-shaded ash-sand shapes on the bank, one hard core-shadow plane on the trunk, motivated low sun from screen left. Indian classical iconography in the ornament border of the frame, flat colour, no text.",
+   "light": "Light: dawn sun low from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Landscape 16:9 frame.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "ENV_KADAMBA_BANK_DAWN",
+   "scene": "PLATE",
+   "method": "generate",
+   "characters": [],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "Empty plate with no people and no animals: the bank is empty, the sand edge is clear, the lone kadamba tree leans over the water on the left, its leaves in the foreground, the far bank and the Braj village far behind on the upper right.",
+   "light": "Light: dawn sun low from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Landscape 16:9 frame, wide establishing plate.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "ENV_WATER_SURFACE_HIGH",
+   "scene": "PLATE",
+   "method": "generate",
+   "characters": [],
+   "place": "ENV-KALIYA-DAH-POISONED",
+   "action": "High angle plate looking down at the water surface of the dark pool: black water filling the frame, dead roots at the lower edge, a few fallen birds on the surface, faint violet and sick green fume bands at the top. No people, no serpents in the frame.",
+   "light": "Light: hazed daylight, the sun dulled by miasma, colour drained toward grey-violet.",
+   "reference_sentence": "Landscape 16:9 frame, high angle plate.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  }
+ ]
+}
