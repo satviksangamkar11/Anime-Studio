@@ -1,0 +1,203 @@
+[
+ {
+  "adhyay": 1,
+  "shot_id": "LEAP-01B",
+  "scene": "LEAP",
+  "method": "edit",
+  "file_version": "v01",
+  "flow_title": "LEAP-01B__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "ENV_KADAMBA_BANK_DAWN__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri always tucked in the sash, in every scene (the leap and underwater included); gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Setting: the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze. B frame of LEAP-01: an edit of LEAP-01A. Eyes locked on the water below, brows level, mouth a firm closed line. Show only these people and no others. Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "4e1014f970f9f59a95ced3a8920f1e8e178fb3ffefa85153151c9901a2b433a0",
+  "base_edit_id": "25bc69d0-0175-4ed1-81e4-37b34ca2d30f",
+  "edit_instruction": "Change only the eyes and mouth: eyes locked on the water below, brows level, mouth a firm closed line. Keep everything else exactly the same: same picture, same Krishna, same branch, same light, same framing.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png",
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV-KADAMBA-BANK.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "LEAP-02B",
+  "scene": "LEAP",
+  "method": "edit",
+  "file_version": "v01",
+  "flow_title": "LEAP-02B__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "ENV_KADAMBA_BANK_DAWN__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri always tucked in the sash, in every scene (the leap and underwater included); gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Setting: the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze. B frame of LEAP-02: an edit of LEAP-02A. Toes curled tight on the bark, hand closed hard on the branch, knees starting to bend. Show only these people and no others. Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "df0ce4641f48d4c7ed98f1b4de5eae1aa41ae60cf78ebab0a8b0ef32a41fc814",
+  "base_edit_id": "7384e99d-4325-4229-bcc9-c1f4a0e1ced1",
+  "edit_instruction": "Change only the toes, the hand and the knees: toes curled tight on the bark, hand closed hard on the branch, knees starting to bend. Keep everything else exactly the same: same picture, same Krishna, same framing and light.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png",
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV-KADAMBA-BANK.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "LEAP-03B",
+  "scene": "LEAP",
+  "method": "edit",
+  "file_version": "v01",
+  "flow_title": "LEAP-03B__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "ENV_KADAMBA_BANK_DAWN__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri always tucked in the sash, in every scene (the leap and underwater included); gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Setting: the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze. B frame of LEAP-03: an edit of LEAP-03A. Mid-air, body arched, arms forward, the branch flexed up. Show only these people and no others. Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "41b61e82a929d01b1b9ce11780fa42ff221dd5c898e6b92829459718124aee27",
+  "base_edit_id": "cc82a4a3-f874-45bd-8554-65bf95469792",
+  "edit_instruction": "Change only the body pose: mid-air, body arched, arms forward, the branch flexed up. Keep everything else exactly the same: same picture, same Krishna, same framing, same light.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png",
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV-KADAMBA-BANK.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "LEAP-04B",
+  "scene": "LEAP",
+  "method": "edit",
+  "file_version": "v01",
+  "flow_title": "LEAP-04B__v01",
+  "characters": [
+   "CHAR-KRISHNA"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KRISHNA",
+   "ENV_WATER_SURFACE_HIGH__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. Exactly 1 person: Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri always tucked in the sash, in every scene (the leap and underwater included); gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown. Setting: a dark pool at the Yamuna bend seen from high above: black water, dead roots at the edge, muted violet and sick green fume bands in flat layers, hazed daylight with the sun dulled by miasma, colour drained toward grey-violet; no glowing neon vapour. B frame of LEAP-04: an edit of LEAP-04A. Krishna just above the dark surface, still head-first. Show only these people and no others. Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "133052f81a8f2561cfa1e0de97f18934f0288371e8a02f5557185db6bb1b80d5",
+  "base_edit_id": "ecabd7b4-feae-4175-893f-7eb2f4d06969",
+  "edit_instruction": "Change only the height: Krishna just above the dark surface, still head-first. Keep everything else exactly the same: same picture, same Krishna, same framing and light.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\CHAR-KRISHNA__identity_master.png",
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV-KALIYA-DAH-POISONED.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "LEAP-05B",
+  "scene": "LEAP",
+  "method": "edit",
+  "file_version": "v01",
+  "flow_title": "LEAP-05B__v01",
+  "characters": [],
+  "people_count": 0,
+  "props": [],
+  "chips": [
+   "ENV_WATER_SURFACE_HIGH__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [],
+  "prompt": "Indian classical iconography and acting rendered as modern 2.5D cel-shaded anime: variable ink lines (thicker on the silhouette, thinner in folds), two cel tones plus one hard core-shadow plane, motivated rim light only where a visible low sun or bright water sits behind the figure, painterly depth layers with flat colour bands and aerial haze behind, Braj daylight earth palette. No people in the picture. Setting: a dark pool at the Yamuna bend seen from high above: black water, dead roots at the edge, muted violet and sick green fume bands in flat layers, hazed daylight with the sun dulled by miasma, colour drained toward grey-violet; no glowing neon vapour. B frame of LEAP-05: an edit of LEAP-05A, no people in the frame. A tall sheet of violet-black water rises where he entered and then hangs. Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "5e3ea74a10231130005ea0c619f0f0c1b82dbbbbfe1558202132424d8042dfb6",
+  "base_edit_id": "4fe615bb-9a38-44ec-aab9-1f4d7a2fcd84",
+  "edit_instruction": "Change only the water: a tall sheet of violet-black water rises where he entered and then hangs. Keep everything else exactly the same: same picture, same framing, same light, no Krishna in the frame.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [
+   "D:\\aai work\\flow_outputs\\anime_kaliya\\adhyay_01\\references\\ENV-KALIYA-DAH-POISONED.png"
+  ],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2. Same rules as the Granth series."
+  },
+  "status": "TODO"
+ }
+]

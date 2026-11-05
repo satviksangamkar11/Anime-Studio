@@ -71,6 +71,25 @@ Owner approved `KRISHNA_IDENTITY_MASTER__v01__edit2_candA.png`. Changes:
 - Not run: no Flow, no browser, no model calls, no network. Nothing under `granthstudio\` edited. Nothing committed.
 
 Open points:
-- PROP-FLUTE's own rule says it shows only in bank or village scenes when music is the beat. Krishna now carries it tucked in the sash, as in the approved look. Owner to confirm, or the prop rule needs an update.
+- RESOLVED 2026-11-05: the owner approved the bansuri rule. Krishna keeps the bansuri tucked in his sash in every scene (leap and underwater included); in hand only when a shot says so. Director bible and series sentence updated.
 - Chip names for the two places and the style chip must match the exact Flow asset names when uploaded. ENV-KADAMBA-BANK's chip name changed to `ENV_KADAMBA_BANK_DAWN__v01`.
 - The earlier phase1a KRISHNA_TURNAROUND, ACTING, ACTION_POSES and COSTUME_DETAIL jobs in `A_KM_flow_jobs_phase1a.json` are superseded by the sheets2 file. Do not run them.
+
+## Keyframes A (START frames of the leap), built 2026-11-05
+Owner approvals the same day: DIRECTION.md (status APPROVED), water plate B, the bansuri rule. Not run: no Flow, no browser, no model calls, no network. Nothing committed; nothing under `granthstudio\` edited (its `build_jobs_v2.py` was only run).
+- Spec: `D:\aai work\anime_studio\flow\A_KM_image_spec_keyframesA.json`
+- Jobs (built, 5 jobs, all `generate`, x2, cap 8): `D:\aai work\anime_studio\flow\A_KM_flow_jobs_keyframesA.json`
+- Build command: `C:\Python314\python.exe "D:\aai work\granthstudio\scripts\flow\build_jobs_v2.py" --adhyay 1 --spec "D:\aai work\anime_studio\flow\A_KM_image_spec_keyframesA.json" --out "D:\aai work\anime_studio\flow\A_KM_flow_jobs_keyframesA.json" --series "D:\aai work\anime_studio\flow\flow_series_kaliya.json"`
+- Aspect: 9:16 portrait for all five (stated in each prompt: "Portrait 9:16 frame"). The agent must set the 9:16 aspect on the Flow chip for each job.
+- Chips (in order):
+  - LEAP-01A__v01: CHAR-KRISHNA, ENV_KADAMBA_BANK_DAWN__v01, STYLE_CHIP_SHEET__v01
+  - LEAP-02A__v01: CHAR-KRISHNA, ENV_KADAMBA_BANK_DAWN__v01, STYLE_CHIP_SHEET__v01
+  - LEAP-03A__v01: CHAR-KRISHNA, ENV_KADAMBA_BANK_DAWN__v01, STYLE_CHIP_SHEET__v01
+  - LEAP-04A__v01: CHAR-KRISHNA, ENV_WATER_SURFACE_HIGH__v01, STYLE_CHIP_SHEET__v01
+  - LEAP-05A__v01: ENV_WATER_SURFACE_HIGH__v01, STYLE_CHIP_SHEET__v01 (no Krishna)
+- Props: none attached as chips. The Kali Kamli is already in the strict CHAR-KRISHNA sentence, so the costume sheet is not a chip here.
+- Water tile: Flow edit `3822feb6-7345-47ad-907c-c65fa19086e3` (candB) is accepted. Before LEAP-04A runs, rename it to `ENV_WATER_SURFACE_HIGH__v01` in Flow and queue it with `download_queue.py add` (the file is `ENV_WATER_SURFACE_HIGH__v01__candB.png`, and `references\ENV-KALIYA-DAH-POISONED.png` is a copy of it).
+- Series: ENV-KALIYA-DAH-POISONED is accepted with chip `ENV_WATER_SURFACE_HIGH__v01`.
+- END frames (LEAP-0xB, edits): `D:\aai work\anime_studio\flow\A_KM_image_spec_keyframesB_pending.json`. Not built. Each needs its A tile's Flow edit id to replace `PENDING-LEAP-0xA`. LEAP-05B has no Krishna.
+- Superseded: `A_KM_image_spec_phase1a_keyframes.json` (the old 10-keyframe stage-2 spec) and its unbuilt jobs. Do not build it; use the two specs above.
+- Open point: DIRECTION.md says "5.5 heads" in its cast line; the approved identity master and the series sentence say about 4.5 heads. The keyframe prompts use 4.5 heads. Owner to confirm, then fix DIRECTION.md.

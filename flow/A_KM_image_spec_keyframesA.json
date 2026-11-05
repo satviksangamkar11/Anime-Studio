@@ -1,0 +1,69 @@
+{
+ "adhyay": 1,
+ "_note": "Kaliya Mardan Phase 1A, keyframes A (START frames of the leap, from milestone_leap/DIRECTION.md). Built 2026-11-05 after the owner's approval of DIRECTION.md, water plate B and the bansuri rule. All five are 'generate' jobs, portrait 9:16 (stated in each prompt; set the 9:16 aspect on the Flow chip per RUN_NOTES.md). Chips: CHAR-KRISHNA (not LEAP-05A, which shows no Krishna), the place chip, then STYLE_CHIP_SHEET__v01. The END frames (LEAP-0xB, edits of these) are in A_KM_image_spec_keyframesB_pending.json and are not built.",
+ "slot_order": {
+  "LEAP": ["LEAP-01A", "LEAP-02A", "LEAP-03A", "LEAP-04A", "LEAP-05A"]
+ },
+ "shots": [
+  {
+   "shot_id": "LEAP-01A",
+   "scene": "LEAP",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "Medium close-up on the high kadamba branch, camera at branch height, eye level with Krishna, locked off: Krishna relaxed and looking out, eyes lifted toward the dark water below, face calm before the leap, brows relaxed, mouth soft; one hand resting on the branch; the kadamba leaves around him, the trunk out of focus; sash and curls still.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "LEAP-02A",
+   "scene": "LEAP",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "Insert close-up, face out of frame, camera at bark level looking straight at the foot, locked off: Krishna's right foot flat on the kadamba bark, toes relaxed, his hand opening on the branch; the bark grain and leaves fill the frame.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "LEAP-03A",
+   "scene": "LEAP",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "Wide side view, camera at branch level, side on, locked off: Krishna in a deep crouch on the branch, knees bent, arms swung back, the black sash ends and curls trailing; the branch bending under him; the dark water and the far bank below.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "LEAP-04A",
+   "scene": "LEAP",
+   "method": "generate",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KALIYA-DAH-POISONED",
+   "action": "High angle, camera above looking straight down, locked off: Krishna falling head-first toward the dark water, small in the frame, body straight, arms together, sash and hair trailing up; the water surface rising below him.",
+   "light": "Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  },
+  {
+   "shot_id": "LEAP-05A",
+   "scene": "LEAP",
+   "method": "generate",
+   "characters": [],
+   "place": "ENV-KALIYA-DAH-POISONED",
+   "action": "Camera above the pool, locked off: the dark surface breaks at the centre where he entered, a sharp splash ring spreading out, violet-black water lifting, faint fume bands at the top; no person in the frame.",
+   "light": "Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null
+  }
+ ]
+}

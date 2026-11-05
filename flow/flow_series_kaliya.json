@@ -38,7 +38,7 @@
       "sheet_adhyay": 1,
       "sheet": "CHAR-KRISHNA__identity_master.png",
       "accepted": true,
-      "sentence": "Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri tucked in the sash; gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown"
+      "sentence": "Krishna (attached CHAR-KRISHNA): a child of about 7-8 years old, about 4.5 heads tall (the proportions of the approved identity master) with child proportions (large head, short limbs, round belly); soft cloud-blue skin, lighter than before, never dark indigo-grey, never cyan; playful, mischievous sparkling eyes and a warm smile; properly curly, bouncy black ringlets with one peacock feather tucked at the side and a pearl string in the hair; layered pearl necklaces and pearl ear studs; a Vaishnava U-shaped tilak on the forehead (two pale cream-yellow lines joined in a narrow U, red centre line, small leaf shape at the bridge); golden pitambara tied at the waist; black Kali Kamli blanket tied as a tight wrestler's sash, with a bamboo bansuri always tucked in the sash, in every scene (the leap and underwater included); gold anklets and armlets; upper body uncovered, no chest mark (as in the approved identity master); exactly as in his character sheet; never a generic anime hero, never an adult, never a crown"
     }
   },
   "places": {
@@ -50,10 +50,10 @@
       "text": "the black ash-sand bank of the Yamuna at dawn: the green grass line stops where the ash begins, one lone kadamba tree leans over the water with dark green leaves out of focus in the foreground, a Braj village far behind on the upper right, low sun from screen left, sky haze, flat painted bands of river and far bank with aerial haze"
     },
     "ENV-KALIYA-DAH-POISONED": {
-      "chip": "ENV-KALIYA-DAH-POISONED",
+      "chip": "ENV_WATER_SURFACE_HIGH__v01",
       "sheet_adhyay": 1,
       "sheet": "ENV-KALIYA-DAH-POISONED.png",
-      "accepted": false,
+      "accepted": true,
       "text": "a dark pool at the Yamuna bend seen from high above: black water, dead roots at the edge, muted violet and sick green fume bands in flat layers, hazed daylight with the sun dulled by miasma, colour drained toward grey-violet; no glowing neon vapour"
     }
   },

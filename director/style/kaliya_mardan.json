@@ -99,8 +99,8 @@
         {"piece": "small gold armlets, bangles and anklets", "colour_hex": "#C7A24B", "physics": {"running": "chime with a one-frame delay on each step, rhythmic", "water": "bangles slide down the wrist", "turning": "swing outward then settle"}}
       ],
       "attached_props": ["PROP-FLUTE"],
-      "flute_carry": "bamboo bansuri (PROP-FLUTE) tucked in the black sash at the hip; in his hand in close-ups",
-      "recurring_attributes": ["peacock feather in the curls (PROP-MOR-MUKUT)", "pearl string in the hair and layered pearl necklaces", "pearl ear studs", "Vaishnava U-tilak on the forehead", "black Kali Kamli sash", "Srivatsa mark on the chest", "bamboo bansuri (PROP-FLUTE) tucked in the sash, in hand in close-ups", "small lotus-foot footprint seal motif only in purification frames"],
+      "flute_carry": "Krishna carries the bamboo bansuri (PROP-FLUTE) tucked in his black sash in every scene (leap and underwater included); it is held in his hand only when a shot says so",
+      "recurring_attributes": ["peacock feather in the curls (PROP-MOR-MUKUT)", "pearl string in the hair and layered pearl necklaces", "pearl ear studs", "Vaishnava U-tilak on the forehead", "black Kali Kamli sash", "Srivatsa mark on the chest", "bamboo bansuri (PROP-FLUTE) tucked in the sash in every scene, in hand only when a shot says so", "small lotus-foot footprint seal motif only in purification frames"],
       "forbidden_drift": [
         "generic anime protagonist hero with spiky cyan hair and a blue body",
         "saturated electric blue skin or any cyan rim",
@@ -301,7 +301,7 @@
     {"id": "PROP-KANDUK", "name": "Kanduk (cloth ball)", "description": "small cloth ball of the ball game (EVENT-005); the ball flies into the river", "colour_hex": "#B8322A", "physics_notes": "soft; lands with a dull thud, bounces once", "forbidden_drift": "a glossy rubber sports ball"},
     {"id": "PROP-AMRIT-KALASH", "name": "Amrit Kalash (pot of nectar)", "description": "a golden pot of amrit carried by Garuda in the flashback (KATHAVACHAK_VARIATION); golden drops sink into the bark", "colour_hex": "#D9A441", "physics_notes": "drops fall with a single bead of light, muted; no spray effects", "forbidden_drift": "a glowing magic orb or a glowing aura"},
     {"id": "PROP-MOR-MUKUT", "name": "Peacock feather (mor pankh) and mukut", "description": "design decision: child Krishna wears a single peacock feather in his curls (source). A full peacock mukut only in divine-vision frames (EVENT-007 underwater vision, purification). Canon-neutral: UNVERIFIED as a scene-level choice for the owner", "colour_hex": "#2F6B73", "physics_notes": "feather lags the head one beat; eye-spot stays readable", "forbidden_drift": "a crown on the child in ordinary scenes"},
-    {"id": "PROP-FLUTE", "name": "Flute (vamshi)", "description": "bamboo flute, shown only in the bank or village scenes when music is the beat", "colour_hex": "#A8763E", "physics_notes": "held in one hand; never played during the poison or the dance beats", "forbidden_drift": "a modern silver flute"}
+    {"id": "PROP-FLUTE", "name": "Flute (vamshi)", "description": "bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so", "colour_hex": "#A8763E", "physics_notes": "tucked in the sash by default; held in one hand only when the shot says so; never played during the poison or the dance beats", "forbidden_drift": "a modern silver flute; the flute left out of a scene"}
   ],
   "environments": [
     {

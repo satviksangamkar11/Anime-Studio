@@ -1,0 +1,69 @@
+{
+ "adhyay": 1,
+ "_note": "Kaliya Mardan Phase 1A, keyframes B (END frames of the leap). NOT BUILT. Each is a Flow 'edit' of its accepted A frame, so base_edit_id stays PENDING-LEAP-0xA until the A tile is accepted and queued; replace each placeholder with the 36-character Flow edit id of that A tile, then build with build_jobs_v2.py --series flow_series_kaliya.json. Portrait 9:16. Chips for an edit: the base A tile is attached by its edit id, the place chip and STYLE_CHIP_SHEET__v01 as the A job, CHAR-KRISHNA except LEAP-05B. Do not build before the LEAP-0xA tiles exist.",
+ "slot_order": {
+  "LEAP": ["LEAP-01B", "LEAP-02B", "LEAP-03B", "LEAP-04B", "LEAP-05B"]
+ },
+ "shots": [
+  {
+   "shot_id": "LEAP-01B",
+   "scene": "LEAP",
+   "method": "edit",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "B frame of LEAP-01: an edit of LEAP-01A. Eyes locked on the water below, brows level, mouth a firm closed line.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": "25bc69d0-0175-4ed1-81e4-37b34ca2d30f",
+   "edit_instruction": "Change only the eyes and mouth: eyes locked on the water below, brows level, mouth a firm closed line. Keep everything else exactly the same: same picture, same Krishna, same branch, same light, same framing."
+  },
+  {
+   "shot_id": "LEAP-02B",
+   "scene": "LEAP",
+   "method": "edit",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "B frame of LEAP-02: an edit of LEAP-02A. Toes curled tight on the bark, hand closed hard on the branch, knees starting to bend.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": "7384e99d-4325-4229-bcc9-c1f4a0e1ced1",
+   "edit_instruction": "Change only the toes, the hand and the knees: toes curled tight on the bark, hand closed hard on the branch, knees starting to bend. Keep everything else exactly the same: same picture, same Krishna, same framing and light."
+  },
+  {
+   "shot_id": "LEAP-03B",
+   "scene": "LEAP",
+   "method": "edit",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KADAMBA-BANK",
+   "action": "B frame of LEAP-03: an edit of LEAP-03A. Mid-air, body arched, arms forward, the branch flexed up.",
+   "light": "Light: dawn, low sun from screen left, sky haze, cool green shade under the leaves.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": "cc82a4a3-f874-45bd-8554-65bf95469792",
+   "edit_instruction": "Change only the body pose: mid-air, body arched, arms forward, the branch flexed up. Keep everything else exactly the same: same picture, same Krishna, same framing, same light."
+  },
+  {
+   "shot_id": "LEAP-04B",
+   "scene": "LEAP",
+   "method": "edit",
+   "characters": ["CHAR-KRISHNA"],
+   "place": "ENV-KALIYA-DAH-POISONED",
+   "action": "B frame of LEAP-04: an edit of LEAP-04A. Krishna just above the dark surface, still head-first.",
+   "light": "Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": "ecabd7b4-feae-4175-893f-7eb2f4d06969",
+   "edit_instruction": "Change only the height: Krishna just above the dark surface, still head-first. Keep everything else exactly the same: same picture, same Krishna, same framing and light."
+  },
+  {
+   "shot_id": "LEAP-05B",
+   "scene": "LEAP",
+   "method": "edit",
+   "characters": [],
+   "place": "ENV-KALIYA-DAH-POISONED",
+   "action": "B frame of LEAP-05: an edit of LEAP-05A, no people in the frame. A tall sheet of violet-black water rises where he entered and then hangs.",
+   "light": "Light: dawn, low sun from screen left, the sun dulled by miasma, colour drained toward grey-violet.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": "4fe615bb-9a38-44ec-aab9-1f4d7a2fcd84",
+   "edit_instruction": "Change only the water: a tall sheet of violet-black water rises where he entered and then hangs. Keep everything else exactly the same: same picture, same framing, same light, no Krishna in the frame."
+  }
+ ]
+}

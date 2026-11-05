@@ -1,10 +1,14 @@
 # Milestone scene: Krishna's kadamba leap (16 s) — DIRECTION LOCK (Phase 0, for owner approval)
 
-Status: DRAFT (written 2026-11-05 by Claude from SOURCE.md EVENT-006, the style bible and the acting library). Approve or change it, then it becomes the locked direction for Phase 1A art and T0.
+Status: APPROVED by the owner 2026-11-05 (direction lock, Phase 0). Written 2026-11-05 by Claude from SOURCE.md EVENT-006, the style bible and the acting library; this is the locked direction for Phase 1A art and T0.
+
+## Owner decisions (2026-11-05)
+- Water plate: B is approved for ENV-KALIYA-DAH-POISONED (LEAP-04 and LEAP-05). Source: Flow edit 3822feb6-7345-47ad-907c-c65fa19086e3, file `D:\aai work\flow_outputs\anime_kaliya\adhyay_01\shots\ENV_WATER_SURFACE_HIGH__v01__candB.png`, chip name `ENV_WATER_SURFACE_HIGH__v01`.
+- Bansuri rule: Krishna keeps the bansuri tucked in his black sash in EVERY scene, including the leap (LEAP-01 to LEAP-04) and the underwater shots. It is held in his hand only when a shot says so.
 
 Canon: ŚB 10.16.6 (CANON) — Krishna tightens his waist-cloth, climbs the kadamba, slaps his arms like a wrestler and leaps into the poisoned pool; Shridama's cry is KATHAVACHAK_VARIATION. This scene covers the climb's END: Krishna already on the high branch; tightening and arm-slap are in the shot before (not in this test).
 
-Cast and assets (ids from `director/style/kaliya_mardan.json`): CHAR-KRISHNA (5.5 heads; flat cloud-dark indigo-grey skin; golden pitambara #E8B531; black Kali Kamli as a tight wrestler's sash; curls + one peacock feather), PROP-KALI-KAMLI, PROP-MOR-MUKUT (feather only), ENV-KADAMBA-BANK (dawn, low sun screen left, black ash bank, leaning kadamba, dark violet-green water). Shridama is off screen (voice only).
+Cast and assets (ids from `director/style/kaliya_mardan.json`): CHAR-KRISHNA (owner-approved identity master `CHAR-KRISHNA`, 2026-11-05: about 4.5 heads; lighter soft cloud-blue skin; playful eyes and smile; curly ringlets with one peacock feather and a pearl string; layered pearl necklaces and ear studs; U-shaped Vaishnava tilak; golden pitambara; black Kali Kamli as a tight wrestler's sash with the bansuri always tucked in it), PROP-KALI-KAMLI, PROP-MOR-MUKUT (feather only), ENV-KADAMBA-BANK (dawn, low sun screen left, black ash bank, leaning kadamba, dark violet-green water). Shridama is off screen (voice only).
 
 ## Shots (editorial time; each H3 render is 107 frames = 4.46 s, trimmed to the edit)
 | Shot | Edit time | What the audience sees (mute-first) | Bhava / acting progression | Camera | Route | Fallback |
