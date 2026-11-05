@@ -93,3 +93,11 @@ Owner approvals the same day: DIRECTION.md (status APPROVED), water plate B, the
 - END frames (LEAP-0xB, edits): `D:\aai work\anime_studio\flow\A_KM_image_spec_keyframesB_pending.json`. Not built. Each needs its A tile's Flow edit id to replace `PENDING-LEAP-0xA`. LEAP-05B has no Krishna.
 - Superseded: `A_KM_image_spec_phase1a_keyframes.json` (the old 10-keyframe stage-2 spec) and its unbuilt jobs. Do not build it; use the two specs above.
 - Open point: DIRECTION.md says "5.5 heads" in its cast line; the approved identity master and the series sentence say about 4.5 heads. The keyframe prompts use 4.5 heads. Owner to confirm, then fix DIRECTION.md.
+
+## Phase 2 (anime filer)
+Anime copies of the download queue and filer live in `D:\aai work\anime_studio\flow\scripts\` (copied from Granth; Granth is not edited). They use the anime project URL (`6a7ab793-d05f-476d-91a2-aaeb00c234a0`), root `D:\aai work\flow_outputs\anime_kaliya`, and file the 2K download into `adhyay_01\final\` by exact tile title. The 2K check accepts 2752x1536 and 1536x2752. Duplicate bytes are refused.
+- Tests (tmp folders only, no Flow, no network): `cd "D:\aai work\anime_studio\flow\scripts"` then `C:\Python314\python.exe -m pytest -q -p no:cacheprovider`
+- Queue a kept tile (use the anime copy, so the URL is the anime project): `C:\Python314\python.exe "D:\aai work\anime_studio\flow\scripts\download_queue.py" add --root "D:\aai work\flow_outputs\anime_kaliya" --adhyay 1 --shot <SHOT_ID> --version v01 --edit-id <36-char id> --jobs "<jobs file>" --model "Nano Banana 2.1 x2"`
+- Status (read-only): `C:\Python314\python.exe "D:\aai work\anime_studio\flow\scripts\download_queue.py" status --root "D:\aai work\flow_outputs\anime_kaliya" --adhyay 1`
+- Collect (files every PENDING item whose exact-title 2K is in Downloads): `C:\Python314\python.exe "D:\aai work\anime_studio\flow\scripts\download_queue.py" collect --root "D:\aai work\flow_outputs\anime_kaliya" --adhyay 1 --downloads "C:\Users\Satvik\Downloads"`
+- Exit code of status and collect is 0 only when nothing is pending. Owner OK is still needed before the download pass runs.
