@@ -1,0 +1,184 @@
+<div id="wiz-panels">
+
+      <section id="next-step" class="card" aria-labelledby="h-next">
+        <h2 id="h-next">Where you stopped</h2>
+        <p id="next-step-text" class="next-text" aria-live="polite">Pick a story to see the next step.</p>
+        <ul id="next-step-warnings" class="hint-list"></ul>
+        <div class="btnrow">
+          <button type="button" id="next-step-continue" class="primary" disabled>Continue</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-lang">
+        <h2 id="h-lang">Languages for this story</h2>
+        <p class="hint">Tick one, two or three. The first one you tick is the main language. Nothing is ticked by default.</p>
+        <fieldset id="story-languages" class="pill-group">
+          <legend class="sr-only">Output languages</legend>
+          <label class="pill"><input type="checkbox" id="lang-en" value="en"> English</label>
+          <label class="pill"><input type="checkbox" id="lang-hi" value="hi"> Hindi</label>
+          <label class="pill"><input type="checkbox" id="lang-mr" value="mr"> Marathi</label>
+          <button type="button" id="lang-all" class="pill-btn">All</button>
+        </fieldset>
+        <p id="lang-status" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section class="card" aria-labelledby="h-voice">
+        <h2 id="h-voice">Voices</h2>
+        <p id="voice-hi-note" class="hint">Hindi: ElevenLabs (fixed).</p>
+        <p id="voice-mr-note" class="hint">Marathi: ElevenLabs (fixed).</p>
+        <label class="pill-check"><input type="checkbox" id="voice-en-h3"> Use the H3 built-in voice for English</label>
+        <p id="voice-en-warning" class="warn">English uses ElevenLabs by default. The H3 voice adds an extra English render and extra H3 cost.</p>
+        <div class="btnrow">
+          <button type="button" id="voice-save">Save voice choice</button>
+        </div>
+        <p id="voice-status" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section class="card" aria-labelledby="h-vmap">
+        <h2 id="h-vmap">Voice for each character</h2>
+        <p class="hint">Type a voice name for each character and language. Leave it empty and it shows "pending owner choice".</p>
+        <div id="voice-map" class="voice-map">
+          <p class="empty">No characters yet. Save the story and run Analysis first.</p>
+        </div>
+        <div class="btnrow">
+          <button type="button" id="voice-map-save">Save voice names</button>
+        </div>
+        <p id="voice-map-status" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section class="card" aria-labelledby="h-bgm">
+        <h2 id="h-bgm">Background music</h2>
+        <label class="pill-check"><input type="checkbox" id="bgm-enabled"> Add background music (off by default)</label>
+        <div class="field">
+          <label for="bgm-manifest">Music list file (path)</label>
+          <input id="bgm-manifest" type="text" class="wide" autocomplete="off" placeholder="path to the music list file">
+        </div>
+        <p class="hint">The list has one row per track: id, file path, licence type, BPM and loudness (LUFS). Gate D says "no music" or "music on" for the mix.</p>
+        <div class="btnrow">
+          <button type="button" id="bgm-save">Save music setting</button>
+        </div>
+        <p id="bgm-status" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section id="validator-panel" class="card" aria-labelledby="h-val">
+        <h2 id="h-val">Check the pack</h2>
+        <p><span id="validator-chip" class="chip status-locked" aria-live="polite">Not run yet</span></p>
+        <p class="hint">Run this after Analysis. Gate A stays closed while there are errors.</p>
+        <p id="validator-stats" class="muted"></p>
+        <div class="tablewrap">
+          <table id="validator-errors"><caption class="sr-only">Pack errors</caption></table>
+        </div>
+        <p id="validator-repair" class="muted"></p>
+        <div class="btnrow">
+          <button type="button" id="validator-run" class="primary">Run the check</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-yt">
+        <h2 id="h-yt">Get the story from a YouTube link</h2>
+        <p class="hint">Uses the video captions when they exist. If not, speech-to-text listens to the audio. No money is spent.</p>
+        <div class="formrow">
+          <div class="field">
+            <label for="yt-url">YouTube link</label>
+            <input id="yt-url" type="text" class="wide" autocomplete="off" placeholder="paste the link here">
+          </div>
+          <div class="field">
+            <label for="yt-lang">Language of the video</label>
+            <select id="yt-lang">
+              <option value="auto">Find it for me</option>
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="mr">Marathi</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="yt-asr">Speech-to-text</label>
+            <select id="yt-asr">
+              <option value="auto">Use only when needed</option>
+              <option value="off">Captions only</option>
+              <option value="force">Always listen to the audio</option>
+            </select>
+          </div>
+        </div>
+        <label class="pill-check"><input type="checkbox" id="yt-overwrite"> Replace the story text that is already saved</label>
+        <div id="yt-choices" class="btnrow" role="group" aria-label="Language choices from the video"></div>
+        <div class="btnrow">
+          <button type="button" id="yt-run" class="primary">Fetch the story text</button>
+          <span class="risk risk-W" title="W = writes local files">W</span>
+        </div>
+        <p id="yt-result" class="hint" aria-live="polite"></p>
+      </section>
+
+      <section id="render-panel" class="card" aria-labelledby="h-render">
+        <h2 id="h-render">Render check</h2>
+        <p id="render-status" class="hint" aria-live="polite">Nothing checked yet. Pick a story and pack first.</p>
+        <h3>Pictures and sound files</h3>
+        <div id="render-assets" class="panel-text">Not checked yet.</div>
+        <h3>Shots that need your choice</h3>
+        <div class="tablewrap">
+          <table id="render-fallback"><caption class="sr-only">Shots with fallback steps</caption></table>
+        </div>
+        <div id="render-choices" class="btnrow" role="group" aria-label="Your choice for the shot"></div>
+        <div class="field">
+          <label for="render-choice-note">Note for this choice (optional)</label>
+          <input id="render-choice-note" type="text" class="wide" maxlength="300" autocomplete="off">
+        </div>
+        <h3>Step 9 quality check</h3>
+        <p id="step9-status" class="muted">Not run. Gate D stays closed until this check passes.</p>
+        <ul id="step9-list" class="hint-list"></ul>
+        <div class="btnrow">
+          <button type="button" id="render-prepare" disabled>Prepare render</button>
+          <span id="render-prepare-reason" class="hint"></span>
+        </div>
+      </section>
+
+      <section id="gate-d-panel" class="card" aria-labelledby="h-gated">
+        <h2 id="h-gated">Gate D: sound and captions per language</h2>
+        <p class="hint">Caption safe zone: <span id="gate-d-safezone" class="chip status-locked">not loaded</span></p>
+        <p id="gate-d-bgm" class="muted">Background music: not loaded.</p>
+        <div class="tablewrap">
+          <table id="gate-d-languages"><caption class="sr-only">Gate D checks for each language</caption></table>
+        </div>
+      </section>
+
+      <section id="author-panel" class="card" aria-labelledby="h-author">
+        <h2 id="h-author">Shot fields (H3 author step)</h2>
+        <p class="hint">Preview only shows the prompts. No model is called. The live run stays off unless the owner turns it on.</p>
+        <p id="author-cache-status" class="muted" aria-live="polite">No author data yet.</p>
+        <div class="tablewrap">
+          <table id="author-missing"><caption class="sr-only">Fields still missing for each shot</caption></table>
+        </div>
+        <div class="btnrow">
+          <button type="button" id="author-preview">Preview author prompts (dry run)</button>
+          <span class="risk risk-R" title="R = read-only">R</span>
+        </div>
+        <div class="field">
+          <label for="author-confirm">Owner phrase (needed for the live run)</label>
+          <input id="author-confirm" type="text" class="wide" autocomplete="off">
+        </div>
+        <div class="btnrow">
+          <button type="button" id="author-run" class="danger" disabled>Run author (free model, off)</button>
+          <span class="risk risk-N" title="N = free model call">N</span>
+        </div>
+        <pre id="author-output" class="box" hidden></pre>
+      </section>
+
+      <section id="ops-panel" class="card" aria-labelledby="h-ops">
+        <h2 id="h-ops">Ops: disk, server and Colab spend</h2>
+        <div id="ops-disk" class="panel-text">Disk: not checked yet.</div>
+        <div id="ops-server" class="panel-text">Server: not checked yet.</div>
+        <div id="ops-colab" class="panel-text">Colab spend: not checked yet.</div>
+        <div class="btnrow">
+          <button type="button" id="ops-refresh">Refresh ops</button>
+          <span class="risk risk-R" title="R = read-only">R</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-runs">
+        <h2 id="h-runs">Runs and documents</h2>
+        <div id="runs-docs">
+          <p class="empty">No runs yet. A run shows here after its first step finishes.</p>
+        </div>
+      </section>
+
+    </div>

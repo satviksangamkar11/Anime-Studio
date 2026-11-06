@@ -14,3 +14,7 @@ Indian-mythology anime pipeline: story -> production pack -> keyframes -> MiniMa
 Stories live in `stories/<name>/SOURCE.md`. Keys are never stored here: the scripts read them at run time from folders outside the repository.
 
 Tests: `cd director && python -m pytest -q`
+
+
+## Where to resume (2026-11-07)
+Read `blot.md` (log every step), then `PROJECT_LOG.md` (NOW block), `CHECKLIST_ARCHITECTURE_2026-11-07.md` and `HANDOFF_2026-11-07.md`.

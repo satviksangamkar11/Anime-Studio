@@ -215,3 +215,25 @@ def test_call_chain_skips_model_whose_breaker_is_open():
 
 def test_free_chain_ids_are_the_owner_order():
     assert rp.FREE_CHAIN[0].startswith("nvidia/nemotron-3.5-super-vl") and rp.FREE_CHAIN[-1].startswith("dots-studio/")
+
+
+def test_write_pack_call_path_retries_a_rate_limit_then_succeeds(monkeypatch):
+    import write_pack as wp
+    calls = []
+
+    def flaky(prompt, model, allow_paid=False, content=None):
+        calls.append(1)
+        if len(calls) < 3:
+            raise wp.ModelRefused(rp.RATE_LIMITED, "HTTP 429")
+        return "answer"
+    monkeypatch.setattr(wp, "call_openrouter", flaky)
+    waits = []
+    assert wp.call_path("p", "openrouter", "m:free", "medium", False, sleep=waits.append) == "answer"
+    assert len(calls) == 3 and len(waits) == 2
+
+
+def test_write_pack_call_path_gives_up_on_a_budget_refusal(monkeypatch):
+    import write_pack as wp
+    monkeypatch.setattr(wp, "call_nvidia", lambda *a, **k: (_ for _ in ()).throw(wp.ModelRefused(rp.PENDING_BUDGET, "PENDING_BUDGET")))
+    with pytest.raises(rp.ModelGaveUp):
+        wp.call_path("p", "nvidia", "m", "medium", False, sleep=lambda s: None)

@@ -8,6 +8,7 @@ Test hooks: --root-override studio=PATH | flow=PATH | downloads=PATH | python=PA
 from __future__ import annotations
 
 import argparse
+import ast
 import datetime as dt
 import hashlib
 import json
@@ -39,10 +40,19 @@ MAX_TEXT = 200 * 1024
 MAX_BODY = 512 * 1024
 MAX_FILE = 60 * 1024 * 1024
 FILE_EXTS = (".png", ".jpg", ".jpeg", ".mp4", ".json", ".md", ".txt", ".jsonl", ".log")
+TEXT_EXTS = (".json", ".md", ".txt", ".jsonl", ".log")
 FORBIDDEN_PARTS = {"granthstudio", "animation_research_tool", "secrets"}
 BANNED_TOKENS = {"--logtostderr", "--allow-paid", "--push", "--fetch", "--stage-via"}
 BANNED_PAIRS = {("--via", "claude"), ("--via", "openrouter")}
 H3_MISSING = "h3 engine not built yet"
+LEGACY_STORY = "kaliya_mardan"                # the one legacy project: its own roots and style; other stories use story_links
+LANGS = ("en", "hi", "mr")
+YT_URL = re.compile(r"^https?://(www\.)?(youtube\.com|youtu\.be)/[^\s]{1,300}$", re.I)
+DISK_PATHS = ("C:/", "D:/")
+LEDGER_NAME = "colab_spend.jsonl"
+STARTED = dt.datetime.now().astimezone().isoformat(timespec="seconds")
+SERVER_MTIME0 = os.path.getmtime(os.path.abspath(__file__))
+PIPELINE_MOD = None
 STAGE_KEYS = ("1", "2", "3e1", "3e2", "3e3", "3e4", "3e5", "5")
 STORY_PACK = "stories/kaliya_mardan/pack_dots_full_v22"
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8")
@@ -77,10 +87,16 @@ class Config:
     colab: list = field(default_factory=lambda: list(COLAB))
     spend: bool = False
     clock: Callable[[], float] = time.time
+    total_cap: float | None = None            # owner sets a cumulative Colab cap; None = report only
+    disk_paths: tuple = DISK_PATHS
 
     @property
     def runs(self) -> Path:
         return self.studio / "ui" / "runs"
+
+    @property
+    def ledger(self) -> Path:
+        return self.runs / LEDGER_NAME
 
 
 @dataclass
@@ -311,6 +327,15 @@ GEN_ADHYAY = _int(1, 99, "adhyay")
 JOBS_NAME = _rx(r"[A-Za-z0-9_-]{1,60}_flow_jobs[A-Za-z0-9_-]{0,40}\.json", "jobs file name")
 
 
+def _yt_url(cfg, v):
+    if not isinstance(v, str) or not YT_URL.fullmatch(v):
+        raise bad("the link must be a YouTube address")
+    return v
+
+
+PACK_PATH = _rx(r"stories/[a-z0-9_]{1,40}/[a-z0-9_-]{1,40}", "pack path")
+
+
 def _gen_root(cfg) -> Path:
     return Path(os.path.realpath(cfg.studio / "flow" / "generated"))
 
@@ -422,9 +447,24 @@ def b_write_pack(cfg, a):
         raise bad(f"{a['pack']} is already finished (PACK.md exists): use {hint}")
     if a.get("model") and a.get("writer"):
         raise bad("give a writer or a model, not both")
+    if not a.get("out_lang"):
+        raise bad("choose at least one output language (en, hi, mr): the writer has no default")
+    lang = ["--out-lang", a["out_lang"]]
     if a.get("model"):
-        return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--via", "nvidia", "--model", a["model"]]
-    return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", a.get("writer") or DEFAULT_WRITER]
+        return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--via", "nvidia", "--model", a["model"]] + lang
+    return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", a.get("writer") or DEFAULT_WRITER] + lang
+
+
+def out_lang_arg(cfg, v):
+    """'en', 'hi,en' (priority order) or 'all' -> the comma list for --out-lang. Refuses repeats, empty and unknown codes."""
+    if not isinstance(v, str):
+        raise bad("out_lang must be text")
+    if v.strip() == "all":
+        return ",".join(LANGS)
+    parts = [x.strip() for x in v.split(",")]
+    if not parts or any(x not in LANGS for x in parts) or len(set(parts)) != len(parts):
+        raise bad("out_lang must be en, hi, mr (one or more, no repeats) or all")
+    return ",".join(parts)
 
 
 def b_check_pack(cfg, a):
@@ -483,7 +523,10 @@ def b_prepare(cfg, a):
     argv = _py(cfg, "director", "run_kaggle.py") + [a["shots"], a["keyframes"], a["batch"]]
     if ids:
         argv += ["--ids", ",".join(ids)]
-    return argv + ["--style", "kaliya_mardan", "--target", "colab", "--profile", "5"]
+    style = a.get("style") or (LEGACY_STORY if Path(a["shots"]).parent.parent.name == LEGACY_STORY else None)
+    if not style:
+        raise bad("style is required for this story (the legacy Kaliya style is only the default for its own folder)")
+    return argv + ["--style", style, "--target", "colab", "--profile", str(a.get("profile") or 5)]
 
 
 def b_colab_run(go):
@@ -502,7 +545,10 @@ def b_h3(cfg, a):
         raise bad("scope shots needs ids")
     if a["scope"] == "reel" and not a.get("reel"):
         raise bad("scope reel needs a reel number")
-    tail = {"shots": a.get("ids") or [], "reel": [str(a.get("reel"))], "all": []}[a["scope"]]
+    story = load_json(a["story"], None)
+    if not isinstance(story, dict) or not isinstance(story.get("episodes"), list) or not isinstance(story.get("registry"), dict):
+        raise bad("the story file must be an H3 story (episodes + registry); shots.json is not accepted here")
+    tail = {"shots": a.get("ids") or [], "reel": [f"EP_{int(a['reel']):02d}"] if a.get("reel") else [], "all": []}[a["scope"]]
     return [cfg.python, "-m", "h3.render_controller", "--story-file", a["story"], "--scope", a["scope"], *tail, "--mode", "prepare-only"]
 
 
@@ -534,11 +580,25 @@ class Cmd:
     post: str = ""            # "colab_verify": after the job, check the Colab session list
 
 
+def b_yt(cfg, a):
+    """director/yt_transcript.py: link -> stories/<slug>/SOURCE.md. Writes one file; no spend, no model call."""
+    argv = _py(cfg, "director", "yt_transcript.py") + [a["url"], str(cfg.studio / "stories" / a["story"]),
+                                                      "--lang", a["lang"], "--asr", a["asr"]]
+    return argv + (["--overwrite"] if a["overwrite"] else [])
+
+
+def b_author(cfg, a):
+    """h3/h3_author.py: dry run only (prompts, no model call). The live run is refused here and in dispatch."""
+    pack = safe_path(cfg, a["pack"], ("studio",), None, True, "dir")
+    return [cfg.python, str(cfg.studio / "h3" / "h3_author.py"), pack, "--dry-run"]
+
+
 BATCH_ARGS = {"batch": A(NAME, True), "gpu": A(GPU, False, "G4"), "session": A(SESSION, False, "t0-kaliya")}
 ADH = A(ADHYAY, False, 1)
 SHOT_ARGS = {"adhyay": ADH, "shot": A(SHOT, True), "version": A(VERSION, True)}
 COMMANDS = {c.id: c for c in (
-    Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "writer": A(WRITER_NAME), "model": A(WRITER_MODEL)}, b_write_pack),
+    Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "writer": A(WRITER_NAME), "model": A(WRITER_MODEL),
+                                      "out_lang": A(out_lang_arg)}, b_write_pack),
     Cmd("check_pack", "R", False, {"pack": A(PACK_REL, True)}, b_check_pack),
     Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(True)),
     Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(False)),
@@ -554,12 +614,16 @@ COMMANDS = {c.id: c for c in (
     Cmd("visual_qa", "N, W", False, {"clip": A(CLIP, True), "direction": A(JSON_FILE, True), "out_dir": A(CLIP_NEW, True),
                                     "model": A(VISION_MODEL, True), "bible": A(JSON_FILE)}, b_visual),
     Cmd("run_kaggle_prepare", "W", False, {"shots": A(JSON_FILE, True), "scope": A(SCOPE, True), "ids": A(IDS), "reel": A(REEL),
-                                           "keyframes": A(DIR_KF, False, _default_keyframes), "batch": A(NAME, True)}, b_prepare),
+                                           "keyframes": A(DIR_KF, False, _default_keyframes), "batch": A(NAME, True),
+                                           "style": A(NAME), "profile": A(_int(1, 5, "profile"))}, b_prepare),
     Cmd("colab_sessions", "R", False, {}, lambda c, a: [*c.colab, "sessions"]),
     Cmd("colab_usage", "R", False, {}, lambda c, a: [*c.colab, "usage"]),
     Cmd("colab_stop", "R-ops", False, {"session": A(SESSION, True)}, lambda c, a: [*c.colab, "stop", "-s", a["session"]], post="colab_verify"),
     Cmd("colab_run_dry", "R", False, BATCH_ARGS, b_colab_run(False)),
-    Cmd("colab_run", "$", True, BATCH_ARGS, b_colab_run(True)),
+    Cmd("yt_transcript", "W", False, {"url": A(_yt_url, True), "story": A(SLUG, True), "lang": A(_enum("lang", "auto", "en", "hi", "mr"), False, "auto"),
+                                      "asr": A(_enum("asr", "auto", "off", "force"), False, "auto"), "overwrite": A(BOOL, False, False)}, b_yt),
+    Cmd("h3_author", "R", False, {"pack": A(PACK_PATH, True)}, b_author),
+    Cmd("colab_run", "$", True, BATCH_ARGS, b_colab_run(True), post="colab_verify"),
     Cmd("h3_prepare", "W", False, {"story": A(JSON_FILE, True), "scope": A(SCOPE, True), "ids": A(IDS), "reel": A(REEL)}, b_h3, needs_h3=True),
     Cmd("build_spec", "W", False, {"pack": A(PACK_REL, True), "adhyay": A(GEN_ADHYAY, True), "overwrite": A(BOOL, False, False)}, b_build_spec),
     Cmd("build_jobs_cmd", "W", False, {"spec": A(_gen_json("spec"), True), "series": A(_gen_json("series"), True),
@@ -666,11 +730,12 @@ def read_pack(cfg, rel, check=False) -> dict:
     for s in shots:
         sid = str(s.get("id", ""))
         n_iss = sum(1 for i in issues if i.startswith(sid + ":"))
-        rows.append({"id": sid, "episode": s.get("episode"), "mode": s.get("mode"), "seconds": s.get("seconds"),
+        rows.append({"id": sid, "episode": s.get("episode"), "mode": s.get("route") or s.get("mode"),
+                     "seconds": s.get("editorial_duration_sec") or s.get("seconds"),
                      "purpose": str(s.get("purpose") or "")[:200], "cut_in": s.get("cut_in"), "cut_out": s.get("cut_out"), "issues": n_iss})
         e = eps.setdefault(s.get("episode"), {"n": s.get("episode"), "shots": 0, "seconds": 0.0, "issues": 0})
         e["shots"] += 1
-        e["seconds"] += num(s.get("seconds"))
+        e["seconds"] += num(s.get("editorial_duration_sec") or s.get("seconds"))
         e["issues"] += n_iss
     episodes = []
     for e in sorted(eps.values(), key=lambda x: (x["n"] is None, x["n"] or 0)):
@@ -684,8 +749,7 @@ def read_pack(cfg, rel, check=False) -> dict:
         episodes.append(e)
 
     def named(key):
-        items = bible.get(key) if isinstance(bible.get(key), list) else []
-        return [{"id": x.get("id"), "name": x.get("name")} for x in items if isinstance(x, dict)]
+        return [{"id": x.get("id"), "name": x.get("name")} for x in _pipeline().bible_items(bible, key)]
     def plain(key):
         return [x["name"] or x["id"] or "" for x in named(key)]
     modes = {}
@@ -720,9 +784,27 @@ def _dq_module():
 SPLIT_ID = re.compile(r"__v\d{2}|_cand[A-Z]")
 
 
-def read_images(cfg, adhyay) -> dict:
-    root = cfg.flow / f"adhyay_{adhyay:02d}"
-    series = load_json(cfg.studio / "flow" / "flow_series_kaliya.json", {})
+def _story_image_root(cfg, slug):
+    """The images folder a story links to (story_links kind 'images'). None when it has none."""
+    d = str(STUDIO / "director")
+    if d not in sys.path:
+        sys.path.append(d)
+    import story_links
+    for link in story_links.check(cfg.studio, slug):
+        if link.get("kind") == "images" and link.get("exists") and link.get("resolved"):
+            return Path(link["resolved"])
+    return None
+
+
+def read_images(cfg, adhyay, slug=LEGACY_STORY) -> dict:
+    legacy = slug == LEGACY_STORY
+    if legacy:
+        root = cfg.flow / f"adhyay_{adhyay:02d}"
+        series_file = cfg.studio / "flow" / "flow_series_kaliya.json"
+    else:
+        root = _story_image_root(cfg, slug) or (cfg.studio / "flow" / "__no_images_folder__")
+        series_file = cfg.studio / "flow" / "generated" / slug / f"{slug}_flow_series.json"
+    series = load_json(series_file, {})
     series = series if isinstance(series, dict) else {}
 
     def items(section):
@@ -739,8 +821,8 @@ def read_images(cfg, adhyay) -> dict:
     jobs = []
     # the old hand-made jobs files (flow/A_KM_flow_jobs_*.json) and the builder's output (flow/generated/<slug>/*_flow_jobs*.json);
     # 'file' is relative to flow/, so the page can use 'flow/' + file
-    job_files = sorted((cfg.studio / "flow").glob("A_KM_flow_jobs_*.json")) + \
-        sorted((cfg.studio / "flow" / "generated").glob("*/*_flow_jobs*.json"))
+    job_files = (sorted((cfg.studio / "flow").glob("A_KM_flow_jobs_*.json")) if legacy else []) + \
+        sorted((cfg.studio / "flow" / "generated" / slug).glob("*_flow_jobs*.json"))
     for f in job_files:
         name = f.relative_to(cfg.studio / "flow").as_posix()
         for j in load_list(f):
@@ -765,7 +847,7 @@ def read_images(cfg, adhyay) -> dict:
                 if isinstance(r, dict):
                     shot_entry(sid)["reviews"].append({"file": p.name, "candidate": Path(str(r.get("candidate") or "")).name,
                                                        "label": r.get("label"), "verdict": r.get("verdict"), "fix": r.get("fix")})
-    q = queue_state(cfg, adhyay)
+    q = queue_state(cfg, adhyay) if legacy else {"pending": [], "filed": [], "accepted": []}
     finals = [{"name": p.name, "path": str(p), "bytes": p.stat().st_size} for p in sorted((root / "final").glob("*__final.png"))] \
         if (root / "final").is_dir() else []
     keyframes = [{"name": p.name, "path": str(p), "bytes": p.stat().st_size} for p in sorted((root / "keyframes_h3").glob("*.png"))] \
@@ -816,10 +898,23 @@ class Job:
         self.spend, self.session, self.post, self.log_path = spend, session, post, log_path
         self.state, self.rc, self.warning = "running", None, ""
         self.started, self.ended, self.proc = now_iso(), None, None
+        self.verified = None      # spend jobs: True once the Colab session is verified gone (D8 lock until then)
+
+    @classmethod
+    def from_record(cls, rec: dict, log_path: Path) -> "Job":
+        job = cls(str(rec.get("id")), str(rec.get("command", "")), rec.get("argv") or [], bool(rec.get("spend")),
+                  rec.get("session"), rec.get("post", ""), log_path)
+        job.state, job.rc = rec.get("state", "done"), rec.get("rc")
+        job.started, job.ended = rec.get("started"), rec.get("ended")
+        job.verified, job.warning = rec.get("verified"), rec.get("warning", "")
+        if job.state == "running":           # the server restarted while the process ran: unknown until checked by hand
+            job.state = "lost"
+            job.warning = "the server restarted while this job ran: check Colab by hand"
+        return job
 
     def summary(self) -> dict:
         return {"id": self.id, "command": self.command, "state": self.state, "rc": self.rc, "started": self.started,
-                "ended": self.ended, "spend": self.spend, "warning": self.warning}
+                "ended": self.ended, "spend": self.spend, "warning": self.warning, "verified": self.verified}
 
 
 class Api:
@@ -828,6 +923,18 @@ class Api:
         self.lock = threading.RLock()
         self.tokens: dict = {}
         self.jobs: dict = {}
+        self._load_jobs()
+
+    def _load_jobs(self):
+        """D8: the job table is rebuilt from runs/jobs/*.json, so a restart forgets nothing."""
+        d = self.cfg.runs / "jobs"
+        if not d.is_dir():
+            return
+        for f in sorted(d.glob("*.json")):
+            rec = load_json(f)
+            if isinstance(rec, dict) and rec.get("id"):
+                job = Job.from_record(rec, d / (rec.get("log") or f.stem + ".log"))
+                self.jobs[job.id] = job
 
     # -- audit, jobs
     def _audit(self, event, **fields):
@@ -840,7 +947,7 @@ class Api:
     def _persist(self, job):
         d = self.cfg.runs / "jobs"
         d.mkdir(parents=True, exist_ok=True)
-        rec = {**job.summary(), "argv": [redact(x) for x in job.argv], "session": job.session, "log": job.log_path.name}
+        rec = {**job.summary(), "argv": [redact(x) for x in job.argv], "session": job.session, "log": job.log_path.name, "post": job.post}
         (d / f"{job.id}.json").write_text(json.dumps(rec, indent=1, ensure_ascii=False), encoding="utf-8")
 
     def _cli_text(self, args, timeout=60):
@@ -860,10 +967,15 @@ class Api:
             raise ApiError(403, "balance unknown: spend refused (colab usage gave no readable balance)")
         if bal < 1.5 * est:
             raise ApiError(403, f"balance {bal:g} is below 1.5 x the estimate {est}: spend refused")
+        if self.cfg.total_cap is not None:   # D9: cumulative, from the append-only ledger
+            total = _ops_checks().colab_spend_total(self.cfg.ledger)["total"]
+            if total + est > self.cfg.total_cap:
+                raise ApiError(403, f"ledger total {total:g} + {est:g} is above the total cap {self.cfg.total_cap:g}")
         return bal
 
     def _active(self) -> bool:
-        return any(j.state == "running" for j in self.jobs.values())
+        """D8: a spend job blocks new spend until it is verified gone (not only while it runs)."""
+        return any(j.state == "running" or (j.spend and j.verified is not True) for j in self.jobs.values())
 
     def _start(self, command, argv, spend, session, post) -> Job:
         jid = dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
@@ -924,12 +1036,13 @@ class Api:
 
     def _verify_stop(self, job):
         text = self._cli_text(["sessions"])
+        job.verified = False
         if text is None:
             line, job.state = "could not read colab sessions: check by hand before you trust the stop\n", "stop_failed"
         elif job.session in {r["name"] for r in parse_sessions(text)}:
             line, job.state = f"STOP FAILED: session {job.session} is still listed; run colab stop -s {job.session} now\n", "stop_failed"
         else:
-            line = f"session {job.session} is no longer listed\n"
+            line, job.verified = f"session {job.session} is no longer listed\n", True
         if job.state == "stop_failed":
             job.warning = spend_warning(job.session)
         with open(job.log_path, "a", encoding="utf-8") as f:
@@ -950,7 +1063,8 @@ class Api:
         return {"studio_ok": c.studio.is_dir(), "flow_ok": c.flow.is_dir(), "python": c.python, "colab_cli": Path(c.colab[0]).is_file(),
                 "nvidia_key_files": len(list((c.studio.parent / "secrets" / "nvidia").glob("nvidia_api_key*.txt"))),
                 "spend_allowed": c.spend, "spend_cap_units": CAP_UNITS, "job": running[0] if running else None,
-                "h3_built": h3_built(c), "time": now_iso()}
+                "h3_built": h3_built(c), "time": now_iso(),
+                "disk": [_ops_checks().disk_free(p) for p in c.disk_paths], "build": _ops_checks().code_fingerprint(c.studio)}
 
     def h3(self) -> dict:
         built = h3_built(self.cfg)
@@ -966,7 +1080,9 @@ class Api:
                     s = self._hook("summary", d) or {}
                     latest = s.get("latest_pack")
                     out.append({"slug": d.name, "packs": packs, "has_source": (d / "SOURCE.md").is_file(), "latest_pack": latest,
-                                "latest_model": (s.get("pack_models") or {}).get(latest) or s.get("last_model")})
+                                "latest_model": (s.get("pack_models") or {}).get(latest) or s.get("last_model"),
+                                "output_languages": _pipeline().output_languages(self.cfg.studio, d.name),
+                                "state": self._story_state_safe(d.name)})
         return {"slugs": out}
 
     def registry_list(self) -> dict:
@@ -1021,6 +1137,9 @@ class Api:
         if target.exists() and not overwrite:
             raise ApiError(409, "SOURCE.md exists: tick overwrite to replace it")
         d.mkdir(parents=True, exist_ok=True)
+        if target.exists():   # M2: the old text is kept before an overwrite
+            stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+            (d / f"SOURCE.md.bak-{stamp}").write_bytes(target.read_bytes())
         target.write_bytes(data)
         self._hook("record_story_saved", d, text, overwrite)
         self._project_update({"story_slug": slug})
@@ -1054,7 +1173,11 @@ class Api:
             changes["takes"] = t
         if not changes:
             raise bad("nothing to set")
-        return {"ok": True, "project": self._project_update(changes)}
+        project = self._project_update(changes)
+        warning = ""
+        if project.get("story_slug") and project.get("pack") and not (self.cfg.studio / "stories" / project["story_slug"] / project["pack"]).is_dir():
+            warning = "the pack folder does not exist yet (fine for a new analysis)"
+        return {"ok": True, "project": project, "scope": {"story": project.get("story_slug"), "pack": project.get("pack")}, "warning": warning}
 
     def pack(self, rel, check=False) -> dict:
         rel = PACK_REL(self.cfg, rel)
@@ -1078,7 +1201,8 @@ class Api:
             confirm = f"EXECUTE {est:.1f}"
         token = secrets.token_urlsafe(18)
         rec = {"command": spec.id, "argv": argv, "digest": digest(argv), "spend": spec.spend, "est": est, "confirm": confirm,
-               "post": spec.post, "session": args.get("session"), "created": self.cfg.clock(), "used": False}
+               "post": spec.post, "session": args.get("session"), "created": self.cfg.clock(), "used": False,
+               "gpu": args.get("gpu"), "batch": args.get("batch"), "story": args.get("story") or args.get("slug")}
         with self.lock:
             self.tokens[token] = rec
         self._audit("preview", command=spec.id, argv=argv, spend=spec.spend, estimate=est)
@@ -1111,7 +1235,11 @@ class Api:
             if self._active():
                 raise ApiError(409, "another job is running: wait for it or stop it")
         if rec["spend"]:
+            if estimate_units(rec["gpu"], batch_clips(self.cfg, rec["batch"])) != rec["est"]:
+                raise ApiError(403, "the batch changed since the preview: preview again")
             self._spend_gate(rec["est"])
+            _ops_checks().record_spend(self.cfg.ledger, units=rec["est"], session=rec["session"], story=rec.get("story") or "",
+                                       reason=rec["command"])
         with self.lock:
             if rec["used"]:
                 raise ApiError(403, "this preview was already used: preview again")
@@ -1141,6 +1269,8 @@ class Api:
             return redact_obj({"records": recs, "counts": dict(Counter(r.get("status") for r in recs))})
         if job.command == "queue_collect":
             return redact_obj({"lines": [x for x in text.splitlines() if x.split(" ", 1)[0] in ("FILED", "REFUSED", "WAITING")]})
+        if job.command == "yt_transcript":
+            return redact_obj(yt_result(job.rc, text))
         if job.command == "review_shot":
             return {"verdict": REVIEW_VERDICT.get(job.rc, "NO RESULT"), "exit": job.rc}
         return redact_obj({"lines": text.splitlines()[-50:]})
@@ -1148,19 +1278,185 @@ class Api:
     def job_stop(self, jid) -> dict:
         job = self._job(jid)
         with self.lock:
-            live = job.state == "running" and job.proc.poll() is None
+            live = job.state == "running" and job.proc is not None and job.proc.poll() is None
             if live:
                 job.state = "stopped"
         if live:
-            job.proc.kill()   # kills the local process only; a $ job may keep its Colab session
+            _kill_tree(job.proc)   # M3: the whole tree (colab CLI, ffmpeg, Whisper children too)
             job.warning = spend_warning(job.session) if job.spend else ""
+        if job.spend and job.verified is not True and not live:
+            self._verify_stop(job)   # a finished or lost $ job is checked before any new spend
         self._persist(job)
         self._audit("stop", command=job.command, job=job.id, state=job.state)
         return {"state": job.state, "warning": job.warning if live else "the job had already finished"}
 
-    # -- images, review, packet, video, colab, export, files
-    def images(self, adhyay) -> dict:
-        return read_images(self.cfg, ADHYAY(self.cfg, adhyay))
+    # -- U1 additions: version, ops, story state and settings, links, voices, validator, render, author
+    def version(self) -> dict:
+        now_mtime = os.path.getmtime(os.path.abspath(__file__))
+        stale = now_mtime > SERVER_MTIME0 + 1
+        return {"pid": os.getpid(), "started": STARTED, "server_mtime_at_start": SERVER_MTIME0, "server_mtime_now": now_mtime,
+                "stale": stale, "build": _ops_checks().code_fingerprint(self.cfg.studio)}
+
+    def ops(self) -> dict:
+        ok = _ops_checks()
+        disks = {name: ok.disk_free(path) for name, path in zip(("C", "D"), self.cfg.disk_paths)}
+        ledger = ok.colab_spend_total(self.cfg.ledger)
+        listed = self._cli_text(["sessions"])
+        return {"disk": disks, "server": {**self.version(), "build": ok.code_fingerprint(self.cfg.studio)},
+                "colab": {"ledger_total_units": ledger["total"], "ledger_today": ledger["today"], "cap_units": CAP_UNITS,
+                          "total_cap_units": self.cfg.total_cap, "runs": jsonl(self.cfg.ledger)[-10:],
+                          "sessions_listed": [r["name"] for r in parse_sessions(listed)] if listed is not None else None}}
+
+    def story_state(self, slug) -> dict:
+        slug = SLUG(self.cfg, slug)
+        return _story_state_module().summarize(self.cfg.studio, slug)
+
+    def _story_state_safe(self, slug) -> dict:
+        try:
+            return _story_state_module().summarize(self.cfg.studio, slug)
+        except Exception as e:   # one broken story shows a warning, never a crash of the list
+            return {"error": f"{type(e).__name__}: {str(e)[:120]}"}
+
+    def _story_dir(self, slug) -> Path:
+        d = self.cfg.studio / "stories" / SLUG(self.cfg, slug)
+        if not d.is_dir():
+            raise ApiError(404, "no such story")
+        return d
+
+    def set_languages(self, slug, body) -> dict:
+        d = self._story_dir(slug)
+        raw = body.get("languages")
+        if raw == "all":
+            langs = list(LANGS)
+        elif isinstance(raw, list) and raw and all(isinstance(x, str) for x in raw):
+            langs = raw
+        else:
+            raise bad("languages: a list of en, hi, mr (at least one, no repeats) or 'all'")
+        if len(set(langs)) != len(langs) or any(x not in LANGS for x in langs):
+            raise bad("languages: en, hi, mr only, no repeats")
+        pl = _pipeline()
+        with self.lock:
+            pl.update_story_json(self.cfg.studio, d.name, {"output_languages": langs, "output_language": langs[0]})
+        return {"output_languages": langs}
+
+    def set_voices(self, slug, body) -> dict:
+        d = self._story_dir(slug)
+        pl = _pipeline()
+        ve = pl._h3("voice_engine")
+        raw = body.get("voice_engine")
+        if not isinstance(raw, dict):
+            raise bad("voice_engine must be an object: {\"en\": \"elevenlabs\"|\"h3\", \"hi\": \"elevenlabs\", \"mr\": \"elevenlabs\"}")
+        langs = pl.output_languages(self.cfg.studio, d.name) or list(LANGS)
+        errs, _warns = ve.voice_engine_problems(raw, langs)
+        if errs:
+            raise bad("; ".join(f"{c} {m}" for c, m in errs))
+        resolved = ve.resolve_engines(langs, raw)
+        with self.lock:
+            pl.update_story_json(self.cfg.studio, d.name, {"voice_engine": resolved})
+        rr = _registry()
+        if rr is not None:
+            self._hook("append_event", d, rr.run_id("voices"), "story_saved", None, "ok", voice_engine=resolved)
+        return {"voice_engine": resolved, "warnings": [f"{c} {m}" for c, m in _warns]}
+
+    def set_bgm(self, slug, body) -> dict:
+        d = self._story_dir(slug)
+        pl = _pipeline()
+        enabled = _bool(self.cfg, body.get("enabled", False))
+        if not enabled:
+            bgm = {"enabled": False, "manifest": None}
+        else:
+            raw = body.get("manifest")
+            path = safe_path(self.cfg, raw, ("studio",), (".json",), True, "file") if isinstance(raw, str) else None
+            if path is None:
+                raise bad("background music needs a bgm manifest path (.json inside the studio)")
+            rep = pl._h3("gate_d_audio").read_bgm_manifest(path)
+            if not rep["ok"]:
+                raise bad("; ".join(f"{e['code']} {e['message']}" for e in rep["errors"][:3]))
+            bgm = {"enabled": True, "manifest": str(Path(path).relative_to(self.cfg.studio)).replace("\\", "/")}
+        with self.lock:
+            pl.update_story_json(self.cfg.studio, d.name, {"bgm": bgm})
+        return {"bgm": bgm, "label": pl._bgm_label({"bgm": bgm})["label"]}
+
+    def _pack_dir(self, pack_path) -> tuple:
+        rel = PACK_PATH(self.cfg, pack_path)
+        d = self.cfg.studio.joinpath(*rel.split("/"))
+        if not d.is_dir():
+            raise ApiError(404, "no such pack")
+        return rel, d, rel.split("/")[1], d.name
+
+    def pack_voices_get(self, pack_path) -> dict:
+        rel, d, slug, _name = self._pack_dir(pack_path)
+        pl = _pipeline()
+        return {"pack": rel, "characters": pl.voice_names(d), "voices": pl.read_voice_map(d),
+                "languages": pl.output_languages(self.cfg.studio, slug) or list(LANGS)}
+
+    def pack_voices_set(self, pack_path, body) -> dict:
+        rel, d, slug, _name = self._pack_dir(pack_path)
+        pl = _pipeline()
+        voices = body.get("voices")
+        if not isinstance(voices, dict):
+            raise bad("voices must be an object: {character_id or NARRATOR: {en, hi, mr}}")
+        langs = pl.output_languages(self.cfg.studio, slug) or list(LANGS)
+        problems = pl.write_voice_map(d, voices, langs)
+        if problems:
+            raise bad("; ".join(problems[:5]))
+        return self.pack_voices_get(rel)
+
+    def pack_validate_get(self, pack_path) -> dict:
+        rel, d, slug, name = self._pack_dir(pack_path)
+        doc = _pipeline().load_validation(self.cfg.runs, slug, name)
+        if doc is None:
+            raise ApiError(404, "no validator report for this pack yet: run the validator")
+        return doc
+
+    def pack_validate_run(self, pack_path, body) -> dict:
+        rel, d, slug, name = self._pack_dir(pack_path)
+        pl = _pipeline()
+        legacy = body.get("legacy")
+        rep = pl.run_validator(self.cfg.studio, slug, name, None if legacy is None else _bool(self.cfg, legacy))
+        self._audit("validate", pack=rel, ok=rep["ok"], errors=len(rep["errors"]))
+        return pl.save_validation(self.cfg.runs, rep)
+
+    def render_status(self, story, pack) -> dict:
+        slug, name = SLUG(self.cfg, story), NAME(self.cfg, pack)
+        if not (self.cfg.studio / "stories" / slug / name).is_dir():
+            raise ApiError(404, "no such pack")
+        return _pipeline().render_status(self.cfg.studio, slug, name)
+
+    def render_choice(self, body) -> dict:
+        slug, name = SLUG(self.cfg, body.get("story")), NAME(self.cfg, body.get("pack"))
+        shot = SHOT(self.cfg, body.get("shot"))
+        note = _note(self.cfg, body.get("note", "")) if body.get("note") else ""
+        if not (self.cfg.studio / "stories" / slug / name).is_dir():
+            raise ApiError(404, "no such pack")
+        try:
+            rec = _pipeline().record_human_choice(self.cfg.studio, slug, name, shot, str(body.get("choice", "")), note)
+        except ValueError as e:
+            raise bad(str(e))
+        return {"ok": True, "recorded": rec}
+
+    def author_status(self, pack_path) -> dict:
+        rel, d, _slug, _name = self._pack_dir(pack_path)
+        try:
+            rep = _h3_author_module().author_pack(str(d), dry_run=True)
+        except ValueError as e:
+            raise bad(str(e))
+        shots = [{"shot_id": s.get("shot_id"), "status": s.get("status"), "missing": s.get("missing", []),
+                  "prompt_chars": s.get("prompt_chars", 0), "problems": s.get("problems", []),
+                  "cache": "fresh" if s.get("status") == "fresh" else ("stale or missing" if s.get("missing") else "not needed")}
+                 for s in rep["shots"]]
+        # the live run is not wired into the UI in v1: run_allowed stays False until the owner approves a live route
+        return {"pack": rel, "dry_run": True, "shots": shots, "problems": rep["problems"], "run_allowed": False,
+                "run_note": "live author runs are not wired in the UI yet (owner go and ANIME_STUDIO_ALLOW_FREE_MODEL=1 needed)"}
+
+    def link(self, slug, body) -> dict:
+        d = self._story_dir(slug)
+        args = {"url": body.get("url"), "story": d.name, "lang": body.get("lang", "auto"), "asr": body.get("asr", "auto"),
+                "overwrite": body.get("overwrite", False)}
+        return self.preview({"command": "yt_transcript", "args": args})
+
+    def images(self, adhyay, story=LEGACY_STORY) -> dict:
+        return read_images(self.cfg, ADHYAY(self.cfg, adhyay), SLUG(self.cfg, story))
 
     def review(self, shot, cand, adhyay) -> dict:
         shot, adh = SHOT(self.cfg, shot), ADHYAY(self.cfg, adhyay)
@@ -1180,7 +1476,11 @@ class Api:
                 "answers": hit.get("answers") or {}}
 
     def packet(self, body) -> dict:
-        jobs_path = safe_path(self.cfg, body.get("jobs"), ("studio",), (".json",), True, "file")
+        slug = SLUG(self.cfg, body.get("story"))
+        NAME(self.cfg, body.get("pack"))
+        jobs_path = gen_json(self.cfg, body.get("jobs"), "jobs")
+        if Path(jobs_path).parent.name != slug:
+            raise bad("the jobs file must be in flow/generated/<story>/ of the same story")
         shots = body.get("shots")
         if not isinstance(shots, list) or not 1 <= len(shots) <= 60:
             raise bad("shots must be a list of 1 to 60 shot ids")
@@ -1218,11 +1518,28 @@ class Api:
                 "read_ok": {"sessions": s_text is not None, "usage": u_text is not None},
                 "rate_units_per_hour": RATES, "cap_units": CAP_UNITS}
 
-    def export(self, reel, pack) -> dict:
-        n, rel = REEL(self.cfg, reel), PACK_REL(self.cfg, pack)
+    def results_roots(self, slug, pack) -> list:
+        """Result folders of one story and pack: story_links kind 'results' (pack-specific or story-wide). The legacy
+        Kaliya project also keeps its T0 folder and its colab batches."""
+        roots = [Path(l["resolved"]) for l in _story_links_module().check(self.cfg.studio, slug)
+                 if l.get("kind") == "results" and l.get("exists") and l.get("resolved") and l.get("pack") in (None, pack)]
+        if slug == LEGACY_STORY:
+            roots.append(self.cfg.studio / "director" / "t0_pack" / "results")
+            bdir = self.cfg.studio / "director" / "colab_batches"
+            if bdir.is_dir():
+                roots += [b / "results" for b in sorted(bdir.iterdir()) if b.is_dir()]
+        return roots
+
+    def export(self, reel, story, pack) -> dict:
+        n = REEL(self.cfg, reel)
+        slug = SLUG(self.cfg, story)
+        name = NAME(self.cfg, pack)
+        if not (self.cfg.studio / "stories" / slug / name).is_dir():
+            raise ApiError(404, "no such pack")
+        rel = f"stories/{slug}/{name}"
         ids = [s.get("id") for s in shot_list(self.cfg.studio.joinpath(*rel.split("/")) / "shots.json") if s.get("episode") == n]
         order = {sid: i for i, sid in enumerate(ids)}
-        clips = [c for c in read_video(self.cfg)["clips"] if c["shot"] in order]
+        clips = [c for root in self.results_roots(slug, name) for c in _clips_in(root) if c["shot"] in order]
         clips.sort(key=lambda c: (order[c["shot"]], c["take"]))
         reel_dir = self.cfg.studio / "reels" / f"reel_{n:02d}"
         files = sorted(p.name for p in reel_dir.iterdir() if p.is_file()) if reel_dir.is_dir() else []
@@ -1231,9 +1548,81 @@ class Api:
 
     def file_response(self, raw) -> Raw:
         real = Path(safe_path(self.cfg, raw, ("studio", "flow"), FILE_EXTS, True, "file"))
+        if real.is_relative_to(Path(os.path.realpath(self.cfg.runs))):
+            raise ApiError(403, "the ui/runs folder is not served: use the job log or result endpoints")
         if real.stat().st_size > MAX_FILE:
             raise ApiError(413, "file is over 60 MB")
-        return Raw(MIME.get(real.suffix.lower(), "application/octet-stream"), real.read_bytes())
+        ctype = MIME.get(real.suffix.lower(), "application/octet-stream")
+        if real.suffix.lower() in TEXT_EXTS:
+            return Raw(ctype, redact(real.read_text(encoding="utf-8", errors="replace")).encode("utf-8"))
+        return Raw(ctype, real.read_bytes())
+
+
+def _story_state_module():
+    d = str(STUDIO / "director")
+    if d not in sys.path:
+        sys.path.append(d)
+    import story_state
+    return story_state
+
+
+def _h3_author_module():
+    root = str(STUDIO)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from h3 import h3_author
+    return h3_author
+
+
+def _story_links_module():
+    d = str(STUDIO / "director")
+    if d not in sys.path:
+        sys.path.append(d)
+    import story_links
+    return story_links
+
+
+def _ops_checks():
+    """director/ops_checks.py (disk, Colab ledger, lock); imported lazily."""
+    d = str(STUDIO / "director")
+    if d not in sys.path:
+        sys.path.append(d)
+    import ops_checks
+    return ops_checks
+
+
+def _kill_tree(proc) -> None:
+    """Windows: taskkill /T takes the children too. Elsewhere: kill the process."""
+    if os.name == "nt":
+        try:
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=30, shell=False)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    try:
+        proc.kill()
+    except OSError:
+        pass
+
+
+def yt_result(rc, text) -> dict:
+    """yt_transcript exit map: 0 ok, 3 needs_choice (candidates in the text), 2 refused (reason line)."""
+    lines = text.splitlines()
+    reason = next((x for x in lines if x.startswith(("REFUSED", "NEEDS_CHOICE"))), "")
+    written = next((x for x in lines if x.startswith("written ")), "")
+    chars = re.search(r"\((\d+) chars of transcript\)", written)
+    engine = "whisper" if "SPEECH RECOGNITION" in text else ("captions" if "YouTube captions" in text else None)
+    cands = []
+    m = re.search(r"candidates are (\[.*?\])", reason)
+    if m:
+        try:
+            cands = [str(c) for c in ast.literal_eval(m.group(1))]
+        except (ValueError, SyntaxError):
+            cands = []
+    status = {0: "ok", 3: "needs_choice", 2: "refused"}.get(rc, "failed")
+    file = written[len("written "):].split(" (")[0] if written else None
+    return {"status": status, "candidates": cands, "engine": engine, "chars": int(chars.group(1)) if chars else None,
+            "file": file, "reason": reason or (text.strip().splitlines()[-1] if text.strip() and status == "failed" else ""),
+            "overwrite_offer": status == "refused" and "exists" in reason}
 
 
 def static_file(cfg, name) -> Raw:
@@ -1253,19 +1642,29 @@ def _pipeline():
         raise ApiError(503, "pipeline module not installed yet")
 
 
-def pipeline_get(api, what):
+def pipeline_get(api, what, q):
+    """GET /api/pipeline and /api/pipeline/summary, optional ?story=&pack= (default: the project pointer)."""
     pl = _pipeline()
+    story, pack = q.get("story") or None, q.get("pack") or None
+    if story is not None:
+        SLUG(api.cfg, story)
+    if pack is not None:
+        NAME(api.cfg, pack)
     if what == "summary":
-        return pl.summary(api.cfg.studio, api.cfg.runs)
-    return pl.pipeline_state(api.cfg.studio, api.cfg.runs)
+        return pl.summary(api.cfg.studio, api.cfg.runs, story, pack)
+    state = pl.pipeline_state(api.cfg.studio, api.cfg.runs, None, story, pack)
+    state["code_fingerprint"] = _ops_checks().code_fingerprint(api.cfg.studio)   # ops health check compares it with disk
+    return state
 
 
 def pipeline_gate(api, body):
-    """POST /api/pipeline/gate {gate, decision, note, confirm?}: records the owner's decision (the only write is runs/approvals.jsonl)."""
+    """POST /api/pipeline/gate {story, pack, gate, decision, note, confirm?}: the only write is runs/approvals.jsonl.
+    The story and pack must be the project pointer (409 otherwise)."""
     pl = _pipeline()
     try:
         gate = pl.apply_gate(api.cfg.studio, api.cfg.runs, str(body.get("gate", "")), str(body.get("decision", "")),
-                             str(body.get("note", "")), body.get("confirm"), who="owner")
+                             str(body.get("note", "")), body.get("confirm"), who="owner",
+                             story=body.get("story"), pack=body.get("pack"))
     except pl.GateError as e:
         raise ApiError(getattr(e, "code", 409), str(e))
     return {"ok": True, "gate": gate}
@@ -1279,7 +1678,22 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         if m:
             return static_file(api.cfg, m.group(1))
         if path in ("/api/pipeline", "/api/pipeline/summary"):
-            return pipeline_get(api, path.rsplit("/", 1)[-1])
+            return pipeline_get(api, path.rsplit("/", 1)[-1], q)
+        if path == "/api/version":
+            return api.version()
+        if path == "/api/ops":
+            return api.ops()
+        m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})/state", path)
+        if m:
+            return api.story_state(m.group(1))
+        if path == "/api/pack/voices":
+            return api.pack_voices_get(q.get("pack", ""))
+        if path == "/api/pack/validate":
+            return api.pack_validate_get(q.get("pack", ""))
+        if path == "/api/render/status":
+            return api.render_status(q.get("story", ""), q.get("pack", ""))
+        if path == "/api/author/status":
+            return api.author_status(q.get("pack", ""))
         if path == "/api/status":
             return api.status()
         if path == "/api/h3":
@@ -1302,7 +1716,7 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         if m:
             return api.job_log(m.group(1), q) if m.group(2) == "log" else api.job_result(m.group(1))
         if path == "/api/images":
-            return api.images(q.get("adhyay", "1"))
+            return api.images(q.get("adhyay", "1"), q.get("story", LEGACY_STORY))
         if path == "/api/review":
             return api.review(q.get("shot", ""), q.get("cand", ""), q.get("adhyay", "1"))
         if path == "/api/video":
@@ -1310,7 +1724,7 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         if path == "/api/colab":
             return api.colab()
         if path == "/api/export":
-            return api.export(q.get("reel", ""), q.get("pack", STORY_PACK))
+            return api.export(q.get("reel", ""), q.get("story", ""), q.get("pack", ""))
         if path == "/api/file":
             return api.file_response(q.get("path", ""))
     elif method == "POST":
@@ -1330,6 +1744,18 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
             return pipeline_gate(api, body)
         if path == "/api/pipeline/project":
             return api.pipeline_project(body)
+        m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})/(languages|voices|bgm|link)", path)
+        if m:
+            slug, what = m.group(1), m.group(2)
+            return {"languages": api.set_languages, "voices": api.set_voices, "bgm": api.set_bgm, "link": api.link}[what](slug, body)
+        if path == "/api/pack/voices":
+            return api.pack_voices_set(q.get("pack", "") or (body or {}).get("pack", ""), body)
+        if path == "/api/pack/validate":
+            return api.pack_validate_run(q.get("pack", "") or (body or {}).get("pack", ""), body)
+        if path == "/api/render/choice":
+            return api.render_choice(body)
+        if path == "/api/author/preview":
+            return api.author_status(body.get("pack", ""))
     raise ApiError(404, "unknown path")
 
 
@@ -1432,7 +1858,11 @@ def main(argv=None) -> int:
             cfg.python = value
         else:
             ap.error(f"unknown override {name}")
-    srv = make_server(cfg, a.port)
+    try:
+        srv = make_server(cfg, a.port)
+    except OSError as e:
+        print(f"Anime Studio UI could not start on 127.0.0.1:{a.port} ({e}). Another copy may be running: stop it, then start again.", file=sys.stderr)
+        return 1
     print(f"Anime Studio UI: http://127.0.0.1:{srv.server_address[1]}  spend {'ON' if cfg.spend else 'OFF'}", flush=True)
     try:
         srv.serve_forever()

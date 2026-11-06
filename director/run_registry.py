@@ -253,7 +253,9 @@ def title_from_source(text: str, default: str) -> str:
 
 
 def detect_language(text: str) -> str:
-    return "hi" if len(re.findall(r"[\u0900-\u097F]", text)) >= 20 else "en"
+    if len(re.findall("[ऀ-ॿ]", text)) < 20:
+        return "en"
+    return "mr" if "ळ" in text else "hi"        # the letter (u0933) is Marathi; a Hindi text never uses it
 
 
 def default_story(story_dir) -> dict:

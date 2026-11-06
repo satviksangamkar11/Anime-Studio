@@ -302,12 +302,14 @@ def test_missing_h3_field_is_reported_not_invented(pack):
     # without a previous shot). The converter problem list is the only report here; see HANDOFF V4H3 open questions.
 
 
-def test_dynamic_seam_is_a_problem_because_v4_has_no_handles(pack):
+def test_dynamic_seam_on_a_full_length_shot_is_a_problem(pack):
+    # Changed 2026-11-07 (H3A): handles are now derived from the editorial length, not set to 0. A full-length shot
+    # (editorial == pixel_frames) has no head handle to give, so a DYNAMIC incoming seam is reported with the numbers.
     shots = json.load(open(os.path.join(pack, "shots.json"), encoding="utf-8"))
     shots[0]["h3_fields"]["incoming_seam_type"] = "DYNAMIC_MATCH_ON_ACTION"
     json.dump(shots, open(os.path.join(pack, "shots.json"), "w", encoding="utf-8"))
     res = convert_pack(pack)
-    assert any("dynamic seam needs head/tail handles" in p for p in res["problems"])
+    assert any(p.startswith(f"{SHOT_A}: incoming DYNAMIC head handle 0 outside 8..35") for p in res["problems"])
 
 
 def test_unknown_location_is_a_problem(pack):

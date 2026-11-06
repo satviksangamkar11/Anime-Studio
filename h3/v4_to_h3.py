@@ -1,16 +1,19 @@
 """V4 writer pack -> H3 story (sing8, pure Foley). Pure functions over dicts; file reads only in convert_pack(path).
 
-Input: a pack folder (shots.json, bible.json, optional stage_1*.json, keyframes/<shot_id>-A.png and -B.png) or a dict
-{"shots": [...], "bible": {...}, "stage": {...} (optional), "asset_root": str (optional)}.
+Input: a pack folder (shots.json, bible.json, optional stage_1*.json, keyframes/<shot_id>-A.png and -B.png, optional
+h3_authored/<shot_id>.json) or a dict {"shots": [...], "bible": {...}, "stage": {...} (optional), "asset_root": str (optional)}.
 
 What maps: lattice and timing (column 1), continuity text (column 2), reference anchors and hook fields (kept under
 registry.v4_rows, environments copied from the bible), per-second directives (column 5) -> the 7 motion stages,
 sfx_cues -> sound_plan.overall_soundscape, performance_notes -> the mouth fields. Narration and dialogue are never put
 in the H3 prompt (ElevenLabs voices them); they stay in registry.v4_rows.
 
-What does not map: the H3 schema needs seam types, pose vectors, biomechanical tags, cadence windows, shot scale, screen
-direction, location and props. The V4 contract has none of them, so they are read from the row's optional
-"h3_fields" block. A missing field is reported in `problems` and left empty, so lint_story reports it too.
+The H3-only fields (research/DECISION_H3_FIELDS_2026-11-07.md) come from three tiers, per field, first hit wins:
+  1. explicit row["h3_fields"] (backward compatible),
+  2. derive_fields(): deterministic tier 1 (seam types, trim and handles, location, props, story_beat, picture paths),
+  3. authored results: h3/h3_author.py (a model, cached in <pack>/h3_authored/<shot_id>.json, valid only while the hash
+     of row, derived fields, blueprint and bible subset is unchanged).
+A field that no tier provides stays empty and is reported in `problems`; lint_story reports it too.
 """
 from __future__ import annotations
 
@@ -25,8 +28,9 @@ from pathlib import Path
 if __package__ in (None, ""):  # run as `python h3/v4_to_h3.py`: the h3 package sits one folder up
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from h3.schema_and_linter import (CHAINED, DYN, OFFICIAL_CAMERA_MOTION_PHRASES, SEAM_TYPES, SFX_CUE_RE, STATIC_SEAMS,
-                                  lint_story, load_default_profile)
+from h3.asset_manifest import canonical_json, hash_frame_file, sha256_text
+from h3.schema_and_linter import (CHAINED, DYN, ID_PATTERN, INTER, LATTICE_CUT_BOUNDS, OFFICIAL_CAMERA_MOTION_PHRASES,
+                                  SEAM_TYPES, SFX_CUE_RE, STATIC_SEAMS, lint_story, load_default_profile)
 from h3.shot_table_spec import FPS, lattice
 
 LANGS = ("en", "hi", "mr")
@@ -39,6 +43,15 @@ H3_FIELDS = ("story_beat", "emotional_objective", "location_id", "shot_scale", "
              "cut_in_biomechanical_state_tag", "cut_out_biomechanical_state_tag", "cut_in_pose_vector",
              "cut_out_pose_vector", "props_present", "hold_window_frames", "burst_window_frames",
              "impact_or_settle_frames", "cadence_clause")
+DERIVED_FIELDS = ("story_beat", "location_id", "props_present", "incoming_seam_type", "outgoing_seam_type")
+AUTHOR_FIELDS = ("emotional_objective", "shot_scale", "screen_direction_vector", "camera_axis_side",
+                 "horizon_line_y_ratio", "cut_in_biomechanical_state_tag", "cut_out_biomechanical_state_tag",
+                 "cut_in_pose_vector", "cut_out_pose_vector", "hold_window_frames", "burst_window_frames",
+                 "impact_or_settle_frames", "cadence_clause")
+HEAD_HANDLE = (8, 35)          # CN-04
+TAIL_HANDLE = (24, 47)         # CN-05
+AUTHORED_DIR = "h3_authored"
+BIBLE_KEYS_FOR_HASH = ("characters", "environments", "props", "style_lock", "forbidden_looks")
 STAGE_NAMES = ("1_starting_state", "2_anticipation", "3_initiation", "4_drive", "5_contact_approach",
                "6_impact_result", "7_settled_end_state")
 SEC = lambda frames: round(frames / FPS, 2)  # noqa: E731  (seconds with the 2-decimal rounding the linter checks)
@@ -101,10 +114,6 @@ def _languages(languages, stage, problems):
     if bad or len(set(langs)) != len(langs):
         problems.append(f"output_languages {langs} must be a non-repeating subset of {LANGS}")
     return langs
-
-
-def _exists(root, rel):
-    return root is not None and os.path.isfile(os.path.join(root, rel))
 
 
 def _camera(directives, sid, problems, notes):
@@ -181,26 +190,286 @@ def _soundscape(track, sid, problems):
     return " ".join(sentences)
 
 
-def _shot(row, idx, ctx, notes, problems):
-    """One H3 shot dict, or None when column 1 is unusable (the reason goes to problems)."""
-    sid = row.get("id") if isinstance(row, dict) else None
-    if not isinstance(sid, str) or not sid:
-        problems.append(f"row {idx}: no shot id; row skipped")
-        return None
+# ---------- timing, grouping, tier 1 ----------
+
+def _timing_inputs(row, sid):
+    """(lattice_n, pixel_frames, editorial_frames, None) or (None, None, None, reason) for an unusable column 1."""
     t1 = row.get("lattice_n")
     if not (isinstance(t1, int) and not isinstance(t1, bool) and 6 <= t1 <= 20):
-        problems.append(f"{sid}: lattice_n {t1!r} is not an int in 6..20; shot skipped")
-        return None
-    lat = lattice(t1)
-    pf = lat["pixel_frames"]
-    if row.get("pixel_frames") != pf or row.get("latent_slots") != lat["latent_slots"]:
-        problems.append(f"{sid}: pixel_frames/latent_slots do not match lattice_n {t1} ({pf}/{lat['latent_slots']}); lattice used")
+        return None, None, None, f"{sid}: lattice_n {t1!r} is not an int in 6..20; shot skipped"
+    pf = lattice(t1)["pixel_frames"]
     e_sec = row.get("editorial_duration_sec")
     if not _is_num(e_sec) or not 0 < round(e_sec * FPS) <= pf:
-        problems.append(f"{sid}: editorial_duration_sec {e_sec!r} must be > 0 and within {SEC(pf)} s; shot skipped")
+        return None, None, None, (f"{sid}: editorial_duration_sec {e_sec!r} must be > 0 and within {SEC(pf)} s; "
+                                  "shot skipped")
+    return t1, pf, round(e_sec * FPS), None
+
+
+def group_rows(shots):
+    """(items, problems). One item per row that has an episode, in row order, with its neighbours inside the episode:
+    {idx, row, ep, prev, next, first, last}. first/last = first/last row of the episode (the reel)."""
+    problems, valid, by_ep = [], [], {}
+    for idx, row in enumerate(shots, 1):
+        ep = row.get("episode") if isinstance(row, dict) else None
+        if ep is None:
+            problems.append(f"row {idx}: no episode number; row skipped")
+            continue
+        valid.append((idx, row, ep))
+        by_ep.setdefault(ep, []).append((idx, row))
+    items = []
+    for idx, row, ep in valid:
+        group = by_ep[ep]
+        pos = next(k for k, (i, _) in enumerate(group) if i == idx)
+        items.append({"idx": idx, "row": row, "ep": ep,
+                      "prev": group[pos - 1][1] if pos > 0 else None,
+                      "next": group[pos + 1][1] if pos + 1 < len(group) else None,
+                      "first": pos == 0, "last": pos == len(group) - 1})
+    return items, problems
+
+
+def _seam_defaults(is_first, is_last, ed, pf):
+    """Seam types when the row says nothing: the first shot of a reel takes the INTER handshake, the last shot gives it;
+    between them a cut is DYNAMIC when the editorial length is shorter than the lattice, CHAINED when it fills it."""
+    inc = INTER if is_first else (DYN if ed < pf else CHAINED)
+    out = INTER if is_last else (DYN if ed < pf else CHAINED)
+    return inc, out
+
+
+def _static_plan(pf, ed):
+    return {"trim_in_frame": 0, "trim_out_frame": ed, "head_handle_frames": 0, "tail_handle_frames": pf - ed}
+
+
+def _plan_handles(sid, pf, ed, inc, out, n):
+    """Trim and handle frames from the seam types and the editorial length. Returns (plan, problems). plan always has the
+    four frame fields; when no split fits, the static plan is returned and the problem names the cause (the linter then
+    reports the same cut as CN-03..06)."""
+    a6, b6 = _stage_spans(pf)[5]
+    dyn_in, dyn_out = inc == DYN, out == DYN
+    if not dyn_in and not dyn_out:
+        if ed == pf:
+            return {"trim_in_frame": 0, "trim_out_frame": pf, "head_handle_frames": 0, "tail_handle_frames": 0}, []
+        return _static_plan(pf, ed), [f"{sid}: static seams ({inc}, {out}) need the full {pf} frames; editorial is {ed}"]
+    if dyn_in and dyn_out:
+        H = pf - ed
+        best = None
+        for tail in range(TAIL_HANDLE[0], TAIL_HANDLE[1] + 1):
+            head, to = H - tail, pf - tail
+            if HEAD_HANDLE[0] <= head <= HEAD_HANDLE[1] and a6 <= to <= b6:
+                score = (abs(to - (a6 + b6) / 2), -tail)     # cut point nearest the middle of 6_impact_result, then longer tail
+                if best is None or score < best[0]:
+                    best = (score, head, tail, to)
+        if best is None:
+            return _static_plan(pf, ed), [
+                f"{sid}: no dynamic split fits: head 8..35 and tail 24..47 frames, trim_out inside the 6_impact_result span "
+                f"{a6}..{b6}, must add up to {H} (pixel {pf} - editorial {ed}); the V4 editorial length cannot be cut"]
+        _, head, tail, to = best
+        probs = []
+        if n in LATTICE_CUT_BOUNDS:
+            (elo, ehi), (hlo, hhi) = LATTICE_CUT_BOUNDS[n]
+            if not (elo <= ed <= ehi and hlo <= H <= hhi):
+                probs.append(f"{sid}: both-dynamic cut at n={n} needs editorial {elo}..{ehi} and handle sum {hlo}..{hhi}; "
+                             f"V4 gives editorial {ed} and handle sum {H}")
+        return {"trim_in_frame": head, "trim_out_frame": to, "head_handle_frames": head, "tail_handle_frames": tail}, probs
+    if dyn_in:   # outgoing static: trim_out is the full lattice, so the head is the whole difference
+        head = pf - ed
+        if not HEAD_HANDLE[0] <= head <= HEAD_HANDLE[1]:
+            return _static_plan(pf, ed), [f"{sid}: incoming DYNAMIC head handle {head} outside 8..35 frames (editorial {ed} "
+                                          f"of pixel {pf}; with a static outgoing cut the head is pixel - editorial)"]
+        return {"trim_in_frame": head, "trim_out_frame": pf, "head_handle_frames": head, "tail_handle_frames": 0}, []
+    tail, probs = pf - ed, []   # incoming static: trim_in 0, the tail is the whole difference
+    if not TAIL_HANDLE[0] <= tail <= TAIL_HANDLE[1]:
+        probs.append(f"{sid}: outgoing DYNAMIC tail handle {tail} outside 24..47 frames (editorial {ed} of pixel {pf})")
+    if not a6 <= ed <= b6:
+        probs.append(f"{sid}: MO-03 trim_out {ed} must sit inside the 6_impact_result span {a6}..{b6} for a dynamic outgoing cut")
+    return {"trim_in_frame": 0, "trim_out_frame": ed, "head_handle_frames": 0, "tail_handle_frames": tail}, probs
+
+
+def _own_keyframe(keyframes_dir, sid, letter):
+    if not keyframes_dir or not isinstance(sid, str) or not ID_PATTERN.match(sid):
         return None
-    ed = round(e_sec * FPS)
+    if os.path.isfile(os.path.join(keyframes_dir, f"{sid}-{letter}.png")):
+        return f"keyframes/{sid}-{letter}.png"
+    return None
+
+
+def _location(row, bible):
+    """ENV id: an ENV token inside fixed_landmarks, else the one bible ENV card whose continuity_landmarks list all of them."""
+    envs = bible.get("environments") if isinstance(bible.get("environments"), dict) else {}
+    anchors = row.get("reference_anchors") if isinstance(row.get("reference_anchors"), dict) else {}
+    lm = [x for x in anchors.get("fixed_landmarks") or [] if isinstance(x, str)]
+    if not lm:
+        return None, "no fixed_landmarks"
+    tokens = []
+    for s in lm:
+        for tok in re.findall(r"ENV-[A-Za-z0-9_-]+", s):
+            if tok in envs and tok not in tokens:
+                tokens.append(tok)
+    if len(tokens) == 1:
+        return tokens[0], ""
+    if tokens:
+        return None, f"fixed_landmarks name several ENV ids {tokens}"
+    cands = [eid for eid, env in envs.items()
+             if isinstance(env, dict) and all(x in [y for y in (env.get("continuity_landmarks") or []) if isinstance(y, str)]
+                                              for x in lm)]
+    if len(cands) == 1:
+        return cands[0], ""
+    return None, f"{len(cands)} bible ENV cards list all of these fixed_landmarks"
+
+
+def _props(row, bible):
+    props = bible.get("props") if isinstance(bible.get("props"), dict) else {}
+    body = {k: v for k, v in row.items() if k not in ("h3_fields", "audio_and_dialogue_track")}
+    text = json.dumps(body, ensure_ascii=False)
+    return [pid for pid in props if isinstance(pid, str)
+            and re.search(r"(?<![A-Za-z0-9_-])" + re.escape(pid) + r"(?![A-Za-z0-9_-])", text)]
+
+
+def _story_beat(row):
+    purpose = row.get("purpose") if isinstance(row.get("purpose"), str) else ""
+    if not purpose.strip():
+        cont = row.get("continuity_handoff") if isinstance(row.get("continuity_handoff"), dict) else {}
+        purpose = cont.get("incoming") if isinstance(cont.get("incoming"), str) else ""
+    text = " ".join(purpose.split())
+    if not text:
+        return None
+    first = re.split(r"(?<=[.!?])\s", text)[0]
+    if len(first) > 140:                       # cut at a word boundary, never mid-word, no added dots
+        first = first[:141].rsplit(" ", 1)[0].rstrip(",;:")
+    return first or None
+
+
+def derive_fields(row, prev_row, next_row, bible, is_first_in_reel, is_last_in_reel, keyframes_dir):
+    """Tier 1, deterministic, never invents. Returns (fields, notes).
+
+    fields: shot_id, lattice_n, pixel_frames, editorial_frames, trim_in_frame, trim_out_frame, head_handle_frames,
+    tail_handle_frames, incoming_seam_type, outgoing_seam_type (the row's own h3_fields seam type wins when given),
+    picture_1_path (None for CHAINED: the converter takes the previous shot's picture_2), picture_2_path, and
+    location_id, props_present, story_beat when they can be derived. A field that cannot be derived is absent.
+    notes: info lines; lines starting with 'PROBLEM: ' are problems the converter reports as they are.
+    The input is never changed."""
+    notes, fields = [], {}
+    sid = row.get("id") if isinstance(row, dict) else None
+    if not isinstance(sid, str) or not sid:
+        return fields, ["PROBLEM: row has no shot id"]
+    fields["shot_id"] = sid
+    t1, pf, ed, err = _timing_inputs(row, sid)
+    if err:
+        return fields, ["PROBLEM: " + err]
     h3 = row.get("h3_fields") if isinstance(row.get("h3_fields"), dict) else {}
+    bible = bible if isinstance(bible, dict) else {}
+    fields.update(lattice_n=t1, pixel_frames=pf, editorial_frames=ed)
+    inc_d, out_d = _seam_defaults(is_first_in_reel, is_last_in_reel, ed, pf)
+    inc = h3["incoming_seam_type"] if "incoming_seam_type" in h3 else inc_d
+    out = h3["outgoing_seam_type"] if "outgoing_seam_type" in h3 else out_d
+    fields["incoming_seam_type"], fields["outgoing_seam_type"] = inc, out
+    if inc == CHAINED and prev_row is None:
+        notes.append(f"PROBLEM: {sid}: CHAINED incoming but no previous shot in this reel to hold the pose from")
+    if inc in SEAM_TYPES and out in SEAM_TYPES:
+        plan, probs = _plan_handles(sid, pf, ed, inc, out, t1)
+    else:                                       # unknown seam type: the converter reports it; static plan kept
+        plan, probs = _static_plan(pf, ed), []
+    fields.update(plan)
+    notes.extend("PROBLEM: " + p for p in probs)
+    fields["picture_2_path"] = _own_keyframe(keyframes_dir, sid, "B")
+    fields["picture_1_path"] = None if inc == CHAINED else _own_keyframe(keyframes_dir, sid, "A")
+    loc, why = _location(row, bible)
+    if loc:
+        fields["location_id"] = loc
+    else:
+        notes.append(f"{sid}: location_id not derived ({why})")
+    fields["props_present"] = _props(row, bible)
+    beat = _story_beat(row)
+    if beat:
+        fields["story_beat"] = beat
+    else:
+        notes.append(f"{sid}: story_beat not derived (no purpose or continuity text)")
+    return fields, notes
+
+
+def requested_fields(row, derived, blueprint):
+    """The authored fields this shot still needs: not explicit in the row, not derived, not fixed by the blueprint."""
+    explicit = row.get("h3_fields") if isinstance(row.get("h3_fields"), dict) else {}
+    fixed = (blueprint or {}).get("fixed") or {}
+    return [f for f in AUTHOR_FIELDS if f not in explicit and f not in fixed and f not in (derived or {})]
+
+
+def build_blueprint(derived, prev_cut=None):
+    """The fixed part the author step must copy: frame plan, seams, stage spans, and (when a previous shot exists) the
+    cut-in tag and pose copied from its cut-out, which CN-07/CN-08 require. prev_cut = {"tag", "pose"} or None."""
+    keys = ("shot_id", "lattice_n", "pixel_frames", "editorial_frames", "trim_in_frame", "trim_out_frame",
+            "head_handle_frames", "tail_handle_frames", "incoming_seam_type", "outgoing_seam_type")
+    bp = {k: derived[k] for k in keys if k in derived}
+    if isinstance(derived.get("pixel_frames"), int):
+        bp["stage_frame_spans"] = _stage_spans(derived["pixel_frames"])
+    bp["fixed"] = ({"cut_in_biomechanical_state_tag": prev_cut["tag"], "cut_in_pose_vector": prev_cut["pose"]}
+                   if prev_cut else {})
+    return bp
+
+
+def cut_out_of(h3):
+    """{"tag", "pose"} of a finished shot's cut-out, or None while it is not known."""
+    if not isinstance(h3, dict):
+        return None
+    tag, pose = h3.get("cut_out_biomechanical_state_tag"), h3.get("cut_out_pose_vector")
+    if isinstance(tag, str) and tag and isinstance(pose, dict):
+        return {"tag": tag, "pose": pose}
+    return None
+
+
+def merge_h3(row, derived, authored, blueprint):
+    """H3 field values, priority explicit row h3_fields > derived > blueprint fixed > authored. Only H3 names are kept."""
+    explicit = row.get("h3_fields") if isinstance(row.get("h3_fields"), dict) else {}
+    out = {k: v for k, v in (authored or {}).items() if k in AUTHOR_FIELDS}
+    out.update((blueprint or {}).get("fixed") or {})
+    out.update({k: derived[k] for k in DERIVED_FIELDS if k in derived})
+    out.update({k: v for k, v in explicit.items() if k in H3_FIELDS})
+    return out
+
+
+def authored_key(row, derived, blueprint, bible, root):
+    """Hash that makes an authored result stale: row, derived fields, blueprint, bible subset, keyframe file bytes."""
+    sid = derived.get("shot_id") or row.get("id")
+    pics = {}
+    for letter in ("A", "B"):
+        p = _own_keyframe(os.path.join(root, "keyframes") if root else None, sid, letter)
+        pics[letter] = hash_frame_file(os.path.join(root, p)) if p else None
+    subset = {k: bible.get(k) for k in BIBLE_KEYS_FOR_HASH} if isinstance(bible, dict) else {}
+    return sha256_text(canonical_json({"row": row, "derived": derived, "blueprint": blueprint,
+                                       "bible": subset, "pictures": pics}))
+
+
+def load_fresh_authored(root, row, derived, blueprint, bible):
+    """(fields, status). status: 'fresh' (fields usable), 'none' (no cache file), 'stale' or 'failed' (no fields)."""
+    sid = derived.get("shot_id")
+    if not root or not isinstance(sid, str) or not ID_PATTERN.match(sid):
+        return None, "none"
+    path = os.path.join(root, AUTHORED_DIR, sid + ".json")
+    if not os.path.isfile(path):
+        return None, "none"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None, "stale"
+    if not isinstance(data, dict) or data.get("status") != "ok":
+        return None, "failed"
+    if data.get("hash") != authored_key(row, derived, blueprint, bible, root) or not isinstance(data.get("fields"), dict):
+        return None, "stale"
+    return data["fields"], "fresh"
+
+
+# ---------- shot and story assembly ----------
+
+def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
+    """One H3 shot dict, or None. h3 = merged H3 fields, derived = tier-1 frame plan (always present when we get here)."""
+    sid = row["id"]
+    t1, pf, ed = derived["lattice_n"], derived["pixel_frames"], derived["editorial_frames"]
+    ti, to = derived["trim_in_frame"], derived["trim_out_frame"]
+    head, tail = derived["head_handle_frames"], derived["tail_handle_frames"]
+    lat = lattice(t1)
+    pixel_claim = row.get("pixel_frames")
+    if pixel_claim != pf or row.get("latent_slots") != lat["latent_slots"]:
+        problems.append(f"{sid}: pixel_frames/latent_slots do not match lattice_n {t1} ({pf}/{lat['latent_slots']}); lattice used")
     for k in H3_FIELDS:
         if k not in h3:
             problems.append(f"{sid}: h3_fields.{k} missing (H3-only field, not in the V4 columns)")
@@ -210,17 +479,6 @@ def _shot(row, idx, ctx, notes, problems):
     for label, seam in (("incoming", seam_in), ("outgoing", seam_out)):
         if seam not in SEAM_TYPES:
             problems.append(f"{sid}: h3_fields.{label}_seam_type {seam!r} is not a known seam type")
-    if DYN in (seam_in, seam_out):
-        problems.append(f"{sid}: dynamic seam needs head/tail handles; V4 has no handle fields, handles set to 0")
-    if seam_out in STATIC_SEAMS and ed != pf:
-        problems.append(f"{sid}: static outgoing seam needs the full {pf} frames; editorial is {ed}")
-
-    # keyframes: own boundary files first; CHAINED incoming takes picture_1 from the previous shot's picture_2
-    prev = ctx["prev"]
-    p2 = f"keyframes/{sid}-B.png" if _exists(ctx["root"], f"keyframes/{sid}-B.png") else None
-    p1 = f"keyframes/{sid}-A.png" if _exists(ctx["root"], f"keyframes/{sid}-A.png") else None
-    if p1 is None and seam_in == CHAINED and prev is not None:
-        p1 = prev["fl2va_keyframes"].get("picture_2_path")
     if p1 is None or p2 is None:
         problems.append(f"{sid}: boundary frames missing (keyframes/{sid}-A.png, -B.png); FL2VA needs both")
     kf = {"mode": "FL2VA", "dimensions_verified": list(ctx["profile"]["base_resolution"])}
@@ -250,15 +508,14 @@ def _shot(row, idx, ctx, notes, problems):
     running = ctx["running"]
     timing = {"lattice_n": t1, "pixel_frames": pf, "latent_slots": lat["latent_slots"], "generation_duration_sec": SEC(pf),
               "exact_generation_duration_sec": SEC(pf), "prompt_alignment_sec_str": f"{pf / FPS:.2f}", "fps": FPS,
-              "trim_in_frame": 0, "trim_out_frame": ed, "head_handle_frames": 0, "tail_handle_frames": pf - ed,
-              "trim_in_sec": 0.0, "trim_out_sec": SEC(ed), "head_handle_sec": 0.0, "tail_handle_sec": SEC(pf - ed),
+              "trim_in_frame": ti, "trim_out_frame": to, "head_handle_frames": head, "tail_handle_frames": tail,
+              "trim_in_sec": SEC(ti), "trim_out_sec": SEC(to), "head_handle_sec": SEC(head), "tail_handle_sec": SEC(tail),
               "editorial_frames": ed, "editorial_duration_sec": SEC(ed),
               "master_reel_frame_window": [running, running + ed],
               "master_reel_window_sec": [SEC(running), SEC(running + ed)]}
     camera = _camera(directives, sid, problems, notes)
-    sid_char = h3.get("cut_in_biomechanical_state_tag")
-    shot = {
-        "shot_id": sid, "episode_id": ctx["episode_id"], "sequence_order": idx,
+    return {
+        "shot_id": sid, "episode_id": ctx["episode_id"], "sequence_order": seq,
         "story_beat": h3.get("story_beat"), "emotional_objective": h3.get("emotional_objective"),
         "mute_animatic_verification": False,
         "timing_and_lattice": timing,
@@ -267,7 +524,8 @@ def _shot(row, idx, ctx, notes, problems):
             "props_present": h3.get("props_present"), "screen_direction_vector": h3.get("screen_direction_vector"),
             "camera_axis_side": h3.get("camera_axis_side"), "horizon_line_y_ratio": h3.get("horizon_line_y_ratio"),
             "incoming_seam_type": seam_in, "incoming_seam_note": _text(cont.get("incoming")),
-            "cut_in_biomechanical_state_tag": sid_char, "cut_in_pose_vector": h3.get("cut_in_pose_vector"),
+            "cut_in_biomechanical_state_tag": h3.get("cut_in_biomechanical_state_tag"),
+            "cut_in_pose_vector": h3.get("cut_in_pose_vector"),
             "outgoing_seam_type": seam_out, "outgoing_seam_note": _text(cont.get("outgoing")),
             "cut_out_biomechanical_state_tag": h3.get("cut_out_biomechanical_state_tag"),
             "cut_out_pose_vector": h3.get("cut_out_pose_vector")},
@@ -282,17 +540,20 @@ def _shot(row, idx, ctx, notes, problems):
                                   "narrator_mouth_closed": True, "mouth_state": mouth},
         "sound_plan": {"overall_soundscape": _soundscape(track, sid, problems), "non_diegetic_music": "N/A"},
     }
-    return shot
 
 
-def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536"):
+def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536", authored=None):
     """Returns {"story": {...}, "problems": [...], "notes": [...]}. Problems are data the H3 story cannot take as is;
-    lint_story(story) reports the same gaps as rule codes. The input is never changed."""
+    lint_story(story) reports the same gaps as rule codes. The input is never changed.
+
+    authored: optional {shot_id: {H3 author fields}} taken as fresh by the caller. When None and the input is a folder,
+    <pack>/h3_authored/<shot_id>.json is used only while its hash matches (otherwise the field stays a problem)."""
     shots, bible, stage, root, problems = _source(pack_dir_or_dicts)
     notes = []
     if not isinstance(shots, list) or not isinstance(bible, dict):
         problems.append("shots.json and bible.json are required (a list of rows and a bible object)")
         return {"story": None, "problems": problems, "notes": notes}
+    from_folder = isinstance(pack_dir_or_dicts, (str, os.PathLike))
     langs = _languages(languages, stage, problems)
     prof = load_default_profile(profile)
     chars_in = bible.get("characters") if isinstance(bible.get("characters"), dict) else {}
@@ -312,29 +573,62 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536")
                 "characters": characters,
                 "environments": bible.get("environments") or {}, "props": bible.get("props") or {}, "v4_rows": {}}
     ctx = {"root": root, "profile": prof, "characters": characters, "environments": registry["environments"],
-           "running": 0, "prev": None, "episode_id": None}
-    episodes, order = {}, []
-    for idx, row in enumerate(shots, 1):
-        ep = row.get("episode") if isinstance(row, dict) else None
-        if ep is None:
-            problems.append(f"row {idx}: no episode number; row skipped")
-            continue
+           "running": 0, "episode_id": None}
+    keyframes_dir = os.path.join(root, "keyframes") if root else None
+    items, group_problems = group_rows(shots)
+    problems.extend(group_problems)
+    episodes, order, last = {}, [], {}
+    for it in items:
+        idx, row, ep = it["idx"], it["row"], it["ep"]
         if ep not in episodes:
             episodes[ep] = {"episode_id": f"EP{ep}", "asset_root": root, "shots": [], "episode_plan": {}}
             order.append(ep)
             ctx["running"] = 0
-            ctx["prev"] = None
+            last.pop(ep, None)
         ctx["episode_id"] = episodes[ep]["episode_id"]
         ep_shots = episodes[ep]["shots"]
-        ctx["prev"] = ep_shots[-1] if ep_shots else None
-        if isinstance(row, dict) and isinstance(row.get("id"), str):
-            registry["v4_rows"][row["id"]] = copy.deepcopy(row)
-        shot = _shot(row, len(ep_shots) + 1, ctx, notes, problems)
+        sid = row.get("id")
+        if not isinstance(sid, str) or not sid:
+            problems.append(f"row {idx}: no shot id; row skipped")
+            continue
+        registry["v4_rows"][sid] = copy.deepcopy(row)
+        t1, pf, ed, err = _timing_inputs(row, sid)
+        if err:
+            problems.append(err)
+            continue
+        derived, dnotes = derive_fields(row, it["prev"], it["next"], bible, it["first"], it["last"], keyframes_dir)
+        for n in dnotes:
+            (problems.append(n[len("PROBLEM: "):]) if n.startswith("PROBLEM: ") else notes.append(n))
+        prev = last.get(ep)
+        cut = cut_out_of(prev["h3"]) if prev else None
+        bp = build_blueprint(derived, cut)
+        req = requested_fields(row, derived, bp)
+        auth = {}
+        if req:
+            if authored is not None:
+                auth = dict((authored or {}).get(sid) or {})
+            elif from_folder:
+                found, status = load_fresh_authored(root, row, derived, bp, bible)
+                auth = dict(found or {})
+                if status in ("stale", "failed"):
+                    notes.append(f"{sid}: authored fields {status}; re-run h3/h3_author.py (missing ones are listed below)")
+        h3 = merge_h3(row, derived, auth, bp)
+        p2 = derived.get("picture_2_path")
+        if h3.get("incoming_seam_type") == CHAINED:
+            p1 = prev["p2"] if prev else None
+        else:
+            p1 = derived.get("picture_1_path")
+        if prev:
+            pout, pin = prev["h3"].get("outgoing_seam_type"), h3.get("incoming_seam_type")
+            if pout in SEAM_TYPES and pin in SEAM_TYPES and ((pout in STATIC_SEAMS) != (pin in STATIC_SEAMS)):
+                problems.append(f"{sid}: cut from {prev['shot_id']} mixes a static and a dynamic side: outgoing {pout}, "
+                                f"incoming {pin} (both sides of a cut must match)")
+        shot =_shot(row, len(ep_shots) + 1, ctx, h3, derived, p1, p2, notes, problems)
         if shot is None:
             continue
         ep_shots.append(shot)
         ctx["running"] += shot["timing_and_lattice"]["editorial_frames"]
-        ctx["prev"] = shot
+        last[ep] = {"shot_id": sid, "h3": h3, "p2": p2, "row": row}
     for ep in order:
         ep_data = episodes[ep]
         total = sum(s["timing_and_lattice"]["editorial_frames"] for s in ep_data["shots"])

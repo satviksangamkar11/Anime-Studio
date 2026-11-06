@@ -41,6 +41,7 @@ import urllib.request
 from pathlib import Path
 
 from h3_director import settings_for
+import retry_policy
 import run_registry
 import writer_prompts as wp
 
@@ -141,18 +142,24 @@ def body_for(model, prompt, max_tokens=65536, content=None):
             "top_p": 0.95, "max_tokens": max_tokens, "stream": True}
 
 
+class ModelRefused(retry_policy.ModelError, RuntimeError):
+    """A refused model call with its kind (rate limit, budget, server ...): the shared retry policy reads `kind`."""
+
+
 def call_nvidia(prompt, model, content=None):
     """Every nvidia_api_key*.txt in turn: a refused or busy key (HTTP error) moves to the next one."""
     keys = [k for k in (p.read_text(encoding="utf-8").strip() for p in sorted(NVIDIA_KEYS.glob("nvidia_api_key*.txt"))) if k]
     if not keys:
         raise RuntimeError(f"no NVIDIA key files in {NVIDIA_KEYS}")
-    errors = []
+    errors, last_code = [], None
     for n, key in enumerate(keys, 1):
         try:
             return envelope(*stream_chat(NVIDIA_URL, key, body_for(model, prompt, content=content)), "nvidia", model)
         except urllib.error.HTTPError as exc:
             errors.append(f"key {n}: HTTP {exc.code}")
-    raise RuntimeError("every NVIDIA key failed: " + "; ".join(errors))
+            last_code = exc.code
+    raise ModelRefused(retry_policy.classify_http(last_code, "") if last_code else retry_policy.FATAL,
+                       "every NVIDIA key failed: " + "; ".join(errors))
 
 
 def openrouter_is_free(model, catalog=None):
@@ -164,7 +171,13 @@ def openrouter_is_free(model, catalog=None):
     entry = next((m for m in catalog if m["id"] == model), None)
     if entry is None:
         raise ValueError(f"{model} is not in OpenRouter's catalog")
-    return all(float(v or 0) == 0 for v in entry.get("pricing", {}).values() if isinstance(v, (str, int, float)))
+    prices = {k: v for k, v in (entry.get("pricing") or {}).items() if isinstance(v, (str, int, float))}
+    if not prices:                      # no price fields = unknown price, never "free" (all([]) would be True)
+        return False
+    try:
+        return all(float(v or 0) == 0 for v in prices.values())
+    except ValueError:
+        return False
 
 
 def call_openrouter(prompt, model, allow_paid=False, content=None):
@@ -183,7 +196,8 @@ def call_openrouter(prompt, model, allow_paid=False, content=None):
             detail = exc.read(400).decode("utf-8", "replace")
         except Exception:
             detail = ""
-        raise RuntimeError(f"OpenRouter refused the call for {model}: HTTP {exc.code} {run_registry.redact(detail)}") from None
+        raise ModelRefused(retry_policy.classify_http(exc.code, detail),
+                           f"OpenRouter refused the call for {model}: HTTP {exc.code} {run_registry.redact(detail)}") from None
     return envelope(text, finish, "openrouter", model)
 
 
@@ -213,12 +227,22 @@ def refuse_finished(out):
         raise ValueError(f"{out.name} is already finished (PACK.md exists): a new call needs a new pack folder")
 
 
-def call_path(prompt, via, model, effort, allow_paid):
+def call_path(prompt, via, model, effort, allow_paid, policy=None, sleep=None):
+    """One model call. Claude runs once. NVIDIA and OpenRouter go through the shared retry policy (director/retry_policy.py):
+    rate limits, server errors, timeouts and empty answers are retried with growing waits (15-180 s, max 5 calls, 600 s cap);
+    a refusal that retrying cannot fix (budget, bad request) stops at once. The error reaches the caller as ModelGaveUp."""
     if via == "claude":
         return call_claude(prompt, model, effort)
-    if via == "nvidia":
-        return call_nvidia(prompt, model)
-    return call_openrouter(prompt, model, allow_paid)
+    one = (lambda: call_nvidia(prompt, model)) if via == "nvidia" else (lambda: call_openrouter(prompt, model, allow_paid))
+    kw = {"policy": policy} if policy else {}
+    if sleep:
+        kw["sleep"] = sleep
+    try:
+        return retry_policy.call_with_retry(one, model=model, check=lambda text: retry_policy.answer_kind(text), **kw)
+    except retry_policy.ModelGaveUp as gave_up:
+        if gave_up.kind == retry_policy.FATAL and gave_up.__cause__ is not None:
+            raise gave_up.__cause__ from None            # a plain refusal (e.g. paid model): the caller sees the real error
+        raise
 
 
 def json_lines(block):
@@ -255,7 +279,12 @@ def bible_from(block):
 
 def answer_text(raw):
     """The answer's text; raises when the model call failed or was cut off."""
-    answer = json.loads(raw)
+    try:
+        answer = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"the saved model answer is not valid JSON ({exc.msg}): delete the raw file and rerun") from exc
+    if not isinstance(answer, dict) or "result" not in answer and not answer.get("is_error"):
+        raise ValueError("the saved model answer has no 'result' field")
     if answer.get("is_error"):
         raise ValueError(f"the model call failed or was cut off ({answer.get('finish_reason')}): {str(answer.get('result'))[:500]}")
     return answer["result"]

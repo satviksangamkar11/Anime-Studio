@@ -916,7 +916,10 @@ def lint_story(story, compiled=None, asset_root_override=None):
             else:
                 seen_ids[sid] = ep["episode_id"]
     for ep in story["episodes"]:
-        root = asset_root_override or ep["asset_root"]
+        root = asset_root_override or ep.get("asset_root")
+        if not isinstance(root, str) or not root:
+            out["errors"].append(f"{ep.get('episode_id')}: EP-AR asset_root is missing (the folder with the picture paths)")
+            continue
         shots, running = ep["shots"], 0
         # Validate episode_id
         log_ep = _Log("episode")

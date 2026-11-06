@@ -218,6 +218,7 @@ def jget(port, path):
 # ----------------------------------------------------------------- group 1: argv builders (one per command id)
 def cases(cfg):
     S, F, P = cfg.studio, cfg.flow, cfg.python
+    write(S / "stories/kaliya_mardan/h3_story.json", {"episodes": [], "registry": {}})
     A1 = F / "adhyay_01"
     dq = [P, str(S / "flow/scripts/download_queue.py")]
     jobs = str(S / "flow/A_KM_flow_jobs_phase1a.json")
@@ -227,9 +228,13 @@ def cases(cfg):
     run_dry = [P, str(S / "director/t0_pack/run_t0_parallel.py"), "--batch", str(batch), "--results", str(batch / "results"),
                "--gpu", "G4", "--name", "t0-kaliya"]
     return {
-        "write_pack": ({"slug": "kaliya_mardan", "pack": "pack_new", "model": WRITER},
+        "yt_transcript": ({"url": "https://youtu.be/abc123", "story": "kaliya_mardan", "lang": "hi"},
+                          [P, str(S / "director/yt_transcript.py"), "https://youtu.be/abc123", str(S / "stories/kaliya_mardan"),
+                           "--lang", "hi", "--asr", "auto"]),
+        "h3_author": ({"pack": PACK}, [P, str(S / "h3/h3_author.py"), str(S / PACK), "--dry-run"]),
+        "write_pack": ({"slug": "kaliya_mardan", "pack": "pack_new", "model": WRITER, "out_lang": "hi"},
                        [P, str(S / "director/write_pack.py"), str(S / "stories/kaliya_mardan/SOURCE.md"), str(S / "stories/kaliya_mardan/pack_new"),
-                        "--staged", "--via", "nvidia", "--model", WRITER]),
+                        "--staged", "--via", "nvidia", "--model", WRITER, "--out-lang", "hi"]),
         "check_pack": ({"pack": PACK}, [P, str(S / "director/check_pack.py"), str(S / PACK)]),
         "bridge_dry": ({"size": "768x1344"}, [P, str(S / "flow/scripts/bridge_flow_to_h3.py"), "--final-dir", str(A1 / "final"),
                                              "--out-dir", str(A1 / "keyframes_h3"), "--size", "768x1344", "--json", "--dry-run"]),
@@ -265,8 +270,8 @@ def cases(cfg):
         "colab_stop": ({"session": "t0-kaliya"}, [*colab, "stop", "-s", "t0-kaliya"]),
         "colab_run_dry": ({"batch": "t0"}, run_dry),
         "colab_run": ({"batch": "t0"}, [*run_dry, "--go"]),
-        "h3_prepare": ({"story": PACK + "/shots.json", "scope": "reel", "reel": 1},
-                       [P, "-m", "h3.render_controller", "--story-file", str(S / PACK / "shots.json"), "--scope", "reel", "1",
+        "h3_prepare": ({"story": "stories/kaliya_mardan/h3_story.json", "scope": "reel", "reel": 1},
+                       [P, "-m", "h3.render_controller", "--story-file", str(S / "stories/kaliya_mardan/h3_story.json"), "--scope", "reel", "EP_01",
                         "--mode", "prepare-only"]),
         "build_spec": ({"pack": GOOD_PACK, "adhyay": 1},
                        [P, str(S / "flow/scripts/pack_to_spec.py"), "--pack", str(S / GOOD_PACK), "--adhyay", "1",
@@ -594,14 +599,17 @@ def test_8_packet_with_a_key_like_text_is_not_written(world, api):
     write(jobs, [{"shot_id": "LEAK_SHOT", "flow_title": "LEAK_SHOT__v01", "chips": [], "prompt": "hf_ABCDEFGHIJKLMNOPQRSTUVWX",
                   "prompt_sha256": "x"}])
     with pytest.raises(ApiError) as e:
-        api.packet({"jobs": "flow/A_KM_flow_jobs_leak.json", "shots": ["LEAK_SHOT"]})
+        api.packet({"story": "kaliya_mardan", "pack": "pack_x", "jobs": "flow/A_KM_flow_jobs_leak.json", "shots": ["LEAK_SHOT"]})
     assert e.value.code == 400
     assert not (cfg.runs / "packets").exists() or not any((cfg.runs / "packets").iterdir())
 
 
 def test_8_packet_is_written_when_clean(world, api):
     cfg, clk, fakes = world
-    res = api.packet({"jobs": "flow/A_KM_flow_jobs_phase1a.json", "shots": ["KRISHNA_TURNAROUND"]})
+    src = json.loads((cfg.studio / "flow/A_KM_flow_jobs_phase1a.json").read_text(encoding="utf-8"))
+    write(cfg.studio / "flow/generated/kaliya_mardan/phase1a_flow_jobs.json", src)
+    res = api.packet({"story": "kaliya_mardan", "pack": "pack_x", "jobs": "flow/generated/kaliya_mardan/phase1a_flow_jobs.json",
+                      "shots": ["KRISHNA_TURNAROUND"]})
     assert Path(res["path"]).is_file()
     assert "Haiku, effort LOW" in res["markdown"] and "Nano Banana 2.1 x2" in res["markdown"] and "abc123" in res["markdown"]
 
@@ -772,7 +780,8 @@ def test_13_server_has_no_shell_and_only_stdlib_or_pillow():
             mods.add(node.module.split(".")[0])
     # download_queue is the flow script's own queue reader, loaded by _dq_module() so UI and script never disagree;
     # run_registry is director/run_registry.py (stdlib), loaded by _registry()
-    assert mods <= set(sys.stdlib_module_names) | {"PIL", "download_queue", "pipeline", "run_registry"}, mods - set(sys.stdlib_module_names)
+    assert mods <= set(sys.stdlib_module_names) | {"PIL", "download_queue", "pipeline", "run_registry", "story_links", "story_state",
+                                                    "ops_checks", "h3", "director", "h3_author"}, mods - set(sys.stdlib_module_names)
 
 
 # ----------------------------------------------------------------- group 14: optional read-only smoke on real data
@@ -842,12 +851,15 @@ def test_http_pack_status_and_h3_missing(http_srv):
 
 def test_http_h3_preview_refused_while_missing_and_allowed_when_built(world, api):
     cfg, clk, fakes = world
+    write(cfg.studio / "stories/kaliya_mardan/h3_story.json", {"episodes": [], "registry": {}})
     with pytest.raises(ApiError) as e:
-        api.preview({"command": "h3_prepare", "args": {"story": PACK + "/shots.json", "scope": "reel", "reel": 1}})
+        api.preview({"command": "h3_prepare", "args": {"story": "stories/kaliya_mardan/h3_story.json", "scope": "reel", "reel": 1}})
     assert e.value.code == 409 and e.value.msg == "h3 engine not built yet"
     write(cfg.studio / "h3/render_controller.py", "# built\n")
-    got = api.preview({"command": "h3_prepare", "args": {"story": PACK + "/shots.json", "scope": "reel", "reel": 1}})
+    write(cfg.studio / "stories/kaliya_mardan/h3_story.json", {"episodes": [], "registry": {}})
+    got = api.preview({"command": "h3_prepare", "args": {"story": "stories/kaliya_mardan/h3_story.json", "scope": "reel", "reel": 1}})
     assert got["argv"][:3] == [cfg.python, "-m", "h3.render_controller"]
+    assert "EP_01" in got["argv"]
 
 
 def test_http_file_endpoint_serves_allowed_and_refuses_the_rest(http_srv, world):
@@ -884,7 +896,7 @@ def test_http_video_and_export_shapes(http_srv):
     status, body = jget(port, "/api/video")
     assert status == 200 and body["batches"] and {"name", "run_py_bytes", "settings", "embed_mb"} <= set(body["batches"][0])
     assert body["clips"] and body["clips"][0]["shot"] == "SHOT-T0-C-S42"
-    status, body = jget(port, f"/api/export?reel=1&pack={PACK}")
+    status, body = jget(port, "/api/export?reel=1&story=kaliya_mardan&pack=pack_x")
     assert status == 200 and body["assembly"] == "not built" and body["shot_ids"] == ["SHOT-01", "SHOT-02"]
 
 
@@ -922,7 +934,9 @@ def test_6_job_started_during_the_spend_gate_blocks_the_second_run(api, monkeypa
     monkeypatch.setattr(api, "_spend_gate", gate_that_lets_the_other_run_start)
     api.cfg.spend = True
     monkeypatch.setitem(api.tokens[second["token"]], "spend", True)
-    monkeypatch.setitem(api.tokens[second["token"]], "est", 1.0)
+    monkeypatch.setitem(api.tokens[second["token"]], "gpu", "G4")
+    monkeypatch.setitem(api.tokens[second["token"]], "batch", "slow")
+    monkeypatch.setitem(api.tokens[second["token"]], "est", server.estimate_units("G4", server.batch_clips(api.cfg, "slow")))
     monkeypatch.setitem(api.tokens[second["token"]], "confirm", "")
     with pytest.raises(ApiError) as e:
         api.run({"token": second["token"], "confirm": ""})
@@ -1015,7 +1029,7 @@ def test_15_build_spec_then_jobs_write_the_files_and_the_page_lists_them(world, 
     assert [j["shot_id"] for j in mine] == ["SHOT-G1A", "SHOT-G1B"]
     assert any(j["file"] == "A_KM_flow_jobs_phase1a.json" for j in listed)
     assert (cfg.studio / "flow" / mine[0]["file"]).is_file()
-    pkt = api.packet({"jobs": "flow/" + mine[0]["file"], "shots": ["SHOT-G1A", "SHOT-G1B"]})
+    pkt = api.packet({"story": "kaliya_mardan", "pack": "pack_good", "jobs": "flow/" + mine[0]["file"], "shots": ["SHOT-G1A", "SHOT-G1B"]})
     assert "SHOT-G1A" in pkt["markdown"]
 
 

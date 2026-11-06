@@ -115,3 +115,121 @@ story_links.py and ops_checks.py: no real defects found (validation, locking, an
 FINAL:
 1. high — story_state.py:201 — `resume` can target a fully-present but unfinished pack, making `_next_step` index `resume["stages_missing"][0]` on an empty list and crash `summarize` with `IndexError`; fix by filtering `unfinished` to packs with `stages_missing` or `failed_stages` at :201.
 2. medium — run_registry.py:366-367 — `voice_engine` lets `"h3"` map to any language, violating the owner rule that `h3` is English-only; fix by adding `and all(v != "h3" or k == "en" for k, v in engines.items())`.
+
+
+# BATCH b4_h3_linter (supervl) 11-07 02:13
+
+=== FILE schema_and_linter.py ===
+
+high, schema_and_linter.py:470 (also 479 and 292): `_check_timing` and `mouth_state_problems` divide by `fps` without validating it is nonzero, and `ZeroDivisionError` is not in `_run`'s caught exception tuple, so `fps = 0` crashes `lint_story` instead of logging a rule error. Concrete failing input: a profile with `"fps": 0` and any shot with valid timing. One-line fix: validate `fps > 0` (and add `ZeroDivisionError` to `_run`) before any `pf / fps` division.
+
+high, schema_and_linter.py:181: `refuse_speech_in_source` raises `SL-04` for *any* utterances in pure-Foley mode, but the owner routes en/hi/mr voices through ElevenLabs after render, so utterances are valid source metadata that must be allowed (the H3 prompt still excludes speech). Concrete failing input: a pure-Foley shot whose `dialogue_and_lip_lock.utterances` holds an ElevenLabs Hindi line. One-line fix: remove the `if utterances and not voice: raise PromptRefused("SL-04", ...)` refusal; keep refusing speech patterns only in free text.
+
+high, schema_and_linter.py:402-423 (called unwrapped at line 902): `lint_profile` indexes `model_sampling_av`, `base_resolution`, and `aspect_ratio` without type validation, so a malformed profile raises `AttributeError`/`ValueError` and crashes `lint_story` instead of emitting a `PO` error. Concrete failing input: a profile with `"base_resolution": "1920x1080"` or `model_sampling_av` as a string. One-line fix: validate profile structure/types before indexing and report `PO` errors rather than letting exceptions escape.
+
+medium, schema_and_linter.py:354: `load_default_profile` builds a path from unchecked `name`, allowing directory traversal. Concrete failing input: `load_default_profile("../../../etc/passwd")`. One-line fix: restrict `name` to `ID_PATTERN` or `os.path.basename(name)` before joining.
+
+medium, schema_and_linter.py:919: `lint_story` indexes `ep["asset_root"]` without validation, crashing on an episode missing `asset_root`. Concrete failing input: an episode dict with no `"asset_root"` key. One-line fix: validate episode structure and report a story-level error instead of indexing directly.
+
+=== FILE compile_h3_sing8.py ===
+
+high, compile_h3_sing8.py:184 (root cause lines 142/145): `compile_episode` calls `compile_comfyui_workflow` without `try/except`; it indexes `mode_to_lora_map` and calls `video_shift_for`, so a missing LoRA entry or shift raises `KeyError` and crashes. Concrete failing input: a profile whose `mode_to_lora_map` lacks the `route_namespace` key. One-line fix: wrap the call in `try/except` (or validate the keys first) and raise `ValueError` on missing config.
+
+medium, compile_h3_sing8.py:171: `compile_episode` uses `next(...)` with no default, raising `StopIteration` for a missing `episode_id`. Concrete failing input: `compile_episode(story, "nonexistent", out_dir)`. One-line fix: use `next(..., None)` and raise `ValueError` when the episode is not found.
+
+=== FILE router.py ===
+no findings
+
+=== FILE shot_table_spec.py ===
+no findings
+
+FINAL:
+1. high, schema_and_linter.py:470 — `fps = 0` causes an uncaught `ZeroDivisionError` in `_check_timing`/`mouth_state_problems`, crashing `lint_story`; validate `fps > 0` (and catch `ZeroDivisionError` in `_run`).
+2. high, schema_and_linter.py:181 — `refuse_speech_in_source` blocks all utterances in pure-Foley mode, contradicting the owner's ElevenLabs post-render voice route for en/hi/mr; drop the `SL-04` utterance refusal.
+3. high, compile_h3_sing8.py:184 — `compile_comfyui_workflow` is called unwrapped in `compile_episode`, so a missing LoRA/shift key crashes with `KeyError`; wrap it in `try/except` and report a `ValueError`.
+4. high, schema_and_linter.py:402-423 — `lint_profile` is called unwrapped at line 902 and crashes on malformed profile types instead of emitting `PO` errors; validate the profile structure first.
+5. medium, schema_and_linter.py:354 — `load_default_profile` allows path traversal via unchecked `name`; restrict to `ID_PATTERN`/`basename`.
+
+
+# BATCH b5_gate_d (supervl) 11-07 02:27
+
+=== FILE gate_d_audio.py ===
+
+**High** — `gate_d_audio.py:829` — `same_timing_problems` calls `parse_time_range(x["time_range"])` on untrusted shot data. A malformed `time_range` (e.g. `"not-a-range"` or `"5-2s"`) raises `ValueError` and crashes the entire planner before any per-language report is produced, instead of returning a recordable `TIME-01` error.  
+Failing input: a shot with `"narration_by_lang": {"en": {"text": "x", "time_range": "bad"}}`.  
+Fix: wrap the `parse_time_range` call in `try/except ValueError` and append a `TIME-01` error dict.
+
+**High** — `gate_d_audio.py:648` — `_caption_cues` calls `parse_time_range(rng)` on untrusted narration/caption time ranges without catching `ValueError`. A bad range crashes `_caption_cues` and aborts that language’s plan.  
+Failing input: `"narration": {"text": "hi", "language": "en", "time_range": "not-a-range"}` with `languages=["en"]`.  
+Fix: catch `ValueError` around `parse_time_range(rng)` and skip/record the bad cue.
+
+**High** — `gate_d_audio.py:733-762` — The `if not errors:` block builds the mix filter and mux argv but does not catch `ValueError` from `build_mix_filter` or `build_final_mux_argv`. An exception there crashes the whole multi-language run, violating the documented contract that a failing language gets no mix/mux and does not affect the others.  
+Failing input: any edge case that makes `build_mix_filter` raise (e.g. `total <= 0` or an empty SFX clip list reaching it).  
+Fix: wrap the mix/mux construction in `try/except ValueError` and append the error so the language is skipped gracefully.
+
+**Medium** — `gate_d_audio.py:235-236` — `validate_bgm_manifest` emits `BGM_MANIFEST_EMPTY` when `tracks` is an empty list, but the owner decision makes BGM optional (default none). An explicit `{"tracks": []}` (no BGM wanted) blocks the reel.  
+Failing input: `bgm_manifest={"tracks": []}`.  
+Fix: remove the empty-tracks error (treat empty `tracks` as no BGM / return `None` path).
+
+**Medium** — `gate_d_audio.py:729` — `export = f"{export_dir}/{reel}_{lang}.mp4"` interpolates unvalidated `reel` into a filesystem path, allowing path traversal (`../../../tmp/evil`).  
+Failing input: `reel="../../../tmp/evil"`.  
+Fix: validate/sanitize `reel` (reject `..`, `/`, `\`) before interpolating.
+
+**Low** — `gate_d_audio.py:113` — `check_opening_hook` calls `parse_time_range(c["time_range"])` on `sfx_cues` without catching `ValueError`; a malformed cue time range crashes the opening-hook check.  
+Failing input: `"sfx_cues": [{"time_range": "bad"}]` on the opening shot.  
+Fix: wrap `parse_time_range` in `try/except ValueError` and treat bad cues as non-hits or record an error.
+
+=== FILE voice_engine.py ===
+
+no findings
+
+=== FILE voice_manifest.py ===
+
+**Low** — `voice_manifest.py:121` — `doc["shots"]` raises `KeyError` when the shots JSON is a dict without a `"shots"` key, crashing the CLI instead of a clean error.  
+Failing input: `--shots` file containing `{"other": []}`.  
+Fix: validate the doc shape (`isinstance(doc, dict) and "shots" in doc`) before indexing.
+
+---
+
+FINAL:
+1. `gate_d_audio.py:829` — `same_timing_problems` crashes on malformed `time_range` instead of returning a `TIME-01` error (High).
+2. `gate_d_audio.py:648` — `_caption_cues` crashes on malformed caption/narration `time_range` instead of reporting it (High).
+3. `gate_d_audio.py:733-762` — Uncaught `ValueError` from `build_mix_filter`/`build_final_mux_argv` aborts the whole planner instead of failing just that language (High).
+4. `gate_d_audio.py:235-236` — `BGM_MANIFEST_EMPTY` for `"tracks": []` contradicts the owner’s optional-BGM decision (Medium).
+5. `gate_d_audio.py:729` — Unsanitized `reel` interpolated into the export path enables path traversal (Medium).
+
+
+# BATCH b6_controller (supervl) 11-07 02:34
+
+### render_controller.py
+
+**Medium, render_controller.py:307** — `seconds` is always `None` for realistic float frame rates (e.g. 23.98) because the guard requires `isinstance(fps, int)`; a profile with `"fps": 23.98` and `"pixel_frames": 100` yields `seconds: null` instead of ~4.17. `isinstance(pf, int)` is also overly strict for JSON numbers. Fix: accept `(int, float)` for both and require `fps != 0`.
+
+**Medium, render_controller.py:102-103** — `asset_root` is normalized but never confined to the story folder; an absolute or `..`-laden value escapes the story directory and lets `_picture_rows` read arbitrary files (e.g. `asset_root: "/etc"` with `picture_1: "passwd"`). Fix: after normalization, reject the path unless it resolves inside the story folder.
+
+**Medium, render_controller.py:560** — `plan_pipeline` defaults `languages` to `["en"]` when no `output_languages` exists, so Hindi and Marathi reels are never planned despite the owner's en/hi/mr voice requirement. Fix: default to `["en", "hi", "mr"]` (or require explicit selection).
+
+**Low/unverified, render_controller.py:536-537** — `_gate_d_result` unconditionally includes `en_h3` in the video plan, contradicting "rendered ONCE" and "h3 English is off-by-default second render" unless `plan_language_outputs` ignores it. (unverified — `gate_d_audio` is not shown)
+
+### fallback_policy.py
+
+**High, fallback_policy.py:122,126,130** — `split_shot_row` subscripts `narration["time_range"][0]`, `dlg["time_range"][0]`, and `cue["time_range"]` without validating their shape, so a row like `{"narration": {"time_range": None}}` raises `TypeError`/`KeyError` and aborts the fallback decision. Fix: validate each `time_range` is a list/tuple of two numbers before use.
+
+### pipeline_contract.py
+
+No findings.
+
+### asset_manifest.py
+
+No findings.
+
+### step9_qc.py
+
+No findings.
+
+FINAL:
+1. render_controller.py:307 — `seconds` is `None` for float FPS (e.g. 23.98) due to `isinstance(fps, int)`; accept `(int, float)` and `fps != 0`.
+2. fallback_policy.py:122,126,130 — `split_shot_row` crashes on missing/malformed `time_range` in narration/dialogue/sfx; validate the range structure before subscripting.
+3. render_controller.py:102-103 — `asset_root` escapes the story folder (absolute/`..`), enabling arbitrary file reads; confine it to the story directory.
+4. render_controller.py:560 — `plan_pipeline` defaults languages to `["en"]`, dropping hi/mr reels; default to `["en", "hi", "mr"]`.
+5. render_controller.py:536-537 — `en_h3` is unconditionally planned, contradicting the single-render / off-by-default h3 rule (unverified without `gate_d_audio`).

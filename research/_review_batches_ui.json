@@ -1,0 +1,16 @@
+{
+ "u1_server": [
+  "ui/server.py",
+  "ui/pipeline.py",
+  "research/UI_CONTRACT_ADDENDUM_2026-11-07.md"
+ ],
+ "u2_pipeline_js": [
+  "ui/static/pipeline.js",
+  "research/UI_CONTRACT_ADDENDUM_2026-11-07.md"
+ ],
+ "u3_app_html_css": [
+  "ui/static/app.js",
+  "ui/static/index.html",
+  "ui/static/style.css"
+ ]
+}

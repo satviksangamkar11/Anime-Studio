@@ -168,7 +168,9 @@ def compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_p
 
 def compile_episode(story, episode_id, out_dir, shot_ids=None, second_pass=False):
     """Lint the episode first (raises ValueError on any error), then write <out>/<shot_id>/prompt.txt and workflow.json."""
-    ep = next(e for e in story["episodes"] if e["episode_id"] == episode_id)
+    ep = next((e for e in story["episodes"] if e.get("episode_id") == episode_id), None)
+    if ep is None:
+        raise ValueError(f"episode {episode_id!r} is not in the story")
     reg = story["registry"]
     res = lint_story({"registry": reg, "episodes": [ep]})
     if res["errors"]:
@@ -181,7 +183,10 @@ def compile_episode(story, episode_id, out_dir, shot_ids=None, second_pass=False
         prev = shots[i - 1] if i else None
         kf = resolve_keyframes(shot, prev, ep["asset_root"])
         text = compile_fl2va_prompt(shot, reg)["compiled_prompt"]
-        wf = compile_comfyui_workflow(shot, reg, text, second_pass, kf)
+        try:
+            wf = compile_comfyui_workflow(shot, reg, text, second_pass, kf)
+        except KeyError as exc:                  # a profile without the LoRA / shift entry for this route
+            raise ValueError(f"{sid}: execution profile has no entry {exc} for this route") from exc
         lint = lint_workflow(wf, shot, reg["execution_profile"])
         if lint["errors"]:
             raise ValueError("\n".join(lint["errors"]))

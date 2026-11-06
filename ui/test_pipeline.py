@@ -16,6 +16,17 @@ import pytest
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
+def sc(runs):
+    """the project's story and pack, for gate records written in a test"""
+    p = load_project(runs)
+    return {"story_slug": p["story_slug"], "pack": p["pack"]}
+
+
+def ag(runs):
+    p = load_project(runs)
+    return {"story": p["story_slug"], "pack": p["pack"]}
+
 def make_runs(tmp_path, slug="test-slug", pack="pack1", takes=3,
               images_dir=None, results_dir=None):
     runs = tmp_path / "runs"
@@ -116,7 +127,7 @@ def test_read_approvals_skip_malformed(tmp_path):
 
 def test_record_gate_creates_folder(tmp_path):
     runs = tmp_path / "runs"
-    rec = record_gate(runs, "A", "approve", "owner", "ok")
+    rec = record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     assert rec["gate"] == "A"
     assert rec["decision"] == "approve"
     assert (runs / "approvals.jsonl").is_file()
@@ -263,7 +274,7 @@ def test_pipeline_state_analysis_approved(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     analysis_stage = next(s for s in state["stages"] if s["id"] == "analysis")
     assert analysis_stage["status"] == "approved"
@@ -280,7 +291,7 @@ def test_pipeline_state_analysis_rejected(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "reject", "owner", "no")
+    record_gate(runs, "A", "reject", "owner", "no", **sc(runs))
     state = pipeline_state(studio, runs)
     analysis_stage = next(s for s in state["stages"] if s["id"] == "analysis")
     assert analysis_stage["status"] == "rejected"
@@ -308,7 +319,7 @@ def test_pipeline_state_images_ready(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "ready"
@@ -324,7 +335,7 @@ def test_pipeline_state_images_running_finals(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=1)  # expected 2
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "running"
@@ -345,7 +356,7 @@ def test_pipeline_state_images_running_pending(tmp_path):
     fl = []
     img_dir = make_images_dir(tmp_path, "img", finals=0, dq_lines=dq, fl_lines=fl)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "running"
@@ -363,7 +374,7 @@ def test_pipeline_state_images_waiting_approval(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=2)  # expected 2
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "waiting_approval"
@@ -381,8 +392,8 @@ def test_pipeline_state_images_approved(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=2)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "approved"
@@ -400,8 +411,8 @@ def test_pipeline_state_images_rejected(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=2)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "reject", "owner", "bad")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "reject", "owner", "bad", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["status"] == "rejected"
@@ -418,7 +429,7 @@ def test_pipeline_state_readout_locked(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     readout_stage = next(s for s in state["stages"] if s["id"] == "readout")
     assert readout_stage["status"] == "locked"
@@ -433,8 +444,8 @@ def test_pipeline_state_readout_waiting_approval(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     readout_stage = next(s for s in state["stages"] if s["id"] == "readout")
     assert readout_stage["status"] == "waiting_approval"
@@ -451,9 +462,9 @@ def test_pipeline_state_readout_approved(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     readout_stage = next(s for s in state["stages"] if s["id"] == "readout")
     assert readout_stage["status"] == "approved"
@@ -470,9 +481,9 @@ def test_pipeline_state_readout_rejected(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "reject", "owner", "no")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "reject", "owner", "no", **sc(runs))
     state = pipeline_state(studio, runs)
     readout_stage = next(s for s in state["stages"] if s["id"] == "readout")
     assert readout_stage["status"] == "rejected"
@@ -489,8 +500,8 @@ def test_pipeline_state_render_locked(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "locked"
@@ -508,9 +519,9 @@ def test_pipeline_state_render_ready(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=0)
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=1)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "ready"
@@ -528,9 +539,9 @@ def test_pipeline_state_render_running(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=1)  # planned_clips = 1*1=1? Wait takes=1, n_shots=1 -> planned=1, clips_home=1 -> not running. Let's use takes=2.
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=2)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "running"
@@ -550,9 +561,9 @@ def test_pipeline_state_render_waiting_approval(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=2)  # planned_clips = 2
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=2)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "waiting_approval"
@@ -572,10 +583,10 @@ def test_pipeline_state_render_approved(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=2)
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=2)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
-    record_gate(runs, "D", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "D", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "approved"
@@ -595,10 +606,10 @@ def test_pipeline_state_render_rejected(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=2)
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=2)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
-    record_gate(runs, "D", "reject", "owner", "bad")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "D", "reject", "owner", "bad", **sc(runs))
     state = pipeline_state(studio, runs)
     render_stage = next(s for s in state["stages"] if s["id"] == "render")
     assert render_stage["status"] == "rejected"
@@ -615,9 +626,9 @@ def test_pipeline_state_export_locked(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     export_stage = next(s for s in state["stages"] if s["id"] == "export")
     assert export_stage["status"] == "locked"
@@ -635,10 +646,10 @@ def test_pipeline_state_export_ready(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=1)
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=1)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
-    record_gate(runs, "D", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "D", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     export_stage = next(s for s in state["stages"] if s["id"] == "export")
     assert export_stage["status"] == "ready"
@@ -654,14 +665,14 @@ def test_cascade_reject_A_invalidates_later(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
     # approve all gates
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
-    record_gate(runs, "D", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "D", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     assert all(g["state"] == "approved" for g in state["gates"])
     # now reject A
-    record_gate(runs, "A", "reject", "owner", "no")
+    record_gate(runs, "A", "reject", "owner", "no", **sc(runs))
     state2 = pipeline_state(studio, runs)
     gate_a = next(g for g in state2["gates"] if g["id"] == "A")
     assert gate_a["state"] == "rejected"
@@ -681,14 +692,14 @@ def test_gate_C_requires_START(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=2)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
     # gate C is open
     with pytest.raises(GateError) as exc:
-        apply_gate(studio, runs, "C", "approve", "", confirm="WRONG")
+        apply_gate(studio, runs, "C", "approve", "", confirm="WRONG", **ag(runs))
     assert exc.value.code == 400
     # with correct confirm
-    gate = apply_gate(studio, runs, "C", "approve", "", confirm="START")
+    gate = apply_gate(studio, runs, "C", "approve", "", confirm="START", **ag(runs))
     assert gate["state"] == "approved"
 
 
@@ -703,23 +714,25 @@ def test_reject_requires_note(tmp_path):
     runs = make_runs(tmp_path, slug=slug, pack="p")
     # gate A is open
     with pytest.raises(GateError) as exc:
-        apply_gate(studio, runs, "A", "reject", "")
+        apply_gate(studio, runs, "A", "reject", "", **ag(runs))
     assert exc.value.code == 400
     # too long note
     with pytest.raises(GateError):
-        apply_gate(studio, runs, "A", "reject", "x" * 301)
+        apply_gate(studio, runs, "A", "reject", "x" * 301, **ag(runs))
     # newline in note
     with pytest.raises(GateError):
-        apply_gate(studio, runs, "A", "reject", "line1\nline2")
+        apply_gate(studio, runs, "A", "reject", "line1\nline2", **ag(runs))
     # non-printable
     with pytest.raises(GateError):
-        apply_gate(studio, runs, "A", "reject", "bad\x00char")
+        apply_gate(studio, runs, "A", "reject", "bad\x00char", **ag(runs))
     # valid reject
-    gate = apply_gate(studio, runs, "A", "reject", "not good")
+    gate = apply_gate(studio, runs, "A", "reject", "not good", **ag(runs))
     assert gate["state"] == "rejected"
 
 
-def test_apply_gate_locked_gate(tmp_path):
+def test_apply_gate_locked_gate(tmp_path, monkeypatch):
+    import pipeline as pl
+    monkeypatch.setattr(pl, "validator_problems", lambda *a: [])   # the fixture pack is not a V4 pack
     studio = tmp_path / "studio"
     studio.mkdir()
     slug = "s"
@@ -729,11 +742,11 @@ def test_apply_gate_locked_gate(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
     # gate A open
-    gate = apply_gate(studio, runs, "A", "approve", "ok")
+    gate = apply_gate(studio, runs, "A", "approve", "ok", **ag(runs))
     assert gate["state"] == "approved"
     # gate B is locked
     with pytest.raises(GateError) as exc:
-        apply_gate(studio, runs, "B", "approve", "ok")
+        apply_gate(studio, runs, "B", "approve", "ok", **ag(runs))
     assert exc.value.code == 409
 
 
@@ -747,7 +760,7 @@ def test_apply_gate_invalid_decision(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
     with pytest.raises(GateError) as exc:
-        apply_gate(studio, runs, "A", "maybe", "note")
+        apply_gate(studio, runs, "A", "maybe", "note", **ag(runs))
     assert exc.value.code == 400
 
 
@@ -761,7 +774,7 @@ def test_apply_gate_invalid_gate(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
     with pytest.raises(GateError) as exc:
-        apply_gate(studio, runs, "Z", "approve", "note")
+        apply_gate(studio, runs, "Z", "approve", "note", **ag(runs))
     assert exc.value.code == 400
 
 
@@ -856,28 +869,28 @@ def test_current_stage_selection(tmp_path):
     bible = {"characters": [], "environments": [], "props": []}
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     assert state["current"] == "images"
     # after images approved, current = readout
     img_dir = make_images_dir(tmp_path, "img", finals=2)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     assert state["current"] == "readout"
     # after readout approved, current = render
-    record_gate(runs, "C", "approve", "owner", "ok")
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     assert state["current"] == "render"
     # after render approved, current = export
     res_dir = make_results_dir(tmp_path, "res", clips=1)
     runs = make_runs(tmp_path, slug=slug, pack="p",
                      images_dir=str(img_dir), results_dir=str(res_dir), takes=1)
-    record_gate(runs, "A", "approve", "owner", "ok")
-    record_gate(runs, "B", "approve", "owner", "ok")
-    record_gate(runs, "C", "approve", "owner", "ok")
-    record_gate(runs, "D", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "B", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "C", "approve", "owner", "ok", **sc(runs))
+    record_gate(runs, "D", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     assert state["current"] == "export"
 
@@ -892,9 +905,9 @@ def test_gate_state_from_latest_approval(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     runs = make_runs(tmp_path, slug=slug, pack="p")
     # first approve
-    record_gate(runs, "A", "approve", "owner", "first")
+    record_gate(runs, "A", "approve", "owner", "first", **sc(runs))
     # then reject
-    record_gate(runs, "A", "reject", "owner", "second")
+    record_gate(runs, "A", "reject", "owner", "second", **sc(runs))
     state = pipeline_state(studio, runs)
     gate_a = next(g for g in state["gates"] if g["id"] == "A")
     assert gate_a["state"] == "rejected"
@@ -912,7 +925,7 @@ def test_progress_dict_when_running(tmp_path):
     make_pack(studio, slug, "p", shots=shots, bible=bible)
     img_dir = make_images_dir(tmp_path, "img", finals=1)
     runs = make_runs(tmp_path, slug=slug, pack="p", images_dir=str(img_dir))
-    record_gate(runs, "A", "approve", "owner", "ok")
+    record_gate(runs, "A", "approve", "owner", "ok", **sc(runs))
     state = pipeline_state(studio, runs)
     images_stage = next(s for s in state["stages"] if s["id"] == "images")
     assert images_stage["progress"] == {"done": 1, "total": 2}
@@ -926,9 +939,9 @@ def test_progress_dict_when_running(tmp_path):
     res_dir = make_results_dir(tmp_path, "res", clips=1)
     runs3 = make_runs(tmp_path, slug=slug, pack="p",
                       images_dir=str(img_dir), results_dir=str(res_dir), takes=3)
-    record_gate(runs3, "A", "approve", "owner", "ok")
-    record_gate(runs3, "B", "approve", "owner", "ok")
-    record_gate(runs3, "C", "approve", "owner", "ok")
+    record_gate(runs3, "A", "approve", "owner", "ok", **sc(runs3))
+    record_gate(runs3, "B", "approve", "owner", "ok", **sc(runs3))
+    record_gate(runs3, "C", "approve", "owner", "ok", **sc(runs3))
     state3 = pipeline_state(studio, runs3)
     render_stage = next(s for s in state3["stages"] if s["id"] == "render")
     assert render_stage["progress"] == {"done": 1, "total": 3}

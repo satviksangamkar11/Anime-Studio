@@ -150,7 +150,7 @@ def test_free_check_reads_every_price_field(chat):
                {"id": "a/none", "pricing": {}}]
     assert write_pack.openrouter_is_free("a/free", catalog) is True
     assert write_pack.openrouter_is_free("a/half", catalog) is False
-    assert write_pack.openrouter_is_free("a/none", catalog) is True
+    assert write_pack.openrouter_is_free("a/none", catalog) is False   # no price fields = unknown = not free (Dots review)
     with pytest.raises(ValueError, match="not in OpenRouter"):
         write_pack.openrouter_is_free("a/missing", catalog)
 

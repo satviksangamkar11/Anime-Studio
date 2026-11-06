@@ -43,7 +43,7 @@ def test_the_ui_writer_table_mirrors_write_pack():
 
 
 def test_write_pack_defaults_to_super_vl_and_names_the_route(api):
-    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new"}})
+    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new", "out_lang": "hi"}})
     argv = out["argv"]
     assert argv[argv.index("--writer") + 1] == "super-vl"
     assert "--via" not in argv and "--model" not in argv and "--staged" in argv
@@ -51,13 +51,13 @@ def test_write_pack_defaults_to_super_vl_and_names_the_route(api):
 
 
 def test_write_pack_ultra_shortcut(api):
-    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new", "writer": "ultra"}})
+    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new", "writer": "ultra", "out_lang": "hi"}})
     assert out["argv"][out["argv"].index("--writer") + 1] == "ultra"
     assert "openrouter nvidia/nemotron-3-ultra-550b-a55b:free" in out["route"]
 
 
 def test_write_pack_legacy_model_path_keeps_its_old_argv(api):
-    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new", "model": WRITER_MODEL}})
+    out = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_new", "model": WRITER_MODEL, "out_lang": "hi"}})
     argv = out["argv"]
     assert argv[argv.index("--via") + 1] == "nvidia" and argv[argv.index("--model") + 1] == WRITER_MODEL
     assert "--writer" not in argv and out["route"].startswith("legacy")
@@ -78,7 +78,7 @@ def test_write_pack_refuses_a_finished_pack_and_suggests_a_new_name(world, api):
     done.mkdir()
     (done / "PACK.md").write_text("finished\n", encoding="utf-8")
     with pytest.raises(ApiError) as e:
-        api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_done"}})
+        api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "pack_done", "out_lang": "hi"}})
     assert e.value.code == 400 and "already finished" in e.value.msg
     assert f"pack_super-vl_{dt.date.today():%Y%m%d}_v1" in e.value.msg
     assert (done / "PACK.md").read_text(encoding="utf-8") == "finished\n"
@@ -167,7 +167,7 @@ def test_story_save_writes_the_run_log_and_survives_a_failing_hook(world, api, m
 def test_a_stopped_write_pack_closes_its_open_steps(world, api, monkeypatch):
     cfg = world[0]
     run_registry.append_event(story_dir(cfg), "run-open", "analysis_done", None, "started", pack="slow_pack", via="openrouter")
-    p = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "slow_pack"}})
+    p = api.preview({"command": "write_pack", "args": {"slug": "kaliya_mardan", "pack": "slow_pack", "out_lang": "hi"}})
     jid = api.run({"token": p["token"]})["job_id"]
     api.job_stop(jid)
 

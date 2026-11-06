@@ -1,11 +1,11 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- Item: checklist 2 (GAP agent: H3 pipeline code). Ticked 2.1 SPEC, 2.3 run_registry, 2.4 voice manifest, 2.6 speech check, 2.7 render_controller dry-run plan.
+- Item: checklist 1-7 done except push + docs wrap (7.2-7.4); captions/fonts/colour/stories set aside by owner.
 - Open: 2.5 contract test (pack_to_spec reads legacy pack only; no V4-to-H3 converter). Retry wiring into write_pack is NOT mine.
 - Green suites (2026-11-07 02:00): director 622, h3 441 (1 skip = 2.5 gap), ui 178, flow 116.
 - Blockers: none in my files. No render, no model call, no commit, no push.
-- Next: triage ARCH_REVIEW b4-b6 -> decide h3_fields transport (V4H3 gap) -> retry_policy into write_pack -> UI audit -> UI update -> UI review -> wrap up.
+- Next: owner gives next task. Queued (not started): colour/attention audit (checklist 10), caption items (section 9), live author run + ElevenLabs need owner go.
 
 Purpose: one line per step so a new session or Claude account loses no context.
 Read with: `HANDOFF_2026-11-07.md` (rules, ledger, section 13 = latest owner decisions), `research/H3_V4_CONTRACT_2026-11-07.md`, `research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt`.
@@ -145,3 +145,79 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 02:25 | me | OWNER | git | owner: push everything done to the git repo and give the link (push go given)
 11-07 02:25 | me | CMD | git | secret_scan clean (101 files); committed caf6fa1 on branch v4-architecture-2026-11-07 (101 files); pushed to origin; stories/* stay ignored (public repo)
 11-07 02:25 | me | OWNER | all agents | owner: do NOT make any Colab calls (none made so far; briefs already forbid it)
+11-07 02:27 | supervl | REVIEW-DONE | batch b4_h3_linter | 4032 chars
+11-07 02:27 | dots | REVIEW-DONE | batch b2_write_pack_lang | 8680 chars
+11-07 02:28 | me | OWNER | h3_fields decision | owner: research git history 3-5 days + repos for the proven way, conclude, fix, no quality shortcuts
+11-07 02:29 | me | DECISION | research/DECISION_H3_FIELDS_2026-11-07.md | h3_fields: derive deterministic tier + separate model-authoring step with lint/repair (e2e_sample pattern) + report; writer unchanged; handles derivable from editorial vs pixel_frames
+11-07 02:29 | me | AGENT-START | H3A(haiku,medium): h3/h3_author.py,v4_to_h3.py,tests | implements DECISION_H3_FIELDS: derive tier + author step + wiring; no live call
+11-07 02:29 | H3A(haiku,medium) | CMD | blot.md,CLAUDE.md,PROJECT_LOG.md,research/DECISION_H3_FIELDS_2026-11-07.md,h3/v4_to_h3.py read | required docs read; derive+author spec in hand
+11-07 02:32 | me | FIX | research/DECISION_H3_FIELDS_2026-11-07.md | owner: all renders were on Colab, not Kaggle; doc corrected (STATUS.md/h3_director docstring still mention one early Kaggle T4 test, not edited)
+11-07 02:34 | supervl | REVIEW-DONE | batch b5_gate_d | 3743 chars
+11-07 02:35 | H3A(haiku,medium) | DECISION | h3/v4_to_h3.py | cut plan: ed<pf=dynamic both sides, ed==pf=static; first-in-reel incoming INTER, last outgoing INTER; CHAINED picture_1 = prev picture_2; authored fields cached per shot with hash
+11-07 02:36 | H3A(haiku,medium) | EDIT | h3/v4_to_h3.py | tier1 derive_fields, group_rows, plan_handles, merge_h3, authored cache read wired into convert_pack
+11-07 02:36 | supervl | REVIEW-DONE | batch b6_controller | 2621 chars
+11-07 02:37 | H3A(haiku,medium) | EDIT | h3/h3_author.py | tier2 prompt, parse, check+repair loop (max 4), save cache, author_pack, scheduler_caller (lazy), CLI dry-run/live gate
+11-07 02:38 | H3A(haiku,medium) | EDIT | h3/tests/test_h3_author.py | new tests written (derive, prompt, parse, loop, cache, round trip, CLI gate)
+11-07 02:38 | H3A(haiku,medium) | TEST | h3/tests/test_h3_author.py,h3/tests/test_v4_to_h3.py | 61 pass (author+converter)
+11-07 02:39 | H3A(haiku,medium) | TEST | h3,ui,flow/scripts,director | h3 503 pass, ui 178, flow 116, director 622
+11-07 02:40 | H3A(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row H3A added (section 9), judgment calls + findings listed
+11-07 02:40 | H3A(haiku,medium) | AGENT-DONE | h3/h3_author.py,h3/v4_to_h3.py,h3/tests/test_h3_author.py | tier1+tier2+cache+CLI built; h3 503 pass; no model call, no commit
+11-07 02:40 | H3A | AGENT-DONE | h3/h3_author.py,v4_to_h3.py,tests | derive+author step built, h3 503 pass; live run needs free-model go; INTER_REEL rule unconfirmed
+11-07 02:41 | me | EDIT | h3/schema_and_linter.py,compile_h3_sing8.py | Super VL b4: fixed missing asset_root crash (EP-AR), episode not found, profile KeyError; rejected SL-04 (speech refusal is by design), fps=0/profile-types/path-traversal (trusted internal inputs)
+11-07 02:43 | me | EDIT | h3/gate_d_audio.py,render_controller.py,tests | Super VL b5-b6: per-language PLAN-01 guard + TIME-01 on bad range, empty BGM tracks ok, reel id sanitized, plan default hi; rejected asset_root confine/float fps (trusted); suites ok
+11-07 02:44 | me | DECISION | research/UI_CONTRACT_ADDENDUM_2026-11-07.md | UI contract addendum: resolved blockers, owner decisions adopted (recommended), new features k-o (voice engine, voice map, BGM toggle, author panel, safe-zone chip)
+11-07 02:44 | me | AGENT-START | U1(haiku,medium) ui/server.py,pipeline.py,tests | UI backend per audit 4a + addendum k-o
+11-07 02:44 | me | AGENT-START | U2(haiku,medium) ui/static/pipeline.js,app.js | UI front end features a-o
+11-07 02:44 | me | AGENT-START | U3(haiku,medium) ui/static/style.css,index.html,test_static.py | UI design pass + static tests
+11-07 02:44 | U2(haiku,medium) | CMD | blot.md,CLAUDE.md,PROJECT_LOG.md,research/UI_*_2026-11-07.md | contract docs read
+11-07 02:45 | U1(haiku,medium) | AGENT-START | ui/server.py,ui/pipeline.py,ui/test_*.py | read blot, CLAUDE, log, plan 1-4a, addendum; starting code read
+11-07 02:46 | U3(haiku,medium) | EDIT | research/UI_CONTRACT_ADDENDUM_2026-11-07.md | U3 element ids section appended (ids for U2)
+11-07 02:47 | U3(haiku,medium) | EDIT | ui/static/index.html | header chips, job bar, wiz-panels containers, labels bound, copy fixes L1 L4 L5 L6 M13 M19 M21
+11-07 02:47 | U2(haiku,medium) | CMD | ui/static/pipeline.js,app.js,test_static.py,server.py | read current JS, pinned test strings noted
+11-07 02:48 | U3(haiku,medium) | EDIT | ui/static/style.css | visual pass 3j: tokens light/dark, 44px, focus-visible 3px, stacked tables, 900/760 breakpoints, reduced motion, toast removed
+11-07 02:49 | U1(haiku,medium) | DECISION | ui/pipeline.py | scope = project pointer (409 if story/pack differ); legacy approvals w/o story ignored; ROUTE_IMAGES map for expected images
+11-07 02:49 | U1(haiku,medium) | CMD | director,h3,ui | read module contracts (story_state, links, validator, ops_checks, voice_engine, render_controller, h3_author, registry); baseline ui 178 pass
+11-07 02:49 | dots | REVIEW-DONE | batch b3_state_ops | 7323 chars
+11-07 02:49 | U3(haiku,medium) | FIX | ui/static/style.css | red-fg token + dark ok/blue/grey darkened for white-text contrast
+11-07 02:49 | U2(haiku,medium) | EDIT | ui/static/pipeline.js | rewritten: story/langs/voices/bgm/link/validator/render/author/ops/gate D/export scoped
+11-07 02:49 | U2(haiku,medium) | TEST | ui/static/pipeline.js | node --check
+11-07 02:49 | U1(haiku,medium) | EDIT | ui/pipeline.py | rewritten: scoped approvals, validator, h3 plan bridge, render status, voice map; not yet tested
+11-07 02:50 | U2(haiku,medium) | EDIT | ui/static/app.js | 403 text only for Host/Origin/X-UI; port via location.host; export scoped by project; one poller hidden-aware
+11-07 02:50 | U2(haiku,medium) | TEST | ui/test_static.py | 17 pass, 1 fail: index.html placeholder https URL (U3 file)
+11-07 02:50 | U2(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row U2 added (section 9), DONE-UNVERIFIED
+11-07 02:51 | U1(haiku,medium) | TEST | ui/test_pipeline.py | 44 pass after scoping gate records (sc/ag helpers)
+11-07 02:51 | U2 | AGENT-DONE | ui/static/pipeline.js,app.js | features a-o built, node --check ok, test_static 17 pass 1 fail (index.html youtube placeholder, U3 file); relies on U1 routes not yet present; shapes forwarded to U1
+11-07 02:51 | me | DECISION | U1 | forwarded U2's assumed response shapes + h3_author whitelist + run_allowed to U1
+11-07 02:51 | U1(haiku,medium) | OWNER | ui/server.py | integrator: match U2 shapes (full pack path on pack/validate/voices/author; gate_d.languages rows vo/captions/final/checks; prepare_ready; h3_author dry-run cmd)
+11-07 02:51 | U1(haiku,medium) | EDIT | ui/server.py | header constants added (LEGACY_STORY, LANGS, DISK_PATHS, STARTED, SERVER_MTIME0)
+11-07 02:51 | U3(haiku,medium) | TEST | ui/test_static.py | 17 U3 tests added; addendum endpoints counted in pipeline.js endpoint check
+11-07 02:51 | U1(haiku,medium) | EDIT | ui/server.py | job verified flag, job table reload, spend lock on unverified, cumulative total cap, kill tree
+11-07 02:52 | me | EDIT | director/write_pack.py,test_retry_policy.py | shared retry policy wired into call_path (nvidia/openrouter): 429/5xx/timeout/empty retried 15-180s max 5; budget/fatal stop; ModelRefused carries kind; +2 tests; director 624 expected
+11-07 02:52 | U3(haiku,medium) | TEST | ui | full ui suite 194 pass (static 34), was 178 baseline
+11-07 02:52 | U3(haiku,medium) | FIX | ui/test_static.py | U3 test count is 16 not 17 (log correction); addendum endpoints counted in pipeline.js check
+11-07 02:52 | U3(haiku,medium) | DECISION | HANDOFF_2026-11-07.md | ledger row U3 added (section 9), DONE-UNVERIFIED; gaps: L2 keyboard stepper, .gitignore check, browser check
+11-07 02:52 | U3(haiku,medium) | AGENT-DONE | ui/static/style.css,index.html,ui/test_static.py | U3 done: ui 194 pass; DONE-UNVERIFIED
+11-07 02:54 | U1(haiku,medium) | EDIT | ui/server.py | write_pack out_lang required + --out-lang argv
+11-07 02:54 | U1(haiku,medium) | EDIT | ui/server.py | h3 prepare refuses shots.json and maps reel->EP_NN; style/profile args; yt_transcript + h3_author dry-run commands; colab_run verified
+11-07 02:56 | U1(haiku,medium) | EDIT | ui/server.py | U1 methods inserted (version, ops, state, languages, voices, bgm, pack voices, validator, render, author dry-run, link); status/stories/save/project/images edited
+11-07 02:57 | U1(haiku,medium) | EDIT | ui/server.py | export story+pack scoped, packet scoped, file endpoint redact and runs block, V4 read_pack, spend re-check + ledger, yt result, bind message
+11-07 02:57 | U1(haiku,medium) | FIX | ui/server.py | previous EDIT line was written before the patch script succeeded; patch2 applied OK on retry
+11-07 02:57 | U1(haiku,medium) | EDIT | ui/pipeline.py,ui/server.py | render status in U2 shape (gate_d.languages vo/captions/final/checks, prepare_ready); dispatch routes for all new endpoints
+11-07 03:00 | U1(haiku,medium) | TEST | ui/test_ui.py | ui suite 195 pass; only test_static u3 id test fails (U3 file, not mine)
+11-07 03:00 | dots | REVIEW-DONE | batch b4_h3_linter | 4245 chars
+11-07 03:01 | U1(haiku,medium) | TEST | ui/test_u1_routes.py | new file 26 pass (gates, validator, languages, voices, bgm, author dry-run, ledger cap, jobs reload)
+11-07 03:02 | U1(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | U1 ledger row added (section 9)
+11-07 03:02 | me | OWNER | research/COLOUR_ATTENTION_RETENTION_AUDIT_2026-11-07.md | owner supplied colour audit, wants it in pipeline BUT not now: finish existing work first. Saved to repo, queued, NOT started. Owner asked if caption/cc files were given: none found
+11-07 03:02 | U1(haiku,medium) | EDIT | research/UI_CONTRACT_ADDENDUM_2026-11-07.md | U1 deviations section appended (16 items)
+11-07 03:02 | U1(haiku,medium) | AGENT-DONE | ui/server.py,ui/pipeline.py,ui/test_ui.py,ui/test_pipeline.py,ui/test_registry.py,ui/test_u1_routes.py | ui 221 pass (+1 U3 test_static WIP), director 624, h3 504, flow 116; no commit
+11-07 03:03 | U1 | AGENT-DONE | ui/server.py,pipeline.py,tests | UI backend done, ui 221 pass + 1 fail (static id 'li'); live author run not built (run_allowed false)
+11-07 03:04 | me | FIX | research/UI_CONTRACT_ADDENDUM_2026-11-07.md | removed backticked li from a note (static id test parsed it as an id); all four suites run
+11-07 03:05 | me | REVIEW-START | research/_run_ui_reviews.py | UI review round: Super VL + Dots (OpenRouter free) on ui/server.py,pipeline.py,pipeline.js,app.js,index.html,style.css -> research/UI_REVIEW_*_2026-11-07.md
+11-07 03:05 | dots | REVIEW-DONE | batch b5_gate_d | 5511 chars
+11-07 03:06 | me | CMD | ui/server.py | stopped stale UI server (pid 21208 from 11-06) and started the new build on 127.0.0.1:8765 for the browser check
+11-07 03:13 | supervl | REVIEW-DONE | batch u1_server | 4265 chars
+11-07 03:15 | dots | REVIEW-DONE | batch u1_server | 3740 chars
+11-07 03:16 | dots | REVIEW-DONE | batch b6_controller | 6070 chars
+11-07 03:17 | me | TEST | UI in built-in browser (phone 490px + desktop 1280px) | found+fixed: duplicate static panels (every id twice), next-step key/text mismatch ([object Object]), header chips, validate POST path, label layout, sticky header on phone, stepper wrap; validator run ok (Upanishad pack: no errors); ui 223 pass
+11-07 03:17 | supervl | REVIEW-DONE | batch u2_pipeline_js | 5252 chars
+11-07 03:19 | me | EDIT | STATUS.md,README.md,HANDOFF_2026-11-07.md,CHECKLIST,PROJECT_LOG.md | wrap-up docs updated; Dots+Super VL triaged: fixed free-model guard (empty pricing), answer_text JSON error, Marathi detect, per-language AttributeError, UI fetch timeout; suites director 624 h3 504 ui 223 flow 116; secret scan clean

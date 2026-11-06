@@ -660,6 +660,8 @@ def _bgm_track(bgm_manifest):
             doc = json.loads(Path(doc).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             return [_err("BGM_MANIFEST_UNREADABLE", str(bgm_manifest), str(exc))], None
+    if isinstance(doc, dict) and doc.get("tracks") == []:   # explicit "no BGM"
+        return [], None
     errors = list(validate_bgm_manifest(doc)["errors"])
     if errors:
         return errors, None
@@ -784,6 +786,8 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
     the mix filtergraph, the mux argv and the loudness argv. A language with errors gets no mix or mux argv; the
     other languages are not affected. Never runs ffmpeg."""
     langs = _pick_languages(languages)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", str(reel)) or ".." in str(reel):
+        raise ValueError(f"reel id {reel!r} may only hold letters, digits, _ . - (it becomes part of file paths)")
     if not shots:
         raise ValueError("shots must not be empty")
     if sfx_stem_path is None and video_has_audio is not True:
@@ -796,15 +800,22 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
         offsets.append(t)
         t += float(s["editorial_duration_sec"])
     reports, plans = {}, {}
-    timing_errs = same_timing_problems(shots)
+    try:
+        timing_errs = same_timing_problems(shots)
+    except ValueError as exc:                          # a malformed time_range in some language
+        timing_errs = [_err("TIME-01", "shots", f"bad time_range: {exc}")]
     for lang in langs:
         eng = engine_for(voice_engines, lang) if voice_engines is not None else "elevenlabs"
-        reports[lang], plans[lang] = _plan_one_language(
-            reel, lang, shots, offsets, vo_dir, bgm_path, list(bgm_errors) + timing_errs, video_path=_video_for(video_path, eng),
-            captions_dir=captions_dir, export_dir=export_dir, face_boxes=face_boxes, fonts_dir=fonts_dir,
-            story_gate_checks=story_gate_checks, payoff_end_sec=payoff_end_sec,
-            narration_driven=narration_driven, measured_text=measured_text, sfx_stem_path=sfx_stem_path,
-            burn_captions=burn_captions, voice_engine=eng)
+        try:
+            reports[lang], plans[lang] = _plan_one_language(
+                reel, lang, shots, offsets, vo_dir, bgm_path, list(bgm_errors) + timing_errs, video_path=_video_for(video_path, eng),
+                captions_dir=captions_dir, export_dir=export_dir, face_boxes=face_boxes, fonts_dir=fonts_dir,
+                story_gate_checks=story_gate_checks, payoff_end_sec=payoff_end_sec,
+                narration_driven=narration_driven, measured_text=measured_text, sfx_stem_path=sfx_stem_path,
+                burn_captions=burn_captions, voice_engine=eng)
+        except (ValueError, KeyError, TypeError) as exc:   # one bad language must not stop the others
+            reports[lang] = _report([_err("PLAN-01", lang, f"{type(exc).__name__}: {exc}")], [], {})
+            plans[lang] = {"mix_filter": None, "mux_argv": None}
         if eng == "h3":
             reports[lang]["warnings"].append("en=h3 breaks the render-once rule: English uses its own H3 video (second render, adds H3 cost)")
     return {"ok": all(r["ok"] for r in reports.values()), "reports": reports, "languages": plans}

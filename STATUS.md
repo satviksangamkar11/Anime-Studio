@@ -1,4 +1,14 @@
-# Anime Studio status checklist (updated 2026-11-06)
+# Anime Studio status checklist (updated 2026-11-07)
+
+## Current (2026-11-07) - read HANDOFF_2026-11-07.md, PROJECT_LOG.md, CHECKLIST_ARCHITECTURE_2026-11-07.md
+- [x] V4 architecture built and reviewed (Super VL + Dots): validator, writer V4 + voice_map, H3 router/compiler/locks, Gate D audio + captions (safe zone bottom 896), Step 9 QC, fallback ladder, asset manifest, voice engine (option A: one shared render, ElevenLabs en/hi/mr after render; English H3 voice = off-by-default second render), V4->H3 converter, H3 field derive/author step, ops safety, retry policy, run registry.
+- [x] UI updated (languages, voices, BGM toggle, validator, render/Gate D/author/ops panels) and checked in the browser at phone and desktop widths.
+- [x] Suites: director 624, h3 504, ui 223, flow/scripts 116.
+- [ ] Not built: Step 9 runner, Gate D assembly runner, live author run, any real render (no Colab calls, owner rule), ElevenLabs use (needs owner go).
+- [ ] Set aside by owner: stories, caption fonts and items, colour/attention audit (queued).
+
+---
+Older status (2026-11-06) below.
 
 ## Current (2026-11-06)
 - [x] **AUDIO PLAN FROZEN 2026-11-06** (`research/AUDIO_PLAN_FROZEN_2026-11-06.md`): music removed, effects-only soundscape with fixed per-location bed, dialogue allowed, per-clip gain match to -16 LUFS then 5 ms fades, no separate audio test render, no paid audio tool.

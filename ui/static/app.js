@@ -59,7 +59,7 @@
   var JOBS_DIR = 'flow/';
   var FINISHED_TEXT = 'the job had already finished';
   var GUARD_403 = 'Refused by a server guard (403). Spend commands need the server started with --allow-spend. ' +
-    'Every request needs header X-UI and Host 127.0.0.1:8765.';
+    'Every request needs header X-UI and Host ' + location.host + '.';
   var PAT = {
     slug: /^[a-z0-9_]{1,40}$/,
     name: /^[a-z0-9_-]{1,40}$/,
@@ -260,7 +260,7 @@
     try {
       res = await fetch(path, opts);
     } catch (e) {
-      throw fail(0, 'Cannot reach the studio server on 127.0.0.1:8765. Is server.py running?');
+      throw fail(0, 'Cannot reach the studio server at ' + location.host + '. Is server.py running?');
     }
     var text = await res.text();
     var isJson = /json/.test(res.headers.get('Content-Type') || '');
@@ -270,7 +270,8 @@
     }
     if (!res.ok) {
       var msg = (isJson && data && data.error) ? String(data.error) : (text.slice(0, 300) || res.statusText);
-      if (res.status === 403) msg = GUARD_403 + ' Server said: ' + msg;
+      // only host, origin and X-UI refusals get the guard text; other 403s (expired preview, etc.) show the server's words
+      if (res.status === 403 && /Host|Origin|X-UI/.test(msg)) msg = GUARD_403 + ' Server said: ' + msg;
       throw fail(res.status, msg);
     }
     return data;
@@ -1316,7 +1317,10 @@
     var reel = $('export-reel').value.trim();
     if (!PAT.count.test(reel) || Number(reel) < 1) return showError('Reel must be a number, 1 or more.');
     try {
-      var d = await api('GET', '/api/export?reel=' + enc(reel));
+      // export is per pack: the story and pack come from the project pointer (never the Kaliya default)
+      var pj = (window.StudioWizard && window.StudioWizard.project && window.StudioWizard.project()) || {};
+      if (!pj.story_slug || !pj.pack) return showError('Pick a story and run its analysis first; export works per pack.');
+      var d = await api('GET', '/api/export?reel=' + enc(reel) + '&story=' + enc(pj.story_slug) + '&pack=' + enc(pj.pack));
       var clips = (d.clips_in_order || []).map(function (c) {
         if (typeof c === 'string') return el('li', { text: c });
         return el('li', { text: String(or(c.shot, '?')) + (c.take ? ' (take ' + c.take + ')' : ' (no take picked)') });
@@ -1380,7 +1384,8 @@
     });
     showSection((location.hash || '#story').slice(1));
     tick();
-    setInterval(tick, POLL_MS);
+    // one poller, and it stays quiet while the tab is hidden
+    setInterval(function () { if (!document.hidden) tick(); }, POLL_MS);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

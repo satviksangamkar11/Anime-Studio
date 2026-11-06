@@ -555,9 +555,9 @@ def plan_pipeline(story, groups, out_root, *, languages=None, render_results=Non
     """Ordered H3 pipeline plan for the selected groups (steps and reasons: h3/pipeline_contract.py). Dry run only:
     never renders, never calls a backend, writes nothing. render_results: None (default, nothing rendered yet) or
     {shot_id: "ok" | "failed"}. qc_measurers: Step 9 measurers (missing ones make QC fail closed). languages: default
-    the story's output_languages, else ["en"]. BGM is not passed (default none). Loudness stays pending: it needs
+    the story's output_languages, else ["hi"] (the writer default). BGM is not passed (default none). Loudness stays pending: it needs
     the exported mp4."""
-    langs = list(languages or story.get("output_languages") or story["registry"].get("output_languages") or ["en"])
+    langs = list(languages or story.get("output_languages") or story["registry"].get("output_languages") or ["hi"])   # hi = the writer's default
     lint = prepare(story, groups, out_root, write=False, mode="dry-run")
     manifest = load_manifest(os.path.join(out_root, MANIFEST_FILE))
     history = load_history(os.path.join(out_root, HISTORY_FILE))

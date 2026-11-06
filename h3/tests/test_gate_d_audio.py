@@ -604,3 +604,14 @@ def test_mix_without_bgm_is_a_two_stem_graph():
     g = gd.build_mix_filter([{"input_index": 0, "trim_in_sec": 0.0, "trim_out_sec": 5.0}], 1, None, 5.0)
     assert "asplit=2[vo_out][sc_sfx]" in g and "sc_bgm" not in g and "amix=inputs=2" in g
     assert "amix=inputs=3" in gd.build_mix_filter([{"input_index": 0, "trim_in_sec": 0.0, "trim_out_sec": 5.0}], 1, 2, 5.0)
+
+
+def test_review_fixes_bad_reel_id_empty_bgm_and_bad_time_range(tmp_path):
+    with pytest.raises(ValueError):                               # the reel id becomes part of file paths
+        gd.plan_language_outputs("../evil", ["hi"], _vo_root(tmp_path), None, shots=_story(), video_path="r.mp4",
+                                 video_has_audio=True)
+    assert gd._bgm_track({"tracks": []}) == ([], None)            # explicit "no BGM" is allowed
+    shots = _story()
+    shots[0]["audio_and_dialogue_track"]["narration_by_lang"] = {"en": {"text": "x", "time_range": "bad"}}
+    out = _run(tmp_path, ["hi", "en"], shots=shots)               # a malformed range is a report, never a crash
+    assert out["ok"] is False
