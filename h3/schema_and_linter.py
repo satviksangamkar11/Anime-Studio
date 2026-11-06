@@ -3,10 +3,15 @@
 Every error/warning string is "<shot_id>: <CODE> <message>" so tests can assert on codes.
 """
 import json
+import math
 import os
 import re
 import struct
 import zlib
+
+from h3.router import REF2VA, ref2va_limit_problems, ref_inventory, route_shot, video_shift_for, workflow_mode
+from h3.voice_engine import audio_ref_problems
+from h3.shot_table_spec import PROMPT_CHAR_LIMIT
 
 STAGES = ("1_starting_state", "2_anticipation", "3_initiation", "4_drive",
           "5_contact_approach", "6_impact_result", "7_settled_end_state")
@@ -56,12 +61,13 @@ SOUND_KEYS = {"overall_soundscape", "non_diegetic_music"}
 BLOCKS = {  # block -> (required keys, optional keys)
     "timing_and_lattice": (TIMING_KEYS, set()),
     "continuity_and_seam_lock": (CONT_KEYS, set()),
-    "fl2va_keyframes": ({"mode", "picture_1_path", "picture_2_path", "dimensions_verified"},
-                        {"flow_source_a", "flow_source_b", "reuse_upstream_b_id"}),
+    "fl2va_keyframes": ({"mode", "dimensions_verified"},
+                        {"picture_1_path", "picture_2_path", "flow_source_a", "flow_source_b", "reuse_upstream_b_id",
+                         "reference_images", "reference_videos", "reference_audio"}),  # KF-06: boundary or refs
     "motion_7_stage": (set(STAGES) | {"stage_frame_spans"}, set()),
     "anime_timing_cadence": (CADENCE_KEYS, set()),
     "camera": (CAMERA_KEYS, set()),
-    "dialogue_and_lip_lock": (DIALOGUE_KEYS, set()),
+    "dialogue_and_lip_lock": (DIALOGUE_KEYS, {"narrator_mouth_closed", "mouth_state"}),  # pure-Foley: MO-01
     "sound_plan": (SOUND_KEYS, set()),
 }
 PROFILE_KEYS = {"route_id", "checkpoint_name", "mode_to_lora_map", "checkpoint_architecture_namespace",
@@ -82,6 +88,225 @@ SOUNDSCAPE_WORD_RE = re.compile(
     re.IGNORECASE)
 SOUND_PREFIX = "Sound effects only:"  # fixed words that open every compiled overall_soundscape
 BED_MAX_WORDS = 12  # registry.sound_beds phrases: same casing and punctuation, at most 12 words
+
+# ---- Pure-Foley prompt locks (owner master prompt V4 section 1): H3 is a Foley/SFX generator, never a speaker ----
+MOUTH_LOCK_PHRASE = "while his lips remain completely closed"   # MO-01 positive lock, must sit in the description
+MOUTH_STATES = ("closed", "open_non_verbal_breath")
+SPEAKER_ID_RE = re.compile(r"\(\s*S\d+(?:\s*,\s*S\d+)*\s*\)")                 # SL-01, compound (S1,S2) included
+LANG_TAG_RE = re.compile(r"\[\s*(?:hi|mr|en|ar|zh|fr|de|it|ja|ko|pt|ru|es|hindi|marathi|english|hinglish|arabic|"
+                         r"chinese|french|german|italian|japanese|korean|portuguese|russian|spanish)\s*\]", re.I)  # SL-02
+DIALOGUE_WRAP_RE = re.compile(r"</?d>", re.I)                                  # SL-03
+AUDIO_TAG_RE = re.compile(r"<\s*Audio\s*\d+\s*>", re.I)                        # AU-01
+CHIP_RE = re.compile(r"@(?:CHAR|SHEET|ENV|STYLE)-[A-Za-z0-9_*-]*|\b(?:SHEET|ENV|STYLE)-[A-Za-z0-9_-]+")  # TG-01 Flow chips
+BRACKET_TAG_RE = re.compile(r"\[\s*(?:char|scene|shot|dur|hook)\s*:[^\]\n]*\]", re.I)  # TG-01 [char:..] [scene:..] ...
+PANEL_RE = re.compile(r"[─-╿]+|\+[-=]{2,}\+")                        # TG-01 panel borders
+ARROW_RE = re.compile(r"[←-⇿➡➔➜]|-->|->|=>")          # TG-01 arrows
+TIMING_LABEL_RE = re.compile(r"\b\d+(?:\.\d+)?\s*[-–—]\s*\d+(?:\.\d+)?\s*s\b"
+                             r"|\b\d{1,2}:\d{2}(?:\.\d+)?\s*[-–—]\s*\d{1,2}:\d{2}(?:\.\d+)?")  # TG-01 timing labels
+TAG_RES = (CHIP_RE, BRACKET_TAG_RE, PANEL_RE, ARROW_RE, TIMING_LABEL_RE)
+QUOTE_RE = re.compile(r'"[^"\n]*"|“[^”\n]*”')                   # TX-01 on-screen text
+SFX_CUE_RE = re.compile(r"\b(?:sound|hiss|rustle|splash|wind|water|step|breath|hum|whoosh|roar|crack|thud|drip|flow|"
+                        r"ring|voice|pop|click|tick|knock|snap|slam|scrape|tap|clink|creak|crunch|rain|spray|swish|"
+                        r"thump|buzz|chime|bell)\w*", re.I)                    # SX-01 synchronized physical sound
+SX_MIN_STAGE_CUES = 7        # SX-01 (owner 2026-11-07: more sound effects hit harder): every one of the 7 action sentences carries a sound cue
+SX_MAX_SENTENCES = 4         # SX-01: overall_soundscape is 1-4 English sentences
+REF2VA_RE = re.compile(
+    r"\Asubject_definitions: (?P<subj>[^\n]+)\nsummary: (?P<summary>[^\n]+)\nretention_analysis: (?P<ret>[^\n]+)\n"
+    r"detailed_description: (?P<det>[^\n]+)\noverall_soundscape: (?P<snd>[^\n]+)\nnon_diegetic_music: N/A\Z")
+MOUTH_LOCK_SENTENCE = ("Silent performance: the figure never speaks, and his mouth stays shut "
+                       f"{MOUTH_LOCK_PHRASE} for the whole shot.")
+
+
+class PromptRefused(ValueError):
+    """The compiler refuses a shot. code is the rule code (SL-01..SL-04); str(e) is '<code> <message>'."""
+
+    def __init__(self, code, msg):
+        super().__init__(f"{code} {msg}")
+        self.code, self.msg = code, msg
+
+
+def clean_text(text):
+    """Free text as it may be emitted: Flow chips and storyboard tags stripped, then sanitize_single_line."""
+    return sanitize_single_line(strip_tags(text)[0])
+
+
+def strip_tags(text):
+    """Remove Flow chips, bracket storyboard tags, panel borders, arrows and timing labels.
+    Returns (clean_text, removed): removed lists every stripped piece."""
+    removed = []
+
+    def cut(m):
+        removed.append(m.group(0))
+        return " "
+    out = text
+    for rx in (BRACKET_TAG_RE, CHIP_RE, TIMING_LABEL_RE, PANEL_RE, ARROW_RE):
+        out = rx.sub(cut, out)
+    return out, removed
+
+
+def iter_strings(obj, path="shot"):
+    """(path, string) for every string inside a nested shot object."""
+    if isinstance(obj, str):
+        yield path, obj
+    elif isinstance(obj, dict):
+        for k, v in obj.items():
+            yield from iter_strings(v, f"{path}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            yield from iter_strings(v, f"{path}[{i}]")
+
+
+def speech_problems(text):
+    """[(code, message)] for the 3 speech patterns: SL-01 (S\\d+) ids, SL-02 [Language] tags, SL-03 <d> wrappers."""
+    out = []
+    if SPEAKER_ID_RE.search(text):
+        out.append(("SL-01", "speaker id such as (S1) is a speech leak"))
+    if LANG_TAG_RE.search(text):
+        out.append(("SL-02", "[Language] dialogue tag is a speech leak"))
+    if DIALOGUE_WRAP_RE.search(text):
+        out.append(("SL-03", "<d>...</d> wrapper is a speech leak"))
+    return out
+
+
+def voice_mode(reg):
+    """English H3 speech is on only when the registry sets voice_engine.en = "h3" explicitly (old stories stay pure Foley)."""
+    ve = reg.get("voice_engine") if isinstance(reg, dict) else None
+    return isinstance(ve, dict) and ve.get("en") == "h3"
+
+
+def refuse_speech_in_source(shot, voice=False):
+    """Source-level refusal before any prompt is built. Pure Foley: any utterance (SL-04). English H3 voice: utterances
+    allowed in English only (VE-06); speech patterns are still refused in every free-text field."""
+    utterances = (shot.get("dialogue_and_lip_lock") or {}).get("utterances")
+    if utterances and not voice:
+        raise PromptRefused("SL-04", "utterances present: speech is voiced by ElevenLabs outside H3, H3 prompts carry none")
+    for u in utterances or []:
+        if voice and isinstance(u, dict) and u.get("language") != "en":
+            raise PromptRefused("VE-06", f"utterance language {u.get('language')!r}: H3 speech is English only")
+    for path, value in iter_strings(shot):
+        if voice and path.startswith("shot.dialogue_and_lip_lock.utterances"):
+            continue  # the utterance text is the speech itself; it is emitted inside <d> by the compiler
+        for code, msg in speech_problems(value):
+            raise PromptRefused(code, f"{msg} (in {path})")
+
+
+def voice_context(shot, reg):
+    """Context for the emitted-prompt speech check: None in pure-Foley mode; else the speaker ids of the story map,
+    the number of utterances, the number of <Audio N> refs and whether the shot has an on-screen speaker."""
+    if not voice_mode(reg):
+        return None
+    utt = [u for u in (shot.get("dialogue_and_lip_lock") or {}).get("utterances") or [] if isinstance(u, dict)]
+    return {"speaker_ids": set(reg.get("voice_speaker_map") or {}), "utterances": len(utt),
+            "audio_refs": len(ref_inventory(shot)["audio"]),
+            "silent": not any(not u.get("is_offscreen_voiceover") for u in utt)}
+
+
+def english_speech_problems(text, voice):
+    """Speech checks of an EMITTED English H3 prompt: SL-01 ids must be in the story map, SL-02 only [English] tags,
+    SL-03 one <d>...</d> per English line."""
+    out = []
+    for m in SPEAKER_ID_RE.finditer(text):
+        for sid in re.findall(r"S\d+", m.group(0)):
+            if sid not in voice["speaker_ids"]:
+                out.append(("SL-01", f"speaker id {sid} is not in voice_speaker_map"))
+    for m in LANG_TAG_RE.finditer(text):
+        if m.group(0) != "[English]":
+            out.append(("SL-02", f"dialogue tag {m.group(0)} must be [English] in English H3 speech"))
+    opens, closes = len(re.findall(r"<d>", text, re.I)), len(re.findall(r"</d>", text, re.I))
+    if opens != closes or opens != voice["utterances"]:
+        out.append(("SL-03", f"{opens} <d> wrapper(s) for {voice['utterances']} English line(s)"))
+    return out
+
+
+def speaking_seconds(shot):
+    """Second keys ("0", "1", ...) overlapped by an on-screen English line: their mouth_state is "speaking"."""
+    out = set()
+    for u in (shot.get("dialogue_and_lip_lock") or {}).get("utterances") or []:
+        if isinstance(u, dict) and not u.get("is_offscreen_voiceover"):
+            s, e = float(u["start_sec"]), float(u["end_sec"])
+            out |= {str(k) for k in range(0, math.ceil(e) + 1) if k < e and k + 1 > s}
+    return out
+
+
+def stripped_tags_of(shot):
+    """Every Flow chip or storyboard tag that clean_text removes from the shot's text fields."""
+    return [hit for _, value in iter_strings(shot) for hit in strip_tags(value)[1]]
+
+
+def sentence_count(text):
+    return len([p for p in re.split(r"(?<=[.!?])\s+", text.strip()) if p])
+
+
+def prompt_lock_problems(text, text_events=0, voice=None):
+    """[(code, message)] locks on an EMITTED prompt: SL-01..03, AU-01, TG-01, TX-01, LEN-01, MO-01, SX-01 (text).
+    voice=None: pure Foley (every speech pattern and every <Audio N> refused). voice=voice_context(...): English H3 speech,
+    where the speech tags are checked by english_speech_problems and <Audio N> must point at a reference of the shot."""
+    if voice is None:
+        out = speech_problems(text)
+        if AUDIO_TAG_RE.search(text):
+            out.append(("AU-01", "<Audio N> tag in the prompt: voice references are refused"))
+    else:
+        out = english_speech_problems(text, voice)
+        for m in AUDIO_TAG_RE.finditer(text):
+            k = int(re.search(r"\d+", m.group(0)).group(0))
+            if not 1 <= k <= voice["audio_refs"]:
+                out.append(("AU-01", f"{m.group(0)} has no matching reference audio in the shot"))
+    tags = [m.group(0) for rx in TAG_RES for m in rx.finditer(text)]
+    if tags:
+        out.append(("TG-01", f"storyboard or Flow tags on the prompt: {tags[:3]}"))
+    quotes = QUOTE_RE.findall(text)
+    if text_events > 1 or len(quotes) > text_events:
+        out.append(("TX-01", f"{len(quotes)} double-quoted on-screen text span(s), {text_events} typography event(s) requested"))
+    if len(text) > PROMPT_CHAR_LIMIT:
+        out.append(("LEN-01", f"prompt is {len(text)} characters, the hard limit is {PROMPT_CHAR_LIMIT}"))
+    if MOUTH_LOCK_PHRASE not in text and (voice is None or voice["silent"]):
+        out.append(("MO-01", f"positive mouth lock {MOUTH_LOCK_PHRASE!r} is missing from the description"))
+    m = re.search(r"^overall_soundscape: (.*)$", text, re.M)
+    if m is None:
+        out.append(("SX-01", "overall_soundscape line is missing"))
+    else:
+        snd = m.group(1)
+        n = sentence_count(snd)
+        if not 1 <= n <= SX_MAX_SENTENCES:
+            out.append(("SX-01", f"overall_soundscape has {n} sentences, need 1-{SX_MAX_SENTENCES}"))
+        if re.search(r"[^\x00-\x7f–—‘’“”]", snd):
+            out.append(("SX-01", "overall_soundscape must be English (ASCII)"))
+    return out
+
+
+def mouth_state_problems(shot, fps, speaking=None):
+    """MO-01 source rules: narrator_mouth_closed must be true; mouth_state covers every second with a valid state.
+    Both fields are required (owner V4 spec): narrator_mouth_closed true on every shot plus a per-second mouth_state.
+    speaking: None (pure Foley) or the speaking_seconds set of English H3 voice mode: then a second is "speaking" exactly
+    when an on-screen line is spoken in it."""
+    d = shot["dialogue_and_lip_lock"]
+    out = []
+    if d.get("narrator_mouth_closed") is not True:
+        out.append("narrator_mouth_closed must be present and true (H3 never voices the narrator)")
+    ms = d.get("mouth_state")
+    if ms is None:
+        return out + ["mouth_state is required (second -> closed or open_non_verbal_breath)"]
+    if not isinstance(ms, dict):
+        return out + ["mouth_state must be an object of second -> state"]
+    pf = shot["timing_and_lattice"]["pixel_frames"]
+    need = {str(s) for s in range(math.ceil(pf / fps))}
+    if set(ms) != need:
+        out.append(f"mouth_state must have exactly the keys {sorted(need, key=int)}")
+    allowed = MOUTH_STATES + (("speaking",) if speaking is not None else ())
+    bad = {k: v for k, v in ms.items() if v not in allowed}
+    if bad:
+        out.append(f"mouth_state values must be one of {allowed}, got {bad}")
+    if speaking is not None:
+        for k, v in ms.items():
+            if (k in speaking) != (v == "speaking"):
+                out.append(f"mouth_state {k} must be 'speaking' exactly inside an on-screen English line")
+    return out
+
+
+def diegetic_text_events(shot):
+    """Typography events the shot explicitly requests (metadata.diegetic_text_events, default 0)."""
+    meta = shot.get("metadata")
+    return int(meta.get("diegetic_text_events", 0)) if isinstance(meta, dict) else 0
 
 
 class _Log:
@@ -181,6 +406,10 @@ def lint_profile(profile):
     if miss:
         out["errors"].append(f"PO-03 execution_profile missing keys {miss}")
         return out
+    msa = profile["model_sampling_av"]
+    if not (isinstance(msa.get("video_shift"), dict) and {"keyframe", "ref2va"} <= set(msa["video_shift"])
+            and "audio_shift" in msa):
+        out["errors"].append("PO-04 model_sampling_av needs video_shift {keyframe, ref2va} and audio_shift")
     w, h = profile["base_resolution"]
     if w % 32 or h % 32:
         out["errors"].append(f"PO-01 base_resolution {w}x{h} is not divisible by 32")
@@ -350,6 +579,18 @@ def _check_dialogue(log, shot, reg):
             continue
         if u.get("character_id") not in chars:
             log.err("DL-02", f"utterance character_id {u.get('character_id')!r} not in registry.characters")
+    if voice_mode(reg):  # English H3 speech: one speaker id per character across the story, each speaker has an anchor
+        smap = reg.get("voice_speaker_map") or {}
+        for u in d["utterances"]:
+            if not isinstance(u, dict):
+                continue
+            sid, cid = u.get("speaker_id"), u.get("character_id")
+            if sid not in smap:
+                log.err("VA-01", f"speaker {sid!r} has no entry in voice_speaker_map")
+            elif smap[sid] != cid:
+                log.err("VA-04", f"speaker {sid!r} is mapped to {smap[sid]!r}, not {cid!r} (same speaker in every shot)")
+            if not (chars.get(cid) or {}).get("voice_anchor"):
+                log.err("VA-01", f"{cid!r} speaks English but has no voice anchor")
 
 
 def _check_keyframes(log, shot, prof, root, prev):
@@ -364,14 +605,21 @@ def _check_keyframes(log, shot, prof, root, prev):
         log.warn("KF-W1", f"picture_1 REUSED from upstream {prev.get('shot_id')} picture_2")
     if list(k.get("dimensions_verified", [])) != base:
         log.err("KF-04", f"dimensions_verified {k.get('dimensions_verified')} != base_resolution {base}")
+    refs = k.get("reference_images") or []
+    if not isinstance(refs, list):
+        log.err("KF-08", "reference_images must be a list of picture paths")
+        refs = []
+    if not refs and not (k.get("picture_1_path") and k.get("picture_2_path")):
+        log.err("KF-06", "both boundary frames are required unless reference_images are given")
     # KF-07 on picture paths and optional flow sources; unsafe paths never reach the disk checks
+    pics = [("picture_1", kf.get("picture_1")), ("picture_2", k.get("picture_2_path"))]
+    pics += [(f"reference_images[{i}]", r) for i, r in enumerate(refs)]
     safe = {}
-    for label, rel in (("picture_1", kf.get("picture_1")), ("picture_2", k.get("picture_2_path")),
-                       ("flow_source_a", k.get("flow_source_a")), ("flow_source_b", k.get("flow_source_b"))):
+    for label, rel in pics + [("flow_source_a", k.get("flow_source_a")), ("flow_source_b", k.get("flow_source_b"))]:
         if rel is not None:
             safe[label] = _check_picture_path(log, label, rel)
     # Disk checks
-    for label, rel in (("picture_1", kf.get("picture_1")), ("picture_2", k.get("picture_2_path"))):
+    for label, rel in pics:
         if rel is None or not safe.get(label):
             continue
         path = os.path.join(root, rel)
@@ -408,17 +656,17 @@ def sound_beds_of(registry):
 
 
 def soundscape_bed(shot, registry):
-    """Sanitized bed phrase for the shot's location, or "" when none is defined or it is not a string."""
+    """Cleaned bed phrase for the shot's location, or "" when none is defined or it is not a string."""
     loc = (shot.get("continuity_and_seam_lock") or {}).get("location_id")
     bed = sound_beds_of(registry).get(loc)
-    return sanitize_single_line(bed) if isinstance(bed, str) else ""
+    return clean_text(bed) if isinstance(bed, str) else ""
 
 
 def compiled_soundscape(shot, registry):
     """THE builder of the compiled overall_soundscape: "Sound effects only: <bed> <shot effects>".
     The compiler and the linter (SD-03) both call it. The prefix and the bed are never doubled."""
     raw = (shot.get("sound_plan") or {}).get("overall_soundscape")
-    text = sanitize_single_line(raw) if isinstance(raw, str) else ""
+    text = clean_text(raw) if isinstance(raw, str) else ""
     bed = soundscape_bed(shot, registry)
     if text.startswith(SOUND_PREFIX):
         text = text[len(SOUND_PREFIX):].strip()
@@ -436,7 +684,7 @@ def _check_sound_plan(log, shot, prof, reg, compiled=None):
     """SD-01, SD-02 (the shot's own text), SD-03 (compiled soundscape), SD-04 (sound_beds)."""
     snd = shot["sound_plan"]
     raw_sc, raw_mu = snd.get("overall_soundscape"), snd.get("non_diegetic_music")
-    soundscape = sanitize_single_line(raw_sc) if isinstance(raw_sc, str) else ""
+    soundscape = clean_text(raw_sc) if isinstance(raw_sc, str) else ""
     # SD-01: soundscape non-empty single sentence, at least 40 chars. It reads the shot's own text, never the
     # compiled one: the prefix and bed would pad an empty soundscape past 40 characters.
     if not soundscape:
@@ -444,7 +692,7 @@ def _check_sound_plan(log, shot, prof, reg, compiled=None):
     elif len(soundscape) < 40:
         log.err("SD-01", f"sound_plan.overall_soundscape too short ({len(soundscape)} chars), need at least 40")
     # SD-01: non_diegetic_music must be "N/A" unless profile allows model music (owner rule 2026-11-06)
-    music = sanitize_single_line(raw_mu) if isinstance(raw_mu, str) else None
+    music = clean_text(raw_mu) if isinstance(raw_mu, str) else None
     if music is None or music.lower() != "n/a":
         if prof.get("allow_model_music") is not True:
             log.err("SD-01", 'sound_plan.non_diegetic_music must be "N/A" (case-insensitive) unless profile sets allow_model_music=true')
@@ -473,23 +721,42 @@ def _check_prompt(log, shot, prof, reg, compiled):
     if compiled is None:
         try:
             compiled = compile_fl2va_prompt(shot, reg)["compiled_prompt"]
+        except PromptRefused as e:
+            log.err(e.code, e.msg)
+            return
         except (KeyError, TypeError, ValueError, AttributeError) as e:
             log.err("PR-00", f"prompt could not be compiled: {e!r}")
             return
     text, style = compiled, reg["style_lock"]
-    m = PROMPT_RE.match(text)
-    if not m:
-        log.err("PR-01", "prompt does not match the 4-part layout")
-        imd = text
+    ref = route_shot(shot) == REF2VA
+    if ref:
+        m = REF2VA_RE.match(text)
+        if not m:
+            log.err("PR-01", "Ref2VA prompt does not match the 6-section layout")
+            imd = text
+        else:
+            imd = m.group("det")
+            inv, subjects = ref_inventory(shot), shot["continuity_and_seam_lock"]["subjects_present"]
+            limits = {"Subject": len(subjects), "Picture": len(inv["images"]), "Video": len(inv["videos"])}
+            for kind, num in re.findall(r"<(Subject|Picture|Video) (\d+)>", text):
+                if not 1 <= int(num) <= limits[kind]:
+                    log.err("RF-03", f"<{kind} {num}> has no matching reference ({limits[kind]} available)")
     else:
-        imd = m.group("imd")
-        pf, fps = shot["timing_and_lattice"]["pixel_frames"], prof["fps"]
-        if m.group("sec") != f"{pf / fps:.2f}":
-            log.err("PR-01", f"header second mark {m.group('sec')} != {pf / fps:.2f}")
-        if not imd.startswith(f"[Shot 1] {sanitize_single_line(style['mandatory_prefix'])}, preserving the exact character design"):
-            log.err("PR-01", "description does not start with the mandatory prefix")
-    if re.findall(r"\[Shot (\d+)\]", text) != ["1"]:
-        log.err("PR-02", "the only [Shot N] tag must be [Shot 1]")
+        m = PROMPT_RE.match(text)
+        if not m:
+            log.err("PR-01", "prompt does not match the 4-part layout")
+            imd = text
+        else:
+            imd = m.group("imd")
+            pf, fps = shot["timing_and_lattice"]["pixel_frames"], prof["fps"]
+            if m.group("sec") != f"{pf / fps:.2f}":
+                log.err("PR-01", f"header second mark {m.group('sec')} != {pf / fps:.2f}")
+            if not imd.startswith(f"[Shot 1] {clean_text(style['mandatory_prefix'])}, preserving the exact character design"):
+                log.err("PR-01", "description does not start with the mandatory prefix")
+    if re.findall(r"\[Shot (\d+)\]", text) != ([] if ref else ["1"]):
+        log.err("PR-02", "the only [Shot N] tag must be [Shot 1] (none in Ref2VA)")
+    for code, msg in prompt_lock_problems(text, text_events=diegetic_text_events(shot), voice=voice_context(shot, reg)):
+        log.err(code, msg)
     if re.search(r"\bAt \d{1,2}:\d{2}(?:\.\d+)?", text):
         log.err("PR-03", "At MM:SS timestamp found")
     for tok in style.get("banned_style_tokens", []):
@@ -500,11 +767,9 @@ def _check_prompt(log, shot, prof, reg, compiled):
     if len(text) > prof["max_total_prompt_chars"]:
         log.err("PR-06", f"prompt length {len(text)} > {prof['max_total_prompt_chars']}")
     d = shot["dialogue_and_lip_lock"]
-    pieces = [sanitize_single_line(shot["anime_timing_cadence"]["cadence_clause"]),
-              sanitize_single_line(d["mouth_state_rule"]),
-              sanitize_single_line(shot["camera"]["compiled_clause"])]
-    pieces += [sanitize_single_line(u["voiceover_action_cue"]) for u in d["utterances"]]
-    pieces += re.findall(r"<d>.*?</d>", text)
+    pieces = [clean_text(shot["anime_timing_cadence"]["cadence_clause"]),
+              clean_text(d["mouth_state_rule"]),
+              clean_text(shot["camera"]["compiled_clause"])]
     for p in pieces:
         if p not in imd:
             log.err("PR-07", f"{p[:60]!r} is not a substring of the description")
@@ -525,7 +790,11 @@ def _check_workflow(log, workflow, shot, prof):
     if workflow.get("_unverified_node_classes") is not True:
         log.err("WF-08", "workflow must carry _unverified_node_classes: true")
     mode = shot["fl2va_keyframes"].get("mode")
-    lora = prof["mode_to_lora_map"].get(f"{mode}_{prof['checkpoint_architecture_namespace']}")
+    route = route_shot(shot)
+    if route not in ("FL2VA", REF2VA):
+        log.err("WF-09", f"route {route} has no sing8 workflow (only FL2VA and Ref2VA)")
+        return
+    lora = prof["mode_to_lora_map"].get(f"{workflow_mode(route)}_{prof['checkpoint_architecture_namespace']}")
     if sum(1 for n in nodes.values() if n.get("class_type") == "LoraLoaderModelOnly") != 1:
         log.err("WF-02", "exactly one LoraLoaderModelOnly node is required")
     lo = nodes["2"]["inputs"]
@@ -533,7 +802,7 @@ def _check_workflow(log, workflow, shot, prof):
         log.err("WF-02", f"LoRA must be {lora!r} at strength {prof['runtime_lora_strength']}, got {lo['lora_name']!r} at {lo['strength_model']}")
     ms = nodes["3"]["inputs"]
     if (sum(1 for n in nodes.values() if n.get("class_type") == "ModelSamplingAV") != 1
-            or ms["video_shift"] != prof["model_sampling_av"]["mode_to_video_shift_map"][mode]
+            or ms["video_shift"] != video_shift_for(prof, route)
             or ms["audio_shift"] != prof["model_sampling_av"]["audio_shift"]):
         log.err("WF-03", "ModelSamplingAV must have one node with the mode's video_shift and audio_shift")
     gd = nodes["6"]["inputs"]
@@ -548,6 +817,46 @@ def _check_workflow(log, workflow, shot, prof):
         log.err("WF-06", f"conditioning must be {w}x{h} with length {shot['timing_and_lattice']['pixel_frames']}")
     if mode == "FL2VA" and lora and "ref2va" in lora.lower():
         log.warn("WF-W1", f"unverified combination: FL2VA on ref2va LoRA {lora!r}")
+
+
+def _check_pure_foley(log, shot, prof, reg=None):
+    """Source-level rules: MO-01 mouth lock, SX-01 sound cue in the action sentences, Ref2VA limits.
+    English H3 voice mode (reg voice_engine en=h3): mouth_state follows the on-screen lines, reference_audio lists the
+    voice anchors of the shot's speakers (VA-05..07)."""
+    voice = voice_mode(reg)
+    for msg in mouth_state_problems(shot, prof["fps"], speaking_seconds(shot) if voice else None):
+        log.err("MO-01", msg)
+    stages = [shot["motion_7_stage"][k] for k in STAGES]
+    cues = sum(1 for s in stages if SFX_CUE_RE.search(s))
+    if cues < SX_MIN_STAGE_CUES:
+        log.err("SX-01", f"only {cues} of 7 action sentences carry a synchronized sound cue, need {SX_MIN_STAGE_CUES}")
+    if route_shot(shot) == REF2VA:
+        for code, msg in ref2va_limit_problems(shot, voice):
+            log.err(code, msg)
+    if voice:
+        inv, chars = ref_inventory(shot), reg["characters"]
+        sid = shot.get("shot_id")
+        anchors = []
+        for cid in inv["audio"]:
+            a = (chars.get(cid) or {}).get("voice_anchor")
+            if a is None:
+                log.err("VA-01", f"reference_audio {cid!r} has no voice anchor")
+            elif a.get("audio") is None:  # UNVERIFIED timbre stability: the anchor is the first approved H3 clip's audio
+                log.err("VA-08", f"voice anchor of {cid!r} is pending: extract its audio from {a.get('clip_shot_id')!r} first")
+            else:
+                anchors.append(a)
+        for code, msg in audio_ref_problems(anchors):
+            log.err(code, msg)
+        for u in (shot.get("dialogue_and_lip_lock") or {}).get("utterances") or []:
+            cid = u.get("character_id") if isinstance(u, dict) else None
+            if cid is None or cid in inv["audio"]:
+                continue
+            a = (chars.get(cid) or {}).get("voice_anchor") or {}
+            if a.get("audio") is None and a.get("clip_shot_id") == sid:
+                continue  # this shot is the anchor's source render: it is rendered without its own anchor
+            log.err("VA-07", f"{cid!r} speaks but its voice anchor is not in reference_audio")
+    elif ref_inventory(shot)["audio"]:
+        log.err("AU-01", "reference_audio must be empty: pure-Foley H3 takes no voice references")
 
 
 def lint_shot(shot, profile, registry, asset_root, prev=None, compiled_prompt=None):
@@ -565,6 +874,7 @@ def lint_shot(shot, profile, registry, asset_root, prev=None, compiled_prompt=No
     _run(log, _check_cadence, shot)
     _run(log, _check_camera, shot)
     _run(log, _check_dialogue, shot, registry)
+    _run(log, _check_pure_foley, shot, profile, registry)
     _run(log, _check_keyframes, shot, profile, asset_root, prev)
     if prev is not None:
         _run(log, _check_cross_shot, shot, prev, asset_root)

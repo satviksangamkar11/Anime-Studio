@@ -13,16 +13,31 @@ run in the same minute gets -2). Pack folders of NEW runs: pack_<writer>_<YYYYMM
 an existing folder is never reused. Reading (summary, report_text) never writes a file."""
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import functools
+import hashlib
 import json
 import os
 import re
 import secrets
 import sys
+import time
 from pathlib import Path
 
+try:                      # Windows: byte-range lock; elsewhere: flock (both released when the process ends)
+    import msvcrt
+except ImportError:
+    msvcrt = None
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 STORY_FILE, RUNS_FILE, REPORT_FILE = "story.json", "RUNS.jsonl", "RUN_REPORT.md"
+SCHEMA_VERSION = 1                                   # story.json schema; fields added after v1 are optional when read
+OUTPUT_LANGUAGES = ("en", "hi", "mr")
+LOCK_TIMEOUT = 10.0                                  # seconds a writer waits for RUNS.jsonl.lock before TimeoutError
 KINDS = ("story_saved", "transcript_fetched", "analysis_stage", "analysis_done", "pack_check", "spec_built", "jobs_built",
          "image_review", "render_prepare", "gate_decision", "stopped", "failed")
 STATUSES = ("started", "ok", "failed", "stopped")
@@ -33,7 +48,9 @@ SLUG = re.compile(r"[a-z0-9_]{1,40}")
 PACK = re.compile(r"[a-z0-9_-]{1,40}")
 RUN_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,159}")
 STAGE = re.compile(r"[0-9]{1,2}(?:e[0-9]{1,2})?|single")
-EVENT_FIELDS = {"started_at", "ended_at", "model", "via", "effort", "pack", "files", "chars", "note", "url", "gate", "decision"}
+EVENT_FIELDS = {"started_at", "ended_at", "model", "via", "effort", "pack", "files", "chars", "note", "url", "gate", "decision",
+                "source_sha256", "output_languages", "voice_engine"}
+VOICE_ENGINES = ("elevenlabs", "h3")                 # voice_engine values per language (owner option A, 2026-11-07)
 SECRET_RX = [re.compile(p) for p in (r"ya29\.\S+", r"Bearer\s+\S+", r"nvapi-\S+", r"hf_[A-Za-z0-9]{20,}",
                                      r"sk-[A-Za-z0-9_-]{16,}", r"AIza[0-9A-Za-z_-]{30,}", r"token=\S+")]
 TRANSCRIPT_MARK = "## TRANSCRIPT (verbatim)"
@@ -157,9 +174,59 @@ def read_json(path, default=None):
 
 def _write_atomic(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")   # per process: two writers never share one temp file
     tmp.write_text(text, encoding="utf-8", newline="\n")
     os.replace(tmp, path)
+
+
+def file_sha256(path) -> str | None:
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def source_file_hash(story_dir) -> str | None:
+    """sha256 of stories/<slug>/SOURCE.md as it is on disk now (None when the file is missing)."""
+    return file_sha256(Path(story_dir) / "SOURCE.md") if story_dir is not None else None
+
+
+def _lock(f) -> None:
+    """One exclusive, non-blocking lock on the open lock file f. Raises OSError while another process or thread holds it."""
+    if msvcrt:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+    else:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def _unlock(f) -> None:
+    if msvcrt:
+        f.seek(0)
+        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+
+@contextlib.contextmanager
+def _locked(path: Path, timeout: float = LOCK_TIMEOUT):
+    """Exclusive lock for appends to `path`, held on the separate file <path>.lock (readers of `path` are never blocked by it).
+    ponytail: one lock per story folder; per-run locks only if many writers ever share one story."""
+    lock_path = path.with_name(path.name + ".lock")
+    with open(lock_path, "a+b") as f:
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                _lock(f)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"{lock_path.name} still held after {timeout:.0f} s") from None
+                time.sleep(0.01)
+        try:
+            yield
+        finally:
+            _unlock(f)
 
 
 # ---------------------------------------------------------------- story meta
@@ -192,7 +259,8 @@ def detect_language(text: str) -> str:
 def default_story(story_dir) -> dict:
     story_dir = Path(story_dir)
     return {"slug": story_dir.name, "title": story_dir.name, "language": None, "source": {}, "created_at": None,
-            "owner_request_text": "", "tags": []}
+            "owner_request_text": "", "tags": [], "schema_version": SCHEMA_VERSION, "source_sha256": None,
+            "output_language": None, "rating": None}
 
 
 def read_story(story_dir) -> dict | None:
@@ -200,9 +268,13 @@ def read_story(story_dir) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def update_story(story_dir, *, title=None, language=None, source=None, owner_request_text=None, tags=None, created_at=None) -> dict:
-    """Creates story.json when it is missing; otherwise changes only the fields given (None = keep)."""
+def update_story(story_dir, *, title=None, language=None, source=None, owner_request_text=None, tags=None, created_at=None,
+                 source_sha256=None, output_language=None, rating=None) -> dict:
+    """Creates story.json when it is missing; otherwise changes only the fields given (None = keep).
+    output_language is en, hi or mr (ValueError otherwise). rating is free text; '' clears it (the owner sets it, never the code)."""
     story_dir = Path(story_dir)
+    if output_language is not None and output_language not in OUTPUT_LANGUAGES:
+        raise ValueError(f"output_language must be one of {', '.join(OUTPUT_LANGUAGES)}")
     meta = read_story(story_dir)
     if meta is None:
         meta = dict(default_story(story_dir), created_at=created_at or now_iso())
@@ -216,8 +288,32 @@ def update_story(story_dir, *, title=None, language=None, source=None, owner_req
         meta["owner_request_text"] = owner_request_text[:200]
     if tags:
         meta["tags"] = sorted(set(meta.get("tags") or []) | set(tags))
+    if source_sha256 is not None:
+        meta["source_sha256"] = source_sha256
+    if output_language is not None:
+        meta["output_language"] = output_language
+    if rating is not None:
+        meta["rating"] = rating.strip()[:300] or None
+    meta["schema_version"] = SCHEMA_VERSION
     _write_atomic(story_dir / STORY_FILE, json.dumps(meta, ensure_ascii=False, indent=1) + "\n")
     return meta
+
+
+def upgrade_story_fields(story_dir, write: bool = True) -> bool:
+    """Adds the fields a v1 story.json lacks (schema_version, source_sha256 = the SOURCE.md hash now, output_language, rating).
+    A value that is already there is never changed. Returns True when something was (or, with write=False, would be) added."""
+    story_dir = Path(story_dir)
+    meta = read_story(story_dir)
+    if meta is None:
+        return False
+    fill = {"schema_version": SCHEMA_VERSION, "source_sha256": source_file_hash(story_dir), "output_language": None, "rating": None}
+    missing = {k: v for k, v in fill.items() if k not in meta}
+    if not missing:
+        return False
+    if write:
+        meta.update(missing)
+        _write_atomic(story_dir / STORY_FILE, json.dumps(meta, ensure_ascii=False, indent=1) + "\n")
+    return True
 
 
 # ---------------------------------------------------------------- events
@@ -258,6 +354,19 @@ def _checked(ev: dict) -> dict:
         raise ValueError("bad decision")
     if ev.get("chars") is not None and (isinstance(ev["chars"], bool) or not isinstance(ev["chars"], int) or ev["chars"] < 0):
         raise ValueError("chars must be a whole number")
+    if ev.get("source_sha256") is not None and not (isinstance(ev["source_sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", ev["source_sha256"])):
+        raise ValueError("source_sha256 must be a sha256 hex digest")
+    langs = ev.get("output_languages")
+    if langs is not None:  # optional: old events lack it; a list, a non-repeating subset of en/hi/mr, in priority order
+        if not (isinstance(langs, list) and langs and len(set(langs)) == len(langs)
+                and all(x in OUTPUT_LANGUAGES for x in langs)):
+            raise ValueError(f"output_languages must be a non-empty, non-repeating list from {OUTPUT_LANGUAGES}")
+    engines = ev.get("voice_engine")
+    if engines is not None:  # optional dict lang -> engine
+        if not (isinstance(engines, dict) and all(k in OUTPUT_LANGUAGES for k in engines)
+                and all(v in VOICE_ENGINES for v in engines.values())
+                and all(v != "h3" or k == "en" for k, v in engines.items())):   # h3 voice is English only
+            raise ValueError(f"voice_engine must map {OUTPUT_LANGUAGES} to {VOICE_ENGINES}")
     files = ev.get("files")
     if files is not None:
         if not isinstance(files, list) or len(files) > 50:
@@ -282,8 +391,9 @@ def append_event(story_dir, run, kind, stage, status, *, at=None, event_id=None,
     ev = _checked(ev)
     story_dir = Path(story_dir)
     story_dir.mkdir(parents=True, exist_ok=True)
-    with open(story_dir / RUNS_FILE, "a", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(ev, ensure_ascii=False) + "\n")
+    line = json.dumps(ev, ensure_ascii=False) + "\n"
+    with _locked(story_dir / RUNS_FILE), open(story_dir / RUNS_FILE, "a", encoding="utf-8", newline="\n") as f:
+        f.write(line)
     return ev
 
 
@@ -357,6 +467,18 @@ def pack_route(rows, pack) -> tuple:
     return last[-1].get("model"), last[-1].get("via")
 
 
+def pack_source_status(story_dir, pack) -> str:
+    """'same' or 'changed': SOURCE.md against the hash the pack's last run event recorded. 'unknown' when no event of that pack
+    has a hash (runs before schema 1, or backfilled ones); 'no SOURCE.md' when there is nothing to compare."""
+    now = source_file_hash(story_dir)
+    if now is None:
+        return "no SOURCE.md"
+    recorded = [e["source_sha256"] for e in read_events(story_dir) if e.get("pack") == pack and e.get("source_sha256")]
+    if not recorded:
+        return "unknown"
+    return "same" if recorded[-1] == now else "changed"
+
+
 # ---------------------------------------------------------------- writing (never raises)
 def _safe(fn, *args, **kwargs):
     try:
@@ -422,6 +544,8 @@ class Recorder:
         via = via or self.via
         effort = (effort or self.effort) if via == "claude" else None
         meta = {"pack": self.pack, "via": via, "model": model or self.model, "effort": effort, "files": list(files)}
+        if kind == "analysis_done":          # the pack's run event carries the SOURCE.md hash it was made from (drift check)
+            meta["source_sha256"] = source_file_hash(self.dir)
         return Step(self, kind, stage, meta, note)
 
 
@@ -429,7 +553,7 @@ class Recorder:
 def record_story_saved(story_dir, text: str, overwrite: bool = False) -> str:
     story_dir = Path(story_dir)
     update_story(story_dir, title=title_from_source(text, story_dir.name), language=detect_language(text),
-                 source=detect_source(text))
+                 source=detect_source(text), source_sha256=source_file_hash(story_dir) or hashlib.sha256(text.encode("utf-8")).hexdigest())
     run = run_id("story-save", taken=_run_ids(story_dir))
     append_event(story_dir, run, "story_saved", None, "ok", files=["SOURCE.md"], chars=transcript_chars(text),
                  note="overwrite" if overwrite else "")
@@ -441,9 +565,9 @@ def record_story_saved(story_dir, text: str, overwrite: bool = False) -> str:
 def record_transcript(story_dir, *, url: str, chars: int, lang: str = "hi", title=None, file: str = "SOURCE.md") -> str:
     story_dir = Path(story_dir)
     fetched = now_iso()
-    update_story(story_dir, title=title, source={"type": "youtube", "url": url, "fetched_at": fetched, "saved_at": fetched,
-                                                 "chars": chars, "truncated_note": None,
-                                                 "note": f"YouTube captions, language {lang}"})
+    update_story(story_dir, title=title, source_sha256=source_file_hash(story_dir),
+                 source={"type": "youtube", "url": url, "fetched_at": fetched, "saved_at": fetched,
+                         "chars": chars, "truncated_note": None, "note": f"YouTube captions, language {lang}"})
     run = run_id("transcript", taken=_run_ids(story_dir))
     append_event(story_dir, run, "transcript_fetched", None, "ok", url=url, chars=chars, files=[file], note=f"captions {lang}")
     write_report(story_dir)

@@ -39,3 +39,10 @@ ui/tasks/*.log
 stories/*
 !stories/kaliya_mardan
 stories/kaliya_mardan/pack_*/
+
+# per-story run records are local (never push)
+stories/*/RUNS.jsonl
+stories/*/RUNS.jsonl.lock
+stories/*/RUN_REPORT.md
+stories/*/story.json
+stories/*/links.json

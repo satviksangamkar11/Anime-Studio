@@ -1,0 +1,38 @@
+{
+ "b1_validator_writer": [
+  "director/pack_validator.py",
+  "director/writer_prompts.py",
+  "research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt"
+ ],
+ "b2_write_pack_lang": [
+  "director/write_pack.py",
+  "director/simple_language.py",
+  "director/retry_policy.py"
+ ],
+ "b3_state_ops": [
+  "director/run_registry.py",
+  "director/story_state.py",
+  "director/story_links.py",
+  "director/ops_checks.py",
+  "tools/secret_scan.py"
+ ],
+ "b4_h3_linter": [
+  "h3/schema_and_linter.py",
+  "h3/router.py",
+  "h3/compile_h3_sing8.py",
+  "h3/shot_table_spec.py"
+ ],
+ "b5_gate_d": [
+  "h3/gate_d_audio.py",
+  "h3/voice_engine.py",
+  "h3/voice_manifest.py",
+  "research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt"
+ ],
+ "b6_controller": [
+  "h3/render_controller.py",
+  "h3/pipeline_contract.py",
+  "h3/fallback_policy.py",
+  "h3/asset_manifest.py",
+  "h3/step9_qc.py"
+ ]
+}

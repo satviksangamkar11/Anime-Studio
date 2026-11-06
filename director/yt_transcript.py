@@ -1,8 +1,10 @@
 """YouTube link -> story SOURCE.md (the pipeline's "give a link" step).
 
-  python director/yt_transcript.py URL stories/<slug> [--lang hi]
+  python director/yt_transcript.py URL stories/<slug> [--lang auto|en|hi|mr] [--asr auto|off|force] [--engine local|groq]
 
-Uses yt-dlp to fetch the video's own captions (manual first, then auto), turns the WebVTT into plain running text
+Captions first, Whisper second (--asr auto, default): the video's own usable captions are used when they pass the quality check in
+asr_transcribe.py; otherwise the audio is transcribed locally with faster-whisper (English, Hindi, Marathi). --asr off = captions only,
+--asr force = Whisper only. An unclear Hindi/Marathi language exits 3 and asks for --lang. Uses yt-dlp to fetch the video's own captions (manual first, then auto), turns the WebVTT into plain running text
 (no timestamps, no duplicate rolling lines) and writes stories/<slug>/SOURCE.md in the studio's SOURCE format
 (header with the video title/channel/URL, the standing format rules, then "## TRANSCRIPT (verbatim)").
 Free, no key, no model call. Refuses a slug outside stories/ or an unsafe slug; never overwrites an existing SOURCE.md
@@ -18,6 +20,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import asr_transcribe
 import run_registry
 
 SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
@@ -62,7 +65,9 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("url")
     ap.add_argument("story_dir", type=Path)
-    ap.add_argument("--lang", default="hi")
+    ap.add_argument("--lang", default="auto", choices=["auto", "en", "hi", "mr"])
+    ap.add_argument("--asr", default="auto", choices=["auto", "off", "force"])
+    ap.add_argument("--engine", default="local", choices=["local", "groq"])
     ap.add_argument("--overwrite", action="store_true")
     a = ap.parse_args(argv)
     studio = Path(__file__).resolve().parent.parent
@@ -77,12 +82,30 @@ def main(argv=None) -> int:
     if target.exists() and not a.overwrite:
         print(f"REFUSED: {target} exists (use --overwrite)")
         return 2
-    with tempfile.TemporaryDirectory() as td:
-        meta, vtt = fetch(a.url, a.lang, Path(td))
-        text = vtt_to_text(vtt.read_text(encoding="utf-8", errors="replace"))
+    lang_used, how = a.lang, ""
+    if a.asr == "off":
+        with tempfile.TemporaryDirectory() as td:
+            meta, vtt = fetch(a.url, "hi" if a.lang == "auto" else a.lang, Path(td))
+            text = vtt_to_text(vtt.read_text(encoding="utf-8", errors="replace"))
+        how = f"YouTube captions, language {lang_used}; `{vtt.name}`"
+        res = {"engine": "captions"}
+    else:
+        meta = asr_transcribe._meta(a.url)
+        res = (asr_transcribe.transcribe_url(a.url, a.lang, a.engine) if a.asr == "force"
+               else asr_transcribe.get_transcript(a.url, a.lang, a.engine))
+        if res.get("needs_choice"):
+            print(f"NEEDS_CHOICE: the language is unclear; the candidates are {res.get('candidates')}. Run again with --lang <one of them>.")
+            return 3
+        text = res.get("text") or asr_transcribe.to_source_text(res)
+        lang_used = res.get("language") or a.lang
+        if res.get("engine") == "captions":
+            how = f"YouTube captions ({(res.get('params') or {}).get('track', 'auto')}), language {lang_used}"
+        else:
+            how = (f"SPEECH RECOGNITION (Whisper `{res.get('model')}`, engine {res.get('engine')}), language {lang_used}, confidence "
+                   f"{res.get('language_confidence')}; the video had no usable captions. Expect word errors: the owner checks this text before the analysis")
     head = f"""# SOURCE: {meta.get('title', 'untitled')} ({meta.get('channel') or meta.get('uploader') or 'unknown channel'})
 
-Fetched from {a.url} on the owner's link (YouTube captions, language {a.lang}; `{vtt.name}`). The text below the line "## TRANSCRIPT (verbatim)" is the caption text unchanged except for joining the caption lines. It is a spoken discourse typed by speech-to-text: expect errors, run-on sentences and a long commentary part. Mark anything not in the transcript as UNVERIFIED.
+Fetched from {a.url} on the owner's link ({how}). The text below the line "## TRANSCRIPT (verbatim)" is the transcript text unchanged except for joining the lines. It is a spoken discourse typed by speech-to-text: expect errors, run-on sentences and a long commentary part. Mark anything not in the transcript as UNVERIFIED.
 
 ## Owner's format and look (standing rules)
 - Short-form connected anime, 9:16 vertical, about 60-75 s per episode. The NUMBER of episodes is decided by the story analysis (do not force a number).
@@ -102,7 +125,7 @@ Fetched from {a.url} on the owner's link (YouTube captions, language {a.lang}; `
     story.mkdir(parents=True, exist_ok=True)
     target.write_text(head, encoding="utf-8")
     print(f"written {target} ({len(text)} chars of transcript)")
-    run_registry.record_transcript(story, url=a.url, chars=len(text), lang=a.lang, title=meta.get("title"), file=target.name)   # best effort
+    run_registry.record_transcript(story, url=a.url, chars=len(text), lang=lang_used, title=meta.get("title"), file=target.name)   # best effort
     return 0
 
 

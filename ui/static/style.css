@@ -459,6 +459,13 @@ th, td { border: 1px solid #999; padding: 0.4rem 0.5rem; text-align: left; verti
 th { background: #e9e9e6; }
 .muted { color: var(--muted); }
 .muted-light { color: #bbb; font-size: 0.9rem; }
+
+/* ---------- Runs & documents (run registry) ---------- */
+.runs-panel tr.clickable { cursor: pointer; }
+.runs-panel tr.clickable:hover, .runs-panel tr.clickable:focus { background: #f1f5ff; }
+.runs-panel tr.selected { background: #e3efff; }
+.runs-panel .runs-detail { margin-top: 1rem; }
+.runs-panel pre.box { white-space: pre-wrap; max-height: 28rem; overflow: auto; padding: 0.6rem; }
 .fixed { font-weight: 600; }
 .small { width: 6rem; }
 .wide { width: 32rem; max-width: 100%; }

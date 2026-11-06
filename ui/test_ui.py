@@ -770,8 +770,9 @@ def test_13_server_has_no_shell_and_only_stdlib_or_pillow():
             mods |= {a.name.split(".")[0] for a in node.names}
         elif isinstance(node, ast.ImportFrom) and node.level == 0:
             mods.add(node.module.split(".")[0])
-    # download_queue is the flow script's own queue reader, loaded by _dq_module() so UI and script never disagree
-    assert mods <= set(sys.stdlib_module_names) | {"PIL", "download_queue", "pipeline"}, mods - set(sys.stdlib_module_names)
+    # download_queue is the flow script's own queue reader, loaded by _dq_module() so UI and script never disagree;
+    # run_registry is director/run_registry.py (stdlib), loaded by _registry()
+    assert mods <= set(sys.stdlib_module_names) | {"PIL", "download_queue", "pipeline", "run_registry"}, mods - set(sys.stdlib_module_names)
 
 
 # ----------------------------------------------------------------- group 14: optional read-only smoke on real data

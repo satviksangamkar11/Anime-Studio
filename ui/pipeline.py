@@ -105,7 +105,10 @@ def record_gate(
     # the decision also goes into the story's run log when the story is known (best effort: never stops the gate)
     rr = _registry() if studio is not None and story_slug else None
     if rr is not None:
-        rr.record_gate_decision(Path(studio) / "stories" / story_slug, gate, decision, note, who)
+        try:
+            rr.record_gate_decision(Path(studio) / "stories" / story_slug, gate, decision, note, who)
+        except Exception as exc:   # best effort: the decision is already in approvals.jsonl; the gate never fails on the log
+            print(f"run registry: gate note skipped ({type(exc).__name__}: {str(exc)[:200]})", file=sys.stderr)
     return record
 
 

@@ -114,6 +114,18 @@ def redact_obj(o):
     return o
 
 
+def _registry():
+    """director/run_registry.py (stdlib): the run log of each story. None when it cannot be imported (the UI still runs)."""
+    d = str(STUDIO / "director")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    try:
+        import run_registry
+    except ImportError:
+        return None
+    return run_registry
+
+
 # ---------------------------------------------------------------- files and paths
 def load_json(path, default=None):
     try:
@@ -279,7 +291,11 @@ PACK_REL = _rx(r"stories/[a-z0-9_]{1,40}/[a-z0-9_-]{1,40}", "pack")
 SIZE = _enum("size", "768x1344", "864x1536")
 GPU = _enum("gpu", *RATES)
 SCOPE = _enum("scope", "shots", "reel", "all")
-WRITER_MODEL = _enum("model", "nvidia/nemotron-3-ultra-550b-a55b")
+WRITER_MODEL = _enum("model", "nvidia/nemotron-3-ultra-550b-a55b")         # legacy single-call NVIDIA path (argv kept as before)
+WRITER_NAME = _enum("writer", "super-vl", "ultra")                          # write_pack --writer shortcut; both are free OpenRouter models
+WRITER_ROUTE = {"super-vl": ("openrouter", "nvidia/nemotron-3.5-super-vl:free"),   # mirrors director/write_pack.py WRITERS (test_registry checks)
+                "ultra": ("openrouter", "nvidia/nemotron-3-ultra-550b-a55b:free")}
+DEFAULT_WRITER = "super-vl"
 VISION_MODEL = _enum("model", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "nvidia/nemotron-3.5-super-vl-120b-a12b")
 ADHYAY = _int(1, 12, "adhyay")
 REEL = _int(1, 99, "reel")
@@ -385,11 +401,30 @@ def scope_ids(shots_file, scope, ids=None, reel=None):
     raise bad("scope must be shots, reel or all")
 
 
+def write_pack_route(a) -> str:
+    """The path and model a write_pack preview will run, as text for the owner."""
+    if a.get("model"):
+        return f"legacy NVIDIA path: nvidia {a['model']}"
+    name = a.get("writer") or DEFAULT_WRITER
+    via, model = WRITER_ROUTE[name]
+    return f"writer {name}: {via} {model} (free model, streamed)"
+
+
 def b_write_pack(cfg, a):
     src = cfg.studio / "stories" / a["slug"] / "SOURCE.md"
     if not src.is_file():
         raise bad("save the story first: SOURCE.md is missing")
-    return _py(cfg, "director", "write_pack.py") + [str(src), str(src.parent / a["pack"]), "--staged", "--via", "nvidia", "--model", a["model"]]
+    dest = src.parent / a["pack"]
+    if (dest / "PACK.md").exists():   # a finished pack is never overwritten: a new run needs a new name
+        rr = _registry()
+        taken = {p.name for p in src.parent.iterdir() if p.is_dir()}
+        hint = rr.pack_name(a.get("writer") or DEFAULT_WRITER, taken=taken) if rr else "a new pack name"
+        raise bad(f"{a['pack']} is already finished (PACK.md exists): use {hint}")
+    if a.get("model") and a.get("writer"):
+        raise bad("give a writer or a model, not both")
+    if a.get("model"):
+        return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--via", "nvidia", "--model", a["model"]]
+    return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", a.get("writer") or DEFAULT_WRITER]
 
 
 def b_check_pack(cfg, a):
@@ -503,7 +538,7 @@ BATCH_ARGS = {"batch": A(NAME, True), "gpu": A(GPU, False, "G4"), "session": A(S
 ADH = A(ADHYAY, False, 1)
 SHOT_ARGS = {"adhyay": ADH, "shot": A(SHOT, True), "version": A(VERSION, True)}
 COMMANDS = {c.id: c for c in (
-    Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "model": A(WRITER_MODEL, True)}, b_write_pack),
+    Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "writer": A(WRITER_NAME), "model": A(WRITER_MODEL)}, b_write_pack),
     Cmd("check_pack", "R", False, {"pack": A(PACK_REL, True)}, b_check_pack),
     Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(True)),
     Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(False)),
@@ -863,6 +898,29 @@ class Api:
                 job.warning = spend_warning(job.session)
         self._persist(job)
         self._audit("end", command=job.command, job=job.id, rc=rc, state=job.state)
+        if job.command == "write_pack" and job.state in ("stopped", "failed"):
+            self._close_run(job)
+
+    def _close_run(self, job):
+        """A write_pack job that was stopped or failed: its open steps get a closing line in the run log."""
+        folder = self._hook("story_folder", Path(job.argv[2]))
+        if folder is not None:
+            status = "stopped" if job.state == "stopped" else "failed"
+            self._hook("close_open_steps", folder, status, "stopped from the UI" if status == "stopped" else f"exit {job.rc}")
+
+    def _hook(self, what, *args, **kwargs):
+        """A run-registry call made by the UI: best effort. A failure is audited and returns None; it never breaks the request."""
+        try:
+            rr = _registry()
+            if rr is None:
+                raise ImportError("run_registry")
+            return getattr(rr, what)(*args, **kwargs)
+        except Exception as e:
+            try:
+                self._audit("registry_hook_failed", hook=what, error=type(e).__name__)
+            except OSError:
+                pass
+            return None
 
     def _verify_stop(self, job):
         text = self._cli_text(["sessions"])
@@ -905,8 +963,40 @@ class Api:
                 if d.is_dir() and re.fullmatch(r"[a-z0-9_]{1,40}", d.name):
                     packs = [p.name for p in sorted(d.iterdir()) if p.is_dir() and re.fullmatch(r"[a-z0-9_-]{1,40}", p.name)
                              and ((p / "shots.json").is_file() or (p / "PACK.md").is_file())]
-                    out.append({"slug": d.name, "packs": packs, "has_source": (d / "SOURCE.md").is_file()})
+                    s = self._hook("summary", d) or {}
+                    latest = s.get("latest_pack")
+                    out.append({"slug": d.name, "packs": packs, "has_source": (d / "SOURCE.md").is_file(), "latest_pack": latest,
+                                "latest_model": (s.get("pack_models") or {}).get(latest) or s.get("last_model")})
         return {"slugs": out}
+
+    def registry_list(self) -> dict:
+        """GET /api/registry: one run-log summary per story folder (read only)."""
+        rr = _registry()
+        if rr is None:
+            raise ApiError(503, "run registry not installed")
+        root, out = self.cfg.studio / "stories", []
+        if root.is_dir():
+            for d in sorted(root.iterdir()):
+                if d.is_dir() and re.fullmatch(r"[a-z0-9_]{1,40}", d.name):
+                    try:
+                        out.append(rr.summary(d))
+                    except Exception:
+                        out.append({"slug": d.name, "error": "could not read the run log"})
+        return redact_obj({"stories": out})
+
+    def registry_get(self, slug) -> dict:
+        """GET /api/registry/{slug}: the story, its runs, every step and RUN_REPORT text (read only; nothing is written)."""
+        slug = SLUG(self.cfg, slug)
+        rr = _registry()
+        if rr is None:
+            raise ApiError(503, "run registry not installed")
+        d = self.cfg.studio / "stories" / slug
+        if not d.is_dir():
+            raise ApiError(404, "no such story")
+        events = rr.read_events(d)
+        rows = rr.steps(events)
+        return redact_obj({"slug": slug, "story": rr.read_story(d), "summary": rr.summary(d), "runs": rr.runs(events, rows),
+                           "steps": rows, "report": rr.report_text(d)})
 
     def story_get(self, slug) -> dict:
         slug = SLUG(self.cfg, slug)
@@ -932,6 +1022,7 @@ class Api:
             raise ApiError(409, "SOURCE.md exists: tick overwrite to replace it")
         d.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+        self._hook("record_story_saved", d, text, overwrite)
         self._project_update({"story_slug": slug})
         return {"saved": f"stories/{slug}/SOURCE.md", "bytes": len(data)}
 
@@ -979,6 +1070,7 @@ class Api:
             raise ApiError(409, H3_MISSING)
         argv = spec.build(self.cfg, args)
         check_argv(argv)
+        route = write_pack_route(args) if spec.id == "write_pack" else None
         est = balance = confirm = None
         if spec.spend:
             est = estimate_units(args["gpu"], batch_clips(self.cfg, args["batch"]))
@@ -991,7 +1083,7 @@ class Api:
             self.tokens[token] = rec
         self._audit("preview", command=spec.id, argv=argv, spend=spec.spend, estimate=est)
         return {"argv": argv, "risk": spec.risk, "estimate": est, "balance": balance, "token": token, "expires_s": TOKEN_TTL,
-                "needs_confirm": spec.spend, "confirm_text": confirm, "spend_allowed": self.cfg.spend}
+                "needs_confirm": spec.spend, "confirm_text": confirm, "spend_allowed": self.cfg.spend, "route": route}
 
     def run(self, body) -> dict:
         tok = body.get("token")
@@ -1197,6 +1289,11 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})", path)
         if m:
             return api.story_get(m.group(1))
+        if path == "/api/registry":
+            return api.registry_list()
+        m = re.fullmatch(r"/api/registry/([^/]{1,80})", path)
+        if m:
+            return api.registry_get(m.group(1))
         if path == "/api/pack":
             return api.pack(q.get("pack", ""), q.get("check") == "1")
         if path == "/api/jobs":

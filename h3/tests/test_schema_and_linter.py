@@ -1,3 +1,4 @@
+import copy
 import os
 
 import pytest
@@ -6,11 +7,18 @@ from h3.compile_h3_sing8 import compile_fl2va_prompt
 from h3.schema_and_linter import (lattice_n_to_frames_and_slots, lint_profile, lint_story,
                                   load_default_profile, read_png_dimensions_on_disk, resolve_keyframes,
                                   sanitize_single_line, write_minimal_valid_png)
-from h3.tests.synth import A_END, A_START, B_END, B_START, _timing, codes
+from h3.tests.synth import A_END, A_START, B_END, B_START, SPEECH_UTTERANCE, _timing, codes
 
 
 def _shots(story):
     return story["episodes"][0]["shots"]
+
+
+def _with_utterance(story, i=1):
+    """The pure-Foley fixtures carry no speech. Schema-only tests inject one utterance to reach the utterance rules."""
+    d = _shots(story)[i]["dialogue_and_lip_lock"]
+    d["utterances"] = [copy.deepcopy(SPEECH_UTTERANCE)]
+    return d["utterances"][0]
 
 
 def _pic(story, name):
@@ -69,7 +77,7 @@ def test_missing_top_level_key_SC01(story):
     lambda st: _shots(st)[0]["timing_and_lattice"].pop("fps"),
     lambda st: _shots(st)[0]["camera"].__setitem__("extra", 1),
     lambda st: _shots(st)[0]["motion_7_stage"]["stage_frame_spans"].pop("7_settled_end_state"),
-    lambda st: _shots(st)[1]["dialogue_and_lip_lock"]["utterances"][0].pop("text"),
+    lambda st: _with_utterance(st).pop("text"),
 ])
 def test_block_key_set_mismatch_SC02(story, mutate):
     mutate(story)
@@ -176,7 +184,7 @@ def test_camera_unofficial_motion_CM01(story):
 
 
 def test_utterance_unknown_character_DL02(story):
-    _shots(story)[1]["dialogue_and_lip_lock"]["utterances"][0]["character_id"] = "char_missing"
+    _with_utterance(story)["character_id"] = "char_missing"
     assert "DL-02" in _codes(story)
 
 
@@ -221,7 +229,7 @@ def test_timestamp_PR03(story):
 
 
 def test_second_shot_tag_PR02(story):
-    _shots(story)[1]["dialogue_and_lip_lock"]["utterances"][0]["text"] = "Hold the line [Shot 2] now."
+    _shots(story)[1]["motion_7_stage"]["2_anticipation"] += " The beat [Shot 2] lands."
     assert "PR-02" in _codes(story)
 
 

@@ -5,7 +5,8 @@ Indian-mythology anime pipeline: story -> production pack -> keyframes -> MiniMa
 | Step | File | What it does |
 |---|---|---|
 | Brief | `director/MASTER_PROMPT_v2.1.md` | The 5-gate studio brief (story, art bible, shots, prompts, sound/QA) ending in a machine-readable shot list |
-| 1 Writer | `director/write_pack.py` | Story -> `PACK.md` + `shots.json` in one model call: `--via claude` (Claude CLI), `--via nvidia` (NVIDIA build API), `--via openrouter` (free models only unless `--allow-paid`) |
+| 1 Writer | `director/write_pack.py` | Story -> `PACK.md` + `shots.json`. Default `--writer super-vl` (free OpenRouter `nvidia/nemotron-3.5-super-vl:free`, streamed); `--writer ultra` (free OpenRouter Nemotron 3 Ultra); `--writer opus` (Claude CLI, effort medium). Lower-level: `--via claude / nvidia / openrouter` with `--model` (OpenRouter free models only unless `--allow-paid`). `--staged` makes one call per gate |
+| Run log | `director/run_registry.py` | Every story, writer and analysis run, with its model and each step: `stories/<slug>/story.json`, append-only `RUNS.jsonl`, and `RUN_REPORT.md` (`report(studio, slug)`). Shown in the UI wizard under "Runs & documents" (`GET /api/registry`). Old stories: `director/backfill_registry.py --only <slug>` (idempotent) |
 | 2 Settings | `director/h3_director.py` | `shots.json` -> one Wan2GP settings file per shot (MiniMax H3 + Pika H3 Flex 6 steps) |
 | 3 Kaggle | `director/run_kaggle.py` | Packs shots + keyframes into one Kaggle T4 run (Wan2GP headless); `--fetch` downloads only the videos |
 | 4 Check | `director/clip_tools.py` | First/middle/last frame sheet, duration, loudness; real last frame -> next shot's start |

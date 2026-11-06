@@ -1,0 +1,119 @@
+You are a senior software architect reviewing a local pipeline called Anime Studio (story -> writer -> pack -> validator -> human approval gates -> Flow images -> H3 video render -> audio mix -> final QC). The full handoff document is appended below. Below is the list of gaps I (the integrator) have found so far. Your job:
+1. Read the handoff and the gap list critically. Add every gap I MISSED (architecture, data model, resume/continue, safety, cost, reliability, testing, UI, docs). Be concrete: name the file/function/field when you can infer it from the handoff; say "uncertain" otherwise. Do not invent files that the handoff does not mention unless you propose them as new.
+2. Rank ALL gaps (mine + yours) by severity (high/medium/low) and by how much they block the owner from running a new story end to end.
+3. Give the FASTEST PATH to close them: an ordered list of work packages (WP1, WP2, ...), each with: goal, files it owns (disjoint between packages so they can run in parallel with separate coder agents), tests that prove it, dependencies, and estimated size (S/M/L). Say which packages can run in parallel and which must wait. Mark what needs an owner decision and do not assume the answer.
+4. List the top 5 risks of the plan and a cheap check for each.
+Answer in plain English, short sentences, as tables or numbered lists. Put the final answer after a line that says exactly FINAL:
+
+GAPS FOUND SO FAR (integrator list, 2026-11-07):
+G1 Approvals (Gate A-D) are stored in ONE global ui/runs/approvals.jsonl and read without filtering by story or pack, so approving Gate A for one story shows approved for another.
+G2 The wizard holds ONE project (ui/runs/project.json: story_slug, pack, images_dir, results_dir). There is no per-story summary of where it stopped and the next step, and no "Continue" button.
+G3 The running UI server is stale (older code; /api/registry returned unknown path) and must be restarted after code changes; nothing reminds or checks this.
+G4 Story upanishad_ganga_ep4_ashtavakra has run events but no story.json or RUN_REPORT.md; an empty pack folder pack_opus_medium_v1 exists in stories/ashtavakra_gita_katha.
+G5 Images/results folders (flow_outputs, Colab results) are not linked to a story or pack, so the image and render stages cannot resume for old stories (Kaliya images exist but are not tied to the story).
+G6 There is no automatic validator between the writer and Gate A in the current main code (pack_validator is being built by an agent). Kaliya pack defects were found only by hand: reels 2-5 too short, characters used in shots but missing from the bible, a suspicious prop.
+G7 No check that the simple everyday Hindi/Marathi language rule is followed (agent F is building a validator; word lists are only a starter list).
+G8 H3 speaking Hindi/Marathi is unverified; the V4 spec moves all speech to ElevenLabs outside H3, but the owner earlier said no paid ElevenLabs (open decision); the code must read supplied voice .wav files and never call the API.
+G9 Free-model reliability: the NVIDIA-key route returns PENDING_BUDGET, OpenRouter free route returns 429 and empty/cut-off answers when reasoning uses the whole token budget; retries are ad hoc.
+G10 The Colab render and the UI Render step have never run end to end from the UI; loudness wiring is not in render_controller; Step 9 QC, asset manifest hashes and the 4-rung fallback are being built but not wired into render_controller or the UI.
+G11 The writer saved the art bible in two layouts (dict vs list); only pack_to_spec accepts both; the V4 writer will save one canonical layout, old packs stay legacy.
+G12 Whisper fallback tested only on one 90-second Hindi sample (worse than YouTube captions); Marathi untested; Groq engine untested; the owner must check Whisper text before analysis.
+G13 The Devanagari caption font file is not bundled (OFL download needed); captions never rendered on a real device.
+G14 The Runs & documents panel and the Whisper wiring were never checked in a real browser; the pane used for checks was too small for visual checks.
+G15 Concurrent writers to RUNS.jsonl are not locked (small risk); registry story.json fields are not redacted (titles come from owner text).
+G16 Nothing pushed to GitHub since commit 8b1119a; the public repo must not receive stories, images, transcripts, keys.
+G17 Gate decisions per story are recorded in the registry but the UI gate state does not read them.
+G18 The image reviewer (Nemotron Omni) may be replaced by Nemotron 3.5 Super VL (higher index): owner has not decided.
+
+HANDOFF DOCUMENT:
+# HANDOFF - Anime Studio - 2026-11-07 (resume here with any Claude account)
+
+Read this file top to bottom, then `STATUS.md`, then `research/H3_V4_CONTRACT_2026-11-07.md`. Section 9 is the LIVE LEDGER: it is updated every time an agent finishes and is verified. If you are a new Claude session: trust the ledger, re-run the four test suites (section 8) before touching anything, and do NOT redo anything marked VERIFIED.
+
+## 1. What this project is
+Anime Studio turns a story (pasted text, or a YouTube link) into short vertical anime reels (9:16, 60-75 s each) through a pipeline with human approval gates. Repo: `satviksangamkar11/Anime-Studio` (PUBLIC: never push images, clips, weights, keys, transcripts or the `stories/` folders; `.gitignore` already blocks them). Working folder: `D:\aai work\anime_studio` (Windows 11, Python 3.14 at `C:/Python314/python.exe`, ffmpeg and yt-dlp on PATH, RTX 3050 6 GB, C: nearly full, D: about 9 GB free). NEVER touch `D:\aai work\granthstudio` (other project; read-only if needed).
+
+Pipeline: Story (paste / YouTube link: captions first, Whisper second) -> Writer (staged, free model) -> pack (PACK.md, bible.json, shots.json) -> **pack_validator (new)** -> **Gate A** (owner approves plan) -> image jobs (pack_to_spec + build_jobs) -> Flow images (Haiku LOW agents, AI reviewer, watermark removal, 2K) -> **Gate B** -> read-out -> **Gate C** (type START) -> H3 router/compiler/linter -> Colab render (spend gate) -> Gate D audio/captions mix -> **Step 9 final QC** -> export.
+
+## 2. Owner rules (binding; also saved in memory `C:\Users\Satvik\.claude\projects\D--aai-work\memory\`, index `MEMORY.md`)
+- Never print, commit or read keys/tokens. The owner enters HF tokens and OAuth codes. Keys live in `secrets/` folders (git-ignored); never `cat` them.
+- No paid video APIs. Colab spend only with the owner's explicit confirmation (spend gate in the UI: `--allow-spend`, typed confirm, 15-unit cap). Colab CLI: never use `colab --logtostderr`; always `colab stop` when done.
+- Writer = **Nemotron 3.5 Super VL free on OpenRouter** (`--writer super-vl`, default). Others: `ultra`, `opus` (only when the owner asks; Opus medium was used once for the Mahadev story).
+- Reviewers = **Nemotron (Ultra via `ui/tasks/nemotron_review.py`, 14-key scheduler `animation_research_tool/nvidia_scheduler.py`) AND Dots (`flow/scripts/dots_review.py`)**, in parallel. Not Codex. Coders = Haiku agents (high or xhigh effort); Flow image generation/download agents = Haiku effort LOW.
+- Tests never call Claude; free models only. All tests offline.
+- Every story/run must be NAMED, stored with the model and every step, documented and visible in the UI (`stories/<slug>/story.json`, `RUNS.jsonl`, `RUN_REPORT.md`; UI panel "Runs & documents"). New packs: `pack_<writer>_<YYYYMMDD>_v<n>`; never overwrite.
+- Language of output = SIMPLE everyday spoken Hindi/Marathi (not literary). Inputs may be English, Hindi, Marathi.
+- Answer the owner in English, short and plain. Keep memory current after every decision. Ask before pushing to GitHub (the owner pushed once explicitly; later pushes need "push" again).
+- Audio decision of 2026-11-07 (owner's V4 master prompt, supersedes the 2026-11-06 frozen audio plan): ElevenLabs voices ALL Hindi/Marathi/English speech OUTSIDE H3; H3 is a frame-synced SFX/Foley generator only; the code reads supplied voice .wav files and NEVER calls ElevenLabs (it is paid; the owner earlier said no paid ElevenLabs: confirm with the owner before any real ElevenLabs use). BGM = one continuous licensed stem logged in `audio/bgm_manifest.json`. No Flow browser actions and no Colab renders until the owner says go.
+
+## 3. Stories (all under `stories/`, local only, not in git)
+| Slug | Source | Model / pack | Result | State |
+|---|---|---|---|---|
+| kaliya_mardan | earlier transcript | older Dots/Nemotron packs | 4 runs ok | older, reference |
+| kaliya_katha_dhenuk | owner paste | Nemotron Ultra, `pack_nemotron_ultra_v1` | 5 reels, 47 shots, 285.7 s | **plan defects, NOT approved**: reels 2-5 short (60.0/47.6/51.1/55.6 s vs 65-75), CHAR-INDRA/BRAHMA/NARADA/SARASVATI and PROP-KALI-KAMLI used in shots but missing from bible, PROP-KANSA suspicious |
+| mahadev_katha_indresh | YouTube https://youtu.be/QIJ4qxo_Oz4 (captions) | Opus medium, `pack_opus_medium_v1` | 3 reels, 35 shots, 211.4 s (Lakshmana satsang, Shurpanakha temptation, restraint) | awaiting Gate A; transcript ends mid-sentence; nose-cutting NOT included (owner was asked: keep 3 reels or add a 4th restrained reel); owner said "wait, I will give a story" |
+| ashtavakra_gita_katha | owner paste (Osho-style talk, cut off mid-sentence) | none | SOURCE saved, runs stopped twice by owner | no pack; owner said stop |
+| upanishad_ganga_ep4_ashtavakra | YouTube https://youtu.be/IR9QwP4boiE (noisy auto captions) | Super VL, `pack_super-vl_20261106_v1` | 6 reels, 57 shots, 403.5 s (Ashtavakra birth to the debate with Bandi), all reels 64-70 s, converter OK 114 tiles | awaiting Gate A (owner asked to approve; unanswered) |
+
+Gate A approvals are recorded append-only in `ui/runs/approvals.jsonl` (git-ignored). No Gate A has been given yet for any of the new packs.
+
+## 4. Models and tools (what to use for what)
+Free OpenRouter models checked 2026-11-06 (Artificial Analysis index v5.0.1): Nemotron 3.5 Super VL 14 (best, sees images), Nemotron 3 Ultra 12, Lightning 6, Gemma 4 31B 4 (often 429), North Mini Code 3; unscored: Nano Omni (current image reviewer), Dots (reviewer, slow, reasoning heavy), Flint, Xing, LFM. The NVIDIA-key route of Ultra often returns PENDING_BUDGET; the OpenRouter `:free` route works. Whisper: `director/asr_transcribe.py` (faster-whisper large-v3-turbo on the GPU, cache on D:, 8x realtime; worse than YouTube captions on the one Hindi test, so captions first). Link tool: `python director/yt_transcript.py URL stories/<slug> [--lang auto|en|hi|mr] [--asr auto|off|force]`.
+
+## 5. Code map (what exists, all tested offline)
+- `director/`: write_pack.py (staged writer, `--writer`), run_registry.py + backfill_registry.py, yt_transcript.py, asr_transcribe.py, h3_director.py, check_pack.py, visual_qa.py, run_kaggle.py (Colab runner), t0_pack/.
+- `flow/scripts/`: build_jobs.py, pack_to_spec.py (pack -> Flow spec; accepts both bible layouts), dots_review.py, dots_coder.py, review_shot.py (Omni image reviewer), lama_inpaint.py/remove_sparkle.py (watermark), tidy_final.py, download_queue.py. `flow/IMAGE_SYSTEM_FULL.md` = the whole image system.
+- `h3/`: schema_and_linter.py, compile_h3_sing8.py, render_controller.py, assemble_reel.py (loudness_plan), e2e_sample.py, SPEC.md, `shot_table_spec.py` (V4 constants), profiles/.
+- `ui/`: local wizard server `python ui/server.py --port 8765` (127.0.0.1 only, spend OFF), static/pipeline.js (gates A-D, Runs & documents panel), pipeline.py (state machine).
+- `research/`: audio plans, image-system audit, `OWNER_MASTER_PROMPT_V4_2026-11-07.txt` (the owner's spec), `H3_V4_CONTRACT_2026-11-07.md` (module API + file ownership).
+
+## 6. State of git
+Pushed to `origin/main` at commit `8b1119a` (2026-11-06): flow, h3, ui, director code and docs. NOT pushed since: run registry + writer switch + `--writer`, Whisper wiring into yt_transcript, `h3/shot_table_spec.py`, the V4 contract, this handoff, and everything the V4 agents write. Push only when the owner says so (code and docs only; check `git status` for images/transcripts first).
+
+## 7. The V4 master prompt: what is being built (2026-11-07)
+The owner pasted a final merged specification (6 pages, saved in `research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt`) for: Writer, `pack_validator.py`, H3 router/compiler, Gate D audio/caption assembler, Step 9 final QC. It is split across six Haiku (high effort) agents with disjoint files, see the contract and the ledger below. Rule: lock 100% of code and tests first, no Flow, no Colab.
+
+## 8. How to verify and resume
+```
+cd "D:\aai work\anime_studio"
+C:/Python314/python.exe -m pytest -q -p no:cacheprovider h3          # baseline 159 before V4 work
+C:/Python314/python.exe -m pytest -q -p no:cacheprovider ui          # 178
+C:/Python314/python.exe -m pytest -q -p no:cacheprovider flow/scripts  # 116
+C:/Python314/python.exe -m pytest -q -p no:cacheprovider director    # 435
+```
+Review step for any new module (owner order): run BOTH `python flow/scripts/dots_review.py --prompt "..." FILES --out report.md` and `python ui/tasks/nemotron_review.py PROMPT.txt OUT.md FILES`, then verify every finding against the code before fixing (Nemotron and Dots produce false positives: they report path attacks that need a symlink or a CLI the owner runs himself; ignore those). Start long background runs directly with `run_in_background` (a trailing `&` inside a command kills them). Windows heredoc `\n` pitfall: use Write/Edit tools for file content.
+Servers: UI server may be running from an earlier session (port 8765); restart it after code changes: stop the old process, `cd ui && C:/Python314/python.exe server.py --port 8765` (run in background).
+
+## 9. LIVE LEDGER (update this table when an agent finishes and is verified)
+Legend: IN PROGRESS / DONE-UNVERIFIED (agent reported, not yet reviewed) / VERIFIED (tests green + Nemotron and Dots reviews triaged).
+
+| ID | Work | Files owned | Status | Verified by | Notes |
+|---|---|---|---|---|---|
+| A | pack_validator (Step 5.5 six checks, six story red-line checks, 6-column table, bible/card rules, repair_loop, CLI) | director/pack_validator.py, test_pack_validator.py | IN PROGRESS | | |
+| B | Writer V4 prompts, canonical bible, validator call + 1 repair retry | director/write_pack.py, writer_prompts.py, test_writer_v4.py | IN PROGRESS | | needs A's API |
+| C | H3 5-mode router, Ref2VA compile, speech/tag/mouth locks, 7000 char limit, shift params | h3/router.py, compile_h3_sing8.py, schema_and_linter.py, profiles/ | IN PROGRESS | | |
+| D | 4-rung fallback, asset manifest hashes, resolution ladder, Step 9 QC | h3/fallback_policy.py, asset_manifest.py, step9_qc.py | IN PROGRESS | | |
+| E | Gate D: voice/narration checks, 3-stem mix filter, loudness after AAC, .ass captions | h3/gate_d_audio.py, assets/fonts/README.md | IN PROGRESS | | font file not bundled yet |
+| F | Simple Hindi/Marathi two-tier validator | director/simple_language.py, director/data/* | IN PROGRESS | | starter word lists, owner extends |
+| I | Integration (wire validator before Gate A in ui/pipeline.py + wizard, render_controller uses router/lint/asset manifest/loudness, Step 9 gate in UI, registry events) | ui/*, h3/render_controller.py | NOT STARTED | | do after A-F verified |
+| S | RESUME FROM ANY STEP for every story (owner question 2026-11-07): (1) scope gate approvals per story+pack (today `ui/pipeline.py` reads ONE global `ui/runs/approvals.jsonl`, so approving Gate A for one story shows approved for another), (2) per-story "where it stopped / next step" summary in the registry + UI with a Continue button that loads that story+pack as the project, (3) restart the UI server (running one is stale: `/api/registry` returns unknown path), (4) backfill `upanishad_ganga_ep4_ashtavakra` (no story.json/RUN_REPORT yet), (5) remove the empty `stories/ashtavakra_gita_katha/pack_opus_medium_v1` folder, (6) link each story's images/results folders (flow_outputs) to the story | ui/pipeline.py, ui/server.py, ui/static/pipeline.js, director/run_registry.py | NOT STARTED (gap confirmed, needs owner go) | | do together with I (both touch ui/pipeline.py) |
+| R | Nemotron + Dots reviews of A-F, triage, fixes | | NOT STARTED | | |
+| G | Update STATUS.md/README, memory, commit; ask owner before push | | NOT STARTED | | |
+
+Older verified items (2026-11-06): UI wizard + gates, h3 hardening, audio rules C8 (sound beds, loudness_plan), pack_to_spec + job wiring, run registry + writer switch (reviewed by Nemotron and Dots, no real findings), Whisper fallback (`asr_transcribe.py`, 33 tests), link tool Whisper wiring (3 tests). Suites at last check: h3 159, ui 178, flow/scripts 116, director 435.
+
+## 10. Open owner decisions (ask, do not assume)
+1. Gate A for Upanishad Ganga (6 reels) and Mahadev (3 reels); Kaliya needs its defects fixed first.
+2. Mahadev: add a 4th restrained reel for the nose-cutting? (needs the missing transcript end; violence level to be set by the owner).
+3. Switch the image reviewer to Nemotron 3.5 Super VL (Omni as fallback)? Pending answer.
+4. Push the unpushed work to GitHub (owner says when).
+5. ElevenLabs: V4 spec requires it for all speech; earlier owner said no paid ElevenLabs. Confirm before any real use; code never calls it.
+6. Test H3 speaking Hindi/Marathi? Not needed if ElevenLabs voices everything (V4 says H3 lacks hi/mr). A short Colab test needs the owner's go and spend confirmation.
+7. Bundling the Devanagari font `NotoSansDevanagari-Bold.ttf` (OFL) into `assets/fonts/` (needs a download; the code never downloads).
+
+## 11. Known gaps / lessons
+- Free models: NVIDIA key route hits PENDING_BUDGET; OpenRouter free route rate limits (429) and returns empty/cut-off answers when reasoning uses the whole token budget (`finish_reason=length`): delete the bad `stage_*_raw.json` and rerun the writer, it resumes from saved stages.
+- Writers differ in bible layout (dict vs list): `pack_to_spec` accepts both; the V4 writer saves ONE canonical layout (dicts keyed by id).
+- The Super VL run once failed at an episode stage for length and resumed fine.
+- Colab runner and the UI Render step have never run end to end from the UI; loudness wiring into `render_controller` is not done (V4 integration task I).
+- Not yet live-tested: Groq Whisper engine, the Runs & documents panel in a browser, Whisper on Marathi.

@@ -10,16 +10,16 @@ B_START, B_END = "syn_b_start.png", "syn_b_end.png"
 C_END = "syn_c_end.png"
 PNGS = (A_START, A_END, B_START, B_END, C_END)
 SHOT_IDS = ("SYN_A", "SYN_B", "SYN_C")
-MSG_RE = re.compile(r"^(SYN_[ABC]|<shot \d+>): ([A-Z]{2}-[A-Z0-9]+) ")
+MSG_RE = re.compile(r"^(SYN_[ABC]|<shot \d+>): ([A-Z]{2,3}-[A-Z0-9]+) ")  # 3-letter codes such as LEN-01
 
 STAGE_TEXT = {
-    "1_starting_state": "The figure stands still on the rain-washed step, weight even on both feet, cloak hanging straight down.",
+    "1_starting_state": "The figure stands still on the rain-washed step, weight even on both feet, cloak hanging straight down with a faint rustle.",
     "2_anticipation": "A small breath lifts the shoulders, the head tilts a fraction, and the grip on the umbrella tightens.",
-    "3_initiation": "The body shifts its weight forward onto the front foot while the eyes lock on the far end of the lane.",
-    "4_drive": "The torso leans into the motion, the arm swings wide, and the cloak begins to trail behind the figure.",
+    "3_initiation": "The body shifts its weight forward onto the front foot while the eyes lock on the far end of the lane with a soft step.",
+    "4_drive": "The torso leans into the motion, the arm swings wide with a whoosh, and the cloak begins to trail behind the figure.",
     "5_contact_approach": "The foot strikes the wet stone, sending a thin spray outward as the figure closes the last gap.",
     "6_impact_result": "The stance snaps into a low lunge, the umbrella drops away, and water scatters in a clean ring.",
-    "7_settled_end_state": "The figure rises slowly into a steady upright pose, breathing calm, eyes fixed on the lit doorway.",
+    "7_settled_end_state": "The figure rises slowly into a steady upright pose, breathing calm with a quiet hum, eyes fixed on the lit doorway.",
 }
 SPANS = {"1_starting_state": [0, 24], "2_anticipation": [25, 49], "3_initiation": [50, 74],
          "4_drive": [75, 99], "5_contact_approach": [100, 124], "6_impact_result": [125, 149],
@@ -57,6 +57,9 @@ def _motion():
 
 
 def _shot(sid, seq, timing, cont, kf, camera, dialogue):
+    import math
+    dialogue = {**dialogue, "narrator_mouth_closed": True,
+                "mouth_state": {str(i): "closed" for i in range(math.ceil(timing["pixel_frames"] / 24))}}
     return {"shot_id": sid, "episode_id": "SYN_EP1", "sequence_order": seq,
             "story_beat": f"Synthetic beat {seq}.", "emotional_objective": "Quiet resolve.",
             "mute_animatic_verification": False, "timing_and_lattice": timing,
@@ -83,6 +86,11 @@ def _kf(p1, p2, **extra):
 
 
 NO_DIALOGUE = {"has_dialogue": False, "utterances": [], "mouth_state_rule": "Mouths stay closed for the whole shot."}
+# Pure-Foley: no speech in any shot. This utterance is only injected by tests that prove the speech refusal.
+SPEECH_UTTERANCE = {"speaker_id": "spk_01", "character_id": "char_alpha", "is_offscreen_voiceover": True,
+                    "voiceover_action_cue": "the figure's jaw tightens", "language": "en",
+                    "text": "Hold the line until the bell.", "start_sec": 0.5, "end_sec": 3.0,
+                    "lip_lock_clause": "lips stay closed while the off-screen voice speaks"}
 
 
 def build_story(root):
@@ -99,11 +107,8 @@ def build_story(root):
               _kf(A_START, A_END),
               {"motion_type": "Static Shot", "amplitude": "medium_omitted", "speed": "normal_omitted",
                "compiled_clause": "The camera holds a static shot."}, copy.deepcopy(NO_DIALOGUE))
-    b_dialogue = {"has_dialogue": True, "mouth_state_rule": "Mouths stay closed while the off-screen voice speaks.",
-                  "utterances": [{"speaker_id": "spk_01", "character_id": "char_alpha", "is_offscreen_voiceover": True,
-                                  "voiceover_action_cue": "the figure's jaw tightens", "language": "en",
-                                  "text": "Hold the line until the bell.", "start_sec": 0.5, "end_sec": 3.0,
-                                  "lip_lock_clause": "lips stay closed while the off-screen voice speaks"}]}
+    b_dialogue = {"has_dialogue": False, "utterances": [],
+                  "mouth_state_rule": "Mouths stay closed while the off-screen figure keeps silent."}
     b = _shot("SYN_B", 2, _timing(12, 145, 12, 30, 145),
               _cont("DYNAMIC_MATCH_ON_ACTION", "Dynamic match from the lean.", "DYNAMIC_MATCH_ON_ACTION",
                     "Dynamic cut on the lunge.", "leaning_forward", _pose(12.5, 21.0, 0.56),
@@ -111,10 +116,8 @@ def build_story(root):
               _kf(B_START, B_END),
               {"motion_type": "Push In", "amplitude": "with small amplitude", "speed": "at slow speed",
                "compiled_clause": "The camera pushes in with small amplitude at slow speed."}, b_dialogue)
-    c_dialogue = {"has_dialogue": True, "mouth_state_rule": "Only the speaking figure's mouth moves, in sync with the line.",
-                  "utterances": [{"speaker_id": "spk_02", "character_id": "char_beta", "is_offscreen_voiceover": False,
-                                  "voiceover_action_cue": "the figure turns toward the light", "language": "en",
-                                  "text": "Not yet.", "start_sec": 0.0, "end_sec": 1.5, "lip_lock_clause": ""}]}
+    c_dialogue = {"has_dialogue": False, "utterances": [],
+                  "mouth_state_rule": "The figure's mouth stays closed while the figure turns toward the light."}
     c = _shot("SYN_C", 3, _timing(0, 175, 0, 0, 278),
               _cont("CHAINED_POSE_HOLD", "Chained from the lunge.", "INTER_REEL_HANDSHAKE",
                     "Handshake into the next reel.", "lunging_low", _pose(8.5, 15.5, 0.505),
@@ -126,6 +129,14 @@ def build_story(root):
                          "style_lock": copy.deepcopy(STYLE), "characters": copy.deepcopy(CHARACTERS)},
             "episodes": [{"episode_id": "SYN_EP1", "asset_root": pics, "shots": [a, b, c],
                           "episode_plan": {"target_editorial_frames": 453}}]}
+
+
+def ref2va_story(root):
+    """build_story with shot A re-routed to Ref2VA: three reference cards and no boundary frames."""
+    story = build_story(root)
+    story["episodes"][0]["shots"][0]["fl2va_keyframes"] = {
+        "mode": "REF2VA", "dimensions_verified": [864, 1536], "reference_images": [A_START, A_END, B_START]}
+    return story
 
 
 def codes(messages):

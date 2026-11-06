@@ -1,57 +1,142 @@
-# h3/: story-agnostic MiniMax H3 (Route C "sing8") compiler, linter, assembler, render selector
+# h3/: H3 (MiniMax H3, Route C "sing8") compiler, linter, render gate, Gate D audio plan
 
-Owner order 2026-11-06. Pre-render only: NO Flow, NO Colab, NO GPU, NO network. The engine reads ANY story/episode JSON given later. Never hardcode a story, never rename live Flow chips. Python 3.14 (`C:\Python314\python.exe`), stdlib + Pillow only. Tests: `cd D:\aai work\anime_studio` then `C:\Python314\python.exe -m pytest -q -p no:cacheprovider h3`. Package = `h3` (needs `h3/__init__.py`); tests live in `h3/tests/` and build their OWN synthetic story fixtures (tiny made-up shots, PNGs written with Pillow into tmp dirs). Do not touch `director/`, `flow/`, or Granth.
+Status 2026-11-07. Pre-render and planning only in this folder: no Flow, no Colab, no GPU, no ffmpeg run, no ElevenLabs
+call, no network. The engine reads any story/episode JSON; no story is hardcoded and no live Flow chip name changes.
+Python 3.14, stdlib + Pillow. Tests: `cd "D:\aai work\anime_studio"`, then `python -m pytest -q -p no:cacheprovider h3`.
 
-## Story file (input JSON)
+## 1. Design (owner option A, final 2026-11-07)
+- The video is rendered ONCE: one shared pure-Foley H3 render. H3 makes diegetic sound effects only (SFX/Foley), frame
+  synced. The narrator's mouth stays closed in every shot. H3 carries no speech.
+- Voices for en, hi and mr are ElevenLabs VO files added AFTER the render and after Step 9 QC. They are supplied by the
+  owner as `audio/vo/<lang>/<shot_id>.wav`. The code never calls ElevenLabs.
+- One final reel per selected language (`export/<reel>_<lang>.mp4`), all from the same video and the same SFX stem.
+- Background music is off by default. Optional: one continuous licensed track from `audio/bgm_manifest.json`.
+- Consistency of a voice across shots and reels: the bible `voice_map` (fixed voice id per character per language;
+  `NARRATOR` for the off-screen narrator).
+- OPTIONAL English H3 voice switch (`voice_engine.en = "h3"`), OFF by default. It is a second English render with
+  H3's built-in voice. Only en can use it; hi and mr never use H3 speech. The details (anchors, speaker map, audio
+  reference rules) belong to EV: see `h3/voice_engine.py` and `research/EN_H3_VOICE_CONSISTENCY_2026-11-07.md`.
+  Turning it on adds a second H3 render and cost. The plan says so in a warning.
+
+## 2. Story file (input JSON)
 ```
-{ "registry": { "execution_profile": {...}, "style_lock": {...}, "characters": {id: {"short_disambiguator": str}} , "bridge_assets": {optional} },
-  "episodes": [ { "episode_id": "EP_01", "asset_root": "<dir holding the picture paths>", "shots": [ <shot>, ... ], "episode_plan": {optional free dict} } ] }
+{ "registry": { "execution_profile": {...}, "style_lock": {...}, "characters": {id: {"short_disambiguator": str}},
+                "voice_engine": {optional, see 8}, "voice_map": {optional, see 8} },
+  "episodes": [ { "episode_id": "EP_01", "asset_root": "<dir with the picture paths>", "shots": [ <shot>, ... ],
+                  "episode_plan": {optional} } ] }
 ```
-`execution_profile` keys: route_id, checkpoint_name ("minimax_h3_singularity_v2_int8.safetensors"), mode_to_lora_map {"FL2VA_SINGULARITY_REF_FUSION": "pika_h3_flex_turbo_8step_hd_ref2va.safetensors", "REF2VA_SINGULARITY_REF_FUSION": same}, checkpoint_architecture_namespace ("SINGULARITY_REF_FUSION"), runtime_lora_strength 1.0, steps_nfe 8, cfg 1.0, sampler_name "euler", scheduler "simple", model_sampling_av {mode_to_video_shift_map {"FL2VA":6.0,"I2VA":6.0,"L2VA":6.0,"REF2VA":12.0}, audio_shift 3.0}, fps 24, aspect_ratio "9:16", base_resolution [864,1536] (or [768,1344]; both must be divisible by 32; if the aspect is not exactly the declared one, only warn when the profile sets "aspect_strict": false), upscale_resolution (optional, e.g. [1440,2560]), ref_image_size_policy "match", min_imd_body_chars 600, max_imd_body_chars 4000, max_total_prompt_chars 5000, valid_lattice_n_range [6,20]. `style_lock`: mandatory_prefix (str), banned_style_tokens (list), banned_negative_words_regex (optional; matches in prose are WARNINGS only, not errors).
-A default profile file `h3/profiles/sing8_864x1536.json` and `sing8_768x1344.json` (registry.execution_profile only) is shipped; a story may override.
+Output languages (`output_languages`, a subset of en/hi/mr in priority order) are set by the writer on story.json;
+the plan reads them from the story, else uses `["en"]`.
 
-## Shot (all required unless marked)
-Top-level keys (set comparison, extra allowed only "metadata"): shot_id, episode_id, sequence_order, story_beat, emotional_objective, mute_animatic_verification, timing_and_lattice, continuity_and_seam_lock, fl2va_keyframes, motion_7_stage, anime_timing_cadence, camera, dialogue_and_lip_lock, sound_plan. Optional per-shot flag at top level inside `fl2va_keyframes`: `reuse_upstream_b_id` (shot id of the previous shot): see "reuse rule".
-- timing_and_lattice: lattice_n, pixel_frames, latent_slots, generation_duration_sec, exact_generation_duration_sec, prompt_alignment_sec_str, fps, trim_in_frame, trim_out_frame, head_handle_frames, tail_handle_frames, trim_in_sec, trim_out_sec, head_handle_sec, tail_handle_sec, editorial_frames, editorial_duration_sec, master_reel_frame_window [a,b], master_reel_window_sec [a,b].
-  Rules: pixel_frames = 17*n+5; latent_slots = 5*n+2; n within valid_lattice_n_range (6..20); duration = pixel_frames/24 within [4.00, 15.00]; head_handle_frames == trim_in_frame; tail_handle_frames == pixel_frames - trim_out_frame; editorial_frames == trim_out_frame - trim_in_frame; every *_sec == round(frames/24, 2); master_reel_frame_window of shot k = [running, running+editorial_frames] (running = sum of previous editorial frames in that episode), window_sec = round(frame/24,2) of both ends; episode total frames == episode_plan.target_editorial_frames when the plan gives it.
-- continuity_and_seam_lock: location_id, shot_scale, subjects_present, props_present, screen_direction_vector, camera_axis_side, horizon_line_y_ratio, incoming_seam_type, incoming_seam_note, cut_in_biomechanical_state_tag, cut_in_pose_vector{torso_pitch_deg,knee_flex_deg,com_y_ratio}, outgoing_seam_type, outgoing_seam_note, cut_out_biomechanical_state_tag, cut_out_pose_vector.
-  Seam types: CHAINED_POSE_HOLD, INTER_REEL_HANDSHAKE (both need trim_in==0 and head handle 0 when incoming; trim_out==pixel_frames and tail 0 when outgoing), DYNAMIC_MATCH_ON_ACTION (incoming head handle in [8,35]; outgoing tail handle in [24,47]). If BOTH incoming and outgoing are dynamic: n-dependent bounds table LATTICE_CUT_BOUNDS {6:(editorial 45..75, handle_sum 32..62), 7:(64..92, 32..60), 8:(81..109, 32..60), 10:(115..143, 32..60)}; other n: skip the check with a warning. Across consecutive shots in an episode: state tag cut_in == previous cut_out; pose vector differences within 5.0 deg (torso), 5.0 deg (knee), 0.03 (com_y); CHAINED_POSE_HOLD incoming requires picture_1_path == previous picture_2_path.
-- fl2va_keyframes: mode ("FL2VA" or "REF2VA"), picture_1_path, picture_2_path (relative to asset_root), dimensions_verified [w,h] == base_resolution, optional flow_source_a / flow_source_b, optional reuse_upstream_b_id. DISK CHECK: both files must exist (os.path.exists) and be real PNGs whose IHDR width,height (read from the first 24 bytes: signature, IHDR chunk) equal base_resolution.
-  Reuse rule: if `reuse_upstream_b_id` is set AND the shot's own picture_1_path file does NOT exist, resolve picture_1 to the upstream shot's picture_2_path (report it as REUSED); if the shot's own file exists it is used (an already-approved A frame always wins).
-- motion_7_stage: keys 1_starting_state ... 7_settled_end_state (strings) + stage_frame_spans {same 7 keys: [start,end]}: spans contiguous (next start = prev end + 1), first starts at 0, last ends at pixel_frames. If outgoing seam is DYNAMIC_MATCH_ON_ACTION then trim_out_frame must lie inside the 6_impact_result span.
-- anime_timing_cadence: hold_window_frames, burst_window_frames, impact_or_settle_frames ([a,b] each), cadence_clause. The three windows sorted by start are contiguous (no gap or overlap), first starts at 0, last ends at pixel_frames.
-- camera: motion_type, amplitude ("with small amplitude" | "with large amplitude" | "medium_omitted"), speed ("at slow speed" | "at fast speed" | "normal_omitted"), compiled_clause. motion_type must be a key of OFFICIAL_CAMERA_MOTION_PHRASES (Zoom In:"zooms in", Zoom Out:"zooms out", Push In:"pushes in", Pull Out:"pulls out", Pan Left/Right:"pans left/right", Truck Left/Right:"trucks left/right", Tilt Up/Down:"tilts up/down", Pedestal Up/Down:"pedestals up/down", Arc Shot:["arcs","moves in an arc"], Tracking Shot:"tracks", Static Shot:["holds a static shot","remains static"], Shake Slightly:"shakes slightly", Shake Strongly:"shakes strongly", POV:["point of view","pov"], Roll Clockwise:"rolls clockwise", Roll Counterclockwise:"rolls counterclockwise") and the clause (lower-case) must contain one of its phrases; amplitude/speed phrases must appear in the clause unless the *_omitted value is used (then the word "amplitude"/"speed" must NOT appear).
-- dialogue_and_lip_lock: has_dialogue, utterances [ {speaker_id, character_id, is_offscreen_voiceover, voiceover_action_cue, language, text, start_sec, end_sec, lip_lock_clause} ], mouth_state_rule.
-- sound_plan: overall_soundscape, non_diegetic_music.
+## 3. Execution profile
+Profile files: `h3/profiles/sing8_864x1536.json`, `sing8_768x1344.json` (`registry.execution_profile`). A story may
+override it.
+- `model_sampling_av`: `video_shift` = `{"keyframe": 6.0, "ref2va": 12.0}` and `audio_shift` = 3.0. These are
+  profile parameters: `h3/router.video_shift_for(profile, route)` picks 12.0 for Ref2VA and 6.0 for every other mode.
+  Old `mode_to_video_shift_map` text is removed.
+- `fps` 24, `aspect_ratio` "9:16", `base_resolution` [864,1536] (or [768,1344]); both divisible by 32.
+- `valid_lattice_n_range` [6,20]; `max_total_prompt_chars` and the LEN-01 limit of 7000 characters.
+- `style_lock`: `mandatory_prefix`, `banned_style_tokens`, optional `banned_negative_words_regex` (prose matches are warnings).
 
-## Compiled prompt (exact format; compiler and linter share ONE `sanitize_single_line(text) = re.sub(r"\s+"," ",text).strip()` and apply it to every free-text field before building and before checking)
-```
-How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the {pixel_frames/24:.2f}-second mark of the target video.
+## 4. Shot row (V4 contract)
+The full V4 row is in `research/H3_V4_CONTRACT_2026-11-07.md`. Columns: id, episode, route (one of the 5 modes),
+lattice_n, pixel_frames, latent_slots, editorial_duration_sec, continuity_handoff, reference_anchors, hook_type,
+is_opening_0_2s_hook, is_closing_hook, deliberate_flip_marker, per_second_directives, and
+`audio_and_dialogue_track` = narration (+ `narration_by_lang`), dialogue, sfx_cues, performance_notes
+(`narrator_mouth_closed: true`, `mouth_state` per second: "closed" or "open_non_verbal_breath").
+The H3 linter and compiler still read the older shot layout (timing_and_lattice, fl2va_keyframes, sound_plan,
+dialogue_and_lip_lock). The V4 row is accepted by the director validator; the H3 side of V4 is not converted yet
+(see the GAP in section 11).
 
-integrated_multimodal_description: [Shot 1] {style_lock.mandatory_prefix}, preserving the exact character design, color palette, lighting, and environment in Picture 1 and Picture 2. {stage1} {stage2} {stage3} {stage4} {stage5} {cadence_clause} {camera.compiled_clause} {dialogue block} {stage6} {stage7}
-overall_soundscape: {sound_plan.overall_soundscape}
-non_diegetic_music: {sound_plan.non_diegetic_music}
-```
-Dialogue block = sanitized mouth_state_rule, then for each utterance: `{cue}, {character short_disambiguator} ({speaker_id}) says in an off-screen voiceover: <d>[{language}] {text}</d> {lip_lock_clause}` if is_offscreen_voiceover else `{cue}, {short_disambiguator} ({speaker_id}) says: <d>[{language}] {text}</d>`. The whole prompt must match one regex with exactly those 4 parts (blank line after the header, single lines otherwise); the only `[Shot N]` tag is `[Shot 1]`; no `At MM:SS.mmm` timestamps; no banned_style_tokens (case-insensitive); imd body length and total length within profile limits. Linter re-derives every check from the SAME sanitized strings (cadence_clause, mouth_state_rule, each cue and `<d>..</d>` tag must be substrings of the imd body).
+## 5. Routing: 5 modes (`h3/router.py`)
+`route_shot(shot)` returns one of T2VA, I2VA, L2VA, FL2VA, Ref2VA:
+- any audio reference -> Ref2VA (the only mode with documented audio refs);
+- reference cards and no boundary pair -> Ref2VA;
+- both boundary frames -> FL2VA; start only -> I2VA; end only -> L2VA; none -> T2VA.
+`ref2va_limit_problems(shot)`: at most 9 image refs (RF-01) and 3 video refs (RF-02); 0 audio refs in pure-Foley mode (AU-01).
 
-## ComfyUI workflow payload (Route C). NOTE: node class names come from an unverified spec; mark every written payload with "_unverified_node_classes": true and say so in the controller output.
-Nodes (ids as keys): 1_CheckpointLoader MiniMaxH3CheckpointLoader{ckpt_name}; 2_LoraLoader LoraLoaderModelOnly{model:[1,0], lora_name (from mode_to_lora_map[f"{mode}_{namespace}"]), strength_model 1.0}; 3_ModelSamplingAV ModelSamplingAV{model:[2,0], video_shift (map by mode), audio_shift 3.0}; 4_TextEncoder MiniMaxH3TextEncode{text_encoder "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", prompt}; 5_FL2VAConditioning MiniMaxH3ImageToVideo{positive:[4,0], first_frame, last_frame, width, height, length: pixel_frames, expected_latent_slots, ref_image_size}; 6_BasicGuider BasicGuider{model:[3,0], conditioning:[5,0], cfg 1.0, has_negative_branch false}; 7_KSampler KSampler{guider:[6,0], latent_image:[5,1], steps 8, sampler_name "euler", scheduler "simple"}; 8_VideoVAEDecode VideoVAEDecode{samples:[7,0], vae_name "minimax_h3_video_vae_fp16.safetensors", precision "fp16"}; 9_AudioVAEDecode AudioVAEDecode{samples:[7,0], vae_name "minimax_h3_audio_vae_fp32.safetensors", precision "fp32"}. Optional second pass (flag): 10_SeparateAVLatent, 11_LatentUpscaler3D (target = upscale_resolution), 12_DirectorRefit2K, 13_ConcatAVLatent. Workflow linter: exactly 1 LoraLoaderModelOnly with the right file and strength 1.0; exactly 1 ModelSamplingAV with video_shift by mode and audio_shift 3.0; guider cfg 1.0 and no negative branch; KSampler steps 8 euler simple; conditioning width/height == base_resolution and length == pixel_frames; both VAE decode nodes present.
-Mode check: Singularity-with-Turbo-LoRA is proven for REF2VA in our own tests; FL2VA on this route is UNVERIFIED: when a shot's mode is FL2VA on a route whose LoRA file contains "ref2va", the linter emits a WARNING "unverified combination" (not an error).
+## 6. Prompt locks and lint codes (`h3/schema_and_linter.py`, `h3/compile_h3_sing8.py`)
+The compiler refuses speech in the source (`refuse_speech_in_source`). The linter reports these codes:
+- Speech (SL): SL-01 speaker id such as `(S1)`; SL-02 `[Language]` tag; SL-03 `<d>...</d>` wrapper; SL-04 speech in the source.
+- Audio (AU-01): `<Audio N>` tags. Tags (TG-01): Flow chips (@CHAR-*, SHEET-*, ENV-*, STYLE-*) or bracket storyboard tags.
+- Text (TX-01): unrequested on-screen text in double quotes.
+- Length (LEN-01): prompt over 7000 characters.
+- Mouth (MO-01): `narrator_mouth_closed` must be true and `mouth_state` must be present; the closed-lips lock sentence is always emitted.
+- Sound (SX-01): every action sentence of the 7 stages needs a sound cue (`SX_MIN_STAGE_CUES = 7`); the soundscape is 1-4 English sentences.
+- Refs (RF-*) and workflow (WF-*) codes as in section 5 and 9.
+In pure-Foley mode the prompt carries no speaker id, no dialogue tag and no `<Audio N>`. `non_diegetic_music` is `N/A` on every shot.
 
-## Assembly (h3/assemble_reel.py)
-`build_ffmpeg_assembly_plan(shots, output_mp4)` -> dict with filter_complex: for shot idx: `[idx:v]trim=start_frame={trim_in}:end_frame={trim_out},setpts=PTS-STARTPTS[v{idx}];[idx:a]atrim=start={trim_in_sec:.2f}:end={trim_out_sec:.2f},asetpts=PTS-STARTPTS,afade=t=in:st=0:d=0.005,afade=t=out:st={editorial_duration_sec-0.005:.3f}:d=0.005[a{idx}]`, joined with `;`, then `;[v0][a0][v1][a1]...concat=n=N:v=1:a=1[vout][aout]`; plus total frames/duration and seam_transitions (from/to shot, frames, seam type, pose deltas). `write_assembly_script(plan, clip_paths, out_dir)` writes `assemble.sh`-style `assemble.cmd` (Windows) with ffmpeg inputs `-i` per clip and the filter_complex via `-filter_complex_script` file (write the filter to `filter.txt`), `-map [vout] -map [aout] -r 24`. Never runs ffmpeg.
+## 7. Compiled prompt
+One prompt per shot. FL2VA shots use the 4-part layout; Ref2VA shots use the 6-section layout
+(`REF2VA_SECTIONS`: subject_definitions, summary, retention_analysis, detailed_description, overall_soundscape,
+non_diegetic_music). Every free-text field goes through `sanitize_single_line` before it is built and before it is checked.
+Dialogue and speech blocks are NOT part of the H3 prompt any more.
 
-## Public API (fixed names; other modules rely on them)
-h3/schema_and_linter.py: `sanitize_single_line`, `lattice_n_to_frames_and_slots(n)`, `read_png_dimensions_on_disk(path)->[w,h]`, `write_minimal_valid_png(path,w,h)` (test helper), `resolve_keyframes(shot, upstream_shot_or_None, asset_root)->dict(picture_1,picture_2,reused:bool)`, `lint_story(story, compiled=None, asset_root_override=None)->{"errors":[...],"warnings":[...]}` (checks every episode; per-shot messages start with the shot id), `lint_shot(shot, profile, ...)`, `lint_workflow(workflow, shot, profile)`.
-h3/compile_h3_sing8.py: `compile_fl2va_prompt(shot, registry)->{"shot_id","compiled_prompt","char_counts"}`, `compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_pass=False, keyframes=None)->{"shot_id","_unverified_node_classes":True,"nodes":{...}}`, `compile_episode(story, episode_id, out_dir, shot_ids=None, second_pass=False)->list of written files` (writes `<out>/<shot_id>/prompt.txt` and `workflow.json`).
-h3/assemble_reel.py: as above.
-h3/render_controller.py (separate task): CLI `python -m h3.render_controller`.
+## 8. Voices and Gate D (`h3/voice_engine.py`, `h3/voice_manifest.py`, `h3/gate_d_audio.py`)
+- `voice_engine` per language: default `{"en": "elevenlabs", "hi": "elevenlabs", "mr": "elevenlabs"}`. The only other
+  allowed value is "h3" for en (section 1). Owner-set, stored in the registry.
+- `voice_map`: `{"CHAR-x" | "NARRATOR": {"en": id, "hi": id, "mr": id}}`, checked by `voice_map_problems` (VM-*).
+- Wav manifest (`h3/voice_manifest.py`): per language and shot: path `audio/vo/<lang>/<shot_id>.wav`, sha256, duration
+  (stdlib wave), voice ids (narrator and speakers from voice_map), VO-fit result (wav <= editorial - 0.10 s,
+  `VO_OVERFLOW_ERROR`), `VO_MISSING` when narration exists but the wav does not. A changed shot text makes its entry stale.
+  CLI: `python -m h3.voice_manifest --vo-root <dir> --shots <json> --lang en,hi [--voice-map <json>] [--out <json>]`.
+- Gate D (`plan_language_outputs`): one plan per language: VO stem, 3-stem mix (SFX, VO, optional BGM), `.ass` captions
+  (6 words per card, font per language), mux with burned-in captions, `loudnorm` master at -14 LUFS, TP <= -1.8 dB.
+  Dead-air, hook and closing checks run per language. Nothing runs ffmpeg; the plan is argv and text only.
+- Post-AAC loudness check: `check_post_aac_loudness` on the exported mp4 (-14 +-0.5 LUFS, true peak <= -1.5 dBTP).
+- Easy language: every spoken line and caption is easy English, Hindi or Marathi (`director/simple_language.py`).
 
-## README: render_controller and e2e_sample (added 2026-11-06)
-- Controller, run from `D:\aai work\anime_studio`: `python -m h3.render_controller --story-file STORY.json --scope shots --ids A,B` (or `--scope shots A,B`, `--scope reel --episode EP`, `--scope all`), optional `--profile`, `--second-pass`, `--out-dir` (default `<story folder>\build`; episode files go to `<out>\<episode_id>\`), `--dry-run`, `--allow-partial`.
-- Gate: each selected episode is linted in full with `lint_story`. Any error blocks the run: exit 1 and nothing executable is written. Stale `prompt.txt`, `workflow.json`, `filter.txt` and `assemble.cmd` of the selected shots are deleted and listed. A shot is ready when it has no errors of its own. `--allow-partial` writes only the ready shots and never the assembly. The assembly is written only for a clean run.
-- Exit codes: 0 clean; 1 blocked, bad scope or bad story; 2 refused usage (execute needs BOTH `--mode execute` and `--execute-render`); 3 execute gates passed but no backend started anything.
-- Outputs per episode: `readiness.json` (shots, picture_1/2 OK/REUSED/MISSING, errors, warnings, totals), with a table on stdout. Every workflow is marked `_unverified_node_classes: true`.
-- Backends: `BACKENDS` holds only `none`. `register_backend(name, fn)` adds one; `fn(request)` returns an int exit code. The module never imports ffmpeg, requests or any Colab code.
-- E2E sample: `python -m h3.e2e_sample --offline` (built-in valid story, no model call) or `python -m h3.e2e_sample --premise "..." --out-dir D` (live). Live uses only `nvidia/nemotron-3-ultra-550b-a55b` through the animation_research_tool scheduler, at most 5 calls (1 + 4 repairs). No Claude call. The prompt fixes the blueprint (lattice_n 6, pixel_frames 107, 3 shots, DYNAMIC and CHAINED seams) and the exact key names. Synthetic PNGs are written before lint, because the disk checks need them. Summary line: `E2E: rounds=N ready=R/3`.
-- Tests: `C:\Python314\python.exe -m pytest -q -p no:cacheprovider h3` (106 passing).
+## 9. Render, QC and fallback
+- Asset manifest (`h3/asset_manifest.py`): each clip is keyed by five hashes: bible (whole registry), shot row,
+  start frame, end frame, model id (`h3-singularity-v2`). A stale hash, a missing clip, an orphan clip, an unlogged
+  model switch or an unresolved `placeholder: missing clip` blocks assembly.
+- Resolution ladder (`render_plan`): pass 1 at 864x1536 (Seedance 1080x1920); pass 2 at 1440x2560 only for approved clips.
+- Fallback ladder (`h3/fallback_policy.py`): failure 1 = regenerate with the Reference Anchors prefix; failure 2 =
+  shorten to <= 6.0 s, split rows, re-run self_check; failure 3 = switch to Seedance 2.0 (logged in the manifest);
+  failure 4 = human gate with `HUMAN_CHOICES`. Rung 4 never re-renders.
+- Step 9 QC (`h3/step9_qc.py` `final_qc`): SFX alignment to sfx_cues (tolerance 0.25 s, a parameter), visual
+  continuity, closing payoff, no storyboard labels on screen. It fails closed: a missing or failing measurer is a failed check.
+
+## 10. Ordered pipeline plan (`h3/pipeline_contract.py`, `render_controller.plan_pipeline`)
+`plan_pipeline(story, groups, out_root, *, languages=None, render_results=None, qc_measurers=None)` is a DRY RUN. It
+never renders, calls no backend and writes no file. Steps in order, each with status `ready`, `blocked` or `pending`
+and a list of reasons:
+1. lint: linter, profile and paths. 2. route: route per shot, Ref2VA limits. 3. prompt: compile per shot.
+4. manifest: hashes current, no missing or placeholder clips. 5. fallback: no shot waiting at the human gate.
+6. render: successful render for every shot (pending until `render_results` is given). 7. step9_qc: final QC (runs after render).
+8. gate_d: Gate D plan for every selected language. 9. assembly: ready only when steps 1-8 are all ready.
+10. loudness: post-AAC check (pending until the mp4 exists; it never blocks assembly).
+`build_plan(results)` and `assembly_allowed(steps)` are pure. The UI reads the list.
+
+## 11. Known gaps (do not hide)
+- No converter from a V4 pack (shot rows + bible) to an H3 story (registry + episodes). `flow/scripts/pack_to_spec.py`
+  reads the legacy Flow pack and writes the Flow image spec. `h3/tests/test_pack_to_spec_contract.py` pins this.
+- The H3 linter still reads the older dialogue and timing layout beside the V4 row. Converting the linter to the V4
+  layout is open.
+- Ref2VA reference_images node input is unverified against a real ComfyUI.
+- Caption placement uses a character-width estimate, not libass measurement. The caption font files are not bundled.
+
+## 12. Public API (fixed names)
+- `h3/schema_and_linter.py`: `sanitize_single_line`, `lint_story(story)`, `lint_profile`, `resolve_keyframes`,
+  `read_png_dimensions_on_disk`, `picture_path_problem`, `voice_mode`.
+- `h3/router.py`: `route_shot`, `ref2va_limit_problems`, `ref2va_limits_ok`, `video_shift_for`, `workflow_mode`.
+- `h3/compile_h3_sing8.py`: `compile_fl2va_prompt(shot, registry)`, `compile_comfyui_workflow(...)`, `compile_episode(...)`.
+- `h3/assemble_reel.py`: `build_ffmpeg_assembly_plan`, `write_assembly_script`. Never runs ffmpeg.
+- `h3/render_controller.py`: `prepare`, `plan_pipeline`, `main`, `register_backend`. The only backend is `none`.
+- `h3/fallback_policy.py`: `next_action`, `record_attempt`, `load_history`. `h3/asset_manifest.py`: `blocking_problems`,
+  `render_plan`, `load_manifest`. `h3/step9_qc.py`: `final_qc`.
+- `h3/gate_d_audio.py`: `plan_language_outputs`, `vo_fit_check`, `check_post_aac_loudness`. `h3/voice_manifest.py`: `build_manifest`, `stale_entries`.
+
+## 13. CLI and tools
+- Controller: `python -m h3.render_controller --story-file STORY.json --scope shots --ids A,B` (also `--scope reel --episode EP`,
+  `--scope all`), `--dry-run`, `--allow-partial`, `--second-pass`, `--out-dir`. Exit 0 clean; 1 blocked, bad scope or
+  bad story; 2 refused usage; 3 execute gates passed, no backend started. Writes per episode: readiness.json and,
+  when clean, prompt.txt, workflow.json, filter.txt, assemble.cmd. Every workflow carries `_unverified_node_classes: true`.
+- E2E sample: `python -m h3.e2e_sample --offline` (built-in valid story, no model call). The live mode is separate and
+  uses only the approved text model through the scheduler. The sample's shots carry explicit `narrator_mouth_closed: true`
+  and per-second `mouth_state`.
+- Voice manifest: `python -m h3.voice_manifest ...` (section 8).
+
+## 14. Tests
+`python -m pytest -q -p no:cacheprovider h3` (h3 suite). Tests are offline and use synthetic fixtures (`h3/tests/synth.py`).
+New with this refresh: `test_render_controller_wiring.py`, `test_voice_manifest.py`, `test_pack_to_spec_contract.py`.

@@ -1,0 +1,238 @@
+Yes—here is the final, 100%-merged Master Prompt for Claude Code incorporating all 6 fixes 
+(the official 4-rung fallback-policy.md ladder, Column 6 sfx_cues, bracket-tag stripping, <Audio 
+N> prohibition in Ref2VA, the 2-shot off-stage release rule, and the 5-term strong-hook subset), 
+all 8 newly verified official rules (qc-checklist.md Step 9, cryptographic asset invalidation, 
+post-AAC -14 LUFS / TP <= -1.5 dBTP, BGM presence floor, 15s vocal hook density, resolution 
+cost ladder, deliberate flip markers, and the closing emotional-anchor + VO question + 
+loop-seam contract), and both technical fixes (duration=longest + atrim so the closing 
+musical/SFX tail is never chopped, and symmetric MarginL=160, MarginR=160 so centered .ass 
+subtitles never drift left). 
+Final Merged Master Prompt (Copy-Paste Directly into Claude Code) 
+Please implement this final, fully verified specification across the Writer, pack_validator.py, the 
+H3 Router/Compiler, the Gate D Audio/Caption Assembler, and the Step 9 Final QC Gate in 
+Anime-Studio (main). Do not run any Google Flow browser actions or Colab renders—lock 
+100% of the code and tests first. 
+1. Pure H3 Foley Engine (32 kHz Native Stereo) + ElevenLabs Voice 
+Separation 
+●​ Official Language Rationale: MiniMax H3 officially supports only 11 spoken languages 
+(ar, zh, en, fr, de, it, ja, ko, pt, ru, es)—Hindi (hi) and Marathi (mr) are absent 
+(base-en.txt). Therefore, ElevenLabs generates all Hindi, Marathi, and English speech 
+externally, while MiniMax H3 (AudioVAEDecode, native 32 kHz stereo at 24 fps) is 
+locked strictly as our frame-synced diegetic SFX & Foley generator. 
+●​ 5 H3 Foley & Speech-Exclusion Rules: 
+1.​ 3-Pattern Speech-Leak Filter: Whenever speech is voiced by ElevenLabs, strip 
+and reject all three speech patterns in H3 prompts: (S\d+) speaker IDs (including 
+compound (S1,S2)), [Language] dialogue tags, and <d>...</d> wrappers. 
+2.​ Prohibit <Audio N> in Ref2VA (ref-en.txt §2.4): Because <Audio N> references in 
+Ref2VA are voice-timbre references mapped to (S1)/(S2), attaching one re-arms 
+H3's speech head and exposes ElevenLabs voices to model cloning. Pure-Foley 
+Ref2VA allows <Subject N>, <Picture N>, and <Video N> only (max_audio_refs = 0; 
+reject any <Audio \d+> tag). 
+3.​ Mouth-Closed & Per-Second Mouth Logging: Enforce narrator_mouth_closed: 
+True at the shot level plus per-second mouth_state logging ("closed" or 
+"open_non_verbal_breath") and include the positive lock ("while his lips remain 
+completely closed") in the H3 description. 
+4.​ Dual-Position Synchronized SFX (§4.1 & §4.6 of base-en.txt): Embed 
+synchronized physical action sounds inside the per-second action sentences 
+of integrated_multimodal_description (or detailed_description in Ref2VA) AND 
+summarize all ambient, physical action, and non-verbal human sounds in 
+overall_soundscape (1–4 English sentences; N/A allowed only if total silence is 
+explicitly requested). 
+5.​ Per-Shot Music & Unintended Text Locks (§4.5, §4.7, Step 8): Hard-lock 
+non_diegetic_music: N/A on every shot ("Do not generate BGM per shot" per official 
+Step 8—BGM is a single continuous stem mixed at Gate D). Because subtitles are 
+
+burned in via .ass at Gate D, reject any unrequested double-quoted on-screen text 
+("...") in H3 prompts (if diegetic scene text is explicitly requested, enforce <= 1 
+typography event per shot, never covering eyes or mouth). 
+2. Story Spine, Card Separation, 6-Column Shot Table, & Step 5.5 
+Self-Check Gate (pack_validator.py) 
+Enforce the official rules from MiniMax-AI/MiniMax-H3/skills/3d-animation-short-generator 
+(SKILL.md, shot-table-spec.md, model-selection.md) between the Writer stages and Gate A 
+(with max_repair_retries = 1 per stage): 
+1.​ Duration Buckets & Studio Preset: Support the official duration choices (15–30s, 
+30–60s, 60–90s, 90–180s, custom) with our studio reel preset defaulted to 60.0s–75.0s 
+(each shot snapped to H3's 5 + 17n frame lattice at 24 fps \rightarrow 5n + 2 latent slots, 
+6 <= n <= 20, i.e., 107..345 frames = 4.46s..14.38s). 
+2.​ All 6 Official Story Outline Red-Line Gate Checks (Stage 1): 
+○​ active_protagonist: Protagonist actively drives the plot. 
+○​ crisis_from_flaw: Crisis is worsened by the protagonist's flaw/internal tension. 
+○​ no_coincidence_resolution: Coincidence never solves the problem. 
+○​ ending_reuses_emotional_anchor: Ending reuses an earlier emotional/visual 
+anchor. 
+○​ non_flat_antagonistic_pressure: Antagonistic/villain pressure is not a flat villain. 
+○​ dialogue_shows_relationship_change: Dialogue/narration reveals relationship or 
+state change rather than explaining the theme. 
+3.​ Single Canonical Bible Layout, Strict Card Separation, & 2D Anime Style Lock 
+(Stage 2): 
+○​ Save one canonical Art Bible JSON layout from the Writer. 
+○​ CHAR-* cards: 16:9 labeled turnaround/expression/prop sheets on plain neutral 
+backdrop. 
+○​ ENV-* scene cards: Environment-only (reject any ENV-* prompt containing 
+characters, people, crowd figures, silhouettes, hands, or faces) + declare fixed 
+continuity_landmarks. 
+○​ 2D Anime + Indian Classical Anatomy Style Lock: Never copy 
+3d-animation-short-generator's default Pixar/C4D/Octane 3D prefix. Enforce our 2D 
+hand-drawn cel-shaded anime direction + positive Indian classical Puranic facial 
+proportions + handdrawn-live-video-generator's organic hand-drawn line-weight / 
+frame-by-frame cel redraw feel (no 3D CG, no uniform vector lines, no smooth neon 
+plastic skin). 
+4.​ Mandatory 6-Column Standardized Shot Table (standard-shot-table, Stage 3): Every 
+shot row must populate all 6 official columns: 
+○​ Col 1 (shot_id_and_duration): Shot ID, lattice n (6..20), pixel_frames (5 + 17n), 
+latent_slots (5n + 2), and trimmed editorial duration (<= 15.0s). 
+○​ Col 2 (continuity_handoff): Cross-shot spine describing how incoming 
+pose/camera/momentum connects from Shot N-1 and hands off to Shot N+1 (plus 
+an optional loop_seam handoff on the final shot pointing back to Shot 1's opening 
+state when looping is enabled). 
+○​ Col 3 (reference_anchors): Must contain all 4 mandatory sub-fields: 
+1.​ fixed_landmarks: Inherited from the ENV-* scene card. 
+
+2.​ character_positions: Screen-space and depth coordinates for active 
+characters. 
+3.​ exited_character_status: Tracks any character who leaves frame, enforcing 
+the official 2-shot release rule ("release only after the character has been 
+explicitly off-stage for two consecutive shots"). 
+4.​ lighting_baseline: Structured as {"key": ..., "fill": ..., "rim": ..., "shot_modifiers": 
+...}. 
+○​ Col 4 (hook_type): Must belong to the official 8-term controlled vocabulary 
+(shot-table-spec.md): visual-joke | reversal | suspense | tender | chase | reveal | 
+callback | expression-beat 
+■​ Strong-Hook Subset Rule: Both the opening shot (is_opening_0_2s_hook = 
+True) and the closing shot (is_closing_hook = True) must use a hook from the 
+official 5-term strong-hook subset: {visual-joke, reversal, reveal, suspense, 
+tender} (chase, callback, and expression-beat do not qualify as 
+opening/closing strong hooks). 
+○​ Col 5 (per_second_directives): Contiguous second brackets (0.0–1.0s, 1.0–2.0s, 
+plus sub-second markers like 2.0–2.5s for fast action bursts) covering 0.00s to 
+S.SS. Every bracket must contain all 5 mandatory elements: 
+action_pose_expression, camera, spatial_position, audio_cue (synchronized 
+birth/impact sound), and handoff_to_next_second. 
+○​ Col 6 (audio_and_dialogue_track): Must contain all 4 official sub-fields: 
+1.​ narration: Off-screen ElevenLabs narration text, language (hi/mr/en), and 
+time range ([start_sec, end_sec]). 
+2.​ dialogue: Character line, speaker ID, tone, and time range ([] if none). 
+3.​ sfx_cues (Mandatory in Pure-Foley Mode): Time-anchored list of keyed 
+SFX events ([{"time_range": "1.2–1.6s", "sfx_key": "sandstone_launch_thud", 
+"description": "..."}]) that drives both H3's overall_soundscape and Step 9 QC 
+sync verification. 
+4.​ performance_notes: Delivery/breath notes + narrator_mouth_closed: True + 
+per-second mouth_state map. 
+5.​ Mandatory Step 5.5 Self-Check Gate (All 6 Official Checks Required Before Gate A): 
+○​ Check 1 (Hook Density & Strong Bookends): At least 1 of every 3 consecutive 
+shots uses reveal, reversal, or callback, and both the opening shot and closing 
+shot use the 5-term strong-hook subset {visual-joke, reversal, reveal, suspense, 
+tender} (plus a ~30s re-hook on reels >= 45s). 
+○​ Check 2 (Shot Duration Cap): Every shot is <= 15.0s (6 <= n <= 20). 
+○​ Check 3 (Character Count Cap): Every shot has <= 3 significant characters. 
+○​ Check 4 (Spatial Anchor Inheritance & 2-Shot Exit Tracking): Every shot 
+inherits fixed_landmarks and lighting_baseline (key/fill/rim + shot_modifiers) and 
+tracks exited_character_status for 2 full consecutive off-stage shots before release. 
+○​ Check 5 (Complete Per-Second Coverage): Per-second (and sub-second) 
+directives cover 0.00s to S.SS continuously with strictly increasing timestamps and 
+all 5 required elements. 
+○​ Check 6 (Cross-Shot Continuity & Deliberate Flip Marker): Every referenced ID 
+exists in the Stage 2 Bible, and any intentional flip in eyeline, screen position, or 
+lighting between Shot N-1 and Shot N must carry an explicit deliberate_flip_marker 
+(e.g., "HARD CUT — time skip: 2h"), otherwise fail validation. 
+
+3. 5-Mode H3 Router, Complete Tag-Strip List, Resolution Cost Ladder, 
+& Official 4-Rung Fallback Policy 
+1.​ 5-Mode H3 Router (T2VA / I2VA / FL2VA / L2VA / Ref2VA): 
+○​ Route per shot (0 images \rightarrow T2VA, 1 start frame \rightarrow I2VA, 1 end 
+frame \rightarrow L2VA, 2 boundary frames \rightarrow FL2VA, reference cards 
+without rigid boundary lock \rightarrow Ref2VA). 
+○​ For Ref2VA (<= 9 image refs / <= 3 video refs / 0 audio refs), compile the official 
+6-section ref-en.txt format (subject_definitions, summary, retention_analysis, 
+detailed_description, overall_soundscape, non_diegetic_music: N/A) with 
+consistent <Subject N>, <Picture N>, <Video N> labels. 
+○​ Store ComfyUI ModelSamplingAV shifts (video_shift = 6.0 for keyframe modes / 
+12.0 for Ref2VA, audio_shift = 3.0 in Route C sing8) as configurable ComfyUI 
+workflow profile parameters. 
+2.​ Complete Storyboard & Double-Binding Tag Stripper (model-selection.md): 
+○​ Before emitting any H3 prompt, strip and reject both Flow chip tags (@CHAR-*, 
+SHEET-*, ENV-*, STYLE-*) and all official bracketed storyboard double-binding 
+tags: [char:...], [scene:...], [shot:...], [dur:...], [hook:...], plus any panel borders, 
+arrows, or storyboard timing labels. Enforce the official 7000-character hard limit 
+(benjiyaya/unknowlei). 
+3.​ Resolution Cost Ladder (model-selection.md): 
+○​ Render Pass 1 draft/approval clips at base resolution (768p / 864×1536 true 9:16), 
+and run the 2K second pass (1440×2560 via H3-Regenerate-2K / 
+LatentUpscaler3D + DirectorRefit2K) only on approved clips (with 1080p for any 
+Seedance 2.0 fallback shot). 
+4.​ Official 4-Rung Post-Render Fallback Policy (fallback-policy.md): When a rendered 
+clip drifts from its reference_anchors or fails SFX/motion QC: 
+○​ Rung 1 (Retry 1): Regenerate in H3 with the prompt explicitly prefixed by the exact 
+Reference Anchors block from the Step 5 Shot Table. 
+○​ Rung 2 (Retry 2): Shorten the shot to <= 6.0s, split the dropped seconds into new 
+adjacent rows in the Step 5 Shot Table, re-run the Step 5.5 self-check gate, and 
+re-render. (Optional studio sub-step: switch FL2VA \leftrightarrow Ref2VA if 
+boundary framing caused the drift.) 
+○​ Rung 3 (Retry 3): Switch that shot row to Seedance 2.0 (1080p hybrid per-shot 
+mixed mode) and log the model switch in the asset manifest. 
+○​ Rung 4 (After 3 Failures — Human Gate): Pause and present the 4 official human 
+choices: switch models / relax requirements / skip with explicit placeholder: missing 
+clip / supply a reference video. Never silently mix corrected and uncorrected 
+clips. 
+4. Gate D Audio, Simple Language, Subtitles, & Step 9 Final Review 
+Gate (qc-checklist.md) 
+1.​ Opening Vocal Hook & Narration Density (heditor): 
+○​ The 0–2s hook must appear in both the visual/SFX track and the ElevenLabs voice 
+track. For narration-driven reels, enforce >= 90% speech coverage (>= 38 words) 
+
+across the first 15s and flag any dead-air pause > 0.45s across junctions. 
+2.​ Closing Shot Contract (Emotional Anchor Payoff + VO Question + Optional 
+loop_seam): 
+○​ The closing shot must first deliver the emotional-anchor payoff (Story Gate 4 + 
+Step 9 QC) using a strong hook from {visual-joke, reversal, reveal, suspense, 
+tender}. 
+○​ If the reel ends on a question/CTA, place it in the ElevenLabs VO inside the final 
+lattice shot after the emotional-anchor payoff (with H3's mouth locked closed, 
+vo_sec fitting inside editorial_sec with zero clipping, and tail residual silence <= 
+0.45s). 
+3.​ ElevenLabs VO Fit Check & Licensed BGM Provenance (bgm_manifest.json): 
+○​ Flag VO_OVERFLOW_ERROR if any ElevenLabs .wav exceeds 
+editorial_duration_sec - 0.10s (re-time or rewrite shorter; never clip words). 
+○​ Require every continuous BGM track to be logged in audio/bgm_manifest.json 
+(track_id, path, license_type, bpm, lufs). 
+4.​ 3-Stem FFmpeg Sidechain Ducking with Tail Preservation & BGM Presence Floor: 
+○​ Upsample/normalize all 3 stems ([h3_sfx] from H3's native 32 kHz stereo, 
+[elevenlabs_vo], and [bgm]) via 
+aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo. 
+○​ Apply 5ms anti-pop afade on every trimmed H3 SFX clip before concatenating into 
+the full-reel [h3_sfx_full] stem. 
+○​ Pad [elevenlabs_vo] with apad to the exact total reel duration 
+(total_reel_duration_sec) before splitting (asplit=3[vo_out][sc_sfx][sc_bgm]), duck 
+[h3_sfx_full] gently (threshold=0.03:ratio=4:attack=10:release=350), duck [bgm] 
+moderately (threshold=0.03:ratio=6:attack=15:release=500), and mix with 
+amix=inputs=3:duration=longest:normalize=0,atrim=0:{total_reel_duration_sec} so 
+the closing shot's musical/SFX tail is never cut off at the last spoken word. 
+○​ BGM Presence Floor (test_music_presence): Verify that BGM never disappears 
+completely under speech (target median ~15–21.5 dB below voice, with a verified 
+non-silent p95 floor). 
+○​ Post-AAC Loudness Verification: Apply loudnorm=I=-14:TP=-1.8:LRA=11 on the 
+master mix and verify on the final AAC-encoded .mp4 output that integrated 
+loudness is -14 LUFS (±0.5) and true peak is strictly <= -1.5 dBTP after AAC 
+encoding. 
+5.​ Symmetric 1440×2560 Safe-Zone .ass Captions (heditor Scaled × 4/3) + Simple 
+Hindi/Marathi Lock: 
+○​ Enforce our Two-Tier Simple Hindi/Marathi validator (whitelisting sacred/Puranic 
+nouns while flagging stiff literary verbs and Hindi-in-Marathi leaks, plus 
+auto-detecting Marathi via ळ \u0933 and Marathi postpositions in Whisper). 
+○​ Render .ass (libass/HarfBuzz) subtitles with our bundled OFL font 
+(NotoSansDevanagari-Bold.ttf, <= 6 words per card, high-contrast active-word 
+highlight), using symmetric horizontal margins (MarginL = 160, MarginR = 160) 
+so centered captions (Alignment=2) never drift left while clearing the 160 px 
+right-side UI zone, MarginV = 467 at the bottom, no content above y = 360 at the 
+top, and never covering character faces. 
+6.​ Step 9 Final Review Gate & Cryptographic Asset Versioning (qc-checklist.md): 
+○​ Asset Versioning: Bind every rendered clip manifest to (bible_sha256, 
+shot_row_sha256, start_frame_sha256, end_frame_sha256, model_id). Any 
+
+upstream edit invalidates stale downstream renders automatically; block assembly 
+if any clip hash is stale or if any placeholder: missing clip remains unresolved. 
+○​ Step 9 Final QC: Verify (a) rendered H3 audio energy peaks align with Column 6's 
+time-anchored sfx_cues, (b) visual continuity matches Column 3's 
+reference_anchors, (c) the closing shot delivers the emotional-anchor payoff, and 
+(d) zero storyboard tags/labels appear on screen. 
+Implement these updates, add unit tests for all new gates, and run pytest + dots_review.py. 

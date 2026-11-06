@@ -35,7 +35,7 @@
  *                               confirm_text, spend_allowed}
  *   POST /api/run              {token, confirm?} -> {job_id}
  * Command ids and args (server COMMANDS table; unknown args are refused):
- *   write_pack {slug, pack, model}           bridge_dry / bridge_write {size, adhyay}
+ *   write_pack {slug, pack, writer}          bridge_dry / bridge_write {size, adhyay}
  *   neighbour_sheet / review_shot {jobs, shot, candidates: [paths], adhyay}
  *   queue_add {shot, version, edit, jobs, note, adhyay}     queue_accept {shot, version, note, adhyay}
  *   queue_collect {adhyay}                   tidy_plan {adhyay}
@@ -50,7 +50,7 @@
 
   var POLL_MS = 2500;
   var PACK_STAGES = ['1', '2', '3e1', '3e2', '3e3', '3e4', '3e5', '5'];
-  var WRITER_MODELS = ['nvidia/nemotron-3-ultra-550b-a55b'];
+  var WRITER_NAMES = ['super-vl', 'ultra'];   // write_pack --writer shortcuts: both are free OpenRouter models; super-vl is the default
   var VISION_MODELS = ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/nemotron-3.5-super-vl-120b-a12b'];
   var GPUS = ['G4', 'A100'];
   var SECTIONS = ['story', 'images', 'bridge', 'video', 'export'];
@@ -701,9 +701,9 @@
       title: kind === 'new' ? 'Run writer: new pack' : 'Resume pack',
       command: 'write_pack',
       risk: 'N W',
-      note: 'Calls the writer through the free NVIDIA tier (rate-limited). Writes stage files into the pack folder. ' +
+      note: 'Calls the writer on a free OpenRouter model (streamed). Writes stage files into the pack folder. ' +
         'Saved stages are not sent again.',
-      args: { slug: slug, pack: pack, model: WRITER_MODELS[0] },
+      args: { slug: slug, pack: pack, writer: ($('story-model') && $('story-model').value) || WRITER_NAMES[0] },
       onEnd: function () { return loadStory(pack); }
     });
   }
@@ -1342,7 +1342,7 @@
     document.querySelectorAll('.tabbtn').forEach(function (b) {
       b.addEventListener('click', function () { renderImgTab(b.getAttribute('data-tab')); });
     });
-    fill($('story-model'), WRITER_MODELS.map(function (m) { return el('option', { value: m, text: m }); }));
+    fill($('story-model'), WRITER_NAMES.map(function (m) { return el('option', { value: m, text: m + ' (free, OpenRouter)' }); }));
     var ay = [];
     for (var i = 1; i <= 12; i += 1) ay.push(el('option', { value: String(i), text: String(i) }));
     fill($('img-adhyay'), ay);

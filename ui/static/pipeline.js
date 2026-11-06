@@ -45,8 +45,17 @@
     storyDirty: false,
     lastStorySlug: '',
     newSlug: '',
-    overwrite: false
+    overwrite: false,
+    registry: null,
+    registryError: '',
+    registrySlug: '',
+    registryDetail: null
   };
+
+  // Runs & documents: status words and badge classes (style.css)
+  var RUN_BADGE = { ok: 'b-ok', failed: 'b-failed', stopped: 'b-review', open: 'b-running', started: 'b-running' };
+  var RUN_WORD = { ok: 'OK', failed: 'Failed', stopped: 'Stopped', open: 'Running', started: 'Running', 'no runs': 'No runs' };
+  var WRITER_NAME = 'super-vl';   // the default writer for the Analysis step (server default too)
 
   // ---------- DOM helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -234,6 +243,37 @@
       .catch(function (err) { showError(err.message || String(err)); });
   }
 
+  // Runs & documents: read-only view of GET /api/registry and /api/registry/<slug>
+  function loadRegistry() {
+    return get('/api/registry')
+      .then(function (data) {
+        State.registry = data.stories || [];
+        State.registryError = '';
+        if (State.pipeline) render();
+      })
+      .catch(function (err) {
+        State.registry = null;
+        State.registryError = err.message || String(err);
+        if (State.pipeline) render();
+      });
+  }
+
+  function loadRegistryDetail(slug) {
+    if (!slug) {
+      State.registryDetail = null;
+      return Promise.resolve();
+    }
+    return get('/api/registry/' + encodeURIComponent(slug))
+      .then(function (data) {
+        State.registryDetail = data;
+        if (State.pipeline) render();
+      })
+      .catch(function (err) {
+        State.registryDetail = { slug: slug, error: err.message || String(err) };
+        if (State.pipeline) render();
+      });
+  }
+
   // ---------- Render ----------
   function render() {
     if (!State.pipeline) return;
@@ -241,7 +281,8 @@
     if (!wizard) return;
 
     // storyList is part of the key: when /api/story arrives after the first render the picker is redrawn (H2)
-    var json = JSON.stringify({ pipeline: State.pipeline, summary: State.summary, packInfo: State.packInfo, storyList: State.storyList });
+    var json = JSON.stringify({ pipeline: State.pipeline, summary: State.summary, packInfo: State.packInfo, storyList: State.storyList,
+      registry: State.registry, registryError: State.registryError, registrySlug: State.registrySlug, registryDetail: State.registryDetail });
     if (json === State.lastJSON && State.lastJSON !== '') {
       restoreDrafts();
       return;
@@ -273,6 +314,7 @@
       var card = mkStageCard(stage, current, project);
       wizard.appendChild(card);
     });
+    wizard.appendChild(registryPanel());
 
     restoreDrafts();
     if (saved) {
@@ -460,7 +502,8 @@
     (State.storyList || []).forEach(function (s) {
       var opt = el('option', {
         value: s.slug,
-        textContent: s.slug + (s.packs && s.packs.length ? ' (' + s.packs.join(', ') + ')' : '')
+        textContent: s.slug + (s.packs && s.packs.length ? ' (' + s.packs.join(', ') + ')' : '') +
+          (s.latest_model ? ' · ' + s.latest_model : '')
       });
       if (s.slug === project.story_slug) opt.selected = true;
       slugSelect.appendChild(opt);
@@ -574,6 +617,12 @@
     return [frag];
   }
 
+  // the next free name pack_<writer>_<YYYYMMDD>_v<n> for a story (from the run log; '' when unknown)
+  function suggestedPack(slug) {
+    var row = (State.registry || []).filter(function (s) { return s.slug === slug; })[0];
+    return row && row.next_pack ? row.next_pack : '';
+  }
+
   function analysisActions(project) {
     var frag = document.createDocumentFragment();
 
@@ -582,7 +631,7 @@
     var packInput = el('input', {
       type: 'text',
       id: 'analysis-pack',
-      value: State.packName || project.pack || '',
+      value: State.packName || project.pack || suggestedPack(project.story_slug),
       maxlength: 40,
       'aria-label': 'Pack name'
     });
@@ -604,17 +653,16 @@
           showError('Analysis is not ready to run');
           return;
         }
-        var model = 'nvidia/nemotron-3-ultra-550b-a55b';
         State.busy = true;
         runBtn.disabled = true;
         post('/api/pipeline/project', { story_slug: slug, pack: pack })
           .then(function () {
             loadPackForCurrent();
-            return post('/api/preview', { command: 'write_pack', args: { slug: slug, pack: pack, model: model } });
+            return post('/api/preview', { command: 'write_pack', args: { slug: slug, pack: pack, writer: WRITER_NAME } });
           })
           .then(function (data) {
             var argv = data.argv || [];
-            var argvText = argv.join(' ');
+            var argvText = (data.route ? data.route + '\n' : '') + argv.join(' ');
             confirmDialog('Run story analysis?', argvText, function () {
               var body = { token: data.token };
               post('/api/run', body)
@@ -1375,12 +1423,144 @@
     }, ERROR_MS);
   }
 
+  // ---------- Runs & documents (run registry: read only) ----------
+  function dash(v) {
+    return v === null || v === undefined || v === '' ? '-' : String(v);
+  }
+
+  function listText(v) {
+    return v && v.length ? v.join(', ') : '-';
+  }
+
+  function shortTime(iso) {
+    return iso ? String(iso).replace('T', ' ').slice(0, 16) : '-';
+  }
+
+  function runBadge(status) {
+    var st = status || 'no runs';
+    return el('span', { class: 'badge ' + (RUN_BADGE[st] || 'b-notrun'), textContent: RUN_WORD[st] || st });
+  }
+
+  function runsTable(headers, rows) {
+    var head = el('tr', { children: headers.map(function (h) { return el('th', { scope: 'col', textContent: h }); }) });
+    var table = el('table', { children: [el('thead', { children: [head] }), el('tbody', { children: rows })] });
+    return el('div', { class: 'tablewrap', children: [table] });
+  }
+
+  function registryPanel() {
+    var card = el('div', { class: 'card runs-panel', id: 'runs-panel' });
+    card.appendChild(el('h3', { textContent: 'Runs & documents' }));
+    card.appendChild(el('p', { class: 'hint', textContent: 'Every writer and analysis run, with its model and each step. Read only: the record is stories/<slug>/RUNS.jsonl, and RUN_REPORT.md is written next to it.' }));
+    if (State.registryError) {
+      card.appendChild(el('div', { class: 'notice', role: 'status', textContent: 'Run log not available: ' + State.registryError }));
+      return card;
+    }
+    if (!State.registry) {
+      card.appendChild(el('p', { class: 'muted', textContent: 'Loading runs...' }));
+      return card;
+    }
+    if (!State.registry.length) {
+      card.appendChild(el('p', { class: 'muted', textContent: 'No stories yet.' }));
+      return card;
+    }
+    var rows = State.registry.map(registryRow);
+    card.appendChild(runsTable(['Story', 'Source', 'Model', 'Status', 'Last run', 'Packs', 'Runs'], rows));
+    if (State.registrySlug) card.appendChild(registryDetail(State.registrySlug));
+    return card;
+  }
+
+  function registryRow(s) {
+    var selected = s.slug === State.registrySlug;
+    var pick = function () {
+      State.registrySlug = selected ? '' : (s.slug || '');   // a click on the open story closes it
+      State.registryDetail = null;
+      render();
+      loadRegistryDetail(State.registrySlug);
+    };
+    var status = s.error ? 'failed' : (s.status || 'no runs');
+    var story = el('td', { children: [
+      el('strong', { textContent: dash(s.slug) }), el('br'),
+      el('span', { class: 'muted', textContent: s.error ? s.error : dash(s.title) })
+    ] });
+    return el('tr', {
+      class: 'clickable' + (selected ? ' selected' : ''),
+      tabindex: '0',
+      onclick: pick,
+      onkeydown: function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pick();
+        }
+      },
+      children: [
+        story,
+        el('td', { textContent: s.source && s.source.type ? s.source.type : '-' }),
+        el('td', { textContent: s.pack_models && s.latest_pack ? dash(s.pack_models[s.latest_pack] || s.last_model) : dash(s.last_model) }),
+        el('td', { children: [runBadge(status)] }),
+        el('td', { textContent: shortTime(s.last_run_at) }),
+        el('td', { textContent: listText(s.packs) }),
+        el('td', { textContent: String(s.run_count || 0) })
+      ]
+    });
+  }
+
+  function runRow(r) {
+    return el('tr', { children: [
+      el('td', { textContent: dash(r.run_id) }),
+      el('td', { children: [runBadge(r.status)] }),
+      el('td', { textContent: String(r.steps || 0) }),
+      el('td', { textContent: listText(r.models) }),
+      el('td', { textContent: listText(r.packs) }),
+      el('td', { textContent: shortTime(r.started_at) }),
+      el('td', { textContent: shortTime(r.ended_at) }),
+      el('td', { textContent: dash(r.note) })
+    ] });
+  }
+
+  function stepRow(r) {
+    return el('tr', { children: [
+      el('td', { textContent: dash(r.run_id) }),
+      el('td', { textContent: dash(r.kind) }),
+      el('td', { textContent: dash(r.stage) }),
+      el('td', { children: [runBadge(r.status)] }),
+      el('td', { textContent: dash(r.via) }),
+      el('td', { textContent: dash(r.model) }),
+      el('td', { textContent: dash(r.effort) }),
+      el('td', { textContent: dash(r.pack) }),
+      el('td', { textContent: shortTime(r.ended_at || r.at) }),
+      el('td', { textContent: dash(r.note) })
+    ] });
+  }
+
+  function registryDetail(slug) {
+    var box = el('div', { class: 'runs-detail', id: 'runs-detail' });
+    var d = State.registryDetail;
+    if (!d || d.slug !== slug) {
+      box.appendChild(el('p', { class: 'muted', textContent: 'Loading the run log of ' + slug + '...' }));
+      return box;
+    }
+    if (d.error) {
+      box.appendChild(el('div', { class: 'notice', role: 'status', textContent: 'Could not read ' + slug + ': ' + d.error }));
+      return box;
+    }
+    box.appendChild(el('h4', { textContent: 'Runs of ' + slug }));
+    if (!(d.runs || []).length) box.appendChild(el('p', { class: 'muted', textContent: 'No runs recorded yet.' }));
+    else box.appendChild(runsTable(['Run', 'Status', 'Steps', 'Model', 'Pack', 'Started', 'Ended', 'Note'], d.runs.map(runRow)));
+    box.appendChild(el('h4', { textContent: 'Steps' }));
+    box.appendChild(runsTable(['Run', 'Step', 'Stage', 'Status', 'Via', 'Model', 'Effort', 'Pack', 'Time', 'Note'], (d.steps || []).map(stepRow)));
+    box.appendChild(el('h4', { textContent: 'RUN_REPORT.md' }));
+    box.appendChild(el('pre', { class: 'box', textContent: d.report || 'No report yet.' }));
+    return box;
+  }
+
   // ---------- Polling ----------
   function startPolling() {
     if (State.pollTimer) return;
     State.pollTimer = setInterval(function () {
       loadPipeline();
       loadSummary();
+      loadRegistry();
+      loadRegistryDetail(State.registrySlug);
     }, POLL_MS);
   }
 
@@ -1398,6 +1578,7 @@
       startPolling();
       loadPipeline();
       loadSummary();
+      loadRegistry();
     }
   }
 
@@ -1428,6 +1609,7 @@
     loadStoryList();
     loadPipeline();
     loadSummary();
+    loadRegistry();
     startPolling();
     document.addEventListener('visibilitychange', handleVisibility);
   }

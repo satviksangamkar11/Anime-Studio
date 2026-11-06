@@ -19,9 +19,16 @@ import sys
 from pathlib import Path
 
 from h3.assemble_reel import build_ffmpeg_assembly_plan, write_assembly_script
+from h3.asset_manifest import H3_MODEL_ID, blocking_problems, hash_bible, hash_frame_file, hash_shot_row, load_manifest
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
+from h3.fallback_policy import attempts_for, load_history
+from h3.gate_d_audio import plan_language_outputs
+from h3.pipeline_contract import assembly_allowed, build_plan
+from h3.router import ref2va_limit_problems, route_shot
 from h3.schema_and_linter import (ID_PATTERN, lint_profile, lint_story, picture_path_problem,
                                   read_png_dimensions_on_disk, resolve_keyframes)
+from h3.shot_table_spec import FALLBACK_RUNGS, HUMAN_CHOICES
+from h3.step9_qc import final_qc
 
 SCOPES = ("shots", "reel", "all")
 UNVERIFIED_NOTE = ("NOTE: Route C ComfyUI node classes are UNVERIFIED (written from an unverified spec); "
@@ -412,6 +419,157 @@ def print_report(res, *, allow_partial=False):
     else:
         names = ", ".join(e["episode_id"] for e in res["episodes"])
         print(f"RUN CLEAN (exit 0): wrote {written_shots} shot(s) and the assembly for {names}.")
+
+
+# ---------- full pipeline plan (dry run: never renders, never writes) ----------
+
+MANIFEST_FILE = "asset_manifest.json"
+HISTORY_FILE = "fallback_history.json"
+
+
+def _lint_result(res):
+    problems = []
+    for ep in res["episodes"]:
+        problems += [f"(episode {ep['episode_id']}) {m}" for m in ep["episode_errors"]]
+        for r in ep["rows"]:
+            problems += [f"{r['shot_id']}: {m}" for m in r["errors"]]
+        for sid, msgs in ep["other_shot_errors"].items():
+            problems += [f"{sid}: {m}" for m in msgs]
+    return {"ok": not problems, "reasons": problems, "details": {"episodes": [e["episode_id"] for e in res["episodes"]]}}
+
+
+def _route_result(groups):
+    problems, routes = [], {}
+    for g in groups:
+        for shot in g["shots"]:
+            sid = shot["shot_id"]
+            routes[sid] = route_shot(shot)
+            problems += [f"{sid}: {code} {msg}" for code, msg in ref2va_limit_problems(shot)]
+    return {"ok": not problems, "reasons": problems, "details": {"routes": routes}}
+
+
+def _prompt_result(story, groups):
+    problems, compiled = [], 0
+    for g in groups:
+        for shot in g["shots"]:
+            try:
+                compile_fl2va_prompt(shot, story["registry"])  # the text is written only at render time
+                compiled += 1
+            except (ValueError, KeyError, TypeError, AttributeError) as e:
+                problems.append(f"{shot.get('shot_id', '?')}: prompt not compiled: {e}")
+    return {"ok": not problems, "reasons": problems, "details": {"compiled": compiled}}
+
+
+def _frame_hash(root, rel):
+    """sha256 of a boundary frame on disk; None when the shot has no such frame (T2VA) or the file is missing."""
+    if not rel or picture_path_problem(rel) is not None:
+        return None
+    path = os.path.join(root, rel)
+    return hash_frame_file(path) if os.path.isfile(path) else None
+
+
+def _current_hashes(story, groups):
+    """shot_id -> the five hashes each shot has now (what its clip must have been rendered from).
+    The bible hash is the whole registry: any upstream edit makes every clip stale (judgment call, see SPEC.md)."""
+    bible = hash_bible(story["registry"])
+    current = {}
+    for g in groups:
+        shots, root = g["episode"]["shots"], g["episode"]["asset_root"]
+        pos = {s["shot_id"]: k for k, s in enumerate(shots)}
+        for shot in g["shots"]:
+            k = pos[shot["shot_id"]]
+            kf = resolve_keyframes(shot, shots[k - 1] if k else None, root)
+            current[shot["shot_id"]] = {
+                "bible_sha256": bible, "shot_row_sha256": hash_shot_row(shot),
+                "start_frame_sha256": _frame_hash(root, kf.get("picture_1")),
+                "end_frame_sha256": _frame_hash(root, kf.get("picture_2")), "model_id": H3_MODEL_ID}
+    return current
+
+
+def _manifest_result(manifest, story, groups):
+    problems = blocking_problems(manifest, _current_hashes(story, groups))
+    return {"ok": not problems, "reasons": problems, "details": {"clips": len(manifest.get("clips", {}))}}
+
+
+def _fallback_result(history, groups):
+    problems, next_rung = [], {}
+    for g in groups:
+        for shot in g["shots"]:
+            sid = shot["shot_id"]
+            n = len(attempts_for(history, sid)) + 1  # number of the next failure of this shot
+            next_rung[sid] = min(n, FALLBACK_RUNGS)
+            if n >= FALLBACK_RUNGS:
+                problems.append(f"{sid}: human gate, choose one of {list(HUMAN_CHOICES)}")
+    return {"ok": not problems, "reasons": problems, "details": {"next_rung": next_rung}}
+
+
+def _render_result(render_results, groups):
+    if render_results is None:
+        return None  # dry run: nothing was rendered, the step stays pending
+    problems = []
+    for g in groups:
+        for shot in g["shots"]:
+            got = render_results.get(shot["shot_id"], "missing")
+            if got != "ok":
+                problems.append(f"{shot['shot_id']}: no successful render ({got})")
+    return {"ok": not problems, "reasons": problems, "details": {"rendered": len(render_results)}}
+
+
+def _qc_result(groups, measurers):
+    problems = []
+    for g in groups:
+        try:
+            rep = final_qc(g["episode"]["shots"], measurers=measurers)
+        except (KeyError, TypeError, ValueError) as e:  # rows not in the V4 layout: QC cannot run, so it blocks
+            problems.append(f"{g['episode']['episode_id']}: Step 9 QC not run: {type(e).__name__}: {e}")
+            continue
+        problems += [f"{g['episode']['episode_id']}: {c['id']} failed: {c['detail']}" for c in rep["checks"] if not c["ok"]]
+    return {"ok": not problems, "reasons": problems, "details": {"episodes": len(groups)}}
+
+
+def _gate_d_result(story, groups, out_root, languages):
+    reg, problems, ok_by_episode = story["registry"], [], {}
+    for g in groups:
+        ep = g["episode"]
+        ep_id = ep["episode_id"]
+        ep_dir = os.path.join(out_root, ep_id)
+        video = {"shared_foley": os.path.join(ep_dir, "render", f"{ep_id}_shared_foley.mp4"),
+                 "en_h3": os.path.join(ep_dir, "render", f"{ep_id}_en_h3.mp4")}
+        try:
+            res = plan_language_outputs(ep_id, languages, os.path.join(ep_dir, "audio", "vo"), None,
+                                        shots=ep["shots"], video_path=video, video_has_audio=True,
+                                        captions_dir=os.path.join(ep_dir, "captions"),
+                                        export_dir=os.path.join(ep_dir, "export"),
+                                        voice_engines=reg.get("voice_engine"))
+        except (KeyError, TypeError, ValueError) as e:  # e.g. a shot row without editorial_duration_sec
+            problems.append(f"{ep_id}: Gate D not planned: {type(e).__name__}: {e}")
+            continue
+        ok_by_episode[ep_id] = {lang: rep["ok"] for lang, rep in res["reports"].items()}
+        for lang, rep in res["reports"].items():
+            problems += [f"{ep_id} {lang}: {e['code']} {e['where']}: {e['message']}" for e in rep["errors"]]
+    return {"ok": not problems, "reasons": problems,
+            "details": {"languages": list(languages), "ok_by_episode": ok_by_episode}}
+
+
+def plan_pipeline(story, groups, out_root, *, languages=None, render_results=None, qc_measurers=None):
+    """Ordered H3 pipeline plan for the selected groups (steps and reasons: h3/pipeline_contract.py). Dry run only:
+    never renders, never calls a backend, writes nothing. render_results: None (default, nothing rendered yet) or
+    {shot_id: "ok" | "failed"}. qc_measurers: Step 9 measurers (missing ones make QC fail closed). languages: default
+    the story's output_languages, else ["en"]. BGM is not passed (default none). Loudness stays pending: it needs
+    the exported mp4."""
+    langs = list(languages or story.get("output_languages") or story["registry"].get("output_languages") or ["en"])
+    lint = prepare(story, groups, out_root, write=False, mode="dry-run")
+    manifest = load_manifest(os.path.join(out_root, MANIFEST_FILE))
+    history = load_history(os.path.join(out_root, HISTORY_FILE))
+    results = {"lint": _lint_result(lint), "route": _route_result(groups),
+               "prompt": _prompt_result(story, groups), "manifest": _manifest_result(manifest, story, groups),
+               "fallback": _fallback_result(history, groups), "render": _render_result(render_results, groups)}
+    if render_results is not None:
+        results["step9_qc"] = _qc_result(groups, qc_measurers or {})
+    results["gate_d"] = _gate_d_result(story, groups, out_root, langs)
+    results = {k: v for k, v in results.items() if v is not None}
+    steps = build_plan(results)
+    return {"mode": "dry-run", "languages": langs, "steps": steps, "assembly_allowed": assembly_allowed(steps)}
 
 
 # ---------- CLI ----------

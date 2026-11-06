@@ -1,6 +1,7 @@
 """Staged writer (write_pack --staged) with fake callers: no network, no model call."""
 import json
 import re
+import sys
 import urllib.request
 
 import pytest
@@ -34,6 +35,13 @@ def no_network(monkeypatch):
         raise AssertionError("network call in a test")
     monkeypatch.setattr(write_pack, "call_nvidia", boom)
     monkeypatch.setattr(urllib.request, "urlopen", boom)
+
+
+@pytest.fixture(autouse=True)
+def no_validator(monkeypatch):
+    """These tests cover the staged plumbing (resume, routing, merge) with the canned answers above, which are not V4 answers:
+    the validator is switched off here (a warning, not a crash). The V4 checks are in test_writer_v4.py."""
+    monkeypatch.setitem(sys.modules, "pack_validator", None)
 
 
 @pytest.fixture

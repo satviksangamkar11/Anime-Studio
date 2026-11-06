@@ -14,7 +14,7 @@
       "sampler_name": "euler",
       "scheduler": "simple",
       "model_sampling_av": {
-        "mode_to_video_shift_map": {"FL2VA": 6.0, "I2VA": 6.0, "L2VA": 6.0, "REF2VA": 12.0},
+        "video_shift": {"keyframe": 6.0, "ref2va": 12.0},
         "audio_shift": 3.0
       },
       "fps": 24,

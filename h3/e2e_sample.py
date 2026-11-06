@@ -89,9 +89,9 @@ SHOT_TEXT = [
          "The lantern keeper stands at the foot of the grey stone tower, a brass lantern hanging from one hand and his wool coat moving in the wind.",
          "He lifts his eyes to the spiral stair, a slow breath raises his shoulders, and his grip tightens on the lantern handle.",
          "He sets one boot on the first worn step and shifts his weight forward, the lantern swinging gently beside his knee.",
-         "He climbs with long steady strides, one hand on the cold wall, the coat sweeping as the stair turns out of sight.",
-         "A boot finds a loose stone, a small puff of dust lifts into the lamplight, and he catches the rail without slowing.",
-         "He plants both feet on the landing in a low lunge, the lantern flares and rocks, and the light scatters across the wall.",
+         "He climbs with long steady strides, one hand on the cold wall, the coat sweeping as the stair turns out of sight, with a quiet scrape of boot on stone.",
+         "A boot finds a loose stone, a small puff of dust lifts into the lamplight, and he catches the rail without slowing, with a faint creak of the stair.",
+         "He plants both feet on the landing in a low lunge, the lantern flares and rocks, and the light scatters across the wall, with a gentle hum of wind.",
          "He rises into an upright pose on the landing, breathing calm, eyes fixed on the dark lamp room above."],
      "cadence": "Hold the stance quietly, then a quick burst of footsteps and swinging light, then settle on the landing.",
      "camera": {"motion_type": "Tracking Shot", "amplitude": "with small amplitude", "speed": "at slow speed",
@@ -107,7 +107,7 @@ SHOT_TEXT = [
          "He lunges forward onto the next tread, the lantern dipping low and the coat snapping behind him.",
          "He drives upward in quick steps, leaning into the steep stair with one hand braced on the wall.",
          "His hand slides along the rail, the stone under his boot cracks faintly, and he steadies himself mid-step.",
-         "He hauls himself up onto the stair, shoulders rising as he pulls the lantern close to his chest.",
+         "He hauls himself up onto the stair, shoulders rising as he pulls the lantern close to his chest, with a light tap of the heel.",
          "He stands tall on the stair, catching his breath, the light steady and his eyes lifted toward the top of the tower."],
      "cadence": "Hold the climb steady, then a short burst of hand and boot contact, then settle as he stands upright.",
      "camera": {"motion_type": "Push In", "amplitude": "with small amplitude", "speed": "at slow speed",
@@ -124,7 +124,7 @@ SHOT_TEXT = [
          "He reaches to the brass valve and turns it, the wick hisses, and his arm moves in a smooth arc.",
          "The wick catches with a soft pop, a warm glow touches his face, and he leans closer to the flame.",
          "The lamp flares to full light, the beam sweeps outward over the water, and he steps back with a sharp breath.",
-         "He stands upright beside the lit lamp, calm and still, the beam steady across the dark sea."],
+         "He stands upright beside the lit lamp, calm and still, the beam steady across the dark sea, with a low thud of weight."],
      "cadence": "Hold the still doorway, then a quick burst as the wick catches, then settle in the steady beam.",
      "camera": {"motion_type": "Static Shot", "amplitude": "medium_omitted", "speed": "normal_omitted",
                 "compiled_clause": "The camera holds a static shot."},
@@ -162,7 +162,9 @@ def build_shots():
         s["anime_timing_cadence"]["cadence_clause"] = t["cadence"]
         s["camera"] = dict(t["camera"])
         s["dialogue_and_lip_lock"] = {"has_dialogue": False, "utterances": [],
-                                      "mouth_state_rule": "Mouths stay closed for the whole shot."}
+                                      "mouth_state_rule": "Mouths stay closed for the whole shot.",
+                                      "narrator_mouth_closed": True,
+                                      "mouth_state": {str(i): "closed" for i in range(-(-s["timing_and_lattice"]["pixel_frames"] // 24))}}
         s["sound_plan"] = {"overall_soundscape": t["sound"][0], "non_diegetic_music": t["sound"][1]}
         shots.append(s)
     return shots

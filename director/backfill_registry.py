@@ -1,21 +1,29 @@
 """Backfill the run registry (story.json, RUNS.jsonl, RUN_REPORT.md) for the stories that were run before it existed.
 
-  python director/backfill_registry.py [--studio PATH] [--only SLUG]
+  python director/backfill_registry.py [--studio PATH] [--only SLUG] [--apply] [--fix-empty-packs]
 
-Idempotent: a second run adds nothing (every backfilled line has a fixed event_id; story.json is kept when it exists).
+Without --apply nothing is written: the output says what would be added. With --apply:
 For every stories/<slug>/ folder it reads what is on disk, in order of trust:
   1. saved answers: stage_*_raw.json and raw_response.json (via, model, is_error, finish_reason, chars)
   2. writer logs (*.log in the story folder): the stages each run wrote, its traceback or its "N episodes, M shots" line,
      and "exit=N" when present. An empty log is a run that stopped before its first stage.
   3. file times: used for every time stamp. They are approximate and each story.json source note says so.
 A claude run with no saved answer is inferred from the pack folder name (opus) and marked as inferred in the note.
-Nothing is read from the network and no model is called."""
+An old story.json gets the fields it lacks (schema_version, source_sha256, output_language, rating); a value already there is kept.
+The source_sha256 written for an old story is the SOURCE.md hash at backfill time, not at save time.
+
+--fix-empty-packs lists the pack_* folders with no file at all and, with --apply, removes exactly those folders.
+Nothing else is deleted.
+
+Idempotent: a second --apply adds nothing (every backfilled line has a fixed event_id; existing story.json values are kept).
+Nothing is read from the network and no model is called. SOURCE.md and pack files are never written."""
 from __future__ import annotations
 
 import argparse
 import datetime as dt
 import hashlib
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -188,20 +196,25 @@ def _story_plans(story_dir: Path, text: str) -> list:
     return plans
 
 
-def backfill_story(story_dir: Path) -> dict:
+def backfill_story(story_dir: Path, apply: bool = False) -> dict:
     slug = story_dir.name
     result = {"slug": slug, "story": "kept", "added": 0, "already": 0, "runs": []}
     source = story_dir / "SOURCE.md"
     text = source.read_text(encoding="utf-8", errors="replace") if source.is_file() else ""
-    if source.is_file() and rr.read_story(story_dir) is None:
-        saved = _when(source)
-        meta = rr.detect_source(text, saved_at=_iso(saved))
-        meta["note"] = "backfilled: times are file times"
-        if meta["type"] == "youtube":
-            meta["fetched_at"] = _iso(saved)
-        rr.update_story(story_dir, title=rr.title_from_source(text, slug), language=rr.detect_language(text), source=meta,
-                        owner_request_text=_owner_request(text), tags=["backfilled"], created_at=_iso(saved))
-        result["story"] = "created"
+    if rr.read_story(story_dir) is None:
+        if source.is_file():
+            result["story"] = "created" if apply else "would create"
+            if apply:
+                saved = _when(source)
+                meta = rr.detect_source(text, saved_at=_iso(saved))
+                meta["note"] = "backfilled: times are file times"
+                if meta["type"] == "youtube":
+                    meta["fetched_at"] = _iso(saved)
+                rr.update_story(story_dir, title=rr.title_from_source(text, slug), language=rr.detect_language(text), source=meta,
+                                owner_request_text=_owner_request(text), tags=["backfilled"], created_at=_iso(saved),
+                                source_sha256=rr.source_file_hash(story_dir))
+    elif rr.upgrade_story_fields(story_dir, write=apply):
+        result["story"] = "upgraded" if apply else "would upgrade"
     covered: dict = {}
     packs = rr.pack_folders(story_dir)
     pack_dirs = sorted(p.name for p in story_dir.iterdir() if p.is_dir() and rr.PACK.fullmatch(p.name))
@@ -212,29 +225,64 @@ def backfill_story(story_dir: Path) -> dict:
         if event_id in existing:
             result["already"] += 1
             continue
-        rr.append_event(story_dir, p["run"], p["kind"], p["stage"], p["status"], at=p["at"], event_id=event_id, **p["fields"])
+        if apply:
+            rr.append_event(story_dir, p["run"], p["kind"], p["stage"], p["status"], at=p["at"], event_id=event_id, **p["fields"])
         existing.add(event_id)
         result["added"] += 1
     result["runs"] = sorted({p["run"] for p in plans})
-    rr.write_report(story_dir)
+    if apply:
+        rr.write_report(story_dir)
     return result
+
+
+def empty_pack_folders(studio: Path) -> list:
+    """pack_* folders under stories/<slug>/ that hold no file at all, sorted."""
+    root = Path(studio) / "stories"
+    out = []
+    for story in sorted(p for p in root.iterdir() if p.is_dir() and rr.SLUG.fullmatch(p.name)) if root.is_dir() else []:
+        for pack in sorted(story.iterdir()):
+            if pack.is_dir() and pack.name.startswith("pack_") and rr.PACK.fullmatch(pack.name) and not any(f.is_file() for f in pack.rglob("*")):
+                out.append(pack)
+    return out
+
+
+def fix_empty_packs(studio: Path, apply: bool = False) -> list:
+    """Lists the empty pack folders; with apply, removes them. A folder is removed only after a check that it holds no file."""
+    rows = []
+    for pack in empty_pack_folders(studio):
+        row = {"path": str(pack), "removed": False}
+        if apply and not any(f.is_file() for f in pack.rglob("*")):
+            shutil.rmtree(pack)
+            row["removed"] = True
+        rows.append(row)
+    return rows
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--studio", type=Path, default=STUDIO, help="the anime_studio folder (default: this one)")
     ap.add_argument("--only", default="", help="one story slug")
+    ap.add_argument("--apply", action="store_true", help="write the files (default: preview, nothing is written or removed)")
+    ap.add_argument("--fix-empty-packs", action="store_true", help="list empty pack folders; with --apply also remove them")
     a = ap.parse_args(argv)
     root = a.studio / "stories"
     if not root.is_dir():
         print(f"no stories folder at {root}")
         return 1
+    if a.fix_empty_packs:
+        rows = fix_empty_packs(a.studio, apply=a.apply)
+        for row in rows:
+            print(f"empty pack folder: {row['path']} {'removed' if row['removed'] else 'would be removed (use --apply)'}")
+        if not rows:
+            print("no empty pack folders")
+    prefix = "" if a.apply else "[preview] "
     for folder in sorted(p for p in root.iterdir() if p.is_dir() and rr.SLUG.fullmatch(p.name)):
         if a.only and folder.name != a.only:
             continue
-        r = backfill_story(folder)
-        print(f"{r['slug']}: story.json {r['story']}; RUNS.jsonl +{r['added']} events ({r['already']} already there); "
-              f"runs {', '.join(r['runs']) or 'none'}; RUN_REPORT.md written")
+        r = backfill_story(folder, apply=a.apply)
+        verb = "+" if a.apply else "would add "
+        print(f"{prefix}{r['slug']}: story.json {r['story']}; RUNS.jsonl {verb}{r['added']} events ({r['already']} already there); "
+              f"runs {', '.join(r['runs']) or 'none'}; RUN_REPORT.md {'written' if a.apply else 'not written'}")
     return 0
 
 

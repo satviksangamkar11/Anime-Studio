@@ -1,11 +1,12 @@
+import copy
 import json
 import os
 
 import pytest
 
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
-from h3.schema_and_linter import PROMPT_RE, lint_workflow, resolve_keyframes
-from h3.tests.synth import A_START, A_END, codes
+from h3.schema_and_linter import MOUTH_LOCK_PHRASE, PROMPT_RE, PromptRefused, lint_story, lint_workflow, resolve_keyframes
+from h3.tests.synth import A_START, A_END, SPEECH_UTTERANCE, codes
 
 
 def _ctx(story):
@@ -31,12 +32,39 @@ def test_prompt_layout_header_and_single_shot_tag(story):
     assert out["char_counts"]["total"] == len(out["compiled_prompt"])
 
 
-def test_dialogue_block_uses_voiceover_and_says_forms(story):
+def test_speech_is_refused_at_source_not_emitted(story):
+    # Pure-Foley (2026-11-07): the old <d> dialogue block is gone; an utterance is refused with SL-04.
     shots, reg, _ = _ctx(story)
-    vo = compile_fl2va_prompt(shots[1], reg)["compiled_prompt"]
-    assert "says in an off-screen voiceover: <d>[en] Hold the line until the bell.</d> lips stay closed" in vo
-    says = compile_fl2va_prompt(shots[2], reg)["compiled_prompt"]
-    assert "the figure turns toward the light, the young figure in a red scarf (spk_02) says: <d>[en] Not yet.</d>" in says
+    shots[1]["dialogue_and_lip_lock"]["utterances"] = [copy.deepcopy(SPEECH_UTTERANCE)]
+    with pytest.raises(PromptRefused) as e:
+        compile_fl2va_prompt(shots[1], reg)
+    assert e.value.code == "SL-04"
+
+
+def test_speech_pattern_in_stage_text_is_refused(story):
+    shots, reg, _ = _ctx(story)
+    shots[0]["motion_7_stage"]["3_initiation"] += " The figure says (S1) it is time."
+    with pytest.raises(PromptRefused) as e:
+        compile_fl2va_prompt(shots[0], reg)
+    assert e.value.code == "SL-01"
+
+
+def test_mouth_lock_phrase_is_in_description_of_every_shot(story):
+    shots, reg, _ = _ctx(story)
+    for shot in shots:
+        text = compile_fl2va_prompt(shot, reg)["compiled_prompt"]
+        imd = PROMPT_RE.match(text).group("imd")
+        assert MOUTH_LOCK_PHRASE in imd
+
+
+def test_flow_chips_and_storyboard_tags_are_stripped_before_emission(story):
+    shots, reg, _ = _ctx(story)
+    shots[0]["motion_7_stage"]["2_anticipation"] += " @CHAR-01 stands in [char:hero] [scene:step] ROOM-> at 0.0-1.0s."
+    out = compile_fl2va_prompt(shots[0], reg)
+    assert "@CHAR" not in out["compiled_prompt"] and "[char:" not in out["compiled_prompt"]
+    assert "->" not in out["compiled_prompt"] and "0.0-1.0s" not in out["compiled_prompt"]
+    assert "@CHAR-01" in out["stripped_tags"] and "[char:hero]" in out["stripped_tags"]
+    assert lint_story(story) == {"errors": [], "warnings": []}
 
 
 def test_compile_episode_writes_prompt_and_workflow_that_lint_clean(story, tmp_path):
@@ -84,7 +112,8 @@ def test_second_pass_needs_upscale_resolution(story):
     (lambda wf: wf["nodes"]["5"]["inputs"].__setitem__("width", 768), "WF-06"),
     (lambda wf: wf["nodes"]["6"]["inputs"].__setitem__("cfg", 1.5), "WF-04"),
     (lambda wf: wf["nodes"]["6"]["inputs"].__setitem__("has_negative_branch", True), "WF-04"),
-    (lambda wf: wf["nodes"]["3"]["inputs"].__setitem__("video_shift", 6.0), "WF-03"),
+    # SYN_A is a boundary-frame (FL2VA-routed) shot: its keyframe shift is 6.0, so 12.0 (the Ref2VA value) is wrong.
+    (lambda wf: wf["nodes"]["3"]["inputs"].__setitem__("video_shift", 12.0), "WF-03"),
     (lambda wf: wf["nodes"].pop("9"), "WF-01"),
     (lambda wf: wf.pop("_unverified_node_classes"), "WF-08"),
 ])

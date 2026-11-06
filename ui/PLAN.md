@@ -112,7 +112,7 @@ Risk: **R** read-only; **W** writes local files (never deletes); **N** free NVID
 |---|---|---|---|---|
 | Load story | none (file read) `S\stories\<slug>\SOURCE.md` | slug | text, bytes | R |
 | Save story | none (file write, refuses overwrite unless ticked) | slug, text | path, bytes | W |
-| Run writer (new pack) | `P S\director\write_pack.py S\stories\<slug>\SOURCE.md S\stories\<slug>\<pack> --staged --via nvidia --model <M>` | slug, new pack name, model from list | stage badges (from `stage_*_raw.json`), log tail, `PACK.md` | N, W |
+| Run writer (new pack) | `P S\director\write_pack.py S\stories\<slug>\SOURCE.md S\stories\<slug>\<pack> --staged --writer super-vl` (or `--writer ultra`; legacy: `--via nvidia --model <M>`) | slug, new pack name, writer from list (default super-vl) | stage badges (from `stage_*_raw.json`), log tail, `PACK.md` | N, W |
 | Resume pack | same command, existing `<pack>` (saved stages are not sent again) | pack | same | N, W |
 | Analysis | none (reads `PACK.md`, `bible.json`, `shots.json`) | pack | Gate 1 text, episodes, characters, places, shots | R |
 | Check pack | `P S\director\check_pack.py <pack>` | pack | JSON: shots, modes, episode_seconds, total_seconds, issues | R |
@@ -161,7 +161,7 @@ Risk: **R** read-only; **W** writes local files (never deletes); **N** free NVID
 | Reel files | none (list the reel folder when it exists) | reel N | files, or "none yet" | R |
 | Stop running job | kills the local process only | job id | job state, warning | ops |
 
-Writer model list (Q4): default `nvidia/nemotron-3-ultra-550b-a55b` (write_pack default). The reviewer model is fixed in `review_shot.py`; the UI only shows it.
+Writer list (Q4, updated 2026-11-06): `super-vl` (default, `nvidia/nemotron-3.5-super-vl:free` on OpenRouter) and `ultra` (`nvidia/nemotron-3-ultra-550b-a55b:free` on OpenRouter); both free-only. The legacy NVIDIA model argument is still accepted. The reviewer model is fixed in `review_shot.py`; the UI only shows it.
 Not exposed in v1: Kaggle push (`run_kaggle.py --push/--fetch`), any `--via claude` or `--via openrouter`, `--allow-paid`, `--stage-via`, `--logtostderr`.
 
 ## 3. Cost estimate rule (for every `$` control)
@@ -177,9 +177,11 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 |---|---|---|---|
 | GET | `/`, `/static/*` | none | HTML, JS, CSS |
 | GET | `/api/status` | none | `{studio_ok, flow_ok, python, colab_cli, nvidia_key_files (count only), spend_allowed, job}` |
-| GET | `/api/story` | none | `{slugs: [{slug, packs: [name]}]}` |
+| GET | `/api/story` | none | `{slugs: [{slug, packs: [name], has_source, latest_pack, latest_model}]}` (latest_model = the model of the newest pack; from the run registry) |
 | GET | `/api/story/{slug}` | none | `{text, bytes}` |
 | POST | `/api/story/{slug}` | `{text, overwrite: false}` | `{saved, bytes}`; 409 if the file exists |
+| GET | `/api/registry` | none | `{stories: [run-log summary per story: slug, title, source, latest_pack, packs, pack_models, run_count, status, last_run_at, last_run_id, next_pack]}`; read only; 503 if the registry module is missing |
+| GET | `/api/registry/{slug}` | none | `{slug, story, summary, runs, steps, report}`; `report` is the RUN_REPORT text; 400 for a bad slug, 404 for no such story; read only |
 | GET | `/api/pack?pack=stories/<slug>/<name>` | none | `{stages: {"1": bool, "2": bool, "3e1": bool, ..., "5": bool}, gate1, episodes: [{n, shots, seconds}], characters, places, shots, check}` |
 | POST | `/api/preview` | `{command, args}` | `{argv, risk, estimate, token, expires_s: 60, needs_confirm}` |
 | POST | `/api/run` | `{token, confirm}` (`confirm` only for `$`, e.g. "EXECUTE 7.5") | `{job_id}`; 403 if spend is off; 409 if a job runs |

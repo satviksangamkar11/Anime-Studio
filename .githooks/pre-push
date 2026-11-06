@@ -1,0 +1,15 @@
+#!/bin/sh
+# Pre-push guard: blocks the push when tools/secret_scan.py finds a secret, a stories/ or transcript file, media, or a file over 1 MB.
+# Install once (the owner runs this; the hook never changes git config):  git config core.hooksPath .githooks
+# Python: $ANIME_PY if set, else C:/Python314/python.exe, else python. Any failure (including "no python") blocks the push.
+remote="${1:-origin}"
+ROOT="$(git rev-parse --show-toplevel)" || { echo "pre-push: not in a git repo"; exit 1; }
+PY="${ANIME_PY:-C:/Python314/python.exe}"
+[ -f "$PY" ] || PY=python
+"$PY" "$ROOT/tools/secret_scan.py" --remote "$remote"
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "pre-push: push blocked (secret_scan exit $rc). Fix the findings above, then push again."
+  exit 1
+fi
+exit 0

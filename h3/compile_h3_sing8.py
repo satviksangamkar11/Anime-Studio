@@ -1,60 +1,137 @@
-"""Compile shots to the sing8 FL2VA/REF2VA prompt and the Route C ComfyUI payload. Story-agnostic.
+"""Compile shots to the sing8 prompts and the Route C ComfyUI payload. Story-agnostic.
 
+compile_fl2va_prompt is the one prompt entry point: FL2VA-routed shots get the 4-part FL2VA layout, Ref2VA-routed
+shots get the official 6-section ref-en.txt layout. Pure-Foley: no speech ever reaches the prompt (refused at source),
+Flow chips and storyboard tags are stripped before emission, and the mouth lock sits in the description.
 Node class names come from an unverified spec: every payload carries "_unverified_node_classes": true.
 """
 import json
 import os
 
-from h3.schema_and_linter import (STAGES, compiled_soundscape, lint_story, lint_workflow, resolve_keyframes,
-                                  sanitize_single_line as san)
+from h3.router import REF2VA, ref_inventory, route_shot, video_shift_for, workflow_mode
+from h3.schema_and_linter import (MOUTH_LOCK_SENTENCE, STAGES, clean_text, compiled_soundscape, lint_story,
+                                  lint_workflow, refuse_speech_in_source, resolve_keyframes, sanitize_single_line as san,
+                                  strip_tags, stripped_tags_of, voice_context, voice_mode)
 
 TEXT_ENCODER = "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
 VIDEO_VAE = "minimax_h3_video_vae_fp16.safetensors"
 AUDIO_VAE = "minimax_h3_audio_vae_fp32.safetensors"
+OFFSCREEN_LIP = "The on-screen character's lips remain completely closed."  # official base-en s4.4 (voiceover)
 
 
-def compile_fl2va_prompt(shot, registry):
-    prof, style = registry["execution_profile"], registry["style_lock"]
-    fps = prof["fps"]
-    pf = shot["timing_and_lattice"]["pixel_frames"]
-    stage = {k: san(shot["motion_7_stage"][k]) for k in STAGES}
-    cadence = san(shot["anime_timing_cadence"]["cadence_clause"])
-    cam = san(shot["camera"]["compiled_clause"])
-    dlg = shot["dialogue_and_lip_lock"]
-    parts = [san(dlg["mouth_state_rule"])]
-    for u in dlg["utterances"]:
-        name = san(registry["characters"][u["character_id"]]["short_disambiguator"])
-        cue, spk = san(u["voiceover_action_cue"]), san(u["speaker_id"])
-        lang, text = san(u["language"]), san(u["text"])
-        if u["is_offscreen_voiceover"]:
-            parts.append(f"{cue}, {name} ({spk}) says in an off-screen voiceover: "
-                         f"<d>[{lang}] {text}</d> {san(u['lip_lock_clause'])}")
+def _mouth_lock(dlg, silent=True):
+    """The mouth-state rule, plus the positive lock sentence when nobody on screen speaks (English voice mode)."""
+    return f"{clean_text(dlg['mouth_state_rule'])} {MOUTH_LOCK_SENTENCE}" if silent else clean_text(dlg["mouth_state_rule"])
+
+
+def _speech_sentences(shot, registry):
+    """English H3 speech in the official form (base-en s4.4): `{cue}, {character} ({Sx}), {voice description}, says:
+    <d>[English] {text}</d>`; off-screen lines say `says in an off-screen voiceover` and state the lips stay closed.
+    The voice description is the character's anchor sentence, verbatim in every shot (UNVERIFIED that it fixes the voice)."""
+    out = []
+    for u in (shot.get("dialogue_and_lip_lock") or {}).get("utterances") or []:
+        ch = registry["characters"][u["character_id"]]
+        desc = ch["voice_anchor"]["voice_description"]
+        who = f"{clean_text(ch['short_disambiguator'])} ({u['speaker_id']}), {desc}"
+        text = san(strip_tags(u["text"])[0])
+        cue = clean_text(u.get("voiceover_action_cue") or "")
+        if u.get("is_offscreen_voiceover"):
+            line = f"{who}, says in an off-screen voiceover: <d>[English] {text}</d> {OFFSCREEN_LIP}"
         else:
-            parts.append(f"{cue}, {name} ({spk}) says: <d>[{lang}] {text}</d>")
+            line = f"{who}, says: <d>[English] {text}</d>"
+        out.append(f"{cue} {line}".strip())
+    return " ".join(out)
+
+
+def _fl2va(shot, registry):
+    prof, style = registry["execution_profile"], registry["style_lock"]
+    fps, pf = prof["fps"], shot["timing_and_lattice"]["pixel_frames"]
+    stage = {k: clean_text(shot["motion_7_stage"][k]) for k in STAGES}
+    cadence = clean_text(shot["anime_timing_cadence"]["cadence_clause"])
+    cam = clean_text(shot["camera"]["compiled_clause"])
+    ctx = voice_context(shot, registry)
+    speech = _speech_sentences(shot, registry) if ctx else ""
     body = san(" ".join([
-        f"[Shot 1] {san(style['mandatory_prefix'])}, preserving the exact character design, "
+        f"[Shot 1] {clean_text(style['mandatory_prefix'])}, preserving the exact character design, "
         "color palette, lighting, and environment in Picture 1 and Picture 2.",
         stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
-        stage["4_drive"], stage["5_contact_approach"], cadence, cam, *parts,
+        stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
+        _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
         stage["6_impact_result"], stage["7_settled_end_state"]]))
     snd = compiled_soundscape(shot, registry)  # shared with the linter (SD-03)
-    music = san(shot["sound_plan"]["non_diegetic_music"])
+    music = clean_text(shot["sound_plan"]["non_diegetic_music"])
     header = (f"How the reference pictures align with the target video — Picture 1 (from Shot 1) "
               f"aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns "
               f"with the {pf / fps:.2f}-second mark of the target video.")
     prompt = (f"{header}\n\nintegrated_multimodal_description: {body}\n"
               f"overall_soundscape: {snd}\nnon_diegetic_music: {music}")
+    return prompt, body
+
+
+def _ref2va(shot, registry):
+    """Official 6 sections: subject_definitions, summary, retention_analysis, detailed_description,
+    overall_soundscape, non_diegetic_music (hard-locked N/A)."""
+    inv, cont = ref_inventory(shot), shot["continuity_and_seam_lock"]
+    chars = registry["characters"]
+    subj = []
+    for i, cid in enumerate(cont["subjects_present"], 1):
+        name = clean_text(chars[cid]["short_disambiguator"])
+        pic = f", design locked to <Picture {i}>" if i <= len(inv["images"]) else ""
+        subj.append(f"<Subject {i}> is {name} ({cid}){pic}.")
+    if voice_mode(registry):  # official ref-en s2.4: an <Audio N> is the voice timbre of the speaker it is bound to
+        sid_of = {cid: sid for sid, cid in (registry.get("voice_speaker_map") or {}).items()}
+        for k, cid in enumerate(inv["audio"], 1):
+            subj.append(f"<Audio {k}> is the voice timbre reference for {sid_of.get(cid, cid)} "
+                        f"({clean_text(chars[cid]['short_disambiguator'])}): {chars[cid]['voice_anchor']['voice_description']}.")
+    ctx = voice_context(shot, registry)
+    speech = _speech_sentences(shot, registry) if ctx else ""
+    pictures = ", ".join(f"<Picture {i}>" for i in range(1, len(inv["images"]) + 1)) or "the reference cards"
+    videos = " ".join(f"<Video {i}> supplies the motion reference." for i in range(1, len(inv["videos"]) + 1))
+    stage = {k: clean_text(shot["motion_7_stage"][k]) for k in STAGES}
+    cadence = clean_text(shot["anime_timing_cadence"]["cadence_clause"])
+    cam = clean_text(shot["camera"]["compiled_clause"])
+    body = san(" ".join([stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
+                         stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
+                         _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
+                         stage["6_impact_result"], stage["7_settled_end_state"]]))
+    sections = [
+        ("subject_definitions", san(" ".join(subj)) or "No named subject is in frame."),
+        ("summary", san(f"{clean_text(shot['story_beat'])} {clean_text(shot['emotional_objective'])}")),
+        ("retention_analysis", san(f"Keep the {clean_text(cont['shot_scale'])} framing, the environment, palette and "
+                                   f"lighting of {pictures} steady; screen direction {clean_text(cont['screen_direction_vector'])}, "
+                                   f"camera axis {clean_text(cont['camera_axis_side'])}. {videos}")),
+        ("detailed_description", body),
+        ("overall_soundscape", compiled_soundscape(shot, registry)),
+        ("non_diegetic_music", "N/A"),
+    ]
+    text = "\n".join(f"{name}: {value}" for name, value in sections)
+    return text, body
+
+
+def compile_fl2va_prompt(shot, registry):
+    """The prompt of one shot (FL2VA layout, or the Ref2VA 6-section layout for Ref2VA-routed shots).
+    Raises PromptRefused (SL-01..SL-04) when speech is present in the source."""
+    refuse_speech_in_source(shot, voice=voice_mode(registry))
+    if route_shot(shot) == REF2VA:
+        prompt, body = _ref2va(shot, registry)
+    else:
+        prompt, body = _fl2va(shot, registry)
     return {"shot_id": shot["shot_id"], "compiled_prompt": prompt,
-            "char_counts": {"imd_body": len(body), "total": len(prompt)}}
+            "char_counts": {"imd_body": len(body), "total": len(prompt)},
+            "stripped_tags": stripped_tags_of(shot)}
 
 
 def compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_pass=False, keyframes=None):
     prof = registry["execution_profile"]
     k, t = shot["fl2va_keyframes"], shot["timing_and_lattice"]
-    mode, ns = k["mode"], prof["checkpoint_architecture_namespace"]
-    kf = keyframes or {"picture_1": k["picture_1_path"], "picture_2": k["picture_2_path"]}
+    route = route_shot(shot)
+    if route not in ("FL2VA", REF2VA):
+        raise ValueError(f"route {route} has no sing8 workflow (only FL2VA and Ref2VA)")
+    ns = prof["checkpoint_architecture_namespace"]
+    kf = keyframes or {"picture_1": k.get("picture_1_path"), "picture_2": k.get("picture_2_path")}
     w, h = prof["base_resolution"]
     ms = prof["model_sampling_av"]
+    refs = ref_inventory(shot)["images"]
 
     def node(title, cls, **inputs):
         return {"_title": title, "class_type": cls, "inputs": inputs}
@@ -62,14 +139,15 @@ def compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_p
     nodes = {
         "1": node("1_CheckpointLoader", "MiniMaxH3CheckpointLoader", ckpt_name=prof["checkpoint_name"]),
         "2": node("2_LoraLoader", "LoraLoaderModelOnly", model=["1", 0],
-                  lora_name=prof["mode_to_lora_map"][f"{mode}_{ns}"], strength_model=prof["runtime_lora_strength"]),
+                  lora_name=prof["mode_to_lora_map"][f"{workflow_mode(route)}_{ns}"],
+                  strength_model=prof["runtime_lora_strength"]),
         "3": node("3_ModelSamplingAV", "ModelSamplingAV", model=["2", 0],
-                  video_shift=ms["mode_to_video_shift_map"][mode], audio_shift=ms["audio_shift"]),
+                  video_shift=video_shift_for(prof, route), audio_shift=ms["audio_shift"]),
         "4": node("4_TextEncoder", "MiniMaxH3TextEncode", text_encoder=TEXT_ENCODER, prompt=compiled_prompt),
         "5": node("5_FL2VAConditioning", "MiniMaxH3ImageToVideo", positive=["4", 0],
                   first_frame=kf["picture_1"], last_frame=kf["picture_2"], width=w, height=h,
                   length=t["pixel_frames"], expected_latent_slots=t["latent_slots"],
-                  ref_image_size=prof["ref_image_size_policy"]),
+                  ref_image_size=prof["ref_image_size_policy"], reference_images=refs),
         "6": node("6_BasicGuider", "BasicGuider", model=["3", 0], conditioning=["5", 0],
                   cfg=prof["cfg"], has_negative_branch=False),
         "7": node("7_KSampler", "KSampler", guider=["6", 0], latent_image=["5", 1],
