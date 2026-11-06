@@ -13,3 +13,29 @@ __pycache__/
 director/kaggle_batches/
 results/
 *.mp4
+
+# large/private artefacts: never commit (public repo)
+flow/lama_weights/
+director/colab_batches/
+director/t0_pack/results/
+director/t0_pack/results_early/
+director/t0_pack/keyframes/
+
+# Anime Studio UI runtime (jobs, audit, packets)
+ui/runs/
+
+# never publish art, clips, transcripts or run logs (public repo)
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.log
+director/t0_pack/cmp/
+ui/_backup*/
+h3/_backup*/
+ui/tasks/*.log
+
+# story sources are other people's talks and our generated packs: keep local
+stories/*
+!stories/kaliya_mardan
+stories/kaliya_mardan/pack_*/

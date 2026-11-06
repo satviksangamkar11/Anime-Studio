@@ -1,5 +1,7 @@
 # Kaliya Mardan, Phase 1A: Flow run notes
 
+> Update 2026-11-06: the image reviewer is now NVIDIA (`flow/scripts/review_shot.py` through the 14-key NvidiaScheduler, primary `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`, fallback `nvidia/nemotron-3.5-super-vl-120b-a12b`); the Codex mentions below are history.
+
 Scope: the reference sheets and plates now (8 jobs). The 10 keyframes wait for accepted sheets. Granth's system v2 is used unchanged; nothing under `D:\aai work\granthstudio\` was edited.
 
 ## Files
