@@ -10,6 +10,90 @@ REQUIRED = ("id", "scene", "mode", "aspect", "purpose", "cast", "props", "set", 
             "camera", "layers", "light", "compositing", "keyframes", "sound")
 
 
+LOOK_KEYS = {"palette_id", "act", "phase", "focal", "focal_value", "hook", "impact_frames", "vfx", "accent_use",
+             "hold_purpose", "focal_box", "tags"}
+HOOK_TYPES = {"H-01", "H-02", "H-03", "H-04", "H-05", "H-06"}
+FOCAL_VALUES = ("lightest", "darkest")
+
+
+def _nonempty_str(v):
+    return isinstance(v, str) and v.strip() != ""
+
+
+def _number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def look_problems(look, sid):
+    """Shape of the optional look block (SPEC 3.4). Unknown keys are WARN; a `style` key is an error."""
+    if not isinstance(look, dict):
+        return [f"{sid}: look must be an object"]
+    p = f"{sid}: look."
+    out = []
+    if "style" in look:
+        out.append(f"{p}style is not allowed (legacy shots use style as a prompt string)")
+    for k in ("palette_id", "act"):
+        if not _nonempty_str(look.get(k)):
+            out.append(f"{p}{k} must be a non-empty string")
+    if "phase" in look and not isinstance(look["phase"], str):
+        out.append(f"{p}phase must be a string")
+    if "focal" in look and not _nonempty_str(look["focal"]):
+        out.append(f"{p}focal must be a non-empty string")
+    if "focal_value" in look and look["focal_value"] not in FOCAL_VALUES:
+        out.append(f"{p}focal_value must be lightest or darkest")
+    if "hook" in look:
+        hook = look["hook"]
+        if not isinstance(hook, dict):
+            out.append(f"{p}hook must be an object")
+        else:
+            if hook.get("type") not in HOOK_TYPES:
+                out.append(f"{p}hook.type must be one of H-01..H-06")
+            if not _nonempty_str(hook.get("caption")):
+                out.append(f"{p}hook.caption must be a non-empty string")
+    if "impact_frames" in look:
+        frames = look["impact_frames"]
+        if not isinstance(frames, list):
+            out.append(f"{p}impact_frames must be a list")
+        for i, f in enumerate(frames if isinstance(frames, list) else []):
+            if not isinstance(f, dict):
+                out.append(f"{p}impact_frames[{i}] must be an object")
+                continue
+            if not _number(f.get("at_s")) or f["at_s"] < 0:
+                out.append(f"{p}impact_frames[{i}].at_s must be a number >= 0")
+            if not _nonempty_str(f.get("type")):
+                out.append(f"{p}impact_frames[{i}].type must be a non-empty string")
+            n = f.get("frames")
+            if isinstance(n, bool) or not isinstance(n, int) or n < 1:
+                out.append(f"{p}impact_frames[{i}].frames must be an integer >= 1")
+    if "vfx" in look:
+        vfx = look["vfx"]
+        if not isinstance(vfx, list):
+            out.append(f"{p}vfx must be a list")
+        for i, v in enumerate(vfx if isinstance(vfx, list) else []):
+            if not isinstance(v, dict):
+                out.append(f"{p}vfx[{i}] must be an object")
+                continue
+            if not _nonempty_str(v.get("color")):
+                out.append(f"{p}vfx[{i}].color must be a non-empty string")
+            if not _nonempty_str(v.get("role")):
+                out.append(f"{p}vfx[{i}].role must be a non-empty string")
+    if "accent_use" in look and not isinstance(look["accent_use"], bool):
+        out.append(f"{p}accent_use must be true or false")
+    if "hold_purpose" in look and look["hold_purpose"] is not None and not isinstance(look["hold_purpose"], str):
+        out.append(f"{p}hold_purpose must be a string or null")
+    if "focal_box" in look:
+        box = look["focal_box"]
+        ok = (isinstance(box, list) and len(box) == 4 and all(_number(v) and 0 <= v <= 1 for v in box)
+              and box[0] < box[2] and box[1] < box[3])
+        if not ok:
+            out.append(f"{p}focal_box must be 4 fractions 0..1 as [x0, y0, x1, y1] with x0 < x1 and y0 < y1")
+    if "tags" in look and not (isinstance(look["tags"], list) and all(isinstance(t, str) for t in look["tags"])):
+        out.append(f"{p}tags must be a list of strings")
+    for k in sorted(set(look) - LOOK_KEYS - {"style"}):
+        out.append(f"{sid}: WARN: look.{k} is not a known look key")
+    return out
+
+
 def validate_shot(shot, bible_ids=None):
     if not isinstance(shot, dict):
         return ["?: shot must be an object"]
@@ -85,6 +169,12 @@ def validate_shot(shot, bible_ids=None):
         out.append(f"{sid}: {primary} beats marked primary, at most one")
     elif beats and primary == 0:
         out.append(f"{sid}: WARN: no beat marked primary")
+    for i, b in enumerate(beats, 1):
+        if "reveal" in b and not isinstance(b["reveal"], bool):
+            out.append(f"{sid}: beat {i} reveal must be true or false")
+
+    if "look" in shot:
+        out += look_problems(shot["look"], sid)
 
     if bible_ids is not None:
         ids = [c.get("id") for c in shot.get("cast") or []] + [p.get("id") for p in shot.get("props") or []]
