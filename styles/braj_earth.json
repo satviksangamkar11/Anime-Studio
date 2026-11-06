@@ -1,0 +1,858 @@
+{
+  "pack_id": "braj_earth",
+  "version": "1.2",
+  "status": "draft",
+  "source_status": "draft for owner review; hex values are design targets, not measured from a reference",
+  "source": {
+    "project": "kaliya_mardan",
+    "version": "2.2"
+  },
+  "references": [
+    {
+      "title": "Krishna Subdues the Serpent Kaliya in the Yamuna River: Illustration from a Bhagavata Purana Series (Met)",
+      "url": "https://www.metmuseum.org/art/collection/search/74677",
+      "shows": "Pahari (Guler or Kangra) ink and wash, Bhagavata Purana series. From search snippet only: attribution follower of Nainsukh, ca. 1780.",
+      "status": "UNVERIFIED (fetch returned HTTP 429 twice; facts from the search snippet, not from the page)"
+    },
+    {
+      "title": "Krishna Quells the Serpent Kaliya, from a Bhagavata Purana (Cleveland Museum of Art, 2018.141)",
+      "url": "https://www.clevelandart.org/art/2018.141",
+      "shows": "Mewar, c. 1710, gum tempera and gold on paper. Krishna dances on the many heads in a poisoned pool, serpent-tailed women flank him, onlookers on a yellow shore, figures leaping from a tree and a cliff, the royal residence at lower right.",
+      "status": "opened"
+    },
+    {
+      "title": "Krishna Quells the Serpent Kaliya, from a Bhagavata Purana (Cleveland Museum of Art, 314446)",
+      "url": "https://www.clevelandart.org/art/314446",
+      "shows": "Same object record as 2018.141 (title, c. 1710, Mewar, scene description): used for the flat-colour and pool-composition notes.",
+      "status": "opened"
+    },
+    {
+      "title": "Toei Animation corporate page: production process (planning, production, editing)",
+      "url": "https://corp.toei-anim.co.jp/en/company/animation_production.html",
+      "shows": "Three stages: planning (theme, audience, structure, character and item design, setting, script), production (storyboarding, key animation, colours, in-betweens, backgrounds, CG and effects; about 3,000-4,500 drawings per TV episode), editing (sound, BGM, sequencing). Used for the pipeline order only.",
+      "status": "opened"
+    },
+    {
+      "title": "Narthaki: Abhinaya and bhava (classical Indian acting)",
+      "url": "https://narthaki.com/info/articles/art436.html",
+      "shows": "Abhinaya is the acting that makes an emotion felt; bhava divided into sthayi (eight), vyabhicari (33 transitory states, e.g. nirveda, glani, sanka), sattvika (eight involuntary states, e.g. stambham, swedam, romancam); eight rasas of the Natyashastra. The article does not name the eight sthayi bhavas.",
+      "status": "opened"
+    },
+    {
+      "title": "imp-art.org: bhava article",
+      "url": "https://imp-art.org/article/bhava/",
+      "shows": "Expected to cover the same bhava categories; the fetch returned HTTP 403.",
+      "status": "UNVERIFIED (not read)"
+    },
+    {
+      "title": "Natyashastra eight sthayi bhavas (rati, hasa, shoka, krodha, utsaha, bhaya, jugupsa, vismaya)",
+      "url": "none",
+      "shows": "The names used in acting_library.py come from general knowledge of the Natyashastra list, not from a source opened in this run.",
+      "status": "UNVERIFIED (check against a primary translation before use)"
+    },
+    {
+      "title": "Bhagavata Purana Canto 10, Chapter 16 (ŚB 10.16)",
+      "url": "none (source text as given in stories/kaliya_mardan/SOURCE.md)",
+      "shows": "The canon for every CANON event (EVENT-001 to EVENT-015).",
+      "status": "taken from the owner's SOURCE.md; not re-checked in this run"
+    }
+  ],
+  "colour_script": {
+    "phases": [
+      {
+        "id": "PH-DAWN-PLAY",
+        "role": "play",
+        "key": "#E9C98F",
+        "accent": "#E8B531",
+        "temp": "warm",
+        "luma_mean": [
+          0.45,
+          0.65
+        ],
+        "sat_mean": [
+          0.25,
+          0.45
+        ],
+        "lut": "luts/ph_dawn_play.cube"
+      },
+      {
+        "id": "PH-POISON",
+        "role": "threat",
+        "key": "#1F3A3E",
+        "accent": "#5B3E6B",
+        "temp": "cool",
+        "luma_mean": [
+          0.15,
+          0.35
+        ],
+        "sat_mean": [
+          0.1,
+          0.25
+        ],
+        "lut": "luts/ph_poison.cube"
+      },
+      {
+        "id": "PH-PURIFIED",
+        "role": "release",
+        "key": "#6FA7B0",
+        "accent": "#F6D27A",
+        "temp": "neutral-warm",
+        "luma_mean": [
+          0.45,
+          0.7
+        ],
+        "sat_mean": [
+          0.3,
+          0.5
+        ],
+        "lut": "luts/ph_purified.cube"
+      }
+    ],
+    "hero_contrast": {
+      "pair": [
+        "pitambara_gold",
+        "violet_fume"
+      ],
+      "note": "near-complementary; reserve for hooks and climaxes"
+    },
+    "limits": {
+      "shot_drift_de2000": 6,
+      "cut_jump_de2000": 8,
+      "flicker_luma_step": 0.04
+    }
+  },
+  "acts": {
+    "HOOK": {
+      "role": "hook",
+      "phase": "PH-DAWN-PLAY",
+      "lut": "luts/ph_dawn_play.cube",
+      "luma_mean": [
+        0.45,
+        0.65
+      ],
+      "sat_mean": [
+        0.25,
+        0.45
+      ]
+    },
+    "BUILD": {
+      "role": "build",
+      "phase": "PH-DAWN-PLAY",
+      "lut": "luts/ph_dawn_play.cube",
+      "luma_mean": [
+        0.45,
+        0.65
+      ],
+      "sat_mean": [
+        0.25,
+        0.45
+      ]
+    },
+    "DROP": {
+      "role": "peak",
+      "phase": "PH-POISON",
+      "lut": "luts/ph_poison.cube",
+      "luma_mean": [
+        0.15,
+        0.35
+      ],
+      "sat_mean": [
+        0.1,
+        0.25
+      ]
+    },
+    "OUTRO": {
+      "role": "outro",
+      "phase": "PH-PURIFIED",
+      "lut": "luts/ph_purified.cube",
+      "luma_mean": [
+        0.45,
+        0.7
+      ],
+      "sat_mean": [
+        0.3,
+        0.5
+      ]
+    }
+  },
+  "palettes": {
+    "char_krishna": {
+      "characters": [
+        "CHAR-KRISHNA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#AFCCEA",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#B3D1F7",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shadow": {
+          "hex": "#7990B9",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "pitambara": {
+          "hex": "#E8B531",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "pitambara shade": {
+          "hex": "#B07A1E",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "mark": {
+          "hex": "#33415E",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "armlets": {
+          "hex": "#C7A24B",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_balarama": {
+      "characters": [
+        "CHAR-BALARAMA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#B07A4E",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#7E5234",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#C99A6D",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#2A1F18",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "nilambara": {
+          "hex": "#3B5A8C",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "nilambara shade": {
+          "hex": "#26395C",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_yashoda": {
+      "characters": [
+        "CHAR-YASHODA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#B98256",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#8A5A3A",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#D9A67A",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "saree": {
+          "hex": "#7A3A2B",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "saree border": {
+          "hex": "#D8B26A",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "ring": {
+          "hex": "#C7A24B",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_nanda": {
+      "characters": [
+        "CHAR-NANDA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#B07A4E",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#7E5234",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#C99A6D",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#C8C2B6",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "dhoti": {
+          "hex": "#D9C7A0",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "dhoti border": {
+          "hex": "#B0622A",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_shridama": {
+      "characters": [
+        "CHAR-SHRIDAMA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#A87A4E",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#7A5233",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#C99A6D",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "dhoti": {
+          "hex": "#E8DCC4",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "dhoti border": {
+          "hex": "#A65C2A",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_madhumangal": {
+      "characters": [
+        "CHAR-MADHUMANGAL"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#A87A4E",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#7A5233",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#C99A6D",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "dhoti": {
+          "hex": "#EDE6D6",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "gamcha": {
+          "hex": "#8A3B2E",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_kaliya": {
+      "characters": [
+        "CHAR-KALIYA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin flat": {
+          "hex": "#1B1A22",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin edges": {
+          "hex": "#3A3640",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin hoods": {
+          "hex": "#4B3A3F",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin veins": {
+          "hex": "#6F8F3A",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin violet": {
+          "hex": "#5B3E6B",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_nagapatni": {
+      "characters": [
+        "CHAR-NAGAPATNI"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#6B8F88",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin tone 2": {
+          "hex": "#B98256",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "necklaces": {
+          "hex": "#3E6E6A",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "necklaces accent": {
+          "hex": "#C7A24B",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_naga_child": {
+      "characters": [
+        "CHAR-NAGA-CHILD"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#6B8F88",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin tone 2": {
+          "hex": "#B98256",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "band": {
+          "hex": "#C7A24B",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_garuda": {
+      "characters": [
+        "CHAR-GARUDA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin feathers": {
+          "hex": "#B9542E",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin edges": {
+          "hex": "#D9A441",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin torso": {
+          "hex": "#B98256",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "char_gopi": {
+      "characters": [
+        "CHAR-GOPI"
+      ],
+      "time_lock": null,
+      "colors": {
+        "skin base": {
+          "hex": "#B98256",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin shade": {
+          "hex": "#8A5A3A",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skin light": {
+          "hex": "#D9A67A",
+          "role": "skin",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "hair base": {
+          "hex": "#1C1A1E",
+          "role": "hair",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skirt": {
+          "hex": "#A3322E",
+          "role": "cloth",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "skirt accent": {
+          "hex": "#C99A3A",
+          "role": "ornament",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_kadamba_bank": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "haze": {
+          "hex": "#E9C98F",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "green": {
+          "hex": "#34452B",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "river": {
+          "hex": "#2F6B73",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "bank": {
+          "hex": "#A9743F",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_kaliya_dah_poisoned": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "violet": {
+          "hex": "#5B3E6B",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "green": {
+          "hex": "#6E7F4A",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_kaliya_dah_purified": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "light": {
+          "hex": "#F6D27A",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "blades": {
+          "hex": "#A6A04E",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "sky": {
+          "hex": "#E9C98F",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "trees": {
+          "hex": "#5E7A3A",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "water": {
+          "hex": "#2F6B73",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_cavern": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "dark": {
+          "hex": "#1B1A22",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "silhouettes": {
+          "hex": "#3E6E6A",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "silhouettes 2": {
+          "hex": "#C7A24B",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_braj_village": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "warm": {
+          "hex": "#E8B531",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    },
+    "env_vrindavan_forest": {
+      "characters": [],
+      "time_lock": null,
+      "colors": {
+        "haze": {
+          "hex": "#E9C98F",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "leaves": {
+          "hex": "#5E7A3A",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        },
+        "green": {
+          "hex": "#34452B",
+          "role": "environment",
+          "usage_pct": 0,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "accent_max_per_episode": 1
+    }
+  },
+  "frame_law": {
+    "min_dL_focal_vs_bg": null,
+    "max_neon_hues_per_shot": 0,
+    "pure_white_area_cap_frac": 0.08
+  },
+  "impact": {
+    "allowed_types": [],
+    "type_max_frames": {}
+  },
+  "typography": {
+    "display": null,
+    "sacred": null,
+    "subtitle_latin": "Inter",
+    "subtitle_devanagari": "Noto Sans Devanagari",
+    "min_px_at_1080w": 22,
+    "font_dir": "styles/fonts",
+    "lockup": {
+      "leader": "devanagari",
+      "latin_size_frac": 0.4,
+      "latin_opacity": 0.7,
+      "gap_px_1080": 16
+    }
+  },
+  "environments": [],
+  "prompt_forbidden_words": [
+    "neon",
+    "glow aura",
+    "halo"
+  ],
+  "guardrails": [
+    "No invented supernatural effects: no lightning beams, no energy aura, no magic circles",
+    "No glowing neon venom; poison is dark fume and dead colour",
+    "No haloes drawn by default",
+    "No exact counts of hoods, gopis or serpents shown as a crowd of many; give a visible number and suggest the rest by depth and shadow",
+    "Kaliya is a serpent, never a dragon or humanoid monster",
+    "avoid white-dominant frames on joyful beats (white = mourning in Hindu custom)"
+  ],
+  "sound_sync": {
+    "enabled": false
+  }
+}
