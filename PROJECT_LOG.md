@@ -2,7 +2,7 @@
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
 - State 04:16: round-2 review (Super VL + Dots) fixes done by Haiku W1-W4 (director, h3 core, gate/controller, converter/author). Suites: director 634, h3 537, ui 223, flow 116; secret scan clean. Branch v4-architecture-2026-11-07 (last push df2a21e; round-2 fixes NOT pushed yet).
-- Pending: round-2 Super VL batches r6-r8 (UI) -> W5 Haiku fixes -> ROUND 3 review of all fixed files (blot rule 5) -> push. Dots round 2 still slow: check later, do not wait.
+- Pending (usage limit hit at 11-07 04:16): W5 UI fixes from Super VL r6-r8, Dots round-2 leftovers (see last LIVE LOG line), then ROUND 3 review, then push. No agents running.
 - Owner rules: Haiku subagents do the work; reviewers Super VL + Dots (act on Super VL first); no Colab calls; no render; stories/captions/colour audit set aside (checklist 9, 10).
 - Resume: read blot.md, this NOW block, last 30 LIVE LOG lines, CHECKLIST_ARCHITECTURE_2026-11-07.md (section 11 = review rounds), HANDOFF section 0 + 13/13b.
 - Not built: Step 9 runner, Gate D assembly runner, live author run, any render; ElevenLabs/live model calls need owner go.
@@ -285,3 +285,4 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 04:14 | supervl | REVIEW-DONE | batch r7_ui_js | 399 chars
 11-07 04:14 | W4 | AGENT-DONE | h3/v4_to_h3,h3_author,voice_manifest | 6 fixed (authored non-dict, check wrapped, cli, lattice keys, location dup, story_gate_checks copied); h3 537 pass
 11-07 04:16 | me | EDIT | PROJECT_LOG.md NOW block,CHECKLIST | owner: limit reaching, log updated; NOW block rewritten with full resume state
+11-07 04:16 | me | DECISION | usage limit reached | STOPPED. Pending for next session (in order): (1) W5 Haiku fix UI round-2: server.py record_spend only after _start succeeds; read_pack episode sort TypeError (key str); pipeline.py total_seconds only sec>0; pipeline.js stale pack on Save story (pipeline.js:723), overlapping polls/stale loadDetail; REJECTED r6 #1 (_verify_stop stays fail-safe, spend must be verified); wait for Super VL r8 (app.js/index.html/css) in research/ROUND2_REVIEW_SUPERVL_2026-11-07.md. (2) Dots round-2 leftovers: simple_language.py:41 regex range check, run_registry detect_language digits, lint_story malformed compiled/timing_and_lattice/episode_plan non-dict (schema_and_linter.py), compile_episode second-pass ValueError, router reference lists. (3) ROUND 3 review (Super VL+Dots, free) of all fixed files, then push. Suites at stop: director 634, h3 537, ui 223, flow 116. Last push 1741452.
