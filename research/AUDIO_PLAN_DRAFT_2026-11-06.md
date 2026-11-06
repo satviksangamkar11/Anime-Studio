@@ -1,0 +1,15 @@
+# Audio plan DRAFT (2026-11-06), for review before freezing
+
+Owner constraints: no paid audio tools (no ElevenLabs); no separate audio test render while we are rendering; the clips must have no vocals (dialogue is acceptable because the owner has tools to remove vocals), sound effects only, and the sound must be CONSISTENT across clips; background score: keep only if it can be made consistent, otherwise remove (the owner supplies the background music separately).
+Facts: each clip is generated independently by MiniMax H3 (video + audio together, prompt sections `overall_soundscape` and `non_diegetic_music`), 5.17 s at 24 fps; a reel is 5 hard-cut clips joined by FFmpeg with 5 ms fades at each cut; per-clip audio is trimmed to the same frames as the picture.
+
+## Proposed plan
+1. Prompts: `overall_soundscape` = concrete sound effects of that shot only (steps, cloth, wind, water, splashes, impacts), one sentence; `non_diegetic_music` = "N/A" in EVERY shot. A dialogue line is allowed when the story has one; if the model speaks it we keep or strip it later.
+2. Consistency of effects: every location has ONE fixed "sound bed" phrase (for example the riverbank: gentle river flow, light wind in leaves) stored once in the registry and repeated word for word at the start of each shot's soundscape in that location; per-shot effects are added after it.
+3. Music: the generated score is NOT kept. Reason: independently generated clips cannot share one score (different key, tempo and instruments at each cut). The owner lays the background music over the whole reel in post.
+4. Post chain per reel: (a) join clips with the existing 5 ms fades; (b) loudness-match each clip's audio before the join to the same level (target about -16 LUFS integrated, true peak -1.5 dBTP) so volume does not jump at cuts; (c) the owner's vocal-removal tool on the joined reel if any vocals appeared; (d) the owner adds the background music.
+5. No separate audio test render and no extra GPU run for sound: the audio of the first real clips is checked by listening as part of the normal clip QA (free). If music or vocals leak in, change the shared soundscape template once for all shots, not per shot.
+6. Cost: no ElevenLabs, no SFX library; audio costs nothing beyond the video render.
+
+## Questions for the reviewer
+Q1 Is excluding the generated score the right call, or is there a reliable way to get a consistent score across independently generated clips? Q2 Will a prompt that says music N/A really give clips without music, and what is the best wording? Q3 Is the per-location fixed sound-bed phrase a sound way to get consistent effects, and what are its limits? Q4 Is per-clip loudness matching before the join correct, with what filter and settings (FFmpeg loudnorm single pass vs two pass; per clip or per reel), and does it interact badly with the 5 ms fades? Q5 Vocal-removal tools split vocals from "everything else": if music leaks in, can effects be separated from music? What do we do? Q6 Any hole in this plan, any step missing, any risk to the final reel sound? Answer concisely, ranked by importance.

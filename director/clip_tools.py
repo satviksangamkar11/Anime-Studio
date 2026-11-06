@@ -44,6 +44,24 @@ def last_frame(clip, png):
     return png
 
 
+USAGE = "usage: clip_tools.py qa CLIP OUT_DIR | last CLIP NEXT_START.png | (legacy) CLIP NEXT_START.png"
+
+
+def main(argv=None):
+    """G13: explicit subcommands. Any other first word is an error (it used to run the last-frame step by accident).
+    Two arguments with no subcommand keep the old last-frame behaviour."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if len(argv) == 3 and argv[0] == "qa":
+        print(json.dumps(qa(argv[1], argv[2]), indent=1))
+    elif len(argv) == 3 and argv[0] == "last":
+        print(last_frame(argv[1], argv[2]))
+    elif len(argv) == 2:
+        print(last_frame(argv[0], argv[1]))
+    else:
+        print(USAGE, file=sys.stderr)
+        return 2
+    return 0
+
+
 if __name__ == "__main__":
-    cmd, clip, target = sys.argv[1:4]
-    print(json.dumps(qa(clip, target), indent=1) if cmd == "qa" else last_frame(clip, target))
+    sys.exit(main())

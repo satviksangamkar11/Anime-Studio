@@ -1,0 +1,200 @@
+{
+ "SHOT-T0-B-S42": {
+  "model_type": "minimax_h3_singularity_v2_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/pika_h3_flex_turbo_4step_ref2va.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "euler",
+  "num_inference_steps": 4,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "subject_definitions:\n<Subject 1> is Bala Krishna, face in <Picture 3>, full body in <Picture 4>.\n<Picture 1> is the start frame of [Shot 1] at 0.00 seconds.\n<Picture 2> is the end frame of [Shot 1] at 5.17 seconds.\nsummary:\n[keyframe completion + reference generation] 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash\nretention_analysis:\n<Picture 1> (keyframe): fully_preserved - the frame as given.\n<Picture 2> (keyframe): fully_preserved - the frame as given.\n<Subject 1> (appears in [Shot 1]): fully_preserved - face, eyes, age proportions, hair, costume, ornaments, line weight and cel shading. May change: pose, expression, camera framing.\ndetailed_description:\n[Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "I",
+  "audio_prompt_type": "",
+  "seed": 42,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png",
+  "image_refs": [
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_face.png",
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_front.png"
+  ],
+  "image_refs_relative_size": 100,
+  "remove_background_images_ref": 0
+ },
+ "SHOT-T0-B-S123": {
+  "model_type": "minimax_h3_singularity_v2_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/pika_h3_flex_turbo_4step_ref2va.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "euler",
+  "num_inference_steps": 4,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "subject_definitions:\n<Subject 1> is Bala Krishna, face in <Picture 3>, full body in <Picture 4>.\n<Picture 1> is the start frame of [Shot 1] at 0.00 seconds.\n<Picture 2> is the end frame of [Shot 1] at 5.17 seconds.\nsummary:\n[keyframe completion + reference generation] 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash\nretention_analysis:\n<Picture 1> (keyframe): fully_preserved - the frame as given.\n<Picture 2> (keyframe): fully_preserved - the frame as given.\n<Subject 1> (appears in [Shot 1]): fully_preserved - face, eyes, age proportions, hair, costume, ornaments, line weight and cel shading. May change: pose, expression, camera framing.\ndetailed_description:\n[Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "I",
+  "audio_prompt_type": "",
+  "seed": 123,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png",
+  "image_refs": [
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_face.png",
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_front.png"
+  ],
+  "image_refs_relative_size": 100,
+  "remove_background_images_ref": 0
+ },
+ "SHOT-T0-C-S42": {
+  "model_type": "minimax_h3_singularity_v2_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/pika_h3_flex_turbo_8step_hd_ref2va.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "euler",
+  "num_inference_steps": 8,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "subject_definitions:\n<Subject 1> is Bala Krishna, face in <Picture 3>, full body in <Picture 4>.\n<Picture 1> is the start frame of [Shot 1] at 0.00 seconds.\n<Picture 2> is the end frame of [Shot 1] at 5.17 seconds.\nsummary:\n[keyframe completion + reference generation] 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash\nretention_analysis:\n<Picture 1> (keyframe): fully_preserved - the frame as given.\n<Picture 2> (keyframe): fully_preserved - the frame as given.\n<Subject 1> (appears in [Shot 1]): fully_preserved - face, eyes, age proportions, hair, costume, ornaments, line weight and cel shading. May change: pose, expression, camera framing.\ndetailed_description:\n[Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "I",
+  "audio_prompt_type": "",
+  "seed": 42,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png",
+  "image_refs": [
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_face.png",
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_front.png"
+  ],
+  "image_refs_relative_size": 100,
+  "remove_background_images_ref": 0
+ },
+ "SHOT-T0-C-S123": {
+  "model_type": "minimax_h3_singularity_v2_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/pika_h3_flex_turbo_8step_hd_ref2va.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "euler",
+  "num_inference_steps": 8,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "subject_definitions:\n<Subject 1> is Bala Krishna, face in <Picture 3>, full body in <Picture 4>.\n<Picture 1> is the start frame of [Shot 1] at 0.00 seconds.\n<Picture 2> is the end frame of [Shot 1] at 5.17 seconds.\nsummary:\n[keyframe completion + reference generation] 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash\nretention_analysis:\n<Picture 1> (keyframe): fully_preserved - the frame as given.\n<Picture 2> (keyframe): fully_preserved - the frame as given.\n<Subject 1> (appears in [Shot 1]): fully_preserved - face, eyes, age proportions, hair, costume, ornaments, line weight and cel shading. May change: pose, expression, camera framing.\ndetailed_description:\n[Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "I",
+  "audio_prompt_type": "",
+  "seed": 123,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png",
+  "image_refs": [
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_face.png",
+   "/content/Wan2GP/inputs/CHAR-KRISHNA__ref_front.png"
+  ],
+  "image_refs_relative_size": 100,
+  "remove_background_images_ref": 0
+ },
+ "SHOT-T0-D-S42": {
+  "model_type": "minimax_h3_fl2va_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/DeepBeepMeep/MiniMax-H3/resolve/main/loras/pika_h3_flex_fl2va_6step_v1_bf16.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "pika_renoise",
+  "num_inference_steps": 6,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\nFor the target video, at 5.17 seconds into the target video, <Picture 2> (from [Shot 1]) is fully referenced.\nintegrated_multimodal_description: [Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "",
+  "audio_prompt_type": "",
+  "seed": 42,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png"
+ },
+ "SHOT-T0-D-S123": {
+  "model_type": "minimax_h3_fl2va_pruned",
+  "settings_version": 2.82,
+  "activated_loras": [
+   "https://huggingface.co/DeepBeepMeep/MiniMax-H3/resolve/main/loras/pika_h3_flex_fl2va_6step_v1_bf16.safetensors"
+  ],
+  "loras_multipliers": "1.0",
+  "sample_solver": "pika_renoise",
+  "num_inference_steps": 6,
+  "guidance_phases": 1,
+  "guidance_scale": 1,
+  "flow_shift": 12,
+  "custom_sigmas": "",
+  "skip_steps_cache_type": "",
+  "custom_settings": {
+   "audio_refinement": "none"
+  },
+  "prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\nFor the target video, at 5.17 seconds into the target video, <Picture 2> (from [Shot 1]) is fully referenced.\nintegrated_multimodal_description: [Shot 1] A 5.17-second single take. Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds. Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below. 0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind. Camera: locked off, wide side view, no camera move; the arc must read against a still frame. Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text. Bala Krishna (about 7-8 years old). 4.5 heads. Silhouette: bouncy black curls with one peacock feather and a pearl string; tribhanga (triple-bend) stance when posed, hip and head counter-bent; tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it. Skin: soft cloud-blue skin, lighter than the old indigo-grey. Costume: golden pitambara (dhoti) tied at the waist #E8B531; black Kali Kamli (blanket) tied as a wrestler's sash #1C1A1E. Hair: #1C1A1E. Locked, never: generic anime protagonist hero with spiky cyan hair and a blue body; saturated electric blue skin or a... Kadamba bank with the lone surviving tree. a black ash-sand bank on the Yamuna; the green grass line stops where the ash begins; one kadamba tree leans over the water; a Braj village is far behind on the upper right. Light: dawn: sky haze #E9C98F, low sun from screen left, cool green shade under the leaves. Layers: fg kadamba leaves and the trunk, out of focus, painted dark green #34452B; mid figures on the sand edge, cel-shaded; bg flat colour bands: river #2F6B73, far bank #A9743F, aerial perspective haze #E9C98F. Kali Kamli: black woollen blanket tied as a wrestler's sash by Krishna before the leap (EVENT-006). Colour #1C1A1E. Never: a modern belt or cloth sash with a logo. Flute (vamshi): bamboo flute, tucked in Krishna's black sash in every scene (leap and underwater included); in his hand only when a shot says so. Colour #A8763E. Never: a modern silver flute; the flute left out of a scene. Style: Braj daylight earth tones first. Colour comes from the scene's light source, never from a constant glow or neon edge. variable weight: thicker on the silhouette and under the chin, thinner in folds; no outline on background plates no gradient airbrush on figures; gradients allowed only in painted backgrounds\noverall_soundscape: dawn wind, leaves, a branch creak and rebound\nnon_diegetic_music: N/A",
+  "image_mode": 0,
+  "video_length": 124,
+  "sliding_window_size": 362,
+  "resolution": "768x1344",
+  "image_prompt_type": "SE",
+  "video_prompt_type": "",
+  "audio_prompt_type": "",
+  "seed": 123,
+  "image_start": "/content/Wan2GP/inputs/LEAP-03A__candidate_v01.png",
+  "image_end": "/content/Wan2GP/inputs/LEAP-03B__candidate_v01.png"
+ }
+}

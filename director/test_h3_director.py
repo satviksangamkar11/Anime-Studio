@@ -25,6 +25,14 @@ def test_fl2va_shot_matches_the_proven_preset():
     assert "integrated_multimodal_description: [Shot 1] A 5.17-second" in s["prompt"]
 
 
+def test_resolution_is_per_shot_and_checked():
+    assert settings_for(dict(FL, resolution="768x1344"))["resolution"] == "768x1344"
+    assert settings_for(dict(FL, aspect="16:9", resolution="960x544"))["resolution"] == "960x544"
+    for bad in ("1344x768", "500x900"):   # wrong orientation, unknown size
+        with pytest.raises(ValueError, match="resolution"):
+            settings_for(dict(FL, resolution=bad))
+
+
 def test_ref2va_needs_refs_and_names_subjects():
     shot = dict(FL, mode="ref2va", end=None, refs=["krishna_sheet.png"], subjects=["<Subject 1> is Bala Krishna in <Picture 1>."])
     s = settings_for(shot)

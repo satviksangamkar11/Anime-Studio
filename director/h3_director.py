@@ -8,11 +8,14 @@ Shot list: JSON list of shots, each
   render_frames optional integer 107 + 17k (max 362); overrides seconds
   edit_frames   optional integer 1..render_frames (the part kept for the edit)
   aspect        "9:16" (default) or "16:9"
+  resolution    optional, one of RES_OPTIONS for the aspect (9:16: 480x832 default, 544x960, 704x1280, 768x1344)
   start, end    optional image paths (PNG, relative, [A-Za-z0-9_./-]); end is a target, not a lock
   refs          ref2va only: identity sheets, in order; subjects write them as <Picture 1>, <Picture 2>, ... and the director
                 renumbers them after the start and end frames (start + end + first ref = <Picture 3>)
   subjects      ref2va only: ["<Subject 1> is Bala Krishna in <Picture 1>", ...]
-  sampler       optional, only pika_renoise (the Pika LoRA's sampler; the default)
+  sampler       optional, only pika_renoise (the Pika LoRA's sampler; the default); pika6 route only
+  route         optional: "pika6" (default, the Pika presets above), "sing4" or "sing8" (Singularity v2 + Pika-Labs Turbo LoRA,
+                4 or 8 steps; Ref2VA only, no sampler field; the route sets the model, LoRA, sampler, steps and CFG)
   style, world  one line each (describe the look; never name a film or show)
   action        what happens, with time codes ("0-1.5s ...; 1.5-4s ...")
   camera        one camera move
@@ -31,13 +34,22 @@ import style_bible
 
 FPS, FRAMES_MIN, FRAMES_STEP, FRAMES_MAX = 24, 107, 17, 362
 LEGAL = range(FRAMES_MIN, FRAMES_MAX + 1, FRAMES_STEP)
-RES = {"9:16": "480x832", "16:9": "832x480"}
+RES = {"9:16": "480x832", "16:9": "832x480"}   # default per aspect (the size proven on the Kaggle T4)
+# optional per-shot "resolution": bigger sizes keep a small face recognisable; landscape is the same list flipped
+RES_OPTIONS = {"9:16": ("480x832", "544x960", "704x1280", "768x1344")}   # H3 sizes are multiples of 32 (vae_block_size)
+RES_OPTIONS["16:9"] = tuple("x".join(r.split("x")[::-1]) for r in RES_OPTIONS["9:16"])
 PRESET = {   # Wan2GP's own "Pika H3 Flex ... Pruned 6 Steps" presets (shared/deepy/settings), commit bd1ff59
     "fl2va": ("minimax_h3_fl2va_pruned", "pika_h3_flex_fl2va_6step_v1_bf16.safetensors", ""),
     "ref2va": ("minimax_h3_ref2va_pruned", "pika_h3_flex_ref2va_6step_v1_bf16.safetensors", "I"),
 }
 PIKA_MODELS = (PRESET["fl2va"][0], PRESET["ref2va"][0])
 LORA_URL = "https://huggingface.co/DeepBeepMeep/MiniMax-H3/resolve/main/loras/"
+# T0 arms B and C (DECISION_best_workflow_2026-11-05.md, RETHINK): Singularity v2 pruned (Wan2GP defaults/minimax_h3_singularity_v2_pruned.json,
+# architecture minimax_h3_ref2va_pruned) with a Pika-Labs Turbo LoRA: ComfyUI-format standard LoRA, euler, simple schedule, CFG 1, shift 12
+ROUTES = ("pika6", "sing4", "sing8")
+SING_MODEL = "minimax_h3_singularity_v2_pruned"
+TURBO_URL = "https://huggingface.co/Pika-Labs/Pika-H3-Flex-Turbo-LoRA/resolve/main/"
+TURBO = {"sing4": ("pika_h3_flex_turbo_4step_ref2va.safetensors", 4), "sing8": ("pika_h3_flex_turbo_8step_hd_ref2va.safetensors", 8)}
 KEEP = "Keep every face, outfit, prop and background exactly as in the pictures; no new people; no style change; no on-screen text."
 DEFAULT_STYLE = "Modern Japanese anime cel look with 2.5D layered depth and painted backgrounds."
 # handler prompt_enhancer.py: FL2VA_DEEPY_PROMPT_INFOS line 30 ("For supplied frame anchors, prepend: `For the target video, at
@@ -52,7 +64,7 @@ ALIGN_FINAL = "For the target video, at {t:.2f} seconds into the target video, <
 RETAIN = ("face, eyes, age proportions, hair, costume, ornaments, line weight and cel shading. "
           "May change: pose, expression, camera framing.")
 SHOT_ID = re.compile(r"SHOT-\d{2,3}[A-Z]?")
-T0_ID = re.compile(r"SHOT-T0-(FL|REF)-S\d+")   # the four T0 variants of one shot (t0_variants.py)
+T0_ID = re.compile(r"SHOT-T0-(FL|REF|[ABCD])-S\d+")   # T0 variants of one shot (t0_variants.py): FL/REF, or arms A-D
 SUBJECT = re.compile(r"<Subject (\d+)> is .+? in <Picture (\d+)>\.?")   # group 1: the subject number, group 2: its picture
 PATH = re.compile(r"[A-Za-z0-9_./-]+")
 IMAGE_EXTS = (".png", ".jpg", ".jpeg")   # image fields only; no video or audio fields exist yet
@@ -60,7 +72,7 @@ IMAGE_EXTS = (".png", ".jpg", ".jpeg")   # image fields only; no video or audio 
 
 def check_shot_id(sid):
     if not isinstance(sid, str) or not (SHOT_ID.fullmatch(sid) or T0_ID.fullmatch(sid)):
-        raise ValueError(f"shot id {sid!r} must match SHOT-NN, SHOT-NNN, SHOT-NNA or SHOT-T0-(FL|REF)-S<seed>")
+        raise ValueError(f"shot id {sid!r} must match SHOT-NN, SHOT-NNN, SHOT-NNA or SHOT-T0-(FL|REF|A|B|C|D)-S<seed>")
     return sid
 
 
@@ -75,7 +87,8 @@ def check_unique_ids(shots):
 
 
 def subject_problems(refs, subjects):
-    """Each subject reads '<Subject k> is ... in <Picture N>' with exactly one <Picture N>, N among the refs (1..len(refs));
+    """Each subject reads '<Subject k> is ... in <Picture N>' and names one or more <Picture N> (e.g. a face crop and a full-body
+    crop of the same character), each N among the refs (1..len(refs));
     the subject indices run 1..n in order, each once."""
     out, indices = [], []
     for s in subjects:
@@ -85,8 +98,8 @@ def subject_problems(refs, subjects):
             continue
         indices.append(int(m.group(1)))
         pictures = re.findall(r"<Picture (\d+)>", s)
-        if len(pictures) != 1:
-            out.append(f"subject {s!r} must name exactly one <Picture N>")
+        if len(pictures) != len(set(pictures)):
+            out.append(f"subject {s!r} names a <Picture N> twice")
         for n in pictures:
             if not 1 <= int(n) <= len(refs):
                 out.append(f"subject {s!r} names <Picture {n}>, but there are {len(refs)} refs (<Picture 1> to <Picture {len(refs)}>)")
@@ -229,12 +242,34 @@ def compile_direction(shot):
     return shot
 
 
+def check_turbo(s, turbo):
+    """Singularity v2 with a Pika-Labs Turbo LoRA (sing4, sing8): the Turbo LoRA is the only adapter (never with the official Pika
+    adapter), with euler, the file's own step count, multiplier 1.0, CFG 1, one phase, flow shift 12, empty custom sigmas, no skipping."""
+    if s["model_type"] != SING_MODEL:
+        raise ValueError("the Pika Turbo LoRA runs on Singularity v2 only (routes sing4 and sing8)")
+    if not turbo:
+        raise ValueError("Singularity v2 runs only with its Pika Turbo LoRA (routes sing4 and sing8)")
+    if len(s["activated_loras"]) != 1:
+        raise ValueError("the Pika Turbo LoRA must be the only adapter: never with the official Pika adapter or another LoRA")
+    steps = {TURBO_URL + lora: n for lora, n in TURBO.values()}[turbo[0]]
+    want = ("euler", steps, "1.0", 1, 1, 12, "", "")
+    got = (s["sample_solver"], s["num_inference_steps"], s["loras_multipliers"], s["guidance_scale"], s["guidance_phases"],
+           s["flow_shift"], s["custom_sigmas"], s["skip_steps_cache_type"])
+    if got != want:
+        raise ValueError(f"Pika Turbo {steps}-step LoRA requires euler, {steps} steps, multiplier 1.0, CFG 1, one phase, flow shift 12, "
+                         "empty custom sigmas and no skipping")
+
+
 def check_combo(s):
     """The handler's Pika rule (minimax_h3_handler.py lines 1007-1014): the pika_renoise sampler and the Pika adapter come together,
-    on an FL2VA or Ref2VA model with that family's own adapter, 6 steps, flow shift 12, one phase, empty custom sigmas, no skipping."""
-    known = {LORA_URL + lora for _, lora, _ in PRESET.values()}
+    on an FL2VA or Ref2VA model with that family's own adapter, 6 steps, flow shift 12, one phase, empty custom sigmas, no skipping.
+    Singularity v2 (routes sing4, sing8) runs only with its Pika Turbo LoRA: check_turbo."""
+    known = {LORA_URL + lora for _, lora, _ in PRESET.values()} | {TURBO_URL + lora for lora, _ in TURBO.values()}
     if any(lora not in known for lora in s["activated_loras"]):
-        raise ValueError("activated_loras must hold only the adapters this director builds (the Pika preset per mode)")
+        raise ValueError("activated_loras must hold only the adapters this director builds (the Pika preset per mode, or a Turbo LoRA)")
+    turbo = [lora for lora in s["activated_loras"] if lora.startswith(TURBO_URL)]
+    if turbo or s["model_type"] == SING_MODEL:
+        return check_turbo(s, turbo)
     pika_loras = [lora for lora in s["activated_loras"] if "pika_h3_flex" in lora]
     pika_sampler = s["sample_solver"] == "pika_renoise"
     if not pika_sampler and not pika_loras:
@@ -252,6 +287,26 @@ def check_combo(s):
         raise ValueError("Pika H3 Flex requires Steps Skipping off")
 
 
+def route_preset(shot, route):
+    """(model_type, activated_loras, sample_solver, steps, video_prompt_type) of one shot. pika6 is the proven Pika preset of its mode;
+    sing4 and sing8 are Singularity v2 Ref2VA with their Pika-Labs Turbo LoRA (euler, that file's own step count)."""
+    if route == "pika6":
+        model, lora, video_prompt_type = PRESET[shot["mode"]]
+        return model, [LORA_URL + lora], shot.get("sampler", "pika_renoise"), 6, video_prompt_type
+    lora, steps = TURBO[route]
+    return SING_MODEL, [TURBO_URL + lora], "euler", steps, PRESET["ref2va"][2]
+
+
+def resolution_of(shot):
+    aspect = shot.get("aspect", "9:16")
+    if aspect not in RES:
+        raise ValueError(f"{shot.get('id')}: aspect must be 9:16 or 16:9")
+    res = shot.get("resolution", RES[aspect])
+    if res not in RES_OPTIONS[aspect]:
+        raise ValueError(f"{shot.get('id')}: resolution {res} is not one of {', '.join(RES_OPTIONS[aspect])} for {aspect}")
+    return res
+
+
 def settings_for(shot, bible=None, to_path=None, require_bible=False):
     """One Wan2GP settings dict. to_path maps a relative image path to the path the runner will use (default: unchanged).
     require_bible: refuse to build without a style bible (preflight and T0 builds)."""
@@ -265,6 +320,14 @@ def settings_for(shot, bible=None, to_path=None, require_bible=False):
             raise ValueError("; ".join(problems))
     if shot["mode"] not in PRESET:
         raise ValueError(f"{sid}: mode must be fl2va or ref2va")
+    route = shot.get("route", "pika6")
+    if route not in ROUTES:
+        raise ValueError(f"{sid}: route must be one of {', '.join(ROUTES)}")
+    if route != "pika6":
+        if shot["mode"] != "ref2va":
+            raise ValueError(f"{sid}: route {route} is Singularity v2 on Ref2VA: use mode ref2va")
+        if "sampler" in shot:
+            raise ValueError(f"{sid}: route {route} sets its own sampler (euler): remove sampler")
     refs = shot.get("refs") or []
     if shot["mode"] == "ref2va" and not (refs and shot.get("subjects")):
         raise ValueError(f"{sid}: ref2va needs refs and subjects")
@@ -278,14 +341,14 @@ def settings_for(shot, bible=None, to_path=None, require_bible=False):
     for p in images:
         safe_path(p)
     frames = frames_for_shot(shot)
-    model, lora, video_prompt_type = PRESET[shot["mode"]]
+    model, loras, solver, steps, video_prompt_type = route_preset(shot, route)
     to = to_path or (lambda p: p)
     image_prompt_type = ("S" if start_of(shot) else "") + ("E" if end_of(shot) else "")
-    s = {"model_type": model, "settings_version": 2.73, "activated_loras": [LORA_URL + lora], "loras_multipliers": "1.0",
-         "sample_solver": shot.get("sampler", "pika_renoise"), "num_inference_steps": 6, "guidance_phases": 1, "guidance_scale": 1,
+    s = {"model_type": model, "settings_version": 2.82, "activated_loras": loras, "loras_multipliers": "1.0",
+         "sample_solver": solver, "num_inference_steps": steps, "guidance_phases": 1, "guidance_scale": 1,
          "flow_shift": 12, "custom_sigmas": "", "skip_steps_cache_type": "", "custom_settings": {"audio_refinement": "none"},
          "prompt": prompt_for(shot, frames, bible), "image_mode": 0, "video_length": frames, "sliding_window_size": FRAMES_MAX,
-         "resolution": RES[shot.get("aspect", "9:16")], "image_prompt_type": image_prompt_type, "video_prompt_type": video_prompt_type,
+         "resolution": resolution_of(shot), "image_prompt_type": image_prompt_type, "video_prompt_type": video_prompt_type,
          "audio_prompt_type": "", "seed": shot.get("seed", 42)}
     if start_of(shot): s["image_start"] = to(start_of(shot))
     if end_of(shot): s["image_end"] = to(end_of(shot))

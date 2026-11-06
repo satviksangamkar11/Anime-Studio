@@ -23,7 +23,7 @@ Mode: you have NO web access in this run. Say "Locked Offline Methodology Mode" 
 - Serialized shorts end on an earned cliffhanger + one closing question; the last episode resolves fully.
 
 ## HARD LIMITS OF OUR VIDEO MODEL (MiniMax H3, write for these)
-- One clip = 107 + 17k frames at 24 fps: 4.5, 5.2, 5.9, 6.6 ... up to 15.1 s. Give each shot a `seconds` value; it is rounded up to that grid.
+- One clip = 107 + 17k frames at 24 fps: 4.5, 5.2, 5.9, 6.6 ... up to 15.1 s. Give each shot a `seconds` value; it is rounded to the NEAREST legal count (5.2 s -> 124 frames = 5.17 s); for an exact length, give `render_frames`.
 - One primary character action + one camera move per clip. Time codes inside the action are allowed ("0-1.5s ...; 1.5-4s ...").
 - Fast fights and complex hand actions are its weak spot: split them into short single-impact shots; impact frames, smears, shake and on-2s/3s holds are added in the edit, not asked of the model.
 - It cannot count: never ask for exact numbers of heads, hoods, arms or crowds; give a visible number (for example a fan of 7-9 hoods) and suggest the rest by depth and shadow.

@@ -50,8 +50,16 @@ def test_t0_base_must_have_both_keyframes_and_one_identity_ref():
     with pytest.raises(ValueError):
         t0_variants.expand(dict(T0_BASE, end=None), BIBLE)
     with pytest.raises(ValueError):
-        t0_variants.expand(dict(T0_BASE, refs=["refs/a.png", "refs/b.png"], subjects=[
-            "<Subject 1> is Bala Krishna in <Picture 1>.", "<Subject 2> is Bala Krishna in <Picture 2>."]), BIBLE)
+        t0_variants.expand(dict(T0_BASE, refs=["refs/a.png", "refs/b.png", "refs/c.png"], subjects=[
+            "<Subject 1> is Bala Krishna in <Picture 1>."]), BIBLE)   # at most 2 refs (face + full body)
+    two = t0_variants.expand(dict(T0_BASE, refs=["refs/face.png", "refs/front.png"], subjects=[
+        "<Subject 1> is Bala Krishna, face in <Picture 1>, full body in <Picture 2>."]), BIBLE)
+    assert all(v["refs"] == ["refs/face.png", "refs/front.png"] for v in two if v["mode"] == "ref2va")
+
+
+def test_t0_resolution_reaches_every_variant():
+    variants = t0_variants.expand(dict(T0_BASE, resolution="768x1344"), BIBLE)
+    assert {settings_for(v, BIBLE)["resolution"] for v in variants} == {"768x1344"}
 
 
 def test_t0_variants_force_the_pika_baseline():
@@ -87,8 +95,11 @@ def test_subjects_are_numbered_in_order_once_each():
         settings_for(dict(REF_SHAPE, refs=["a.png", "b.png"], subjects=[two[1], two[0]]))
     with pytest.raises(ValueError, match="in order"):
         settings_for(dict(REF_SHAPE, refs=["a.png", "b.png"], subjects=[two[0], two[0]]))
-    with pytest.raises(ValueError):
-        settings_for(dict(REF_SHAPE, refs=["a.png", "b.png"], subjects=["<Subject 1> is x with <Picture 2> in <Picture 1>."]))
+    both = "<Subject 1> is Bala Krishna, face in <Picture 1>, full body in <Picture 2>."   # one character, two crops
+    assert settings_for(dict(REF_SHAPE, refs=["a.png", "b.png"], subjects=[both]))["image_refs"] == ["a.png", "b.png"]
+    for bad in ("<Subject 1> is x with <Picture 1> in <Picture 1>.", "<Subject 1> is x with <Picture 3> in <Picture 1>."):
+        with pytest.raises(ValueError):
+            settings_for(dict(REF_SHAPE, refs=["a.png", "b.png"], subjects=[bad]))
 
 
 def test_check_unique_ids_checks_every_id_syntax():

@@ -3,6 +3,12 @@
   --via nvidia      NVIDIA build API (free tier); keys from secrets/nvidia/nvidia_api_key*.txt; --model e.g. nvidia/nemotron-3-ultra-550b-a55b
   --via openrouter  OpenRouter; key from OPENROUTER_KEY_FILE (default loop_p0/secrets/openrouter_paid_key.txt); --model any id.
                     Only models whose price is 0 are sent, unless --allow-paid is given (owner rule: no paid calls).
+  --writer NAME     a shortcut that sets --via and --model (owner order 2026-11-06); it is the DEFAULT when no path is given:
+                    super-vl (default)  openrouter nvidia/nemotron-3.5-super-vl:free
+                    ultra               openrouter nvidia/nemotron-3-ultra-550b-a55b:free
+                    opus                claude, --model opus, effort medium
+Every run is recorded in stories/<slug>/RUNS.jsonl by director/run_registry.py (when the story is stories/<slug>/SOURCE.md);
+a registry error never stops the writer. A NEW run needs a new pack folder: a folder with PACK.md is never written again.
 Single-call mode (default): ONE call with MASTER_PROMPT_v2.1.md as the brief. Writes into out_dir:
   raw_response.json  the answer, saved before anything is parsed (a re-run with it present makes no call)
   PACK.md            the full production pack (raw material for every later step)
@@ -12,8 +18,8 @@ Staged mode (--staged): one call per gate, in order: 1 (markdown), 2 (style bibl
   stages. Each answer is saved as stage_<name>_raw.json before parsing, and an existing file is not sent again (resume).
   Writes PACK.md (all stage texts in order), bible.json and shots.json (all episodes merged).
   --stage-via 2=nvidia,3=claude and --stage-model 3=opus route per stage ("3" covers 3e1, 3e2 ...; "3e2" overrides it).
-Usage: python write_pack.py story.md out_dir --via claude|nvidia|openrouter [--model M] [--effort low|medium|high] [--allow-paid]
-       python write_pack.py story.md out_dir --staged [--via ...] [--model M] [--stage-via 2=nvidia,3=claude] [--stage-model 3=opus]"""
+Usage: python write_pack.py story.md out_dir [--writer super-vl|ultra|opus] [--via claude|nvidia|openrouter] [--model M] [--effort low|medium|high] [--allow-paid]
+       python write_pack.py story.md out_dir --staged [--writer ...] [--via ...] [--model M] [--stage-via 2=nvidia,3=claude] [--stage-model 3=opus]"""
 import argparse
 import json
 import os
@@ -27,6 +33,7 @@ import urllib.request
 from pathlib import Path
 
 from h3_director import settings_for
+import run_registry
 
 HERE = Path(__file__).resolve().parent
 WORK = HERE.parents[1]                                    # D:\aai work
@@ -37,9 +44,17 @@ BIBLE_BLOCK = re.compile(r"```json bible\s*\n(.*?)\s*```", re.DOTALL)
 EPISODES_BLOCK = re.compile(r"```json episodes\s*\n(.*?)\s*```", re.DOTALL)
 UNTAGGED_JSON = re.compile(r"```json[ \t]*\n(.*?)\s*```", re.DOTALL)   # a ```json block with no tag word
 EPISODE_LINE = re.compile(r"^[ \t>#*_-]*(?:Episode|Ep\.?)\s*(\d+)\b", re.IGNORECASE | re.MULTILINE)
+# a markdown table row whose first cell is just the number, "| **3** | title | ..." (seen in a real stage 1 answer, 2026-11-06); used only when no "Episode N" line exists
+EPISODE_ROW = re.compile(r"^\|[ \t*_]*(\d{1,2})[ \t*_]*\|", re.MULTILINE)
 VIAS = ("claude", "nvidia", "openrouter")
 TIMEOUT_S = 3600
 DEFAULT_MODEL = {"claude": "opus", "nvidia": "nvidia/nemotron-3-ultra-550b-a55b", "openrouter": None}
+WRITERS = {   # --writer NAME: the path and the model (the UI's server.py WRITER_ROUTE mirrors the two OpenRouter rows; a test checks it)
+    "super-vl": {"via": "openrouter", "model": "nvidia/nemotron-3.5-super-vl:free", "effort": None},
+    "ultra": {"via": "openrouter", "model": "nvidia/nemotron-3-ultra-550b-a55b:free", "effort": None},
+    "opus": {"via": "claude", "model": "opus", "effort": "medium"},
+}
+DEFAULT_WRITER = "super-vl"
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 NVIDIA_KEYS = Path(os.environ.get("NVIDIA_KEYS_DIR") or WORK / "secrets" / "nvidia")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -148,11 +163,46 @@ def openrouter_is_free(model, catalog=None):
 
 
 def call_openrouter(prompt, model, allow_paid=False, content=None):
+    """Streamed (SSE) call, max_tokens 65536: the same body as NVIDIA. A cut-off answer (finish_reason other than stop) is
+    an error in the envelope; an HTTP refusal (e.g. a max_tokens the model does not allow) is raised with OpenRouter's reason."""
     if not allow_paid and not openrouter_is_free(model):
         raise ValueError(f"{model} is a paid OpenRouter model: refused (no paid calls; pass --allow-paid only with the owner's OK)")
     key = OPENROUTER_KEY.read_text(encoding="utf-8").strip()
-    text, finish = stream_chat(OPENROUTER_URL, key, body_for(model, prompt, content=content), {"X-Title": "anime-studio-writer"})
+    try:
+        text, finish = stream_chat(OPENROUTER_URL, key, body_for(model, prompt, content=content), {"X-Title": "anime-studio-writer"})
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read(400).decode("utf-8", "replace")
+        except Exception:
+            detail = ""
+        raise RuntimeError(f"OpenRouter refused the call for {model}: HTTP {exc.code} {run_registry.redact(detail)}") from None
     return envelope(text, finish, "openrouter", model)
+
+
+def resolve_route(writer=None, via=None, model=None, effort=None):
+    """(writer, via, model, effort) from the options. No option at all = the default writer. --writer excludes --via and --model."""
+    if writer is None and via is None and model is None:
+        writer = DEFAULT_WRITER
+    if writer is not None:
+        if via is not None or model is not None:
+            raise ValueError("--writer sets the path and the model: do not pass --via or --model with it")
+        if writer not in WRITERS:
+            raise ValueError(f"unknown writer {writer!r}: use one of {', '.join(WRITERS)}")
+        route = WRITERS[writer]
+        return writer, route["via"], route["model"], effort or route["effort"] or "medium"
+    if via is None:
+        raise ValueError("--model needs --via (or use --writer)")
+    check_via(via)
+    model = model or DEFAULT_MODEL[via]
+    if not model:
+        raise ValueError("--model is required with --via openrouter")
+    return None, via, model, effort or "medium"
+
+
+def refuse_finished(out):
+    """A new model call never writes into a finished pack folder (PACK.md exists): the caller needs a new folder."""
+    if (out / "PACK.md").exists():
+        raise ValueError(f"{out.name} is already finished (PACK.md exists): a new call needs a new pack folder")
 
 
 def call_path(prompt, via, model, effort, allow_paid):
@@ -251,7 +301,7 @@ def episodes_from(text):
     """Episode numbers named by stage 1: a ```json episodes block, else lines 'Episode N' / 'Ep N'."""
     block = EPISODES_BLOCK.search(text)
     found = [v if isinstance(v, int) else v["episode"] for v in json.loads(block.group(1))] if block else \
-        [int(n) for n in EPISODE_LINE.findall(text)]
+        [int(n) for n in EPISODE_LINE.findall(text)] or [int(n) for n in EPISODE_ROW.findall(text)]
     episodes = sorted(set(found))
     if not episodes:
         raise ValueError("stage 1 names no episodes (write lines 'Episode N: title' or a ```json episodes block)")
@@ -304,76 +354,112 @@ def merge_episodes(per_episode):
     return merged
 
 
-def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model):
-    """Stages 1, 2, 3e<N> per episode, 5. Writes PACK.md, bible.json, shots.json; returns the merged shots."""
+def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None):
+    """Stages 1, 2, 3e<N> per episode, 5. Writes PACK.md, bible.json, shots.json; returns the merged shots.
+    rec: the run registry Recorder of this run (default: records nothing). Every stage and the whole run are steps in it."""
+    rec = rec or run_registry.Recorder(None, "none")
     brief = staged_brief().read_text(encoding="utf-8")
     done = []                                                   # (stage name, saved text), in order
     out.mkdir(parents=True, exist_ok=True)
 
     def raw_for(name):
         raw_path = out / f"stage_{name}_raw.json"
-        if not raw_path.exists():
+        if raw_path.exists():
+            info = run_registry.envelope_file(raw_path)
+            with rec.step("analysis_stage", name, via=info.get("via"), model=info.get("model"), files=[f"{out.name}/{raw_path.name}"],
+                          note="saved answer reused: no model call"):
+                pass
+        else:
             v = stage_setting(stage_via, name, via)
             m = stage_setting(stage_model, name, model if v == via else None) or DEFAULT_MODEL[v]
             if not m:
                 raise ValueError(f"stage {name}: --model is required with --via openrouter")
+            refuse_finished(out)
             prompt = build_stage_prompt(brief, story_text, done, stage_instruction(name))
             # ponytail: stages and episodes run one after another; parallel episodes when a run gets slow
-            raw_path.write_text(call_path(prompt, v, m, effort, allow_paid), encoding="utf-8")
+            with rec.step("analysis_stage", name, via=v, model=m, effort=effort, files=[f"{out.name}/{raw_path.name}"]) as st:
+                text = call_path(prompt, v, m, effort, allow_paid)
+                raw_path.write_text(text, encoding="utf-8")
+                st.chars = run_registry.envelope_info(text).get("chars")
         print(f"stage {name}: {raw_path}")
         return raw_path.read_text(encoding="utf-8")
 
-    text1 = answer_text(raw_for("1"))
-    done.append(("1", text1))
-    text2, bible = parse_bible(raw_for("2"))
-    done.append(("2", text2))
-    per_episode, episodes = [], episodes_from(text1)
-    for ep in episodes:
-        text, ep_shots = parse(raw_for(f"3e{ep}"))
-        done.append((f"3e{ep}", text))
-        per_episode.append(ep_shots)
-    done.append(("5", answer_text(raw_for("5"))))
-    shots = merge_episodes(per_episode)
-    (out / "PACK.md").write_text("\n\n".join(text for _, text in done), encoding="utf-8")
-    (out / "bible.json").write_text(json.dumps(bible, indent=1, ensure_ascii=False), encoding="utf-8")
-    (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
+    with rec.step("analysis_done", None, via=via, model=model, effort=effort) as run:
+        text1 = answer_text(raw_for("1"))
+        done.append(("1", text1))
+        text2, bible = parse_bible(raw_for("2"))
+        done.append(("2", text2))
+        per_episode, episodes = [], episodes_from(text1)
+        for ep in episodes:
+            text, ep_shots = parse(raw_for(f"3e{ep}"))
+            done.append((f"3e{ep}", text))
+            per_episode.append(ep_shots)
+        done.append(("5", answer_text(raw_for("5"))))
+        shots = merge_episodes(per_episode)
+        (out / "PACK.md").write_text("\n\n".join(text for _, text in done), encoding="utf-8")
+        (out / "bible.json").write_text(json.dumps(bible, indent=1, ensure_ascii=False), encoding="utf-8")
+        (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
+        run.files = [f"{out.name}/{n}" for n in ("PACK.md", "bible.json", "shots.json")]
+        run.note = f"{len(episodes)} episodes, {len(shots)} shots"
     print(f"{len(episodes)} episodes, {len(shots)} shots -> {out}")
+    return shots
+
+
+def run_single(story_text, out, via, model, effort, allow_paid, rec=None):
+    """Single call: raw_response.json, PACK.md, shots.json. A saved raw_response.json is parsed again without a call."""
+    rec = rec or run_registry.Recorder(None, "none")
+    out.mkdir(parents=True, exist_ok=True)
+    raw_path = out / "raw_response.json"
+    with rec.step("analysis_done", None, via=via, model=model, effort=effort) as run:
+        if raw_path.exists():
+            info = run_registry.envelope_file(raw_path)
+            with rec.step("analysis_stage", "single", via=info.get("via"), model=info.get("model"),
+                          files=[f"{out.name}/raw_response.json"], note="saved answer reused: no model call"):
+                pass
+        else:
+            refuse_finished(out)
+            prompt = build_prompt(story_text)
+            with rec.step("analysis_stage", "single", via=via, model=model, effort=effort,
+                          files=[f"{out.name}/raw_response.json"]) as st:
+                text = call_path(prompt, via, model, effort, allow_paid)
+                raw_path.write_text(text, encoding="utf-8")
+                st.chars = run_registry.envelope_info(text).get("chars")
+        text, shots = parse(raw_path.read_text(encoding="utf-8"))
+        (out / "PACK.md").write_text(text, encoding="utf-8")
+        (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
+        run.files = [f"{out.name}/{n}" for n in ("PACK.md", "shots.json")]
+        run.note = f"{len(shots)} shots"
+    print(f"{len(shots)} shots -> {out / 'shots.json'}")
     return shots
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("story"); ap.add_argument("out_dir")
-    ap.add_argument("--via", default="claude", choices=VIAS)
-    ap.add_argument("--model"); ap.add_argument("--effort", default="medium", choices=("low", "medium", "high"))
+    ap.add_argument("--writer", choices=tuple(WRITERS), default=None,
+                    help="shortcut that sets --via and --model: super-vl (default), ultra (OpenRouter, free) or opus (Claude, effort medium)")
+    ap.add_argument("--via", default=None, choices=VIAS)
+    ap.add_argument("--model"); ap.add_argument("--effort", default=None, choices=("low", "medium", "high"))
     ap.add_argument("--allow-paid", action="store_true")
     ap.add_argument("--staged", action="store_true", help="one call per gate: 1, 2, 3e<N> per episode, 5")
     ap.add_argument("--stage-via", default="", help="staged only: per-stage path, e.g. 2=nvidia,3=claude")
     ap.add_argument("--stage-model", default="", help="staged only: per-stage model, e.g. 3=opus")
     a = ap.parse_args(argv)
-    if a.staged:
-        try:
-            stage_via = parse_stage_map(a.stage_via, check_via)
-            stage_model = parse_stage_map(a.stage_model, str)
-        except ValueError as exc:
-            ap.error(str(exc))
-        run_staged(Path(a.story).read_text(encoding="utf-8"), Path(a.out_dir), a.via, a.model, a.effort, a.allow_paid,
-                   stage_via, stage_model)
-        return
-    if a.stage_via or a.stage_model:
+    if not a.staged and (a.stage_via or a.stage_model):
         ap.error("--stage-via and --stage-model need --staged")
-    model = a.model or DEFAULT_MODEL[a.via]
-    if not model:
-        ap.error("--model is required with --via openrouter")
-    out = Path(a.out_dir); out.mkdir(parents=True, exist_ok=True)
-    raw_path = out / "raw_response.json"
-    if not raw_path.exists():
-        prompt = build_prompt(Path(a.story).read_text(encoding="utf-8"))
-        raw_path.write_text(call_path(prompt, a.via, model, a.effort, a.allow_paid), encoding="utf-8")
-    text, shots = parse(raw_path.read_text(encoding="utf-8"))
-    (out / "PACK.md").write_text(text, encoding="utf-8")
-    (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
-    print(f"{len(shots)} shots -> {out / 'shots.json'}")
+    try:
+        writer, via, model, effort = resolve_route(a.writer, a.via, a.model, a.effort)
+        stage_via = parse_stage_map(a.stage_via, check_via) if a.staged else {}
+        stage_model = parse_stage_map(a.stage_model, str) if a.staged else {}
+    except ValueError as exc:
+        ap.error(str(exc))
+    out = Path(a.out_dir)
+    rec = run_registry.Recorder(run_registry.story_folder(Path(a.story)), run_registry.writer_tag(writer, via, model),
+                                pack=out.name, via=via, model=model, effort=effort)
+    if a.staged:
+        run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec)
+        return
+    run_single(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, rec)
 
 
 if __name__ == "__main__":

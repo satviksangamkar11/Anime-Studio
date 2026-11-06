@@ -130,6 +130,13 @@ def test_the_claude_cli_path_is_refused_with_a_clear_error(clip):
         visual_qa.review(clip["clip"], clip["direction"], clip["out"], "claude", "opus")
 
 
+def test_the_cli_has_no_claude_choice(capsys):
+    """G11: argparse refuses --via claude before any call is made."""
+    with pytest.raises(SystemExit) as e:
+        visual_qa.main(["clip.mp4", "direction.json", "out", "--via", "claude", "--model", "x"])
+    assert e.value.code == 2 and "invalid choice" in capsys.readouterr().err
+
+
 def test_a_model_path_needs_a_model(clip):
     with pytest.raises(ValueError, match="--model"):
         visual_qa.review(clip["clip"], clip["direction"], clip["out"], "nvidia", None)

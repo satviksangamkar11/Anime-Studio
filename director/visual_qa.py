@@ -120,7 +120,7 @@ def review(clip, direction_json, out_dir, via, model=None, bible=None):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("clip"); ap.add_argument("direction"); ap.add_argument("out_dir")
-    ap.add_argument("--via", required=True, choices=("claude", "nvidia", "openrouter", "manual"))
+    ap.add_argument("--via", required=True, choices=("nvidia", "openrouter", "manual"))   # G11: no claude choice (the CLI takes no images here)
     ap.add_argument("--model"); ap.add_argument("--bible", help="bible.json from the writer (optional)")
     a = ap.parse_args(argv)
     print(json.dumps(review(a.clip, a.direction, a.out_dir, a.via, a.model, a.bible), indent=1, ensure_ascii=False))

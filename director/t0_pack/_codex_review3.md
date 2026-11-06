@@ -1,0 +1,1 @@
+No findings in the RUNNER retry loop (lines 63–72). The 429 check uses only the current attempt’s log bytes, any `.mp4` stops retries, and retries are capped at four attempts.

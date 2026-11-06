@@ -1,0 +1,1 @@
+Re-review ONLY director/run_kaggle.py RUNNER retry loop (lines ~63-72) after fixes: the 429 check now reads only the current attempt log bytes, and any mp4 stops retries. Report bugs or "no findings".

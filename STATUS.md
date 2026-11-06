@@ -1,4 +1,25 @@
-# Anime Studio status checklist (updated 2026-11-04, evening)
+# Anime Studio status checklist (updated 2026-11-06)
+
+## Current (2026-11-06)
+- [x] **AUDIO PLAN FROZEN 2026-11-06** (`research/AUDIO_PLAN_FROZEN_2026-11-06.md`): music removed, effects-only soundscape with fixed per-location bed, dialogue allowed, per-clip gain match to -16 LUFS then 5 ms fades, no separate audio test render, no paid audio tool.
+- [x] **DECISION (owner 2026-11-06): the video model generates ALL the sound effects** (MiniMax H3 makes video+audio in one pass from the prompt's `overall_soundscape`). No separate SFX library, no ElevenLabs for effects, and `post.py` must KEEP the model's audio (the earlier plan to drop H3 audio is cancelled). **Background music is the owner's own separate step**; video prompts keep `non_diegetic_music: N/A`. Everything else in the pipeline is frozen.
+- [x] **RULE (owner 2026-11-06): Flow image generation and download agents run on Haiku effort LOW.** Details: `flow/IMAGE_SYSTEM_FULL.md`. (Build and review agents are separate.)
+- [x] **UI pipeline wizard built (2026-11-06)**: Story -> Analysis -> Gate A -> Images -> Gate B -> Read-out -> Gate C (typed START) -> Render -> Gate D -> Export. Coders: Dots (round 3) then Haiku xhigh (owner order: Dots too slow); reviewers: Haiku xhigh (found 5 HIGH, fixed), Dots and Nemotron Ultra in parallel (no real bugs). Suites: h3 159, ui 162, flow/scripts 115, director 352.
+- [x] h3 hardening (ids, paths, SD-01/SD-02), audio rules C8 (sound_beds, SD-03/SD-04, loudness_plan, loudness.json), `flow/scripts/pack_to_spec.py` (pack -> Flow spec+series, any story) and UI commands `build_spec` / `build_jobs_cmd` + "Build image jobs" button. Gap: render_controller does not pass `loudness` to the assembly plan yet (needs measured clips).
+- [ ] **Kaliya pack defects before Gate A**: reels 2-5 short (60.0/47.6/51.1/55.6 s vs 65-75 s target); CHAR-INDRA/BRAHMA/NARADA/SARASVATI and PROP-KALI-KAMLI used by shots but missing from bible; PROP-KANSA suspicious. Owner has not answered; do not approve the plan until fixed.
+- [ ] Known leftovers: wizard rejected-stage does not auto re-open after a re-run (decide again works); typed pack name reverts on poll; app.js message bar success class; PLACE_TEXT_OVERRIDES in build_jobs is Kaliya-only.
+- [x] 18 Flow images final at 2K, watermark removed (LaMa).
+- [x] Colab CLI works (T4/L4/A100/G4); T0 test done: 8 clips of LEAP-03 (arms A, B, C, D x seeds 42 and 123). B (Singularity + Turbo 4-step) breaks the scene; A, C, D hold identity and scene.
+- [x] **OWNER DECISION 2026-11-06: video route = arm C** (Singularity v2 pruned + Pika-Labs Turbo 8-step HD LoRA, `route: "sing8"`, Ref2VA with face + front refs, euler, CFG 1, shift 12, 768x1344, 124 frames). Arm A (`pika6`) stays as the fallback. Reasons and plus/minus: `research/workflow_review/DECISION_best_workflow_2026-11-05.md`.
+- [x] Retry-on-429 for Hugging Face downloads in the Colab runner; Drive model cache dropped (Drive cannot be mounted from the Colab CLI).
+- [ ] Render LEAP-01..05 with `sing8` (3 takes each, one G4 session, ~7 min model download + ~2.2 min/clip warm), then owner picks takes.
+- [ ] `post.py` (join, trim, drop H3 audio, add voice/SFX, anime upscale).
+- [ ] Open images: LEAP-02A/02B water still pale; KRISHNA_ACTION_POSES bottom row broken (do not use as ref).
+- [ ] Commit and push code/docs only (repo is public; never images, weights, notebooks, clips).
+
+---
+Older status (2026-11-04) below.
+
 
 ## Running now
 - [ ] Opus independent review (high effort): checks both owner-supplied audits, throughput maths for a full series on Kaggle T4s, a better plan if one exists, first-two-weeks plan, ranked repo changes. Output: `research/OPUS_INDEPENDENT_REVIEW_2026-11-04.md`.

@@ -1,0 +1,146 @@
+[
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Minimax-h3_Singularity_ref2va_v2_pruned_int8_convrot.safetensors",
+  "dest": "ckpts/Minimax-h3_Singularity_ref2va_v2_pruned_int8_convrot.safetensors",
+  "bytes": 20967820848,
+  "approx_gb": 19.53,
+  "sha256": "3fb1a0d75441b21f614f10a4e2e6e20bdc6806c215bcf95a3388f37dfa8aa965",
+  "source": "defaults/minimax_h3_singularity_v2_pruned.json:7 (only URL, int8_convrot)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors",
+  "dest": "ckpts/MiniMax-H3-Ref2VA-pruned_rank8_int8_convrot.safetensors",
+  "bytes": 21057674788,
+  "approx_gb": 19.61,
+  "sha256": "e09db861c48d13560222948b4e38082bc21b1b7d4ddcaed9c865bf9c3233898c",
+  "source": "defaults/minimax_h3_ref2va_pruned.json:8 (int8 choice: wgp.py:3298-3316, default int8 wgp.py:3664)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors",
+  "dest": "ckpts/MiniMax-H3-FL2VA-pruned_rank8_int8_convrot.safetensors",
+  "bytes": 21057674787,
+  "approx_gb": 19.61,
+  "sha256": "30ff400f974b11a1ef13d216c5d9f6439a9c10322a3988b0374a39672ce286f0",
+  "source": "defaults/minimax_h3_fl2va_pruned.json:8 (int8 choice: wgp.py:3298-3316)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/Qwen3-VL-32B-Instruct-layer50_quanto_bf16_int8.safetensors",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/Qwen3-VL-32B-Instruct-layer50_quanto_bf16_int8.safetensors",
+  "bytes": 26723791903,
+  "approx_gb": 24.89,
+  "sha256": "4df8fc5237746b3b058745d6ec8fe1e54a9721bdc663d35d2d1806952672f301",
+  "source": "minimax_h3_handler.py:37,803-809 (int8 text encoder; default text_encoder_quantization int8 wgp.py:3671; download wgp.py:4515-4523)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/config.json",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/config.json",
+  "bytes": 1474,
+  "approx_gb": 0.0,
+  "sha256": null,
+  "source": "minimax_h3_handler.py:1273-1275 (config/tokenizer list); minimax_h3_main.py:236 (config read)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/preprocessor_config.json",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/preprocessor_config.json",
+  "bytes": 390,
+  "approx_gb": 0.0,
+  "sha256": null,
+  "source": "minimax_h3_handler.py:1275"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/tokenizer.json",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/tokenizer.json",
+  "bytes": 7032403,
+  "approx_gb": 0.01,
+  "sha256": null,
+  "source": "minimax_h3_handler.py:1275 (tokenizer read by text_encoder.py:122)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/tokenizer_config.json",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/tokenizer_config.json",
+  "bytes": 11004,
+  "approx_gb": 0.0,
+  "sha256": null,
+  "source": "minimax_h3_handler.py:1275"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "Qwen3-VL-32B-Instruct/vocab.json",
+  "dest": "ckpts/Qwen3-VL-32B-Instruct/vocab.json",
+  "bytes": 2776833,
+  "approx_gb": 0.0,
+  "sha256": null,
+  "source": "minimax_h3_handler.py:1275"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "minimax_h3/minimax_h3_video_vae_int8_convrot.safetensors",
+  "dest": "ckpts/minimax_h3/minimax_h3_video_vae_int8_convrot.safetensors",
+  "bytes": 2811065256,
+  "approx_gb": 2.62,
+  "sha256": "0cb8161a12166fb049a2c1295e6a4833fdc571effdab9ac0ed074b10f2d6646d",
+  "source": "minimax_h3_main.py:29; handler resolve_runtime_model_def :1239-1246 (int8 when transformer int8), query_model_files :1263-1265"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "MiniMax-H3-audio_vae_fp32.safetensors",
+  "dest": "ckpts/MiniMax-H3-audio_vae_fp32.safetensors",
+  "bytes": 605429308,
+  "approx_gb": 0.56,
+  "sha256": "37dddc2f3e6d5d5139d823d5ea283bbf304dadcb885b1ccda818aa13dade5ea2",
+  "source": "minimax_h3_main.py:33; handler :1266-1267"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "minimax_h3/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  "dest": "ckpts/minimax_h3/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+  "bytes": 690592992,
+  "approx_gb": 0.64,
+  "sha256": "4f57821f5837f32f7142b67d815606dbd7550f194e5c769f7d6c3f83b146a5e6",
+  "source": "minimax_h3_main.py:34-35; handler :1276-1277 (every non-Viggle H3)"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "loras/pika_h3_flex_ref2va_6step_v1_bf16.safetensors",
+  "dest": "loras/minimax_h3/pika_h3_flex_ref2va_6step_v1_bf16.safetensors",
+  "bytes": 1383678576,
+  "approx_gb": 1.29,
+  "sha256": "202e31cd53963fc9ad7692542b911024c6d2025c37e8f2c143bca5179cb10e98",
+  "source": "profiles/minimax_h3_ref2va/Pika H3 Flex Ref2VA 6 Steps.json:4; h3_director.py:43; LoRA dir wgp.py:2766-2786, handler get_lora_dir :578-579, download wgp.py:3989-4023"
+ },
+ {
+  "repo": "DeepBeepMeep/MiniMax-H3",
+  "repo_path": "loras/pika_h3_flex_fl2va_6step_v1_bf16.safetensors",
+  "dest": "loras/minimax_h3/pika_h3_flex_fl2va_6step_v1_bf16.safetensors",
+  "bytes": 1383678576,
+  "approx_gb": 1.29,
+  "sha256": "d2e7b5ded8671fd480dc92b86beca078708e90f4712e73670111ea8adb98988f",
+  "source": "profiles/minimax_h3_fl2va/Pika H3 Flex FL2VA 6 Steps.json:4; h3_director.py:42"
+ },
+ {
+  "repo": "Pika-Labs/Pika-H3-Flex-Turbo-LoRA",
+  "repo_path": "pika_h3_flex_turbo_4step_ref2va.safetensors",
+  "dest": "loras/minimax_h3/pika_h3_flex_turbo_4step_ref2va.safetensors",
+  "bytes": 3912311400,
+  "approx_gb": 3.64,
+  "sha256": "7f4ddf47ab9966059d9d3f886603f00ee44c0e309e71edf585ac7cbc33af2ee5",
+  "source": "h3_director.py:52 (route sing4); t0_pack/_review_settings.json activated_loras"
+ },
+ {
+  "repo": "Pika-Labs/Pika-H3-Flex-Turbo-LoRA",
+  "repo_path": "pika_h3_flex_turbo_8step_hd_ref2va.safetensors",
+  "dest": "loras/minimax_h3/pika_h3_flex_turbo_8step_hd_ref2va.safetensors",
+  "bytes": 3912311400,
+  "approx_gb": 3.64,
+  "sha256": "dfe46d972408d1094053ff1f30c720bf16176ec334962009767ab0fff29e6de2",
+  "source": "h3_director.py:52 (route sing8); t0_pack/_review_settings.json activated_loras"
+ }
+]

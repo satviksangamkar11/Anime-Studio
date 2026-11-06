@@ -1,0 +1,20 @@
+{
+  "id": "SHOT-03",
+  "episode": 1,
+  "scene": "kadamba_leap",
+  "aspect": "9:16",
+  "resolution": "768x1344",
+  "render_frames": 124,
+  "start": "LEAP-03A__candidate_v01.png",
+  "end": "LEAP-03B__candidate_v01.png",
+  "refs": ["CHAR-KRISHNA__ref_face.png", "CHAR-KRISHNA__ref_front.png"],
+  "subjects": ["<Subject 1> is Bala Krishna, face in <Picture 1>, full body in <Picture 2>."],
+  "style": "Flat 2D cel anime with ink outlines and 2.5D layered depth over painted backgrounds.",
+  "world": "Kadamba bank at dawn: black ash bank, one leaning kadamba tree, low sun from screen left, dark violet-green water below.",
+  "action": "0-1.5s Krishna holds a deep crouch on the leaning branch, knees bent, weight sunk low, bansuri tucked in his black sash; 1.5-5.2s he springs out and up, arms forward, his body arcs over the bank into a mid-air arch while the branch flexes up and rebounds, and the golden pitambara and curls trail a beat behind.",
+  "camera": "locked off, wide side view, no camera move; the arc must read against a still frame",
+  "sound": "dawn wind, leaves, a branch creak and rebound",
+  "cast": [{"id": "CHAR-KRISHNA"}],
+  "set": "ENV-KADAMBA-BANK",
+  "props": [{"id": "PROP-KALI-KAMLI"}, {"id": "PROP-FLUTE"}]
+}

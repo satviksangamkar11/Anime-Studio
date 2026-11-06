@@ -75,15 +75,15 @@ def test_staged_run_writes_pack_bible_and_merged_shots(tmp_path, story, fake_cla
 
 def test_a_second_run_makes_no_calls(tmp_path, story, fake_claude, monkeypatch):
     out = tmp_path / "pack"
-    staged(story, out)
+    staged(story, out, "--writer", "opus")
     before = (out / "shots.json").read_text(encoding="utf-8")
     monkeypatch.setattr(write_pack, "call_claude", lambda *a: pytest.fail("resume must not call the model"))
-    staged(story, out)
+    staged(story, out, "--writer", "opus")
     assert (out / "shots.json").read_text(encoding="utf-8") == before
 
 
 def test_each_stage_gets_the_brief_the_story_and_earlier_saved_text(tmp_path, story, fake_claude):
-    staged(story, tmp_path / "pack")
+    staged(story, tmp_path / "pack", "--writer", "opus")
     prompts = {c["name"]: c["prompt"] for c in fake_claude}
     assert all("Kaliya story" in p and write_pack.staged_brief().read_text(encoding="utf-8") in p for p in prompts.values())
     assert CANNED["1"].strip() in prompts["2"] and CANNED["1"].strip() not in prompts["1"]
@@ -96,12 +96,12 @@ def test_the_raw_answer_is_saved_before_parsing_and_resume_redoes_only_the_bad_s
     good = CANNED["3e1"]
     monkeypatch.setitem(CANNED, "3e1", "no shots block here")
     with pytest.raises(ValueError):
-        staged(story, out)
+        staged(story, out, "--writer", "opus")
     assert (out / "stage_3e1_raw.json").exists()                 # saved although it did not parse
     monkeypatch.setitem(CANNED, "3e1", good)
     (out / "stage_3e1_raw.json").unlink()                        # the owner deletes the bad answer to redo it
     fake_claude.clear()
-    staged(story, out)
+    staged(story, out, "--writer", "opus")
     assert [c["name"] for c in fake_claude] == ["3e1", "3e2", "5"]
 
 
@@ -117,7 +117,7 @@ def test_stage_routing_per_stage_via_and_model(tmp_path, story, monkeypatch):
         return envelope(CANNED[stage_of(prompt)], "nvidia", model)
     monkeypatch.setattr(write_pack, "call_claude", claude)
     monkeypatch.setattr(write_pack, "call_nvidia", nvidia)
-    staged(story, tmp_path / "pack", "--model", "sonnet", "--stage-via", "2=nvidia,3=claude", "--stage-model", "3=haiku")
+    staged(story, tmp_path / "pack", "--via", "claude", "--model", "sonnet", "--stage-via", "2=nvidia,3=claude", "--stage-model", "3=haiku")
     assert seen == [("claude", "1", "sonnet"), ("nvidia", "2", write_pack.DEFAULT_MODEL["nvidia"]),
                     ("claude", "3e1", "haiku"), ("claude", "3e2", "haiku"), ("claude", "5", "sonnet")]
 
@@ -188,7 +188,7 @@ def test_episodes_that_restart_their_shot_numbers_merge_into_unique_ids(tmp_path
            dict(SHOT, id="SHOT-02", episode=2, cut_in="match on action from SHOT-01", start="keyframes/SHOT-02-FRAME-A.png")]
     monkeypatch.setitem(CANNED, "3e1", "```json shots\n" + json.dumps(ep1) + "\n```")
     monkeypatch.setitem(CANNED, "3e2", "```json shots\n" + json.dumps(ep2) + "\n```")
-    staged(story, tmp_path / "pack")
+    staged(story, tmp_path / "pack", "--writer", "opus")
     shots = json.loads((tmp_path / "pack" / "shots.json").read_text(encoding="utf-8"))
     assert [s["id"] for s in shots] == ["SHOT-001", "SHOT-002", "SHOT-003", "SHOT-004"]
     assert [s["source_id"] for s in shots] == ["SHOT-01", "SHOT-02", "SHOT-01", "SHOT-02"]

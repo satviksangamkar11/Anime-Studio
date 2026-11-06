@@ -1,0 +1,4 @@
+- **Medium — [director/run_kaggle.py:68](/D:/aai%20work/anime_studio/director/run_kaggle.py:68):** The appended log retains earlier attempts’ 429 errors. If attempt 1 gets a 429 and attempt 2 fails for another reason with a short log, the old 429 still triggers retries, adding paid GPU time. Check only the current attempt’s output.
+- **Medium — [director/run_kaggle.py:67](/D:/aai%20work/anime_studio/director/run_kaggle.py:67):** An MP4 prevents retries only when `rc == 0`. If rendering produces an MP4 but exits nonzero and the tail contains a 429, it renders again despite the “no MP4” requirement.
+
+Other checks passed: four attempts maximum; `files` and `rc` remain defined; logs append. The token change does not print the token, and an unset/empty token adds no arguments. The built batch parses and contains exactly six IDs: B/C/D × seeds 42/123, with matching seed values.

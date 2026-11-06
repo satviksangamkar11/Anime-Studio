@@ -1,0 +1,4 @@
+Review ONLY these two small changes for bugs before a paid Colab GPU run. Read-only; report findings (severity, file:line, why), or "no findings".
+1. director/run_kaggle.py RUNNER string: new retry loop `for attempt in range(1, 5)` around the wgp.py call; retries only when the wgp log tail contains "429 Too Many Requests" and no mp4 was made; sleeps 60*attempt s. Check: logic, variable `files`/`rc` still defined after the loop, no infinite loop, no extra GPU spend on non-429 failures, the log is appended per attempt (sh opens log with "a").
+2. director/t0_pack/run_t0_parallel.py: optional `--env HF_TOKEN=...` passed to `colab exec` only if HF_TOKEN is set locally. Check it never prints the token and a missing token changes nothing.
+Also check the built batch director/colab_batches/t0/run.py parses and holds exactly 6 ids (B,C,D x seeds 42,123).
