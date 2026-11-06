@@ -13,7 +13,7 @@
 - [x] **OWNER DECISION 2026-11-06: video route = arm C** (Singularity v2 pruned + Pika-Labs Turbo 8-step HD LoRA, `route: "sing8"`, Ref2VA with face + front refs, euler, CFG 1, shift 12, 768x1344, 124 frames). Arm A (`pika6`) stays as the fallback. Reasons and plus/minus: `research/workflow_review/DECISION_best_workflow_2026-11-05.md`.
 - [x] Retry-on-429 for Hugging Face downloads in the Colab runner; Drive model cache dropped (Drive cannot be mounted from the Colab CLI).
 - [ ] Render LEAP-01..05 with `sing8` (3 takes each, one G4 session, ~7 min model download + ~2.2 min/clip warm), then owner picks takes.
-- [ ] `post.py` (join, trim, drop H3 audio, add voice/SFX, anime upscale).
+- [ ] `post.py` (join, trim, keep H3 audio, add voice/SFX, anime upscale).
 - [ ] Open images: LEAP-02A/02B water still pale; KRISHNA_ACTION_POSES bottom row broken (do not use as ref).
 - [ ] Commit and push code/docs only (repo is public; never images, weights, notebooks, clips).
 

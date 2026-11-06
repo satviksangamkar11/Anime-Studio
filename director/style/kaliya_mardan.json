@@ -56,7 +56,7 @@
       "hex": "#F6D27A",
       "max_per_shot": 1
     },
-    "skin_range": "Indian complexions varied by character (see characters). No lightened skin on any character; Krishna is cloud-dark indigo-grey."
+    "skin_range": "Indian complexions varied by character (see characters). No lightened skin on any character; Krishna is soft cloud-blue (see CHAR-KRISHNA.skin)."
   },
   "line": {
     "weight_px_on_1080_wide": {"hero_contour": "4-6", "interior": "2-3", "far_figure": "1-2"},
@@ -83,7 +83,7 @@
       "proportions_heads": 4.5,
       "proportion_rule": "child proportions: large head, short limbs, round belly, no adult chest or hip width",
       "silhouette_markers": ["bouncy black curls with one peacock feather and a pearl string", "tribhanga (triple-bend) stance when posed, hip and head counter-bent", "tight wrestler's sash of the black blanket knotted at the waist, bansuri tucked in it"],
-      "skin": {"treatment": "soft cloud-blue skin, lighter than the old indigo-grey; flat cel tones: base #AFCCEA, light #B3D1F7, core shadow #7990B9 (sampled from the approved identity master, KRISHNA_IDENTITY_MASTER__v01__edit2_candA.png, skin areas); a soft warm cheek blush kept light", "forbidden": "saturated cyan or electric blue; dark indigo-grey skin; white or pale-grey skin; glossy plastic; airbrushed glow"},
+      "skin": {"treatment": "soft cloud-blue skin; flat cel tones: base #AFCCEA, light #B3D1F7, core shadow #7990B9 (sampled from the approved identity master, KRISHNA_IDENTITY_MASTER__v01__edit2_candA.png, skin areas); a soft warm cheek blush kept light", "forbidden": "saturated cyan or electric blue; dark indigo-grey skin; white or pale-grey skin; glossy plastic; airbrushed glow"},
       "eyes": {"shape": "large round-almond eyes with heavy upper lid and a soft lower lid line; lively, not wide-staring", "iris": "dark brown-black with one bright catch-light; a soft sparkle in the eye is allowed, star or heart shapes are not", "expression_rule": "playful and mischievous: one lid a little lower, eyes lit with a sparkle; emotion shows in the lids, the brows and the smile"},
       "expression_default": "playful and mischievous: a warm smile with one cheek lifted, sparkling eyes, head tipped slightly",
       "hair": {"base_colour": "#1C1A1E", "style": "properly curly, bouncy black ringlets pushed back from the face, a pearl string woven through the curls, one peacock feather tucked at the side (PROP-MOR-MUKUT), no spiky anime fringe", "physics": "curls spring back in 2-3 frames when he turns; feather lags the head by one beat"},
