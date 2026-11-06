@@ -143,3 +143,5 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 02:14 | me | EDIT | director/pack_validator.py,write_pack.py,story_state.py,run_registry.py | fixed 9 Super VL batch1-3 findings (ML-06 single-lang, tone, bool, screen/depth, id/episode/key/URLError guards, resume IndexError, h3 en-only); director 622 pass; skipped: ML-03 all-keys rule (by design), 999 cap (not real)
 11-07 02:24 | me | EDIT | PROJECT_LOG.md,CHECKLIST_ARCHITECTURE_2026-11-07.md | NOW refreshed; ticked 2.1 2.3 2.4 2.7
 11-07 02:25 | me | OWNER | git | owner: push everything done to the git repo and give the link (push go given)
+11-07 02:25 | me | CMD | git | secret_scan clean (101 files); committed caf6fa1 on branch v4-architecture-2026-11-07 (101 files); pushed to origin; stories/* stay ignored (public repo)
+11-07 02:25 | me | OWNER | all agents | owner: do NOT make any Colab calls (none made so far; briefs already forbid it)

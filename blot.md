@@ -35,3 +35,6 @@ Every agent brief must include: "append lines in blot.md format to PROJECT_LOG.m
 
 ## OTHER STANDING RULES (details in HANDOFF section 13 and memory)
 No push without the owner's go. No paid or ElevenLabs/Colab spend without go. Reviews = Nemotron 3.5 Super VL (OpenRouter free) + Dots. Easy English/Hindi/Marathi everywhere. Answer in English.
+
+## RULE 4: NO COLAB CALLS (owner, 2026-11-07)
+No Colab call of any kind (no colab CLI, no Colab runs, no sessions). Applies to me and every agent until the owner lifts it. Also: no renders, no ElevenLabs, no paid calls.
