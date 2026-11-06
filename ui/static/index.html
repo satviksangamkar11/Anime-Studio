@@ -68,15 +68,7 @@
 
   <div class="wizard-col">
 
-    <section id="job-bar" class="job-bar" aria-label="Current job">
-      <div class="job-bar-line">
-        <span class="job-bar-label">Job</span>
-        <span id="job-bar-text" class="job-bar-text" aria-live="polite">No job running.</span>
-        <button type="button" id="job-bar-toggle" class="pill-btn" aria-expanded="false" aria-controls="job-bar-log">Show log</button>
-        <button type="button" id="job-bar-stop" data-gate="busy" data-title="Stops the local process only">Stop job</button>
-      </div>
-      <pre id="job-bar-log" class="log job-bar-log" hidden>No job output yet.</pre>
-    </section>
+    <!-- static job bar removed 2026-11-07: pipeline.js builds the job bar inside the wizard -->
 
     <main id="wizard">
       <noscript><p>This page needs JavaScript turned on.</p></noscript>

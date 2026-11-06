@@ -535,11 +535,17 @@ def _gate_d_result(story, groups, out_root, languages):
         ep_dir = os.path.join(out_root, ep_id)
         video = {"shared_foley": os.path.join(ep_dir, "render", f"{ep_id}_shared_foley.mp4"),
                  "en_h3": os.path.join(ep_dir, "render", f"{ep_id}_en_h3.mp4")}
+        # Story Gate 4 checks: story-level, then registry, then episode. Absent = closing gate fails closed (below).
+        gate = story.get("story_gate_checks") or reg.get("story_gate_checks") or ep.get("story_gate_checks")
+        if not gate:
+            problems.append(f"{ep_id}: story_gate_checks missing: add it to the story registry as "
+                            "registry['story_gate_checks'] (v4_to_h3 copies it from stage_1); closing VO stays blocked")
         try:
             res = plan_language_outputs(ep_id, languages, os.path.join(ep_dir, "audio", "vo"), None,
                                         shots=ep["shots"], video_path=video, video_has_audio=True,
                                         captions_dir=os.path.join(ep_dir, "captions"),
                                         export_dir=os.path.join(ep_dir, "export"),
+                                        story_gate_checks=gate, payoff_end_sec=ep.get("payoff_end_sec"),
                                         voice_engines=reg.get("voice_engine"))
         except (KeyError, TypeError, ValueError) as e:  # e.g. a shot row without editorial_duration_sec
             problems.append(f"{ep_id}: Gate D not planned: {type(e).__name__}: {e}")

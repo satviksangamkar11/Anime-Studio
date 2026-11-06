@@ -596,7 +596,7 @@ def _s55_4(shots, bible, errs):
         for x in _l(a.get("exited_character_status")):
             if isinstance(x, dict) and x.get("released") is True:
                 off = x.get("off_stage_shots")
-                if not (isinstance(off, int) and off >= EXIT_RELEASE_SHOTS):
+                if not (isinstance(off, int) and not isinstance(off, bool) and off >= EXIT_RELEASE_SHOTS):
                     _e(errs, "S55-4", f"{w}.exited_character_status",
                        f"{x.get('id')} released after {off} off-stage shots; release needs {EXIT_RELEASE_SHOTS} consecutive")
 

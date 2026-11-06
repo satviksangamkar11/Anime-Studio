@@ -127,7 +127,10 @@ def stream_chat(url, key, body, extra_headers=None):
             line = line.decode("utf-8", "replace").strip()
             if not line.startswith("data:") or line == "data: [DONE]":
                 continue
-            event = json.loads(line[5:])
+            try:
+                event = json.loads(line[5:])
+            except json.JSONDecodeError as exc:      # a broken line from the provider: a network-class error, so the retry policy tries again
+                raise retry_policy.ModelError(retry_policy.NETWORK, f"malformed stream line from the provider ({exc.msg})") from exc
             if event.get("error"):   # OpenRouter reports a failure in the middle of the stream as an error event: keep its reason
                 raise RuntimeError(f"stream error from the provider: {run_registry.redact(str(event['error'])[:300])}")
             choices = event.get("choices") or [{}]
@@ -168,16 +171,9 @@ def openrouter_is_free(model, catalog=None):
         catalog = catalog or json.load(urllib.request.urlopen("https://openrouter.ai/api/v1/models", timeout=60))["data"]
     except (urllib.error.URLError, TimeoutError) as exc:
         raise ValueError(f"cannot check whether {model} is free (catalog unreachable: {type(exc).__name__}): refused") from exc
-    entry = next((m for m in catalog if m["id"] == model), None)
-    if entry is None:
+    if not any(m.get("id") == model for m in catalog):
         raise ValueError(f"{model} is not in OpenRouter's catalog")
-    prices = {k: v for k, v in (entry.get("pricing") or {}).items() if isinstance(v, (str, int, float))}
-    if not prices:                      # no price fields = unknown price, never "free" (all([]) would be True)
-        return False
-    try:
-        return all(float(v or 0) == 0 for v in prices.values())
-    except ValueError:
-        return False
+    return retry_policy.is_free_model(model, catalog)      # the one free-price rule (every price field present and 0)
 
 
 def call_openrouter(prompt, model, allow_paid=False, content=None):
@@ -319,7 +315,10 @@ def parse(raw):
         raise ValueError("duplicate shot ids")
     for shot in shots:
         if not is_v4_row(shot):                 # a legacy row must still be one the H3 director can run; V4 rows are checked by the validator
-            settings_for(shot)
+            try:
+                settings_for(shot)
+            except Exception as exc:           # KeyError, TypeError ... on a malformed row is a parse error, not a traceback
+                raise ValueError(f"shot {shot.get('id')}: the H3 director cannot read this row ({type(exc).__name__}: {exc})") from exc
     return text, shots
 
 
@@ -373,8 +372,12 @@ def episodes_from(text):
     if story and isinstance(json.loads(story.group(1)).get("episodes"), list):
         found = [e["episode"] for e in json.loads(story.group(1))["episodes"] if isinstance(e, dict) and isinstance(e.get("episode"), int)]
     elif block:
+        try:
+            values = json.loads(block.group(1))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"the ```json episodes block is not valid JSON ({exc.msg}): fix the block and rerun") from exc
         found = [v if isinstance(v, int) and not isinstance(v, bool) else v.get("episode") if isinstance(v, dict) else None
-                 for v in json.loads(block.group(1))]
+                 for v in values]
         if not all(isinstance(v, int) for v in found):
             raise ValueError("the ```json episodes block must hold episode numbers or objects with an integer 'episode'")
     else:
@@ -433,6 +436,18 @@ def merge_episodes(per_episode):
 
 class StageFailed(ValueError):
     """A stage whose answer still fails its checks after the one repair retry. The run stops; the stage's files say why."""
+
+
+def checked_call(name, call, *args):
+    """One model call. A refusal (ValueError, e.g. a paid model) passes through as before; any other failure (missing key files,
+    ModelGaveUp, network) becomes StageFailed, so the run stops with a message and the registry step is marked failed."""
+    try:
+        return call(*args)
+    except (ValueError, StageFailed):
+        raise
+    except Exception as exc:
+        raise StageFailed(f"stage {name}: the model call failed ({type(exc).__name__}: {str(exc)[:300]}); nothing was saved for it, "
+                          "rerun to retry") from exc
 
 
 class _CheckFailed(Exception):
@@ -521,13 +536,13 @@ def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
                       note="saved answer reused: no model call"):
             pass
     else:
-        call(prompt_for([]), raw_path)
+        checked_call(name, call, prompt_for([]), raw_path)
     print(f"stage {name}: {raw_path}")
     text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
     retries = 0
     while errors and retries < spec.MAX_REPAIR_RETRIES:
         retries += 1
-        call(prompt_for(errors), raw_path)
+        checked_call(name, call, prompt_for(errors), raw_path)
         print(f"stage {name}: repair retry {retries}: {raw_path}")
         text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
     if errors:
@@ -594,7 +609,7 @@ def with_language(errors, language_errors):
     and there is no validator: the stage is then recorded as not checked."""
     if errors is None:
         return language_errors or None
-    return language_errors + errors
+    return language_errors + [e for e in errors if e not in language_errors]     # an identical line from both is reported once
 
 
 def text_language_errors(pairs, lang):
@@ -807,7 +822,8 @@ def apply_captions(shots, items, langs):
     langs = wp.lang_list(langs)
     by_id = {i.get("shot_id"): i for i in items}
     for shot in shots:
-        item = by_id.get(shot.get("id"))
+        # stage 5 names the original per-episode id; merge_episodes has renumbered the shot and kept that id as source_id
+        item = by_id.get(shot.get("source_id")) or by_id.get(shot.get("id"))
         if not item:
             continue
         track = shot.get("audio_and_dialogue_track") if isinstance(shot.get("audio_and_dialogue_track"), dict) else None
@@ -874,12 +890,15 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         return run_stage(name, out, prompt_for=prompt_for, call=lambda prompt, path: call_for(name, prompt, path),
                          parse_fn=parse_fn, check_fn=check_fn, rec=rec)
 
-    def gate(name, data, bible_for, fallback=lambda: []):
+    def gate(name, data, bible_for, fallback=lambda: [], merge=False):
         """The validator's checks, with the story's languages and the simple-language hook, when there is a validator. Without one,
-        the writer's own language checks (fallback) run and the stage is recorded as not checked by the validator."""
+        the writer's own language checks (fallback) run and the stage is recorded as not checked by the validator. merge=True also
+        runs the fallback next to the validator: stage 5 is a passthrough in the validator (no rule), so its caption checks are only
+        here. Stages with a validator rule keep the validator alone (its own LANG checks; the fallback would contradict it)."""
         if mod is None:
             return with_language(None, fallback())
-        return stage_errors(mod, name, data, bible_for, output_languages=langs, lang_check=hook, voice_engines=engines)
+        errors = stage_errors(mod, name, data, bible_for, output_languages=langs, lang_check=hook, voice_engines=engines)
+        return with_language(errors, fallback()) if merge else errors
 
     def story_parse(raw):
         text, data = parse_story(raw)
@@ -900,7 +919,7 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
             done.append((f"3e{ep}", text))
             per_episode.append(ep_shots)
         text5, captions = stage("5", parse_captions,
-                                lambda d: gate("5", d, bible, lambda: caption_language_errors(d["captions"], langs)))
+                                lambda d: gate("5", d, bible, lambda: caption_language_errors(d["captions"], langs), merge=True))
         done.append(("5", text5))
         shots = [legacy_fields(s, bible) for s in apply_captions(merge_episodes(per_episode), captions["captions"], langs)]
         (out / "PACK.md").write_text("\n\n".join(text for _, text in done), encoding="utf-8")
@@ -930,7 +949,7 @@ def run_single(story_text, out, via, model, effort, allow_paid, rec=None):
             prompt = build_prompt(story_text)
             with rec.step("analysis_stage", "single", via=via, model=model, effort=effort,
                           files=[f"{out.name}/raw_response.json"]) as st:
-                text = call_path(prompt, via, model, effort, allow_paid)
+                text = checked_call("single", call_path, prompt, via, model, effort, allow_paid)
                 raw_path.write_text(text, encoding="utf-8")
                 st.chars = run_registry.envelope_info(text).get("chars")
         text, shots = parse(raw_path.read_text(encoding="utf-8"))

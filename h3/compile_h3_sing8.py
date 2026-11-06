@@ -24,13 +24,23 @@ def _mouth_lock(dlg, silent=True):
     return f"{clean_text(dlg['mouth_state_rule'])} {MOUTH_LOCK_SENTENCE}" if silent else clean_text(dlg["mouth_state_rule"])
 
 
+def _speaker(registry, cid):
+    """The character of an English utterance; a clean ValueError when the speech cannot be voiced."""
+    ch = (registry.get("characters") or {}).get(cid)
+    if not isinstance(ch, dict):
+        raise ValueError(f"utterance character {cid!r} is not in registry characters")
+    if not ch.get("short_disambiguator") or not (ch.get("voice_anchor") or {}).get("voice_description"):
+        raise ValueError(f"character {cid!r} needs short_disambiguator and voice_anchor.voice_description for speech")
+    return ch
+
+
 def _speech_sentences(shot, registry):
     """English H3 speech in the official form (base-en s4.4): `{cue}, {character} ({Sx}), {voice description}, says:
     <d>[English] {text}</d>`; off-screen lines say `says in an off-screen voiceover` and state the lips stay closed.
     The voice description is the character's anchor sentence, verbatim in every shot (UNVERIFIED that it fixes the voice)."""
     out = []
     for u in (shot.get("dialogue_and_lip_lock") or {}).get("utterances") or []:
-        ch = registry["characters"][u["character_id"]]
+        ch = _speaker(registry, u["character_id"])
         desc = ch["voice_anchor"]["voice_description"]
         who = f"{clean_text(ch['short_disambiguator'])} ({u['speaker_id']}), {desc}"
         text = san(strip_tags(u["text"])[0])
@@ -44,7 +54,9 @@ def _speech_sentences(shot, registry):
 
 
 def _fl2va(shot, registry):
-    prof, style = registry["execution_profile"], registry["style_lock"]
+    prof, style = registry["execution_profile"], registry.get("style_lock")
+    if not style:
+        raise ValueError("registry has no style_lock (the prompt prefix); lint_story reports it as PO-05")
     fps, pf = prof["fps"], shot["timing_and_lattice"]["pixel_frames"]
     stage = {k: clean_text(shot["motion_7_stage"][k]) for k in STAGES}
     cadence = clean_text(shot["anime_timing_cadence"]["cadence_clause"])
@@ -110,7 +122,9 @@ def _ref2va(shot, registry):
 
 def compile_fl2va_prompt(shot, registry):
     """The prompt of one shot (FL2VA layout, or the Ref2VA 6-section layout for Ref2VA-routed shots).
-    Raises PromptRefused (SL-01..SL-04) when speech is present in the source."""
+    Raises PromptRefused (SL-01..SL-04) when speech is present in the source, ValueError when the shot has no shot_id."""
+    if not isinstance(shot.get("shot_id"), str) or not shot["shot_id"]:
+        raise ValueError("shot has no shot_id; the prompt cannot be named or saved")
     refuse_speech_in_source(shot, voice=voice_mode(registry))
     if route_shot(shot) == REF2VA:
         prompt, body = _ref2va(shot, registry)

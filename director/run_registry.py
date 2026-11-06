@@ -579,6 +579,7 @@ def record_transcript(story_dir, *, url: str, chars: int, lang: str = "hi", titl
 @best_effort
 def record_gate_decision(story_dir, gate: str, decision: str, note: str = "", who: str = "owner") -> str:
     story_dir = Path(story_dir)
+    gate = str(gate).strip().upper()          # GATES are upper case: "a" must be stored as "A", not dropped by _checked
     run = run_id(f"gate-{gate.lower()}", taken=_run_ids(story_dir))
     append_event(story_dir, run, "gate_decision", None, "ok", gate=gate, decision=decision,
                  note=f"by {who}" + (f": {note}" if note else ""))

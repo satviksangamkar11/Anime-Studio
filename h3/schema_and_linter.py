@@ -303,10 +303,16 @@ def mouth_state_problems(shot, fps, speaking=None):
     return out
 
 
+def _is_count(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
 def diegetic_text_events(shot):
-    """Typography events the shot explicitly requests (metadata.diegetic_text_events, default 0)."""
+    """Typography events the shot explicitly requests (metadata.diegetic_text_events, default 0). A value that is not a
+    whole number >= 0 counts as 0 here; _check_metadata reports it (SC-02)."""
     meta = shot.get("metadata")
-    return int(meta.get("diegetic_text_events", 0)) if isinstance(meta, dict) else 0
+    n = meta.get("diegetic_text_events", 0) if isinstance(meta, dict) else 0
+    return n if _is_count(n) else 0
 
 
 class _Log:
@@ -455,6 +461,16 @@ def _check_keys(log, shot):
     spans = (shot.get("motion_7_stage") or {}).get("stage_frame_spans")
     if spans is not None:
         _keyset(log, "stage_frame_spans", spans, STAGES)
+
+
+def _check_metadata(log, shot):
+    meta = shot.get("metadata")
+    if meta is None:
+        return
+    if not isinstance(meta, dict):
+        log.err("SC-02", "metadata must be an object")
+    elif "diegetic_text_events" in meta and not _is_count(meta["diegetic_text_events"]):
+        log.err("SC-02", f"metadata.diegetic_text_events must be a whole number >= 0, got {meta['diegetic_text_events']!r}")
 
 
 def _check_timing(log, shot, prof):
@@ -830,7 +846,7 @@ def _check_pure_foley(log, shot, prof, reg=None):
     cues = sum(1 for s in stages if SFX_CUE_RE.search(s))
     if cues < SX_MIN_STAGE_CUES:
         log.err("SX-01", f"only {cues} of 7 action sentences carry a synchronized sound cue, need {SX_MIN_STAGE_CUES}")
-    if route_shot(shot) == REF2VA:
+    if route_shot(shot) == REF2VA:  # any audio ref routes the shot here, so AU-01 is reported by this call only
         for code, msg in ref2va_limit_problems(shot, voice):
             log.err(code, msg)
     if voice:
@@ -855,8 +871,6 @@ def _check_pure_foley(log, shot, prof, reg=None):
             if a.get("audio") is None and a.get("clip_shot_id") == sid:
                 continue  # this shot is the anchor's source render: it is rendered without its own anchor
             log.err("VA-07", f"{cid!r} speaks but its voice anchor is not in reference_audio")
-    elif ref_inventory(shot)["audio"]:
-        log.err("AU-01", "reference_audio must be empty: pure-Foley H3 takes no voice references")
 
 
 def lint_shot(shot, profile, registry, asset_root, prev=None, compiled_prompt=None):
@@ -868,6 +882,7 @@ def lint_shot(shot, profile, registry, asset_root, prev=None, compiled_prompt=No
     if isinstance(compiled_prompt, dict):
         compiled_prompt = compiled_prompt["compiled_prompt"]
     _run(log, _check_keys, shot)
+    _run(log, _check_metadata, shot)
     _run(log, _check_timing, shot, profile)
     _run(log, _check_continuity, shot, profile)
     _run(log, _check_motion, shot)
@@ -903,6 +918,9 @@ def lint_story(story, compiled=None, asset_root_override=None):
     out["errors"] += [f"{anchor}: {m}" for m in pl["errors"]]
     out["warnings"] += [f"{anchor}: {m}" for m in pl["warnings"]]
     if pl["errors"]:
+        return out
+    if "style_lock" not in reg:  # the prompt prefix; compile_fl2va_prompt refuses without it
+        out["errors"].append(f"{anchor}: PO-05 registry has no style_lock (the prompt prefix and banned tokens)")
         return out
     # Check for duplicate shot_ids across the whole story
     seen_ids = {}
@@ -942,8 +960,12 @@ def lint_story(story, compiled=None, asset_root_override=None):
             running += ed if isinstance(ed, int) else 0
             try:
                 text = c or compile_fl2va_prompt(shot, reg)["compiled_prompt"]
-                wf = compile_comfyui_workflow(shot, reg, text, False, resolve_keyframes(shot, prev, root))
             except (KeyError, TypeError, ValueError, AttributeError):
+                continue  # lint_shot already reported the prompt failure (PR-00 / SL-*)
+            try:
+                wf = compile_comfyui_workflow(shot, reg, text, False, resolve_keyframes(shot, prev, root))
+            except (KeyError, TypeError, ValueError, AttributeError) as e:
+                out["errors"].append(f"{sid}: PR-00 workflow could not be compiled: {e!r}")
                 continue
             r = lint_workflow(wf, shot, prof)
             out["errors"] += r["errors"]

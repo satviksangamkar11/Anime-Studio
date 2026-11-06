@@ -324,6 +324,7 @@ def test_stage_1_data_carries_the_selected_languages_for_the_validator(tmp_path,
     mod = types.ModuleType("pack_validator")
     mod.validate_stage = validate_stage
     monkeypatch.setitem(sys.modules, "pack_validator", mod)
+    fake_claude["state"]["answers"] = canned(["en", "hi"])     # the run is en,hi: the stage 5 answer must cover both (writer caption checks run)
     run(story, tmp_path / "pack_v1", "--out-lang", "en,hi")
     assert seen["langs"] == ["en", "hi"] and seen["data"]["output_languages"] == ["en", "hi"]
     assert seen["data"]["output_language"] == "en" and seen["hook"] is not None

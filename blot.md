@@ -38,3 +38,6 @@ No push without the owner's go. No paid or ElevenLabs/Colab spend without go. Re
 
 ## RULE 4: NO COLAB CALLS (owner, 2026-11-07)
 No Colab call of any kind (no colab CLI, no Colab runs, no sessions). Applies to me and every agent until the owner lifts it. Also: no renders, no ElevenLabs, no paid calls.
+
+## RULE 5: REVIEW AGAIN AFTER FIXES (owner, 2026-11-07)
+Every review round is followed by fixes and then a SECOND review of the fixed files (Super VL + Dots, free models). Repeat until a round finds no real defect. Log each round start and finish.

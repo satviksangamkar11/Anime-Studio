@@ -63,3 +63,31 @@ FINAL:
 3. medium, pipeline.js:175–199 — fetch has no timeout, so a hanging request leaves `busy=true` and disables all buttons permanently; add timeout/abort and reset `busy`.
 4. medium, pipeline.js:1951–1963 — overlapping polls let stale responses overwrite newer state (e.g., re‑block Gate A after approval); serialize the poll loop.
 5. medium, pipeline.js:1140 — `GET /api/images?story=&pack=` likely diverges from the contract `?adhyay=&story=`, breaking the packet flow for non‑kaliya stories; align the query per the contract.
+
+
+# BATCH u3_app_html_css (supervl) 11-07 03:17
+
+Brief reasoning: I audited the same-origin fetch layer, the gate/disable logic, the job poller, every command's args against the documented contract, modal/spend confirm flow, DOM output paths (no innerHTML anywhere — XSS surface is clean), and the HTML wiring. Real defects found are a job-tracker that can never be retired, a non-wired job-bar log toggle (a11y), dead always-disabled buttons, stale header chips, an export path that depends on an absent global and sends non-contract query params, and an X-UI guard that is only sent on non-GET requests despite the comment saying every request needs it.
+
+- **high** app.js:350,354 — `pollJobs` keeps a tracker in `S.trackers` whenever its job is absent from `/api/jobs` (`!j`) as well as when still running, and coerces a non-array `/api/jobs` response to `[]`. A completed job evicted from the newest-first list (or one non-array response) therefore never calls `onEnd` and is never removed, so `pollJobs` re-fetches `/api/jobs` every 2.5 s forever and post-job refreshes (e.g. `loadImages(true)` after `review_shot`, `showBridge` after bridge) never run. Failing path: start a `review_shot` job, let it complete and drop off the job list; open Images > Shots — the review's `onEnd` never fires and the tracker lingers indefinitely. Fix: only keep a tracker when `isRunning(j)`; treat `!j` as finished, drop it, and invoke `t.onEnd(j)` (with `undefined`) so callers can refresh safely.
+
+- **high (unverified)** app.js:1321 — `loadExport` builds its request from `(window.StudioWizard && window.StudioWizard.project && window.StudioWizard.project()) || {}`, but `pipeline.js` (which would define `StudioWizard`) is not part of the reviewed files, so with the provided code `pj` is `{}` and export always errors "Pick a story and run its analysis first". It also appends `&story=` and `&pack=` while the contract for `GET /api/export` is only `?reel=N`, which a strict server may reject. Failing path: open Export, set a reel, click Load — immediate local error or a server 400 on the unexpected `story`/`pack` params. Fix: source story/pack from the UI's own story/pack selection (or confirm `pipeline.js` exports `StudioWizard`) and send only `?reel=N` unless the contract is updated.
+
+- **medium** index.html:75 + app.js (init) — `job-bar-toggle` (`aria-expanded="false"`, `aria-controls="job-bar-log"`) has no click handler in `init()`, so the job-bar log can never be expanded and `aria-expanded` is permanently false; `job-bar-log` stays hidden. Failing path: with a finished job, click "Show log" in the job bar — nothing happens and the accessible state never changes. Fix: add an `init()` listener that toggles `$('job-bar-log').hidden` and updates `aria-expanded` to "true"/"false".
+
+- **medium (unverified)** app.js:254 — `api()` only adds the `X-UI` header for non-GET requests, but the guard comment at app.js:61-62 states "Every request needs header X-UI and Host". If the server enforces `X-UI` on GET endpoints, every read (`/api/status`, `/api/jobs`, `/api/pack`, …) fails 403 and the UI is unusable; `Host` cannot be set via fetch anyway. Failing path: reload the page — if the server requires `X-UI` on GET, `/api/status` returns 403 and the header shows "server not reachable"/guard text. Fix: confirm the server's GET guard; if `X-UI` is required on all requests, add `opts.headers['X-UI'] = '1'` for GET too (the browser sets `Host`).
+
+- **low** app.js:760-765 — The "Build*" button in `renderJobs` is hard-coded `data-gate="never"` with a permanent "Not available yet" reason, so `applyGates` can never enable it; it is an unreachable/dead button. Failing path: open Images > Jobs — "Build*" is always disabled regardless of state. Fix: remove the button or wire it to a real command/gate (drop `data-gate="never"`).
+
+- **low** index.html:332 — `export-open` is statically `disabled` ("Not available yet: no folder-open command in v1") and nothing enables it; always-disabled/unreachable. Failing path: open Export — "Open folder" is permanently disabled. Fix: remove it or implement the folder-open command and enable it conditionally.
+
+- **low** index.html:15-17 / app.js:291-305 — `renderHeader` updates `spend-badge`, `job-badge`, and `story-status` but never touches `#project-name`, `#chip-pack`, or `#chip-languages`, so the topbar chips are permanently "Story: (no story chosen)", "Pack: none", "Languages: none ticked" even after a story/pack is chosen. Failing path: choose a story slug and pack in Story; the chips still show "(no story chosen)" / "Pack: none". Fix: update `#project-name`, `#chip-pack`, and `#chip-languages` in `renderHeader` from the current story/pack/language selection.
+
+No XSS (all server text goes through `textContent`/`createElement`/`setAttribute`; no `innerHTML`), no secrets emitted, and spend commands already require typed confirm via `needs_confirm`/risk `$`.
+
+FINAL:
+1. high — app.js:350,354: `pollJobs` retires neither finished jobs that fall off `/api/jobs` nor trackers after a non-array response, so `onEnd` never runs and the tracker re-polls forever.
+2. high (unverified) — app.js:1321: `loadExport` depends on undefined `window.StudioWizard.project()` and sends `story`/`pack` params not in the `GET /api/export?reel=N` contract, breaking export.
+3. medium — index.html:75 + app.js init: `job-bar-toggle` is unwired; `aria-expanded` stuck false and the job log never toggles (accessibility blocker).
+4. medium (unverified) — app.js:254: `X-UI` is only sent on non-GET despite the "every request needs X-UI" comment, risking 403 on all reads if the server enforces it.
+5. low — app.js:760-765 and index.html:332: "Build*" and "Open folder" are always-disabled, unreachable buttons.

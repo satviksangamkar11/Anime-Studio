@@ -76,3 +76,9 @@ Suites to stay green: director 603, h3 385, ui 178, flow 116 (counts grow).
 
 ## 10. QUEUED (owner: do NOT start until existing work is finished): colour / attention-retention audit
 - [ ] 10.1 Read research/COLOUR_ATTENTION_RETENTION_AUDIT_2026-11-07.md and decide what enters the pipeline (owner asked 2026-11-07 to include it, after the current work)
+
+## 11. Round-2 review (owner rule 5: review again after fixes)
+- [x] 11.1 Super VL round 2 r1-r5 done + Dots r1-r2 (r6-r8 pending)
+- [ ] 11.2 Triage + fix: W1-W4 done (director, h3 core, gate/controller, converter); W5 UI pending
+- [ ] 11.3 Round 3 on files fixed in 11.2 (repeat until no real defect)
+- [ ] 11.4 Suites green, secret scan clean, push

@@ -17,7 +17,7 @@ import statistics
 import wave
 from pathlib import Path
 
-from h3.voice_engine import engine_for
+from h3.voice_engine import H3_SPEECH_LANGS, VOICE_ENGINES, engine_for
 from h3.shot_table_spec import (CAPTION, FPS, HOOK_NARRATION, LOUDNESS, STRONG_HOOKS, TAIL_SILENCE_MAX_SEC,
                                 VO_FIT_MARGIN_SEC)
 
@@ -91,6 +91,8 @@ def _speech_items(trk, t0=0.0):
     """Narration and dialogue of one shot as (start, end, word_count) on the reel clock (t0 = shot start)."""
     items = []
     narr = trk.get("narration")
+    if narr and not isinstance(narr, dict):
+        raise ValueError(f"narration must be an object with text and time_range, got {type(narr).__name__}")
     if narr and str(narr.get("text", "")).strip():
         s, e = parse_time_range(narr["time_range"])
         items.append((s + t0, e + t0, len(narr["text"].split())))
@@ -176,7 +178,10 @@ def check_closing_shot(closing_shot, *, story_gate_checks=None, vo_wav_path=None
         errors.append(_err("CLOSING_VO_NO_TEXT", where, "a closing VO was given but narration text is empty"))
         return _report(errors)
     s, e = parse_time_range(narr["time_range"])
-    if payoff_end_sec is None or s < payoff_end_sec:
+    warnings = []
+    if payoff_end_sec is None:
+        warnings.append("payoff end not known, VO-after-payoff not verified")
+    elif s < payoff_end_sec:
         errors.append(_err("CLOSING_VO_BEFORE_PAYOFF", where, f"VO starts at {s:.2f}s, before the payoff ends at "
                                                              f"{payoff_end_sec}s"))
     pn = trk.get("performance_notes") or {}
@@ -195,7 +200,7 @@ def check_closing_shot(closing_shot, *, story_gate_checks=None, vo_wav_path=None
         stats["vo"]["residual_sec"] = round(residual, 3)
         if residual > TAIL_SILENCE_MAX_SEC + 1e-9:
             errors.append(_err("CLOSING_TAIL_SILENCE", where, f"tail silence {residual:.2f}s > {TAIL_SILENCE_MAX_SEC}s"))
-    return _report(errors, stats=stats)
+    return _report(errors, warnings=warnings, stats=stats)
 
 
 # ---------------------------------------------------------------- VO fit and BGM provenance
@@ -806,6 +811,11 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
         timing_errs = [_err("TIME-01", "shots", f"bad time_range: {exc}")]
     for lang in langs:
         eng = engine_for(voice_engines, lang) if voice_engines is not None else "elevenlabs"
+        if eng not in VOICE_ENGINES or (eng == "h3" and lang not in H3_SPEECH_LANGS):
+            reports[lang] = _report([_err("PLAN-01", lang, f"voice engine {eng!r} is not allowed for {lang}: use "
+                                                          f"elevenlabs, or h3 for English only")], [], {})
+            plans[lang] = {"mix_filter": None, "mux_argv": None}
+            continue
         try:
             reports[lang], plans[lang] = _plan_one_language(
                 reel, lang, shots, offsets, vo_dir, bgm_path, list(bgm_errors) + timing_errs, video_path=_video_for(video_path, eng),
@@ -836,7 +846,16 @@ def same_timing_problems(shots):
         per_lang = {}
         for key in ("narration_by_lang", "dialogue_by_lang", "captions_by_lang"):
             for lang, val in (trk.get(key) or {}).items():
-                items = [val] if isinstance(val, dict) else list(val or [])
+                if val is None:
+                    items = []
+                elif isinstance(val, dict):
+                    items = [val]
+                elif isinstance(val, list):
+                    items = val
+                else:
+                    errs.append(_err("TIME-01", sid, f"{key}[{lang}] must be an object or a list of objects, "
+                                                     f"got {type(val).__name__}"))
+                    continue
                 ranges = [parse_time_range(x["time_range"]) for x in items
                           if isinstance(x, dict) and x.get("time_range") not in (None, [])]
                 per_lang.setdefault(lang, []).extend(ranges)

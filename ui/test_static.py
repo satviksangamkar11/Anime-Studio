@@ -368,7 +368,7 @@ def _id_source(elem_id):
 
 
 def test_status_text_is_announced_to_screen_readers():
-    for elem_id in ["story-status", "job-bar-text"]:           # static ids in index.html
+    for elem_id in ["story-status"]:           # static ids in index.html
         tag = re.search(r"<[^>]*\sid=\"%s\"[^>]*>" % re.escape(elem_id), INDEX)
         assert tag, "status element missing: " + elem_id
         assert re.search(r"aria-live=|role=\"(status|alert)\"", tag.group(0)), "not announced: " + elem_id

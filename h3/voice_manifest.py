@@ -118,7 +118,10 @@ def _cli(argv=None):
         return 2
     with open(args.shots, encoding="utf-8") as f:
         doc = json.load(f)
-    shots = doc["shots"] if isinstance(doc, dict) else doc
+    shots = doc.get("shots") if isinstance(doc, dict) else doc
+    if not isinstance(shots, list):
+        print('ERROR: --shots must be a JSON list of shot rows, or an object {"shots": [...]}')
+        return 2
     vmap = None
     if args.voice_map:
         with open(args.voice_map, encoding="utf-8") as f:

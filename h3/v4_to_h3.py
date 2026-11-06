@@ -96,7 +96,7 @@ def _source(pack):
     stage = {}
     for p in sorted(d.glob("stage_1*.json")):
         data = json.loads(p.read_text(encoding="utf-8"))
-        if isinstance(data, dict) and ("output_languages" in data or "voice_engine" in data):
+        if isinstance(data, dict) and ("output_languages" in data or "voice_engine" in data or "story_gate_checks" in data):
             stage = data
             break
     return shots, bible, stage, str(d.resolve()), problems
@@ -468,12 +468,12 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
     head, tail = derived["head_handle_frames"], derived["tail_handle_frames"]
     lat = lattice(t1)
     pixel_claim = row.get("pixel_frames")
-    if pixel_claim != pf or row.get("latent_slots") != lat["latent_slots"]:
+    if ("pixel_frames" in row and pixel_claim != pf) or ("latent_slots" in row and row["latent_slots"] != lat["latent_slots"]):
         problems.append(f"{sid}: pixel_frames/latent_slots do not match lattice_n {t1} ({pf}/{lat['latent_slots']}); lattice used")
     for k in H3_FIELDS:
         if k not in h3:
             problems.append(f"{sid}: h3_fields.{k} missing (H3-only field, not in the V4 columns)")
-    if h3.get("location_id") not in ctx["environments"]:
+    if "location_id" in h3 and h3["location_id"] not in ctx["environments"]:
         problems.append(f"{sid}: h3_fields.location_id {h3.get('location_id')!r} is not an ENV id of the bible")
     seam_in, seam_out = h3.get("incoming_seam_type"), h3.get("outgoing_seam_type")
     for label, seam in (("incoming", seam_in), ("outgoing", seam_out)):
@@ -606,7 +606,11 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
         auth = {}
         if req:
             if authored is not None:
-                auth = dict((authored or {}).get(sid) or {})
+                entry = (authored or {}).get(sid) or {}
+                if isinstance(entry, dict):
+                    auth = dict(entry)
+                else:
+                    notes.append(f"{sid}: authored entry is not an object; ignored")
             elif from_folder:
                 found, status = load_fresh_authored(root, row, derived, bp, bible)
                 auth = dict(found or {})
@@ -638,6 +642,8 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
              "registry": registry, "episodes": [episodes[ep] for ep in order]}
     if isinstance(stage.get("voice_engine"), dict):
         story["voice_engine"] = copy.deepcopy(stage["voice_engine"])   # metadata only: never switches H3 speech on
+    if isinstance(stage.get("story_gate_checks"), dict):              # the V4 writer's six red-line checks, as written
+        registry["story_gate_checks"] = copy.deepcopy(stage["story_gate_checks"])
     return {"story": story, "problems": problems, "notes": notes}
 
 

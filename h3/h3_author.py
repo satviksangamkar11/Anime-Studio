@@ -159,7 +159,10 @@ def author_shot(row, derived, caller, max_repairs=MAX_REPAIRS, *, bible=None, pa
         except Exception as exc:  # the caller failed: a precise problem, not a silent default
             return {"fields": None, "rounds": rounds, "problems": [f"MODEL call failed: {exc!r}"]}
         rounds += 1
-        fields, messages = check_answer(row, derived, bp, reply, bible, pack_root, prev_row)
+        try:
+            fields, messages = check_answer(row, derived, bp, reply, bible, pack_root, prev_row)
+        except Exception as exc:  # the converter or linter failed on this reply: a per-shot problem, never a traceback
+            return {"fields": None, "rounds": rounds, "problems": [f"MODEL check failed: {exc!r}"]}
         if not messages:
             return {"fields": fields, "rounds": rounds, "problems": []}
         prompt = build_repair_prompt(base, messages, reply)
@@ -229,7 +232,10 @@ def author_pack(pack_dir, caller=None, *, dry_run=False):
                     entry["status"] = "dry-run"
                 else:
                     prev_row = dict(prev["row"], h3_fields=prev["h3"]) if prev else None
-                    res = author_shot(row, derived, caller, bible=bible, pack_root=root, prev_row=prev_row, blueprint=bp)
+                    try:
+                        res = author_shot(row, derived, caller, bible=bible, pack_root=root, prev_row=prev_row, blueprint=bp)
+                    except Exception as exc:  # belt and braces: the shot fails, the pack walk goes on by the same rule
+                        res = {"fields": None, "rounds": 0, "problems": [f"MODEL check failed: {exc!r}"]}
                     entry["rounds"] = res["rounds"]
                     if res["problems"]:
                         entry.update(status="failed", problems=entry["problems"] + res["problems"])

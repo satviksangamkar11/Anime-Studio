@@ -1017,6 +1017,8 @@
         var stage = getStage('analysis');
         if (!slug) { showError('Save the story first'); return; }
         if (!pack) { showError('Enter a pack name'); return; }
+        var savedLangs = (State.storyState && State.storyState.output_languages) || [];
+        if (!savedLangs.length) { showError('Tick the languages and press Save languages first. The writer has no default language.'); return; }
         if (stage && stage.status !== 'ready' && stage.status !== 'rejected') {
           showError('Analysis is not ready to run');
           return;
@@ -1024,7 +1026,7 @@
         State.busy = true;
         post('/api/pipeline/project', { story_slug: slug, pack: pack })
           .then(function () {
-            return post('/api/preview', { command: 'write_pack', args: { slug: slug, pack: pack, writer: WRITER_NAME } });
+            return post('/api/preview', { command: 'write_pack', args: { slug: slug, pack: pack, writer: WRITER_NAME, out_lang: savedLangs.join(',') } });
           })
           .then(function (data) {
             var argv = data.argv || [];

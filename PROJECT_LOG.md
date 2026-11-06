@@ -1,11 +1,11 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- Item: checklist 1-7 done except push + docs wrap (7.2-7.4); captions/fonts/colour/stories set aside by owner.
-- Open: 2.5 contract test (pack_to_spec reads legacy pack only; no V4-to-H3 converter). Retry wiring into write_pack is NOT mine.
-- Green suites (2026-11-07 02:00): director 622, h3 441 (1 skip = 2.5 gap), ui 178, flow 116.
-- Blockers: none in my files. No render, no model call, no commit, no push.
-- Next: owner gives next task. Queued (not started): colour/attention audit (checklist 10), caption items (section 9), live author run + ElevenLabs need owner go.
+- State 04:16: round-2 review (Super VL + Dots) fixes done by Haiku W1-W4 (director, h3 core, gate/controller, converter/author). Suites: director 634, h3 537, ui 223, flow 116; secret scan clean. Branch v4-architecture-2026-11-07 (last push df2a21e; round-2 fixes NOT pushed yet).
+- Pending: round-2 Super VL batches r6-r8 (UI) -> W5 Haiku fixes -> ROUND 3 review of all fixed files (blot rule 5) -> push. Dots round 2 still slow: check later, do not wait.
+- Owner rules: Haiku subagents do the work; reviewers Super VL + Dots (act on Super VL first); no Colab calls; no render; stories/captions/colour audit set aside (checklist 9, 10).
+- Resume: read blot.md, this NOW block, last 30 LIVE LOG lines, CHECKLIST_ARCHITECTURE_2026-11-07.md (section 11 = review rounds), HANDOFF section 0 + 13/13b.
+- Not built: Step 9 runner, Gate D assembly runner, live author run, any render; ElevenLabs/live model calls need owner go.
 
 Purpose: one line per step so a new session or Claude account loses no context.
 Read with: `HANDOFF_2026-11-07.md` (rules, ledger, section 13 = latest owner decisions), `research/H3_V4_CONTRACT_2026-11-07.md`, `research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt`.
@@ -221,3 +221,67 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 03:17 | me | TEST | UI in built-in browser (phone 490px + desktop 1280px) | found+fixed: duplicate static panels (every id twice), next-step key/text mismatch ([object Object]), header chips, validate POST path, label layout, sticky header on phone, stepper wrap; validator run ok (Upanishad pack: no errors); ui 223 pass
 11-07 03:17 | supervl | REVIEW-DONE | batch u2_pipeline_js | 5252 chars
 11-07 03:19 | me | EDIT | STATUS.md,README.md,HANDOFF_2026-11-07.md,CHECKLIST,PROJECT_LOG.md | wrap-up docs updated; Dots+Super VL triaged: fixed free-model guard (empty pricing), answer_text JSON error, Marathi detect, per-language AttributeError, UI fetch timeout; suites director 624 h3 504 ui 223 flow 116; secret scan clean
+11-07 03:20 | me | REVIEW-START | research/_run_round2_reviews.py | ROUND 2 review of the fixed files (8 batches): Super VL + Dots (OpenRouter free) -> research/ROUND2_REVIEW_*_2026-11-07.md; owner rule 5 added to blot.md
+11-07 03:21 | supervl | REVIEW-DONE | batch u3_app_html_css | 5707 chars
+11-07 03:26 | dots | REVIEW-DONE | batch u2_pipeline_js | 7649 chars
+11-07 03:27 | supervl | REVIEW-DONE | batch r1_director | 3350 chars
+11-07 03:34 | me | EDIT | ui/static/pipeline.js,index.html,ui/test_static.py | triaged UI round-1 leftovers: analysis button now sends out_lang (server has no default language), removed dead static job bar (duplicate, toggle unwired); ui 223 pass
+11-07 03:36 | supervl | REVIEW-DONE | batch r2_registry_retry | 2123 chars
+11-07 03:40 | dots | REVIEW-DONE | batch r1_director | 1769 chars
+11-07 03:42 | dots | REVIEW-DONE | batch u3_app_html_css | 4957 chars
+11-07 03:43 | supervl | REVIEW-DONE | batch r3_h3_core | 3194 chars
+11-07 03:44 | me | OWNER | reviews | owner: Haiku subagents do the work from now; reviewers unchanged but act on Super VL first, do not wait for slow Dots (check it later); close fast
+11-07 03:45 | me | AGENT-START | W1(haiku,medium) director/write_pack,pack_validator,run_registry,retry_policy | round-2 Super VL+Dots findings batches r1-r2
+11-07 03:45 | me | AGENT-START | W2(haiku,medium) h3/schema_and_linter,compile_h3_sing8,router | round-2 Super VL findings batch r3
+11-07 03:45 | W1(haiku,medium) | CMD | blot.md,CLAUDE.md,PROJECT_LOG.md,research/ROUND2_REVIEW_*.md | read rules + 8 round-2 findings
+11-07 03:45 | W2(haiku,medium) | CMD | blot.md,CLAUDE.md,PROJECT_LOG.md,HANDOFF_2026-11-07.md | read rules, NOW, ledger; scope = 3 h3 files
+11-07 03:46 | W1(haiku,medium) | DECISION | write_pack.py,run_registry.py,retry_policy.py,pack_validator.py | 8 findings verified in code: all real; #2 match source_id first (stage 5 sees original ids)
+11-07 03:46 | W2(haiku,medium) | DECISION | h3/schema_and_linter.py KF-01 | rejected: REF2VA is the documented keyframe mode spelling (e2e_sample, fixtures); Ref2VA is the route label
+11-07 03:46 | W2(haiku,medium) | TEST | h3/tests | baseline h3 504 pass
+11-07 03:46 | W1(haiku,medium) | TEST | director | baseline director 624 pass
+11-07 03:47 | W1(haiku,medium) | EDIT | director/test_round2_fixes.py | 8 new tests written (one per finding)
+11-07 03:47 | W2(haiku,medium) | EDIT | h3/tests/test_round2_fixes.py | 8 tests written (red before fix)
+11-07 03:47 | W2(haiku,medium) | TEST | h3/tests/test_round2_fixes.py | 8 fail before fix (all 8 confirmed real)
+11-07 03:47 | W1(haiku,medium) | EDIT | director/write_pack.py | fixes 1 (gate merges fallback) and 2 (captions by source_id first)
+11-07 03:48 | W1(haiku,medium) | EDIT | director/write_pack.py | fixes 3 (parse wraps settings_for), 4 (SSE line, episodes block JSON)
+11-07 03:48 | W1(haiku,medium) | EDIT | director/write_pack.py | fix 5 checked_call around stage and single model calls
+11-07 03:48 | W2(haiku,medium) | EDIT | h3/compile_h3_sing8.py,h3/schema_and_linter.py | fixes F2 F3 F4 F5 F6-compile F6-linter (PO-05, PR-00, SC-02, AU-01 once)
+11-07 03:48 | W1(haiku,medium) | EDIT | director/retry_policy.py,director/write_pack.py | fix 8 is_free_model every price numeric 0; openrouter_is_free delegates to it
+11-07 03:48 | W1(haiku,medium) | EDIT | director/pack_validator.py,director/run_registry.py | fix 6 bool excluded in S55-4; fix 7 gate upper-cased
+11-07 03:48 | W1(haiku,medium) | TEST | director/test_round2_fixes.py | 10 new tests pass (9 failed before fixes; bool test rewritten to set EXIT_RELEASE_SHOTS=1)
+11-07 03:48 | W1(haiku,medium) | FAIL | director/test_writer_v4.py | existing test_stage_1_data_carries_the_selected_languages fails after gate merge (LANG-03 from writer fallback); investigating
+11-07 03:48 | W2(haiku,medium) | TEST | h3/tests | h3 512 pass (504+8 new)
+11-07 03:48 | W1(haiku,medium) | DECISION | director/write_pack.py | fix 1 narrowed: merge writer caption checks only for stage 5 (validator passthrough); stages 1-3 keep validator alone (existing test contradicted merge)
+11-07 03:49 | W2(haiku,medium) | TEST | director | 633 pass 1 fail (test_writer_v4 LANG-03 in W1's write_pack WIP; no h3 import of changed functions)
+11-07 03:49 | dots | REVIEW-DONE | batch r2_registry_retry | 3873 chars
+11-07 03:49 | W1(haiku,medium) | EDIT | director/test_writer_v4.py | stage-5 canned answer set to en,hi to match the run (was hi-only; writer checks now run on stage 5)
+11-07 03:50 | W2(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row W2 added (section 9)
+11-07 03:50 | W2(haiku,medium) | AGENT-DONE | h3 batch r3 | fixed 5 (F2,F3,F4,F5,F6), rejected 1 KF-01, skipped 2 (fps, utterance); h3 512 pass
+11-07 03:50 | W2 | AGENT-DONE | h3/schema_and_linter.py,compile_h3_sing8.py | 5 real fixed (PR-00, PO-05, speaker guard, shot_id, SC-02, AU-01 once), KF-01 rejected as false positive; h3 512 pass
+11-07 03:50 | W1(haiku,medium) | TEST | director,h3,ui,flow | director 634, h3 512 (W2 concurrent), ui 223, flow 116 pass
+11-07 03:50 | W1(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row W1 added to section 9
+11-07 03:50 | W1(haiku,medium) | AGENT-DONE | director/write_pack.py,pack_validator.py,run_registry.py,retry_policy.py | 8 findings: 8 fixed (1 narrowed to stage 5), 0 rejected; director 634 pass
+11-07 03:58 | supervl | REVIEW-DONE | batch r4_h3_gate_ctrl | 3751 chars
+11-07 03:58 | W1 | AGENT-DONE | director/write_pack,pack_validator,run_registry,retry_policy | 8 findings fixed (stage-5 caption checks merged, source_id match, parse/stream/episodes/model-call guards, bool, gate upper, free-model strict), director 634 pass
+11-07 03:58 | me | AGENT-START | W3(haiku,medium) h3/gate_d_audio,render_controller,voice_engine | round-2 Super VL batch r4 (5 findings: closing-shot payoff args, scalar by_lang crashes, engine validation)
+11-07 03:59 | W3(haiku,medium) | EDIT | h3/tests/test_round2_gate_fixes.py | 12 tests written for 5 findings (not yet run)
+11-07 04:00 | W3(haiku,medium) | TEST | h3/tests/test_round2_gate_fixes.py | RED before fix: 13 fail, 1 pass (list/dict control)
+11-07 04:00 | W3(haiku,medium) | EDIT | h3/render_controller.py,h3/gate_d_audio.py | fixes 1-5 applied (story gate+payoff args, payoff-unknown warning, scalar by_lang TIME-01, non-dict narration, engine check)
+11-07 04:01 | W3(haiku,medium) | TEST | h3,director,ui,flow | h3 526 pass (512+14 new), director 634, ui 223, flow 116; GREEN after fixes
+11-07 04:01 | W3(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row W3 added (section 9)
+11-07 04:01 | W3(haiku,medium) | AGENT-DONE | h3/render_controller.py,h3/gate_d_audio.py,h3/tests/test_round2_gate_fixes.py | 5 real fixed, 0 rejected, 14 tests; h3 526 pass
+11-07 04:05 | supervl | REVIEW-DONE | batch r5_h3_convert_author | 3492 chars
+11-07 04:05 | W3 | AGENT-DONE | h3/gate_d_audio,render_controller | 5 findings fixed; h3 526 pass
+11-07 04:05 | me | AGENT-START | W4(haiku,medium) h3/v4_to_h3,h3_author,voice_manifest | round-2 Super VL batch r5 (5 findings) + copy story_gate_checks into registry
+11-07 04:06 | W4(haiku,medium) | TEST | h3 | baseline h3 526 pass before W4 edits
+11-07 04:07 | dots | REVIEW-DONE | batch r3_h3_core | 3416 chars
+11-07 04:07 | W4(haiku,medium) | EDIT | h3/tests/test_round2_convert_fixes.py | 11 tests written for findings 1-6 (not yet run)
+11-07 04:07 | W4(haiku,medium) | TEST | h3/tests/test_round2_convert_fixes.py | RED before fix: 9 fail, 2 pass (control)
+11-07 04:07 | W4(haiku,medium) | EDIT | h3/v4_to_h3.py,h3/h3_author.py,h3/voice_manifest.py | fixes 1-6 applied (6 findings, 0 rejected so far)
+11-07 04:08 | W4(haiku,medium) | TEST | h3,director,ui,flow | h3 537 pass (526+11), director 634, ui 223, flow 116 pass after fixes
+11-07 04:08 | W4(haiku,medium) | EDIT | HANDOFF_2026-11-07.md | ledger row W4 added (section 9)
+11-07 04:08 | W4(haiku,medium) | AGENT-DONE | h3/v4_to_h3,h3_author,voice_manifest,tests/test_round2_convert_fixes | 6 findings fixed, 0 rejected, 11 tests; h3 537 pass
+11-07 04:11 | supervl | REVIEW-DONE | batch r6_ui_server | 1597 chars
+11-07 04:14 | supervl | REVIEW-DONE | batch r7_ui_js | 399 chars
+11-07 04:14 | W4 | AGENT-DONE | h3/v4_to_h3,h3_author,voice_manifest | 6 fixed (authored non-dict, check wrapped, cli, lattice keys, location dup, story_gate_checks copied); h3 537 pass
+11-07 04:16 | me | EDIT | PROJECT_LOG.md NOW block,CHECKLIST | owner: limit reaching, log updated; NOW block rewritten with full resume state

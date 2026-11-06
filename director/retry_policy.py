@@ -198,13 +198,15 @@ def call_with_retry(fn, *, model: str = "", policy: Policy = DEFAULT_POLICY, bre
 def is_free_model(model: str, catalog: list) -> bool:
     """True only when the model is in the catalog and EVERY price field is 0. Unknown or unpriced = not free."""
     entry = next((m for m in catalog if m.get("id") == model), None)
-    if not entry:
+    if not entry or not isinstance(entry.get("pricing"), dict) or not entry["pricing"]:
         return False
-    prices = [v for v in (entry.get("pricing") or {}).values() if isinstance(v, (str, int, float))]
-    try:
-        return bool(prices) and all(float(v) == 0 for v in prices)
-    except ValueError:
-        return False
+
+    def zero(v) -> bool:
+        try:
+            return isinstance(v, (str, int, float)) and not isinstance(v, bool) and float(v) == 0
+        except ValueError:
+            return False
+    return all(zero(v) for v in entry["pricing"].values())
 
 
 def require_free(models, catalog: list) -> tuple:
