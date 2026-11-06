@@ -1,0 +1,166 @@
+[
+ {
+  "id": "SHOT-001",
+  "episode": 1,
+  "scene": "EVENT-001",
+  "mode": "fl2va",
+  "seconds": 8.0,
+  "aspect": "9:16",
+  "purpose": "Establish the poisoned Yamuna: toxic fumes rise, a bird falls dead, cows collapse at the bank.",
+  "cast": [],
+  "props": [],
+  "set": "ENV-KALIYA-DAH",
+  "beats": [
+   {
+    "t": [
+     0.0,
+     2.5
+    ],
+    "acting": "violet-green fume rises from the river, billowing upward",
+    "secondary": "fume column thickens",
+    "bhava": "dread"
+   },
+   {
+    "t": [
+     2.5,
+     5.0
+    ],
+    "acting": "a bird in the sky drops from the air, wings limp",
+    "primary": true,
+    "secondary": "feathers scatter"
+   },
+   {
+    "t": [
+     5.0,
+     7.0
+    ],
+    "acting": "cows at the bank stagger and fall, tongues lolling",
+    "secondary": "dust puffs"
+   },
+   {
+    "t": [
+     7.0,
+     8.0
+    ],
+    "acting": "the fume spreads across the water surface, water turns violet-green",
+    "hold": true,
+    "bhava": "desolation"
+   }
+  ],
+  "camera": {
+   "move": "tilt down from sky to river",
+   "lens_mm": 24,
+   "height": "high",
+   "start_framing": "wide landscape with river",
+   "end_framing": "river surface with dead bird"
+  },
+  "layers": {
+   "fg": "fume layer",
+   "mid": "river and bank",
+   "bg": "distant Vrindavan hills",
+   "fx": "bird fall, dust"
+  },
+  "light": {
+   "key": "dull morning sun from screen left",
+   "rim": "none",
+   "mood": "toxic twilight"
+  },
+  "compositing": {
+   "generated": "fume animation, bird fall, cow collapse",
+   "held": "background plate",
+   "post": "on-2s hold at end, color grade to violet-grey"
+  },
+  "start_state": "Lush green riverbank, clear blue water, cows grazing",
+  "end_state": "Violet-green water, black ash-sand bank, dead bird in foreground, cows collapsed",
+  "cut_in": "cold open",
+  "cut_out": "cut to SHOT-002",
+  "keyframes": {
+   "start": "keyframes/SHOT-001-FRAME-A.png",
+   "end": "keyframes/SHOT-001-FRAME-B.png"
+  },
+  "refs": [],
+  "subjects": [
+   "bird",
+   "cows"
+  ],
+  "sound": "wind, bird wing flap, thud, cow lowing (muffled)",
+  "dialogue": [],
+  "source_id": "SHOT-01"
+ },
+ {
+  "id": "SHOT-002",
+  "episode": 1,
+  "scene": "EVENT-001",
+  "mode": "fl2va",
+  "seconds": 8.7,
+  "aspect": "9:16",
+  "purpose": "Close-up on the black sand bank, dead roots, and a collapsed cow, emphasizing the scorched earth.",
+  "cast": [],
+  "props": [],
+  "set": "ENV-KALIYA-DAH",
+  "beats": [
+   {
+    "t": [
+     0.0,
+     3.5
+    ],
+    "acting": "camera pans across black ash-sand, dry dead roots",
+    "secondary": "dust drift"
+   },
+   {
+    "t": [
+     3.5,
+     6.5
+    ],
+    "acting": "a dead cow lies on its side, tongue out, eyes glazed",
+    "primary": true
+   },
+   {
+    "t": [
+     6.5,
+     8.7
+    ],
+    "acting": "violet-green water laps at the black bank, small bubbles",
+    "hold": true,
+    "bhava": "stillness after death"
+   }
+  ],
+  "camera": {
+   "move": "pan right along the bank",
+   "lens_mm": 35,
+   "height": "ground level",
+   "start_framing": "dead roots",
+   "end_framing": "cow carcass with water"
+  },
+  "layers": {
+   "fg": "dust",
+   "mid": "bank and cow",
+   "bg": "river"
+  },
+  "light": {
+   "key": "low sun, long shadows",
+   "rim": "none",
+   "mood": "bleak"
+  },
+  "compositing": {
+   "generated": "dust, water bubbles",
+   "held": "background",
+   "post": "desaturated"
+  },
+  "start_state": "Black ash-sand, dry roots, a cow carcass",
+  "end_state": "Same, water lapping at the edge",
+  "cut_in": "match on action from SHOT-001",
+  "cut_out": "cut to SHOT-003",
+  "keyframes": {
+   "start": "keyframes/SHOT-002-FRAME-A.png",
+   "end": "keyframes/SHOT-002-FRAME-B.png"
+  },
+  "refs": [],
+  "subjects": [
+   "cow carcass"
+  ],
+  "sound": "wind, water lap",
+  "dialogue": [],
+  "source_id": "SHOT-02"
+ }
+]

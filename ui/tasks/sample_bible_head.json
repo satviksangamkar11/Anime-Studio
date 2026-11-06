@@ -1,0 +1,94 @@
+{
+ "characters": [
+  {
+   "id": "CHAR-KRISHNA",
+   "name": "Bala Krishna",
+   "description": "Child Krishna, 5-6 heads, peacock feather in wild curls, golden pitambara, black Kali Kamli tied as wrestler's sash, cloud-dark blue skin, Srivatsa mark",
+   "colours": {
+    "skin": "#D4A57A",
+    "eyes": "#2B1B1B",
+    "hair": "#1A1A1A",
+    "pitambara": "#FFD700",
+    "kali_kamli": "#000000",
+    "srivatsa": "#FF0000"
+   },
+   "poses": [
+    "POSE-crouch-branch",
+    "POSE-dive",
+    "POSE-stand-bank",
+    "POSE-wrestler-slap",
+    "POSE-coiled-stand",
+    "POSE-tandava-leap",
+    "POSE-pranama-smile",
+    "POSE-expand",
+    "POSE-grasp-tongues",
+    "POSE-reaction-toe"
+   ]
+  },
+  {
+   "id": "CHAR-KALIYA",
+   "name": "Kaliya",
+   "description": "Colossal obsidian many-hooded serpent, violet-green venom veins, fan of 7-9 visible hoods, never an exact count",
+   "colours": {
+    "body": "#000000",
+    "venom_veins": "#556B2F",
+    "fangs": "#FFFFFF"
+   },
+   "poses": [
+    "POSE-coiled-flat",
+    "POSE-rear-strike",
+    "POSE-coiled-around",
+    "POSE-bleeding-hood",
+    "POSE-surrender-plea"
+   ]
+  }
+ ],
+ "environments": [
+  {
+   "id": "ENV-KALIYA-DAH",
+   "name": "Kaliya-dah surface",
+   "description": "Poisoned river pool with lone Kadamba tree on black-sand bank, violet-green water, dead birds and cows, scorched earth",
+   "colours": {
+    "water": "#5F9EA0",
+    "sand": "#2F2F2F",
+    "tree_bark": "#B87333"
+   }
+  },
+  {
+   "id": "ENV-UNDERWATER-CAVERN",
+   "name": "Underwater cavern",
+   "description": "Dark blue-green water, rock formations, glowing Krishna silhouette, Naga-Patnis in mid-ground",
+   "colours": {
+    "water": "#191970",
+    "rock": "#2F4F4F"
+   }
+  }
+ ],
+ "props": [
+  {
+   "id": "PROP-AMRIT-KALASH",
+   "name": "Amrit Kalash",
+   "description": "Golden pot of nectar, ornate, carried by Garuda, drops of amrit make the Kadamba immortal",
+   "colours": {
+    "pot": "#FFD700",
+    "ornament": "#C0C0C0"
+   }
+  },
+  {
+   "id": "PROP-CLOTH-BALL",
+   "name": "Kanduk (cloth ball)",
+   "description": "Golden yellow cloth ball, textured, used in the ball game, struck into the poisoned river",
+   "colours": {
+    "ball": "#FFD700"
+   }
+  },
+  {
+   "id": "PROP-KALI-KAMLI",
+   "name": "Kali Kamli (black blanket)",
+   "description": "Black blanket tied as wrestler's sash around Krishna's waist, tightens when He slaps His arms",
+   "colours": {
+    "cloth": "#000000"
+   }
+  }
+ ]
+}

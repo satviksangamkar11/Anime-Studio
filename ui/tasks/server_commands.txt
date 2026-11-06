@@ -1,0 +1,36 @@
+
+BATCH_ARGS = {"batch": A(NAME, True), "gpu": A(GPU, False, "G4"), "session": A(SESSION, False, "t0-kaliya")}
+ADH = A(ADHYAY, False, 1)
+SHOT_ARGS = {"adhyay": ADH, "shot": A(SHOT, True), "version": A(VERSION, True)}
+COMMANDS = {c.id: c for c in (
+    Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "model": A(WRITER_MODEL, True)}, b_write_pack),
+    Cmd("check_pack", "R", False, {"pack": A(PACK_REL, True)}, b_check_pack),
+    Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(True)),
+    Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(False)),
+    Cmd("neighbour_sheet", "W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_neighbour),
+    Cmd("review_shot", "N, W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_review),
+    Cmd("queue_add", "W", False, {**SHOT_ARGS, "edit": A(EDIT, True), "jobs": A(JSON_FILE, True), "note": A(NOTE, False, "")}, b_queue_add),
+    Cmd("queue_status", "R", False, {"adhyay": ADH}, lambda c, a: _dq(c, "status", a, "--json")),
+    Cmd("queue_collect", "W", False, {"adhyay": ADH}, lambda c, a: _dq(c, "collect", a, "--downloads", str(c.downloads))),
+    Cmd("queue_accept", "W", False, {**SHOT_ARGS, "note": A(NOTE, False, "")}, b_queue_accept),
+    Cmd("tidy_plan", "R", False, {"adhyay": ADH}, b_tidy(False)),
+    Cmd("tidy_apply", "W", False, {"adhyay": ADH}, b_tidy(True)),
+    Cmd("clip_qa", "W", False, {"clip": A(CLIP, True), "out_dir": A(CLIP_NEW, True)}, b_clip_qa),
+    Cmd("visual_qa", "N, W", False, {"clip": A(CLIP, True), "direction": A(JSON_FILE, True), "out_dir": A(CLIP_NEW, True),
+                                    "model": A(VISION_MODEL, True), "bible": A(JSON_FILE)}, b_visual),
+    Cmd("run_kaggle_prepare", "W", False, {"shots": A(JSON_FILE, True), "scope": A(SCOPE, True), "ids": A(IDS), "reel": A(REEL),
+                                           "keyframes": A(DIR_KF, False, _default_keyframes), "batch": A(NAME, True)}, b_prepare),
+    Cmd("colab_sessions", "R", False, {}, lambda c, a: [*c.colab, "sessions"]),
+    Cmd("colab_usage", "R", False, {}, lambda c, a: [*c.colab, "usage"]),
+    Cmd("colab_stop", "R-ops", False, {"session": A(SESSION, True)}, lambda c, a: [*c.colab, "stop", "-s", a["session"]], post="colab_verify"),
+    Cmd("colab_run_dry", "R", False, BATCH_ARGS, b_colab_run(False)),
+    Cmd("colab_run", "$", True, BATCH_ARGS, b_colab_run(True)),
+    Cmd("h3_prepare", "W", False, {"story": A(JSON_FILE, True), "scope": A(SCOPE, True), "ids": A(IDS), "reel": A(REEL)}, b_h3, needs_h3=True),
+)}
+
+
+def command_spec(name) -> Cmd:
+    if not isinstance(name, str) or name not in COMMANDS:
+        raise bad("unknown command")
+    return COMMANDS[name]
+

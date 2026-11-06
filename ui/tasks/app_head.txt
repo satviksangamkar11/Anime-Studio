@@ -1,0 +1,120 @@
+/*
+ * Anime Studio control UI (frontend). Plain JS, ES2018, no framework, no network except same-origin /api/*.
+ * Server text only goes in through textContent and createElement; no HTML string is ever parsed.
+ *
+ * Backend contract: the shapes this page reads, as served by ui/server.py. A missing key shows as "-"; it never throws.
+ *   GET  /api/status           {studio_ok, flow_ok, python, colab_cli, nvidia_key_files (count), spend_allowed,
+ *                               spend_cap_units, h3_built, job: null | {id, command, state, rc, started, ended, spend, warning}}
+ *   GET  /api/jobs             [job summary, newest first]
+ *   GET  /api/jobs/{id}/log?tail=N           text, redacted
+ *   GET  /api/jobs/{id}/result bridge_*: {records, counts}; queue_collect: {lines}; review_shot: {verdict, exit}; other: {lines}
+ *   POST /api/jobs/{id}/stop   {} -> {state, warning}
+ *   GET  /api/story            {slugs: [{slug, packs: [name], has_source}]}
+ *   GET  /api/story/{slug}     {text, bytes}; 404 = no SOURCE.md yet
+ *   POST /api/story/{slug}     {text, overwrite} -> {saved, bytes}; 409 = SOURCE.md exists
+ *   GET  /api/pack?pack=stories/<slug>/<name>[&check=1]
+ *                              {stages: {"1": bool, ...}, gate1, episodes: [{n, shots, seconds, check}],
+ *                               characters: [{id, name}], places: [{id, name}],
+ *                               shots: [{id, episode, mode, seconds, cut_in, cut_out, issues: count}], check}
+ *   GET  /api/images?adhyay=N  {series: {characters, places, props: [{id, name, chip, sheet, accepted}]},
+ *                               sheets: [{id, sheet, accepted}], jobs: [{file, shot_id, scene, chips, attempts, attempt_cap, status}],
+ *                               shots: [{id, candidates: [{name, path}], reviews}], progress: {lines: [...], total, legacy},
+ *                               queue: {pending: [...], counts: {pending, filed, accepted}}, filed: [...], accepted: [...],
+ *                               finals: [{name, path, bytes}]}
+ *   GET  /api/review?shot=&cand=&adhyay=N   cand = picture FILE NAME; {verdict, fix, regen_sentence, edit_instruction,
+ *                                           answers: {Q1..Q6}}; 404 = no review yet
+ *   POST /api/packet           {jobs: "flow/<file>.json", shots: [id]} -> {path, markdown}
+ *   GET  /api/video            {shot_files: [relative path], batches: [{name, run_py_bytes, settings, embed_mb}],
+ *                               clips: [{shot, take, file, bytes, seconds, qa: bool}]}
+ *   GET  /api/h3               {built, message, command, module}
+ *   GET  /api/colab            {sessions: [{name, gpu, status}] | null, balance: number | null,
+ *                               read_ok: {sessions, usage}, rate_units_per_hour: {G4, A100}, cap_units}
+ *   GET  /api/export?reel=N    {clips_in_order: [{shot, take, file, ...}], assembly: "not built", assembly_note, reel_files: [name]}
+ *   GET  /api/file?path=       bytes (png, jpg, mp4, ...)
+ *   POST /api/preview          {command, args} -> {argv, risk, estimate, balance, token, expires_s, needs_confirm,
+ *                               confirm_text, spend_allowed}
+ *   POST /api/run              {token, confirm?} -> {job_id}
+ * Command ids and args (server COMMANDS table; unknown args are refused):
+ *   write_pack {slug, pack, model}           bridge_dry / bridge_write {size, adhyay}
+ *   neighbour_sheet / review_shot {jobs, shot, candidates: [paths], adhyay}
+ *   queue_add {shot, version, edit, jobs, note, adhyay}     queue_accept {shot, version, note, adhyay}
+ *   queue_collect {adhyay}                   tidy_plan {adhyay}
+ *   clip_qa {clip, out_dir}                  visual_qa {clip, direction, out_dir, model}
+ *   run_kaggle_prepare {shots, scope, ids | reel, keyframes?, batch}
+ *   colab_run {batch, gpu, session}          colab_stop {session}
+ *   h3_prepare {story, scope, ids | reel}
+ * Relative paths (for example "flow/A_KM_flow_jobs_x.json") are resolved by the server against the studio folder.
+ */
+(function () {
+  'use strict';
+
+  var POLL_MS = 2500;
+  var PACK_STAGES = ['1', '2', '3e1', '3e2', '3e3', '3e4', '3e5', '5'];
+  var WRITER_MODELS = ['nvidia/nemotron-3-ultra-550b-a55b'];
+  var VISION_MODELS = ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/nemotron-3.5-super-vl-120b-a12b'];
+  var GPUS = ['G4', 'A100'];
+  var SECTIONS = ['story', 'images', 'bridge', 'video', 'export'];
+  var IMG_TABS = ['series', 'jobs', 'shots', 'progress', 'queue', 'finals'];
+  var MAX_STORY_BYTES = 200 * 1024;
+  var JOBS_DIR = 'flow/';
+  var FINISHED_TEXT = 'the job had already finished';
+  var GUARD_403 = 'Refused by a server guard (403). Spend commands need the server started with --allow-spend. ' +
+    'Every request needs header X-UI and Host 127.0.0.1:8765.';
+  var PAT = {
+    slug: /^[a-z0-9_]{1,40}$/,
+    name: /^[a-z0-9_-]{1,40}$/,
+    shot: /^[A-Z0-9][A-Z0-9_-]{0,39}$/,
+    version: /^v\d{2}b?$/,
+    edit: /^[0-9a-f-]{36}$/,
+    session: /^[A-Za-z0-9_-]{1,40}$/,
+    note: /^[^\r\n\u0000-\u001f\u007f]{1,200}$/,
+    count: /^\d{1,3}$/,
+    json: /^[^\r\n\u0000-\u001f"]{1,260}\.json$/i
+  };
+  var RISK_TEXT = {
+    R: 'R = read-only',
+    W: 'W = writes local files (never deletes)',
+    N: 'N = free model call (network, rate-limited)',
+    '$': '$ = spends Colab units or GPU time (spend gate)',
+    OPS: 'OPS = stops a local process (cuts spend, no confirm)',
+    X: 'X = not available yet'
+  };
+  var KIND_TEXT = { ok: 'OK', notrun: 'NOT RUN', review: 'NEEDS REVIEW', failed: 'FAILED', running: 'RUNNING' };
+
+  var S = {
+    status: null,
+    jobBusy: false,
+    lastJobId: null,
+    logDone: null,
+    trackers: [],
+    ticking: false,
+    section: '',
+    slugs: [],
+    story: { slug: '' },
+    images: null,
+    imgTab: 'series',
+    imgAt: 0,
+    reviewGen: 0,
+    colabOk: false,
+    colabBalance: null,
+    h3Ok: false,
+    h3Msg: ''
+  };
+  var modalTimer = null;
+  var msgTimer = null;
+
+  // ---------- DOM helpers (textContent and createElement only) ----------
+  function $(id) { return document.getElementById(id); }
+
+  function appendKids(node, kids) {
+    kids.forEach(function (k) {
+      if (k === null || k === undefined || k === false) return;
+      if (Array.isArray(k)) appendKids(node, k);
+      else if (k instanceof Node) node.appendChild(k);
+      else node.appendChild(document.createTextNode(String(k)));
+    });
+  }
+
+  function el(tag, props) {
+    var node = document.createElement(tag);
+    var p = props || {};
