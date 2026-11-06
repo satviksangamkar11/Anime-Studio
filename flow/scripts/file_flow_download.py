@@ -5,6 +5,8 @@ Adhyay: env FLOW_ADHYAY (default 1). With a v2 jobs file the logged prompt_sha25
 The model is the one read off the screen (arg) - else env FLOW_MODEL - else "unknown". Operator: env FLOW_OPERATOR (default claude).
 Optional env, set by download_queue collect from the queue item (empty = not set = old behaviour):
   FLOW_ASPECT (16:9 or 9:16), FLOW_APPROVED_DHASH (16 hex chars), FLOW_LINEAGE (free text), FLOW_DECIDED_BY (owner, claude or haiku).
+  G1 palette gate (WP5): FLOW_STYLE_PACK and FLOW_ENV_ID (set together; FLOW_STYLES_DIR optional pack folder). On a FAIL it writes
+  <sub>/<iid>__candidate_<ver>.png.palette.json and refuses; nothing is copied.
 A refusal prints "REFUSED: <reason>" to stderr and exits 2. The checks are explicit, not asserts (asserts vanish under python -O).
 2K check: 2752x1536 (16:9 sheets and plates) or 1536x2752 (9:16 keyframes)."""
 import datetime
@@ -20,6 +22,7 @@ from pathlib import Path
 from PIL import Image
 
 from fingerprint import dhash_image, hamming
+from palette_check import check_download as g1_check_download
 
 SIZES = {"16:9": (2752, 1536), "9:16": (1536, 2752)}
 FINGERPRINT_MAX_DISTANCE = 14
@@ -41,6 +44,9 @@ aspect = os.environ.get("FLOW_ASPECT", "").strip() or None
 approved = os.environ.get("FLOW_APPROVED_DHASH", "").strip().lower() or None
 lineage = os.environ.get("FLOW_LINEAGE", "") or None
 decided_by = os.environ.get("FLOW_DECIDED_BY", "").strip() or None
+style_pack = os.environ.get("FLOW_STYLE_PACK", "").strip() or None
+env_id = os.environ.get("FLOW_ENV_ID", "").strip() or None
+styles_dir = os.environ.get("FLOW_STYLES_DIR", "").strip() or None
 if aspect is not None and aspect not in SIZES:
     refuse(f"aspect must be 16:9 or 9:16, got {aspect}")
 if approved is not None and not re.fullmatch(r"[0-9a-f]{16}", approved):
@@ -80,6 +86,19 @@ if approved is not None:
     if dist > FINGERPRINT_MAX_DISTANCE:
         refuse(f"does not match the approved picture: dHash distance {dist} > {FINGERPRINT_MAX_DISTANCE}")
     fingerprint = {"approved_dhash": approved, "downloaded_dhash": got, "hamming": dist}
+if (style_pack is None) != (env_id is None):
+    refuse("FLOW_STYLE_PACK and FLOW_ENV_ID must be set together")
+if style_pack is not None:                                            # G1 palette gate (WP5); unset = skipped
+    pal = g1_check_download(_probe, style_pack, env_id, aspect=aspect, styles_dir=styles_dir)
+    for e in pal["entries"]:
+        if e["level"] == "WARN":
+            print(f"WARN {e['message']}", file=sys.stderr)
+    if pal["fail"]:
+        pj = root / sub / f"{iid}__candidate_{ver}.png.palette.json"
+        pj.parent.mkdir(parents=True, exist_ok=True)
+        pj.write_text(json.dumps(pal["entries"], indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        first = next(e for e in pal["entries"] if e["level"] == "FAIL")
+        refuse(f"palette gate G1: {first['message']}")
 _probe.close()
 jpg.parent.mkdir(parents=True, exist_ok=True)                          # a new Adhyay starts with no folders
 shutil.copy2(src, jpg)
