@@ -30,7 +30,7 @@ def calibrate(paths, pct=99.0):
     """-> {"ceiling": float, "frames": int, "files": int}. ValueError on no files, a bad percentile or an unreadable file."""
     if not paths:
         raise ValueError("no reference files given")
-    if not (isinstance(pct, (int, float)) and 0 < pct <= 100):
+    if not (isinstance(pct, (int, float)) and not isinstance(pct, bool) and 0 < pct <= 100):
         raise ValueError("percentile must be in (0, 100]")
     values = []
     for p in paths:
@@ -38,7 +38,7 @@ def calibrate(paths, pct=99.0):
             raise ValueError(f"not a file: {p}")
         try:
             stats = per_frame_stats(p)
-        except RuntimeError as exc:
+        except (RuntimeError, OSError) as exc:   # ffmpeg failed or the file could not be opened
             raise ValueError(str(exc)) from exc
         values += [s["SATAVG"] for s in stats if "SATAVG" in s]
     if not values:
@@ -49,12 +49,12 @@ def calibrate(paths, pct=99.0):
 def write_ceiling(core_path, value):
     """Replaces the gates.sat_avg_ceiling value in place (formatting and key order of the file are kept)."""
     path = Path(core_path)
-    text = path.read_text(encoding="utf-8")
+    text = path.read_bytes().decode("utf-8")   # bytes in and out: CRLF or LF line endings are kept as they are
     if len(_KEY.findall(text)) != 1:
         raise ValueError("core.json must contain exactly one sat_avg_ceiling key")
     new = _KEY.sub(lambda m: m.group(1) + repr(float(value)), text)
     json.loads(new)   # the result must still be valid JSON
-    path.write_text(new, encoding="utf-8", newline="\n")
+    path.write_bytes(new.encode("utf-8"))
 
 
 def main(argv=None):

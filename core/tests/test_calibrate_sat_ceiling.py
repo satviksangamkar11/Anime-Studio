@@ -81,6 +81,25 @@ def test_cli_prints_without_writing_and_writes_with_flag(tmp_path):
     assert subprocess.run([sys.executable, str(ROOT / "tools" / "calibrate_sat_ceiling.py")], capture_output=True).returncode == 2
 
 
+def test_bool_percentile_is_refused(tmp_path):
+    with pytest.raises(ValueError):
+        cal.calibrate([str(tmp_path)], True)
+
+
+def test_write_ceiling_keeps_crlf_line_endings(tmp_path):
+    core = tmp_path / "core.json"
+    core.write_bytes((ROOT / "core" / "core.json").read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    cal.write_ceiling(core, 150.5)
+    raw = core.read_bytes()
+    assert b"\r\n" in raw and raw.count(b"\n") == raw.count(b"\r\n")
+    assert json.loads(raw.decode("utf-8"))["gates"]["sat_avg_ceiling"] == 150.5
+
+
+def test_calibrate_turns_a_directory_into_value_error(tmp_path):
+    with pytest.raises(ValueError):
+        cal.calibrate([str(tmp_path)], 99)   # a directory is not a file
+
+
 @pytest.mark.skipif(not os.environ.get("ANIME_RELEASE"), reason="release gate: set ANIME_RELEASE=1 once the reference frames are approved")
 def test_release_requires_a_calibrated_sat_avg_ceiling():
     value = json.loads((ROOT / "core" / "core.json").read_text(encoding="utf-8"))["gates"]["sat_avg_ceiling"]
