@@ -49,3 +49,15 @@ def test_lint_story_non_object_shot_row_is_reported_not_raised(tmp_path):
 def test_route_shot_non_object_keyframes_does_not_raise(bad):
     from h3.router import route_shot
     route_shot({"fl2va_keyframes": bad})
+
+
+# Q-R5-4: the wrapped compile error names the failing line, so a code bug is not passed off as a bad shot
+def test_compile_error_names_the_failing_line(tmp_path, monkeypatch):
+    import h3.compile_h3_sing8 as c
+    story = build_story(str(tmp_path))
+    ep_id = story["episodes"][0]["episode_id"]
+    monkeypatch.setattr(c, "lint_story", lambda *a, **k: {"errors": [], "warnings": []})   # reach the compile step itself
+    monkeypatch.setattr(c, "compile_comfyui_workflow", lambda *a, **k: (_ for _ in ()).throw(TypeError("boom")))
+    with pytest.raises(ValueError) as exc:
+        c.compile_episode(story, ep_id, str(tmp_path / "out"))
+    assert "TypeError: boom" in str(exc.value) and " at " in str(exc.value) and ".py:" in str(exc.value)

@@ -252,10 +252,20 @@ def title_from_source(text: str, default: str) -> str:
     return default
 
 
+MARATHI_WORDS = frozenset("आहे आहेत आणि नाही होते होता होती म्हणून काय पण मला तुला त्याला तिला आम्ही".split())
+HINDI_WORDS = frozenset("है हैं और नहीं था थी थे में का की के को से क्या पर लेकिन मुझे तुम्हें उसे हम".split())
+
+
 def detect_language(text: str) -> str:
+    """en when under 20 Devanagari letters. Otherwise mr when the Marathi evidence beats the Hindi evidence, else hi.
+    Evidence = the letter ळ (u0933, Marathi) plus common function words of each language (Q-R5-3, 2026-11-07: a Marathi
+    text without any ळ is no longer called Hindi). A tie is Hindi."""
     if len(re.findall("[ऀ-ॿ]", text)) < 20:
         return "en"
-    return "mr" if "ळ" in text else "hi"        # the letter (u0933) is Marathi; a Hindi text never uses it
+    words = re.findall("[ऀ-ॿ]+", text)
+    mr = text.count("ळ") + sum(w in MARATHI_WORDS for w in words)
+    hi = sum(w in HINDI_WORDS for w in words)
+    return "mr" if mr > hi else "hi"
 
 
 def default_story(story_dir) -> dict:

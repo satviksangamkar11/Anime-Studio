@@ -6,6 +6,7 @@ Flow chips and storyboard tags are stripped before emission, and the mouth lock 
 Node class names come from an unverified spec: every payload carries "_unverified_node_classes": true.
 """
 import json
+import traceback
 import os
 
 from h3.router import REF2VA, ref_inventory, route_shot, video_shift_for, workflow_mode
@@ -202,7 +203,8 @@ def compile_episode(story, episode_id, out_dir, shot_ids=None, second_pass=False
         except KeyError as exc:                  # a profile without the LoRA / shift entry for this route
             raise ValueError(f"{sid}: execution profile has no entry {exc} for this route") from exc
         except (TypeError, ValueError, AttributeError) as exc:   # second-pass or malformed-shot failure: report, do not crash
-            raise ValueError(f"{sid}: workflow could not be compiled ({type(exc).__name__}: {exc})") from exc
+            where = traceback.extract_tb(exc.__traceback__)[-1]   # Q-R5-4: name the failing line so a code bug is not passed off as a bad shot
+            raise ValueError(f"{sid}: workflow could not be compiled ({type(exc).__name__}: {exc}) at {os.path.basename(where.filename)}:{where.lineno}") from exc
         lint = lint_workflow(wf, shot, reg["execution_profile"])
         if lint["errors"]:
             raise ValueError("\n".join(lint["errors"]))

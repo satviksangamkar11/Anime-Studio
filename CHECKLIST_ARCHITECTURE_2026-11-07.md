@@ -64,18 +64,18 @@ Suites to stay green: director 603, h3 385, ui 178, flow 116 (counts grow).
 - [ ] Stories: Kaliya defects, Mahadev 4th reel
 
 ## 9. Caption components (from the owner's caption research + Super VL/Dots review; reviews in research/CAPTION_REVIEW_*_2026-11-07.md). Owner supplies fonts/captions later: build only the code parts, no downloads
-- [ ] 9.1 SRT + WebVTT sidecar export per language (from the same cues)
-- [x] 9.2 Safe zone: bottom margin 896 (35%), top 360 (14%), sides 160; per-platform templates still to build
-- [ ] 9.3 Font glyph-coverage QA with fontTools (माझं कुठे ॲप क्ष ज्ञ ळ ऱ)
-- [ ] 9.4 Hook-word emphasis style
-- [ ] 9.5 Real font measurement + grapheme wrapping + max 2 lines + explicit line breaks (replace len*46 px)
-- [ ] 9.6 Caption contact sheet / reference-frame QA (plan only, no ffmpeg run)
-- [ ] 9.7 ElevenLabs word alignment into karaoke timing with phrase fallback (plan; needs owner go for API)
-- [ ] 9.8 Mixed-script Latin fallback; preflight check that ffmpeg has libass+HarfBuzz
+- [x] 9.1 SRT + WebVTT sidecar export per language (from the same cues) (built on universal-v1.1: core/caption_export.py to_srt/to_vtt/write_sidecars; post.py writes them)
+- [x] 9.2 Safe zone: bottom margin 896 (35%), top 360 (14%), sides 160; per-platform templates built (core.json safe_zone_templates, build_ass template=, post.py --platform)
+- [x] 9.3 Font glyph-coverage QA with fontTools (माझं कुठे ॲप क्ष ज्ञ ळ ऱ) (built on universal-v1.1: core/caption_text.py check_font_coverage with an own cmap reader; build_ass FAILs a missing glyph)
+- [x] 9.4 Hook-word emphasis style (built on universal-v1.1: cue emphasis and look.hook.emphasis in core/captions.py)
+- [x] 9.5 Real font measurement + grapheme wrapping + max 2 lines + explicit line breaks (replace len*46 px) (built on universal-v1.1: caption_text.clusters/wrap_lines/fit_text, used when a fonts dir is given; Pillow basic layout, documented approximation)
+- [x] 9.6 Caption contact sheet / reference-frame QA (plan only, no ffmpeg run) (built on universal-v1.1: caption_export.contact_sheet_plan (argv only), frame_hash, compare_frames)
+- [x] 9.7 ElevenLabs word alignment into karaoke timing with phrase fallback (plan; needs owner go for API) (built on universal-v1.1: caption_export.words_from_elevenlabs (parser only, no API) + karaoke_text with phrase fallback; live use needs the owner's go)
+- [x] 9.8 Mixed-script Latin fallback; preflight check that ffmpeg has libass+HarfBuzz (built on universal-v1.1: caption_text.fallback_markup + caption_export.ffmpeg_preflight (run by post.py))
 - DECIDED 2026-11-07: captions inside the Instagram Reels + YouTube Shorts safe zone (bottom 896 px).
 
 ## 10. QUEUED (owner: do NOT start until existing work is finished): colour / attention-retention audit
-- [ ] 10.1 Read research/COLOUR_ATTENTION_RETENTION_AUDIT_2026-11-07.md and decide what enters the pipeline (owner asked 2026-11-07 to include it, after the current work)
+- [x] 10.1 Read research/COLOUR_ATTENTION_RETENTION_AUDIT_2026-11-07.md (decided and built: docs/COLOUR_AUDIT_DECISIONS.md on universal-v1.1) and decide what enters the pipeline (owner asked 2026-11-07 to include it, after the current work)
 
 ## 11. Round-2 review (owner rule 5: review again after fixes)
 - [x] 11.1 Super VL round 2 r1-r5 done + Dots r1-r2 (r6-r8 pending)
