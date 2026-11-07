@@ -18,7 +18,8 @@ import os
 import sys
 from pathlib import Path
 
-from h3.assemble_reel import build_ffmpeg_assembly_plan, write_assembly_script
+from h3.assemble_reel import (attach_colour_seams, build_ffmpeg_assembly_plan, load_loudness_plan,
+                              write_assembly_script)
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
 from h3.schema_and_linter import (ID_PATTERN, lint_profile, lint_story, picture_path_problem,
                                   read_png_dimensions_on_disk, resolve_keyframes)
@@ -247,11 +248,16 @@ def _write_shot(reg, ep, shot, prev, ep_dir, second_pass):
 
 
 def _write_assembly(ep, shots_sel, ep_dir):
-    plan = build_ffmpeg_assembly_plan(shots_sel, f"{ep['episode_id']}.mp4")
+    loud = load_loudness_plan(os.path.join(ep_dir, "loudness.json"))
+    plan = build_ffmpeg_assembly_plan(shots_sel, f"{ep['episode_id']}.mp4", loudness=loud)
     clips = [f"{s['shot_id']}/clip.mp4" for s in shots_sel]
+    attach_colour_seams(plan, [os.path.join(ep_dir, c) for c in clips], shots_sel)
     paths = write_assembly_script(plan, clips, ep_dir)
-    return {"filter": paths["filter"], "cmd": paths["cmd"], "total_frames": plan["total_frames"],
-            "total_duration_sec": plan["total_duration_sec"], "seams": len(plan["seam_transitions"])}
+    out = {"filter": paths["filter"], "cmd": paths["cmd"], "total_frames": plan["total_frames"],
+           "total_duration_sec": plan["total_duration_sec"], "seams": len(plan["seam_transitions"])}
+    if "colour_seams_note" not in plan:
+        out["colour_seams"] = len(plan["colour_seams"])
+    return out
 
 
 def _remove_if_exists(paths):
