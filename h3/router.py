@@ -15,9 +15,16 @@ def _has(value):
 
 def ref_inventory(shot):
     """Reference lists of a shot as {images, videos, audio}; each defaults to []."""
-    k = shot.get("fl2va_keyframes") or {}
-    return {"images": list(k.get("reference_images") or []), "videos": list(k.get("reference_videos") or []),
-            "audio": list(k.get("reference_audio") or [])}
+    k = shot.get("fl2va_keyframes")
+    k = k if isinstance(k, dict) else {}
+    return {"images": _ref_list(k, "reference_images"), "videos": _ref_list(k, "reference_videos"),
+            "audio": _ref_list(k, "reference_audio")}
+
+
+def _ref_list(k, key):
+    """A non-list value (a string, a dict) is not a reference list: count it as none here; RF-03 reports it."""
+    v = k.get(key)
+    return list(v) if isinstance(v, list) else []
 
 
 def route_shot(shot):
@@ -43,6 +50,11 @@ def ref2va_limit_problems(shot, voice=False):
     Audio: 0 in pure-Foley mode (AU-01). In English H3 voice mode audio refs are voice anchors, counted and timed by
     voice_engine.audio_ref_problems (VA-05/VA-06), so they are not counted here."""
     inv, out = ref_inventory(shot), []
+    k = shot.get("fl2va_keyframes")
+    k = k if isinstance(k, dict) else {}
+    for key in ("reference_images", "reference_videos", "reference_audio"):
+        if k.get(key) is not None and not isinstance(k.get(key), list):
+            out.append(("RF-03", f"{key} must be a list, got {type(k.get(key)).__name__}"))
     if len(inv["images"]) > REF2VA_LIMITS["image_refs"]:
         out.append(("RF-01", f"{len(inv['images'])} image refs, Ref2VA allows at most {REF2VA_LIMITS['image_refs']}"))
     if len(inv["videos"]) > REF2VA_LIMITS["video_refs"]:

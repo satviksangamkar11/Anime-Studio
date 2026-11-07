@@ -58,8 +58,8 @@ def test_en_h3_plan_needs_no_vo_files_and_warns_about_render_once(tmp_path):
     en_errs = [e["code"] for e in res["reports"]["en"]["errors"]]
     assert "VO_MISSING" not in en_errs and "NO_VO_FILES" not in en_errs
     assert any("breaks the render-once rule" in w for w in res["reports"]["en"]["warnings"])
-    # hi has no VO files on disk: its own errors, and no en warning for hi
-    assert "NO_VO_FILES" in [e["code"] for e in res["reports"]["hi"]["errors"]]
+    # hi has no speech in any shot: no VO expected, so no NO_VO_FILES; and no en warning for hi
+    assert "NO_VO_FILES" not in [e["code"] for e in res["reports"]["hi"]["errors"]]
     assert not any("render-once" in w for w in res["reports"]["hi"]["warnings"])
     # the English mix is the single stem: no VO stem in its filtergraph
     en_mix = res["languages"]["en"]["mix_filter"]

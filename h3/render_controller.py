@@ -271,7 +271,7 @@ def _remove_if_exists(paths):
 
 
 def _num(v):
-    return v if isinstance(v, (int, float)) else 0
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
 
 
 # ---------- prepare ----------
@@ -304,7 +304,7 @@ def prepare(story, groups, out_root, *, second_pass=False, allow_partial=False, 
             prev = shots[pos[sid] - 1] if pos[sid] else None
             t = shot.get("timing_and_lattice") if isinstance(shot.get("timing_and_lattice"), dict) else {}
             pf = t.get("pixel_frames")
-            secs = round(pf / fps, 2) if isinstance(pf, int) and isinstance(fps, int) and fps else None
+            secs = max(0.0, round(pf / fps, 2)) if isinstance(pf, int) and not isinstance(pf, bool) and isinstance(fps, int) and fps else None
             pics = _picture_rows(ep["asset_root"], shot, prev, base)
             rows.append({"shot_id": sid, "sequence_order": shot.get("sequence_order"), "frames": pf, "seconds": secs,
                          "editorial_frames": t.get("editorial_frames"), "picture_1": pics["picture_1"],
@@ -520,7 +520,7 @@ def _qc_result(groups, measurers):
     for g in groups:
         try:
             rep = final_qc(g["episode"]["shots"], measurers=measurers)
-        except (KeyError, TypeError, ValueError) as e:  # rows not in the V4 layout: QC cannot run, so it blocks
+        except (KeyError, TypeError, ValueError, AttributeError) as e:  # rows not in the V4 layout: QC cannot run, so it blocks
             problems.append(f"{g['episode']['episode_id']}: Step 9 QC not run: {type(e).__name__}: {e}")
             continue
         problems += [f"{g['episode']['episode_id']}: {c['id']} failed: {c['detail']}" for c in rep["checks"] if not c["ok"]]
@@ -547,7 +547,7 @@ def _gate_d_result(story, groups, out_root, languages):
                                         export_dir=os.path.join(ep_dir, "export"),
                                         story_gate_checks=gate, payoff_end_sec=ep.get("payoff_end_sec"),
                                         voice_engines=reg.get("voice_engine"))
-        except (KeyError, TypeError, ValueError) as e:  # e.g. a shot row without editorial_duration_sec
+        except (KeyError, TypeError, ValueError, AttributeError) as e:  # e.g. a shot row without editorial_duration_sec
             problems.append(f"{ep_id}: Gate D not planned: {type(e).__name__}: {e}")
             continue
         ok_by_episode[ep_id] = {lang: rep["ok"] for lang, rep in res["reports"].items()}
@@ -619,7 +619,7 @@ def main(argv=None):
             source = args.profile
         kind, ids, episode = parse_scope(args.scope, args.ids, args.episode)
         groups = select_scope(story, kind, ids, episode)
-    except (OSError, ValueError, KeyError, TypeError) as e:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"ERROR: {e}")
         return 1
     story_file = os.path.abspath(args.story_file)
@@ -628,7 +628,7 @@ def main(argv=None):
     try:
         res = prepare(story, groups, out_root, second_pass=args.second_pass, allow_partial=args.allow_partial,
                       write=not args.dry_run, mode=mode, profile_source=source, story_file=story_file)
-    except (OSError, ValueError, KeyError, TypeError) as e:  # e.g. a refused path: report it, exit 1, no traceback
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as e:  # e.g. a refused path: report it, exit 1, no traceback
         print(f"ERROR: {e}")
         return 1
     print_report(res, allow_partial=args.allow_partial)

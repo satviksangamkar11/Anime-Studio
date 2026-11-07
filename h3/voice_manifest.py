@@ -23,11 +23,14 @@ def shot_id(shot):
 
 def narration_text(shot, lang):
     """Narration text of a shot in one language (*_by_lang first, else the single narration in that language)."""
-    trk = shot.get("audio_and_dialogue_track") or {}
-    by_lang = trk.get("narration_by_lang") or {}
+    trk = shot.get("audio_and_dialogue_track")
+    trk = trk if isinstance(trk, dict) else {}
+    by_lang = trk.get("narration_by_lang")
+    by_lang = by_lang if isinstance(by_lang, dict) else {}     # a corrupt (non-object) block has no narration
     if isinstance(by_lang.get(lang), dict):
         return str(by_lang[lang].get("text") or "")
-    narr = trk.get("narration") or {}
+    narr = trk.get("narration")
+    narr = narr if isinstance(narr, dict) else {}
     return str(narr.get("text") or "") if narr.get("language") == lang else ""
 
 
@@ -42,9 +45,12 @@ def wav_rel_path(lang, sid):
 def voice_ids_for(shot, lang, voice_map):
     """{"narrator": id or None, "speakers": {character: id}} for one shot in one language."""
     vm = voice_map or {}
-    trk = shot.get("audio_and_dialogue_track") or {}
+    trk = shot.get("audio_and_dialogue_track")
+    trk = trk if isinstance(trk, dict) else {}     # a non-object track has no speakers (build_manifest reports it)
+    dbl = trk.get("dialogue_by_lang")
+    dia = dbl[lang] if isinstance(dbl, dict) and lang in dbl else trk.get("dialogue")
     speakers = {}
-    for d in trk.get("dialogue") or []:
+    for d in dia if isinstance(dia, list) else []:
         ch = d.get("speaker") if isinstance(d, dict) else None
         if ch and ch in vm and isinstance(vm[ch], dict) and vm[ch].get(lang):
             speakers[ch] = vm[ch][lang]
@@ -75,17 +81,28 @@ def build_manifest(vo_root, shots, languages, voice_map=None):
     """{"schema", "languages", "entries": [...], "fit": {"ok", "errors", ...}}. Fit runs per language on the wavs
     that exist; a shot with narration in that language and no wav is a VO_MISSING error."""
     entries, fit_items, errors = [], [], []
+    for shot in shots:
+        trk = shot.get("audio_and_dialogue_track") if isinstance(shot, dict) else None
+        if trk is not None and not isinstance(trk, dict):   # a corrupt track is an error, never a silent or crashing skip
+            errors.append({"code": "VO_BAD_TRACK", "where": str(shot_id(shot)),
+                           "message": f"audio_and_dialogue_track must be an object, got {type(trk).__name__}"})
     for lang in languages:
         for shot in shots:
+            if not isinstance(shot, dict):
+                continue  # a non-object row (e.g. 42) has no narration and no id
             if not narration_text(shot, lang).strip():
                 continue  # this shot has no narration in this language: no wav needed
             e = build_entry(vo_root, shot, lang, voice_map)
             entries.append(e)
-            if e["exists"]:
-                fit_items.append({"shot_id": e["shot_id"], "wav_path": os.path.join(vo_root, e["path"]),
-                                  "editorial_duration_sec": e["editorial_duration_sec"]})
-            else:
+            ed = e["editorial_duration_sec"]
+            if not e["exists"]:
                 errors.append({"code": "VO_MISSING", "where": f"{lang}/{e['shot_id']}", "message": f"no {e['path']}"})
+            elif isinstance(ed, (int, float)) and not isinstance(ed, bool) and ed > 0:
+                fit_items.append({"shot_id": e["shot_id"], "wav_path": os.path.join(vo_root, e["path"]),
+                                  "editorial_duration_sec": ed})
+            else:   # the wav exists but the shot has no usable length to check it against: report, do not crash the fit
+                errors.append({"code": "VO_UNREADABLE", "where": f"{lang}/{e['shot_id']}",
+                               "message": "shot has no positive editorial_duration_sec to fit this VO against"})
     fit = vo_fit_check(fit_items)
     return {"schema": MANIFEST_SCHEMA, "languages": list(languages), "entries": entries,
             "fit": {"ok": fit["ok"] and not errors, "errors": errors + fit["errors"], "stats": fit["stats"]}}
@@ -93,7 +110,7 @@ def build_manifest(vo_root, shots, languages, voice_map=None):
 
 def stale_entries(manifest, shots):
     """Entries whose shot text changed after the wav was made (text_sha256 differs). Returns [(lang, shot_id)]."""
-    by_id = {shot_id(s): s for s in shots}
+    by_id = {shot_id(s): s for s in shots if isinstance(s, dict)}
     out = []
     for e in manifest.get("entries", []):
         shot = by_id.get(e["shot_id"])

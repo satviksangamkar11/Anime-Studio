@@ -153,7 +153,8 @@ def test_bgm_manifest_required_fields(tmp_path):
     assert _codes(gd.validate_bgm_manifest(missing)) == ["BGM_FIELD_MISSING"]
     bad_bpm = {"tracks": [{"track_id": "b", "path": "p", "license_type": "x", "bpm": "fast", "lufs": -18}]}
     assert _codes(gd.validate_bgm_manifest(bad_bpm)) == ["BGM_FIELD_INVALID"]
-    assert _codes(gd.validate_bgm_manifest({"tracks": []})) == ["BGM_MANIFEST_EMPTY"]
+    empty = gd.validate_bgm_manifest({"tracks": []})   # Q-R4-13: empty = no BGM, not an error
+    assert empty["ok"] and _codes(empty) == []
     path = tmp_path / "bgm_manifest.json"
     path.write_text("{not json", encoding="utf-8")
     assert _codes(gd.read_bgm_manifest(path)) == ["BGM_MANIFEST_UNREADABLE"]
@@ -434,7 +435,8 @@ def test_language_with_no_vo_files_at_all_fails_only_itself(tmp_path):
 def test_language_with_no_vo_and_no_captions_fails_only_itself(tmp_path):
     shots = _story(langs=("en", "hi"))                              # mr has no text in any shot
     out = _run(tmp_path, ["en", "hi", "mr"], vo_dir=_vo_root(tmp_path, langs=("en", "hi")), shots=shots)
-    assert {"NO_VO_FILES", "NO_CAPTIONS"} <= set(_codes(out["reports"]["mr"]))
+    assert "NO_CAPTIONS" in set(_codes(out["reports"]["mr"]))
+    assert "NO_VO_FILES" not in set(_codes(out["reports"]["mr"]))   # mr has no speech, so no VO is expected
     assert out["reports"]["en"]["ok"] and out["reports"]["hi"]["ok"]
     assert out["languages"]["mr"]["mux_argv"] is None and out["languages"]["mr"]["captions"] == []
 

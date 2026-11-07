@@ -58,7 +58,7 @@ SEC = lambda frames: round(frames / FPS, 2)  # noqa: E731  (seconds with the 2-d
 
 
 def _is_num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)  # JSON Infinity/NaN are not timings
 
 
 def _text(x):
@@ -500,6 +500,7 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
     mouth, mouth_rule = _mouth(track, pf, sid, problems)
     cont = row.get("continuity_handoff") if isinstance(row.get("continuity_handoff"), dict) else {}
     positions = row.get("reference_anchors", {}).get("character_positions") if isinstance(row.get("reference_anchors"), dict) else []
+    positions = positions if isinstance(positions, list) else []  # a scalar here (e.g. 42) must not abort the shot
     subjects = [c["id"] for c in positions or [] if isinstance(c, dict) and isinstance(c.get("id"), str)]
     for cid in subjects:
         if cid not in ctx["characters"]:
@@ -641,7 +642,8 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
     story = {"output_languages": langs, "output_language": langs[0] if langs else None,
              "registry": registry, "episodes": [episodes[ep] for ep in order]}
     if isinstance(stage.get("voice_engine"), dict):
-        story["voice_engine"] = copy.deepcopy(stage["voice_engine"])   # metadata only: never switches H3 speech on
+        story["voice_engine"] = copy.deepcopy(stage["voice_engine"])
+        registry["voice_engine"] = copy.deepcopy(stage["voice_engine"])   # Q-R4-4: the linter and Gate D read the registry copy; H3 English speech is on only when en = "h3" is set explicitly
     if isinstance(stage.get("story_gate_checks"), dict):              # the V4 writer's six red-line checks, as written
         registry["story_gate_checks"] = copy.deepcopy(stage["story_gate_checks"])
     return {"story": story, "problems": problems, "notes": notes}

@@ -201,6 +201,8 @@ def compile_episode(story, episode_id, out_dir, shot_ids=None, second_pass=False
             wf = compile_comfyui_workflow(shot, reg, text, second_pass, kf)
         except KeyError as exc:                  # a profile without the LoRA / shift entry for this route
             raise ValueError(f"{sid}: execution profile has no entry {exc} for this route") from exc
+        except (TypeError, ValueError, AttributeError) as exc:   # second-pass or malformed-shot failure: report, do not crash
+            raise ValueError(f"{sid}: workflow could not be compiled ({type(exc).__name__}: {exc})") from exc
         lint = lint_workflow(wf, shot, reg["execution_profile"])
         if lint["errors"]:
             raise ValueError("\n".join(lint["errors"]))

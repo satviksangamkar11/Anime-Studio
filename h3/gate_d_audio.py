@@ -130,7 +130,7 @@ def check_narration_density(shots, *, narration_driven=True):
     items, t0 = [], 0.0
     for shot in shots:
         items += _speech_items(shot.get("audio_and_dialogue_track") or {}, t0)
-        t0 += float(shot["editorial_duration_sec"])
+        t0 += _editorial_len(shot)
     words = sum(n * _overlap(s, e, 0.0, win) / (e - s) for s, e, n in items)
     merged = []
     for s, e in sorted((s, e) for s, e, _ in items):
@@ -191,7 +191,7 @@ def check_closing_shot(closing_shot, *, story_gate_checks=None, vo_wav_path=None
     if pn.get("narrator_mouth_closed") is not True or open_secs:
         errors.append(_err("CLOSING_MOUTH_OPEN", where, f"mouth must be closed while the VO plays "
                                                         f"(seconds not closed: {open_secs})"))
-    editorial = float(closing_shot["editorial_duration_sec"])
+    editorial = _editorial_len(closing_shot)
     fit = vo_fit_check([{"shot_id": where, "wav_path": vo_wav_path, "editorial_duration_sec": editorial}])
     errors += fit["errors"]
     stats = {"vo": fit["stats"].get(where)}
@@ -237,8 +237,7 @@ def validate_bgm_manifest(doc):
     if not isinstance(doc, dict) or not isinstance(doc.get("tracks"), list):
         return _report([_err("BGM_MANIFEST_SHAPE", "bgm_manifest", 'expected {"tracks": [...]}')])
     tracks, errors, ids = doc["tracks"], [], set()
-    if not tracks:
-        errors.append(_err("BGM_MANIFEST_EMPTY", "bgm_manifest", "no continuous BGM track logged"))
+    # Q-R4-13: an empty track list means "no BGM" (owner: BGM off); it is valid, matching _bgm_track
     for i, t in enumerate(tracks):
         where = f"tracks[{i}]"
         if not isinstance(t, dict):
@@ -267,6 +266,11 @@ def read_bgm_manifest(path):
     return validate_bgm_manifest(doc)
 
 
+def _is_db(x):
+    """True for a finite real number (not bool, not str)."""
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
 def check_music_presence(voice_db, bgm_db, *, speech_gate_db=BGM_PRESENCE["speech_gate_db"],
                          median_band=BGM_PRESENCE["median_under_voice_db"],
                          p95_floor_db=BGM_PRESENCE["p95_floor_db"]):
@@ -277,7 +281,7 @@ def check_music_presence(voice_db, bgm_db, *, speech_gate_db=BGM_PRESENCE["speec
     if len(voice_db) != len(bgm_db) or not voice_db:
         return _report([_err("BGM_PRESENCE_BAD_INPUT", "levels", "voice and bgm arrays must be equal and non-empty")])
     diffs = [v - b for v, b in zip(voice_db, bgm_db)
-             if v >= speech_gate_db and math.isfinite(v) and not math.isnan(b)]
+             if _is_db(v) and _is_db(b) and v >= speech_gate_db]
     if not diffs:
         return _report([_err("BGM_PRESENCE_NO_SPEECH", "levels", "no speech windows: presence cannot be verified")])
     median = statistics.median(diffs)
@@ -286,7 +290,11 @@ def check_music_presence(voice_db, bgm_db, *, speech_gate_db=BGM_PRESENCE["speec
     if not lo <= median <= hi:
         errors.append(_err("BGM_MEDIAN_OUT_OF_BAND", "levels",
                            f"median BGM is {median:.1f} dB under voice, need {lo}-{hi} dB"))
-    srt = sorted(bgm_db)
+    srt = sorted(b for b in bgm_db if _is_db(b))
+    if not srt:
+        errors.append(_err("BGM_SILENT_FLOOR", "levels", "no finite BGM level: floor cannot be verified"))
+        return _report(errors, stats={"median_under_voice_db": round(median, 2), "p95_floor_db": None,
+                                      "speech_windows": len(diffs)})
     floor = srt[int(0.05 * (len(srt) - 1))]
     if not floor > p95_floor_db:
         errors.append(_err("BGM_SILENT_FLOOR", "levels", f"BGM p95 floor {floor:.1f} dB is not above {p95_floor_db} dB"))
@@ -618,7 +626,10 @@ def _lang_track(trk, lang):
     """(narration, dialogue) of one shot for one language. Shots with *_by_lang maps use them. Single-language shots
     keep the old fields and serve only their narration language (dialogue is taken as that language)."""
     if trk.get("narration_by_lang") is not None or trk.get("dialogue_by_lang") is not None:
-        return (trk.get("narration_by_lang") or {}).get(lang), (trk.get("dialogue_by_lang") or {}).get(lang) or []
+        nbl, dbl = trk.get("narration_by_lang"), trk.get("dialogue_by_lang")
+        nbl = nbl if isinstance(nbl, dict) else {}   # a non-object *_by_lang is reported as TIME-01 by same_timing_problems
+        dbl = dbl if isinstance(dbl, dict) else {}
+        return nbl.get(lang), dbl.get(lang) or []
     narr = trk.get("narration")
     if narr and narr.get("language") == lang:
         return narr, trk.get("dialogue") or []
@@ -690,19 +701,22 @@ def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors,
 
     # VO file set audio/vo/<lang>/<shot_id>.wav for every shot with speech in this language (ElevenLabs engine only).
     vo_clips, vo_files, existing = [], {}, []
+    any_speech = False
     for s, v in zip(shots, views):
-        sid, ed = s["id"], float(s["editorial_duration_sec"])
+        sid, ed = _sid(s), _editorial_len(s)
         if h3_voice or not _speech_items(v["audio_and_dialogue_track"]):
             vo_clips.append((None, ed))
             continue
+        any_speech = True
         path = Path(vo_dir) / lang / f"{sid}.wav"
         vo_clips.append((str(path), ed))
         if path.is_file():
             vo_files[sid] = str(path)
-            existing.append({"shot_id": sid, "wav_path": str(path), "editorial_duration_sec": ed})
+            if ed > 0:
+                existing.append({"shot_id": sid, "wav_path": str(path), "editorial_duration_sec": ed})
         else:
             errors.append(_err("VO_MISSING", sid, f"no {lang} VO file at {path}"))
-    if not h3_voice and not vo_files:
+    if not h3_voice and any_speech and not vo_files:
         errors.append(_err("NO_VO_FILES", lang, f"no {lang} VO file for any shot under {Path(vo_dir) / lang}"))
     take("vo_fit", vo_fit_check(existing))
 
@@ -730,7 +744,7 @@ def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors,
         errors.append(_err("CLOSING_SHOT_MISSING", lang, "no shot has is_closing_hook"))
     else:
         take("closing", check_closing_shot(views[ci], story_gate_checks=story_gate_checks,
-                                           vo_wav_path=vo_files.get(shots[ci]["id"]), payoff_end_sec=payoff_end_sec))
+                                           vo_wav_path=vo_files.get(_sid(shots[ci])), payoff_end_sec=payoff_end_sec))
 
     # Pre-render gate: the mix and mux are only built when nothing above failed for this language.
     export = f"{export_dir}/{reel}_{lang}.mp4"
@@ -755,8 +769,8 @@ def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors,
         if bgm_path is not None:
             bgm_idx = len(inputs)
             inputs.append(bgm_path)
-        total = offsets[-1] + float(shots[-1]["editorial_duration_sec"])
-        sfx = [{"input_index": f"h3s{k}", "trim_in_sec": t0, "trim_out_sec": t0 + float(s["editorial_duration_sec"])}
+        total = offsets[-1] + _editorial_len(shots[-1])
+        sfx = [{"input_index": f"h3s{k}", "trim_in_sec": t0, "trim_out_sec": t0 + _editorial_len(s)}
                for k, (s, t0) in enumerate(zip(shots, offsets))]
         if h3_voice:
             plan["mix_filter"] = ";".join([build_sfx_split_filter(sfx_ref, len(shots)),
@@ -774,6 +788,17 @@ def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors,
     else:
         warnings.append(f"loudness for {lang} not measured yet: run loudness_argv on {export} after render")
     return _report(errors, warnings, stats), plan
+
+
+def _sid(shot):
+    """The shot id: shot_id (the H3 schema key), else the older id key."""
+    return shot.get("shot_id", shot.get("id")) if isinstance(shot, dict) else None
+
+
+def _editorial_len(shot):
+    """The editorial length in seconds, or 0.0 when it is not a positive number (same_timing_problems reports that as TIME-01)."""
+    ed = shot.get("editorial_duration_sec") if isinstance(shot, dict) else None
+    return float(ed) if isinstance(ed, (int, float)) and not isinstance(ed, bool) and ed > 0 else 0.0
 
 
 def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video_path, video_has_audio=None,
@@ -803,12 +828,12 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
     offsets, t = [], 0.0
     for s in shots:
         offsets.append(t)
-        t += float(s["editorial_duration_sec"])
+        t += _editorial_len(s)
     reports, plans = {}, {}
     try:
         timing_errs = same_timing_problems(shots)
-    except ValueError as exc:                          # a malformed time_range in some language
-        timing_errs = [_err("TIME-01", "shots", f"bad time_range: {exc}")]
+    except (ValueError, AttributeError) as exc:        # a malformed time_range, or a non-object *_by_lang / track
+        timing_errs = [_err("TIME-01", "shots", f"bad time_range or track: {type(exc).__name__}: {exc}")]
     for lang in langs:
         eng = engine_for(voice_engines, lang) if voice_engines is not None else "elevenlabs"
         if eng not in VOICE_ENGINES or (eng == "h3" and lang not in H3_SPEECH_LANGS):
@@ -823,7 +848,7 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
                 story_gate_checks=story_gate_checks, payoff_end_sec=payoff_end_sec,
                 narration_driven=narration_driven, measured_text=measured_text, sfx_stem_path=sfx_stem_path,
                 burn_captions=burn_captions, voice_engine=eng)
-        except (ValueError, KeyError, TypeError) as exc:   # one bad language must not stop the others
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:   # one bad language must not stop the others (AttributeError: a non-object track/gate/mouth block)
             reports[lang] = _report([_err("PLAN-01", lang, f"{type(exc).__name__}: {exc}")], [], {})
             plans[lang] = {"mix_filter": None, "mux_argv": None}
         if eng == "h3":
@@ -845,7 +870,11 @@ def same_timing_problems(shots):
         trk = s.get("audio_and_dialogue_track") or {}
         per_lang = {}
         for key in ("narration_by_lang", "dialogue_by_lang", "captions_by_lang"):
-            for lang, val in (trk.get(key) or {}).items():
+            by_lang = trk.get(key) or {}
+            if not isinstance(by_lang, dict):
+                errs.append(_err("TIME-01", sid, f"{key} must be an object keyed by language, got {type(by_lang).__name__}"))
+                continue
+            for lang, val in by_lang.items():
                 if val is None:
                     items = []
                 elif isinstance(val, dict):
@@ -858,7 +887,8 @@ def same_timing_problems(shots):
                     continue
                 ranges = [parse_time_range(x["time_range"]) for x in items
                           if isinstance(x, dict) and x.get("time_range") not in (None, [])]
-                per_lang.setdefault(lang, []).extend(ranges)
+                if ranges:   # a language with no time_range is not timed in this shot: it is not compared (no false TIME-01)
+                    per_lang.setdefault(lang, []).extend(ranges)
         keys = {lang: sorted((round(a, 3), round(b, 3)) for a, b in r) for lang, r in per_lang.items()}
         if len({tuple(v) for v in keys.values()}) > 1:
             errs.append(_err("TIME-01", sid, f"languages use different time ranges: {keys}"))

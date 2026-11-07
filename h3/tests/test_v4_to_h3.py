@@ -122,7 +122,9 @@ def test_output_languages_and_voice_engine_are_metadata_only(pack):
     story = convert_pack(pack)["story"]
     assert story["output_languages"] == ["en", "hi", "mr"] and story["output_language"] == "en"
     assert story["voice_engine"] == {"en": "elevenlabs", "hi": "elevenlabs", "mr": "elevenlabs"}
-    assert "voice_engine" not in story["registry"]     # never switches H3 speech on
+    assert story["registry"]["voice_engine"] == story["voice_engine"]   # Q-R4-4: the registry copy is what the linter and Gate D read
+    from h3.schema_and_linter import voice_mode
+    assert voice_mode(story["registry"]) is False        # all elevenlabs: H3 speech stays off
 
 
 def test_languages_argument_overrides_stage_file(pack):

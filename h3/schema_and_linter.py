@@ -393,10 +393,12 @@ def resolve_keyframes(shot, upstream_shot_or_None, asset_root):
     An unsafe own path is never replaced by a reuse: it is returned as-is so KF-07 blocks the shot."""
     k = shot.get("fl2va_keyframes") or {}
     own = k.get("picture_1_path")
-    if own is None:
-        # Required key, but guard anyway
-        return {"picture_1": None, "picture_2": k.get("picture_2_path"), "reused": False}
     reuse_id = k.get("reuse_upstream_b_id")
+    if own is None:   # Q-R4-5: no own picture_1 at all: reuse the upstream picture_2 when a reuse id and an upstream shot exist
+        if reuse_id and upstream_shot_or_None is not None:
+            upstream_kf = upstream_shot_or_None.get("fl2va_keyframes") or {}
+            return {"picture_1": upstream_kf.get("picture_2_path"), "picture_2": k.get("picture_2_path"), "reused": True}
+        return {"picture_1": None, "picture_2": k.get("picture_2_path"), "reused": False}
     if (reuse_id and upstream_shot_or_None is not None and picture_path_problem(own) is None
             and not os.path.exists(os.path.join(asset_root, own))):
         upstream_kf = upstream_shot_or_None.get("fl2va_keyframes") or {}
@@ -416,10 +418,22 @@ def lint_profile(profile):
     if not (isinstance(msa.get("video_shift"), dict) and {"keyframe", "ref2va"} <= set(msa["video_shift"])
             and "audio_shift" in msa):
         out["errors"].append("PO-04 model_sampling_av needs video_shift {keyframe, ref2va} and audio_shift")
-    w, h = profile["base_resolution"]
+    fps = profile["fps"]
+    if not (_is_count(fps) and fps > 0):  # ponytail: zero fps divides by zero in the timing rules; reject it here once
+        out["errors"].append(f"PO-06 fps must be a positive whole number, got {fps!r}")
+        return out
+    br = profile["base_resolution"]
+    if not (isinstance(br, list) and len(br) == 2 and all(_is_count(x) for x in br)):
+        out["errors"].append(f"PO-01 base_resolution must be [width, height] whole numbers, got {br!r}")
+        return out
+    w, h = br
     if w % 32 or h % 32:
         out["errors"].append(f"PO-01 base_resolution {w}x{h} is not divisible by 32")
-    a, b = (int(x) for x in profile["aspect_ratio"].split(":"))
+    parts = str(profile["aspect_ratio"]).split(":")
+    if len(parts) != 2 or not all(p.isdigit() for p in parts):
+        out["errors"].append(f"PO-02 aspect_ratio {profile['aspect_ratio']!r} must be 'a:b' with whole numbers")
+        return out
+    a, b = (int(p) for p in parts)
     if w * b != h * a:
         msg = f"base_resolution {w}x{h} is not exactly {profile['aspect_ratio']}"
         if profile.get("aspect_strict", True):
@@ -489,7 +503,9 @@ def _check_timing(log, shot, prof):
         log.err("TM-01", f"fps={t['fps']} != profile fps {fps}")
     ti, to, ed = t["trim_in_frame"], t["trim_out_frame"], t["editorial_frames"]
     head, tail = t["head_handle_frames"], t["tail_handle_frames"]
-    if head != ti or tail != pf - to or ed != to - ti or not 0 <= ti < to <= pf:
+    if not all(_is_count(x) for x in (ti, to, ed, head, tail)):
+        log.err("TM-02", "trim, editorial and handle frame counts must be whole numbers >= 0 (not booleans)")
+    elif head != ti or tail != pf - to or ed != to - ti or not 0 <= ti < to <= pf:
         log.err("TM-02", f"handles/editorial mismatch: trim {ti}..{to}, head {head}, tail {tail}, editorial {ed}, pixel {pf}")
     for sec_key, frame_key in SEC_FRAMES.items():
         if t[sec_key] != round(t[frame_key] / fps, 2):
@@ -605,7 +621,8 @@ def _check_dialogue(log, shot, reg):
                 log.err("VA-01", f"speaker {sid!r} has no entry in voice_speaker_map")
             elif smap[sid] != cid:
                 log.err("VA-04", f"speaker {sid!r} is mapped to {smap[sid]!r}, not {cid!r} (same speaker in every shot)")
-            if not (chars.get(cid) or {}).get("voice_anchor"):
+            ch = chars.get(cid)
+            if not (isinstance(ch, dict) and ch.get("voice_anchor")):
                 log.err("VA-01", f"{cid!r} speaks English but has no voice anchor")
 
 
@@ -625,7 +642,7 @@ def _check_keyframes(log, shot, prof, root, prev):
     if not isinstance(refs, list):
         log.err("KF-08", "reference_images must be a list of picture paths")
         refs = []
-    if not refs and not (k.get("picture_1_path") and k.get("picture_2_path")):
+    if not refs and not (kf.get("picture_1") and kf.get("picture_2")):   # the resolved frames: a REUSED picture_1 counts (Q-R4-5)
         log.err("KF-06", "both boundary frames are required unless reference_images are given")
     # KF-07 on picture paths and optional flow sources; unsafe paths never reach the disk checks
     pics = [("picture_1", kf.get("picture_1")), ("picture_2", k.get("picture_2_path"))]
@@ -790,8 +807,14 @@ def _check_prompt(log, shot, prof, reg, compiled):
         if p not in imd:
             log.err("PR-07", f"{p[:60]!r} is not a substring of the description")
     rx = style.get("banned_negative_words_regex")
-    if rx and re.search(rx, text, re.I):
-        log.warn("PR-W1", f"banned negative word pattern {rx!r} matches the prose")
+    if rx:
+        try:
+            hit = re.search(rx, text, re.I)
+        except re.error as e:  # a bad pattern in the registry is a registry error, not a crash
+            log.err("PR-08", f"banned_negative_words_regex {rx!r} is not a valid regex: {e}")
+            hit = None
+        if hit:
+            log.warn("PR-W1", f"banned negative word pattern {rx!r} matches the prose")
 
 
 def _check_workflow(log, workflow, shot, prof):
@@ -835,13 +858,17 @@ def _check_workflow(log, workflow, shot, prof):
         log.warn("WF-W1", f"unverified combination: FL2VA on ref2va LoRA {lora!r}")
 
 
+def _check_mouth_lock(log, shot, prof, reg=None):
+    for msg in mouth_state_problems(shot, prof["fps"], speaking_seconds(shot) if voice_mode(reg) else None):
+        log.err("MO-01", msg)
+
+
 def _check_pure_foley(log, shot, prof, reg=None):
     """Source-level rules: MO-01 mouth lock, SX-01 sound cue in the action sentences, Ref2VA limits.
     English H3 voice mode (reg voice_engine en=h3): mouth_state follows the on-screen lines, reference_audio lists the
     voice anchors of the shot's speakers (VA-05..07)."""
     voice = voice_mode(reg)
-    for msg in mouth_state_problems(shot, prof["fps"], speaking_seconds(shot) if voice else None):
-        log.err("MO-01", msg)
+    _run(log, _check_mouth_lock, shot, prof, reg)  # own _run: a malformed mouth block must not hide SX-01 and the VA rules
     stages = [shot["motion_7_stage"][k] for k in STAGES]
     cues = sum(1 for s in stages if SFX_CUE_RE.search(s))
     if cues < SX_MIN_STAGE_CUES:
@@ -854,7 +881,10 @@ def _check_pure_foley(log, shot, prof, reg=None):
         sid = shot.get("shot_id")
         anchors = []
         for cid in inv["audio"]:
-            a = (chars.get(cid) or {}).get("voice_anchor")
+            a = (chars.get(cid) or {}).get("voice_anchor") if isinstance(chars.get(cid), dict) else None
+            if a is not None and not isinstance(a, dict):   # a non-object anchor is treated as missing
+                log.err("VA-01", f"reference_audio {cid!r} has a voice anchor that is not an object")
+                continue
             if a is None:
                 log.err("VA-01", f"reference_audio {cid!r} has no voice anchor")
             elif a.get("audio") is None:  # UNVERIFIED timbre stability: the anchor is the first approved H3 clip's audio
@@ -867,7 +897,8 @@ def _check_pure_foley(log, shot, prof, reg=None):
             cid = u.get("character_id") if isinstance(u, dict) else None
             if cid is None or cid in inv["audio"]:
                 continue
-            a = (chars.get(cid) or {}).get("voice_anchor") or {}
+            a = (chars.get(cid) or {}).get("voice_anchor") if isinstance(chars.get(cid), dict) else None
+            a = a if isinstance(a, dict) else {}
             if a.get("audio") is None and a.get("clip_shot_id") == sid:
                 continue  # this shot is the anchor's source render: it is rendered without its own anchor
             log.err("VA-07", f"{cid!r} speaks but its voice anchor is not in reference_audio")
@@ -876,6 +907,8 @@ def _check_pure_foley(log, shot, prof, reg=None):
 def lint_shot(shot, profile, registry, asset_root, prev=None, compiled_prompt=None):
     """Per-shot rules. prev = previous shot in the episode (enables cross-shot and reuse rules).
     compiled_prompt: optional already-compiled prompt text (or its compile dict) to check instead of recompiling."""
+    if not isinstance(shot, dict):   # Q-R4-8: a bad row is a lint error, never a crash
+        return {"errors": [f"<shot ?>: SH-00 shot must be an object, got {type(shot).__name__}"], "warnings": []}
     sid = shot.get("shot_id", "<shot ?>")
     log = _Log(sid if isinstance(sid, str) else "<shot ?>")
     _validate_id(sid, "shot", log)  # ID-01: the id names files, so it must be path-safe
@@ -912,8 +945,11 @@ def lint_story(story, compiled=None, asset_root_override=None):
     reg = story["registry"]
     prof = reg["execution_profile"]
     out = {"errors": [], "warnings": []}
+    compiled_map = compiled if isinstance(compiled, dict) else {}
     all_shots = [s for ep in story["episodes"] for s in ep["shots"]]
-    anchor = all_shots[0].get("shot_id", "<shot 1>") if all_shots else "<story>"
+    anchor = all_shots[0].get("shot_id", "<shot 1>") if all_shots and isinstance(all_shots[0], dict) else "<story>"
+    if compiled is not None and not isinstance(compiled, dict):   # a non-object map: reported, then every shot is compiled again
+        out["errors"].append(f"{anchor}: PR-00 compiled must be an object {{shot_id: prompt}}, got {type(compiled).__name__}")
     pl = lint_profile(prof)
     out["errors"] += [f"{anchor}: {m}" for m in pl["errors"]]
     out["warnings"] += [f"{anchor}: {m}" for m in pl["warnings"]]
@@ -926,7 +962,7 @@ def lint_story(story, compiled=None, asset_root_override=None):
     seen_ids = {}
     for ep in story["episodes"]:
         for shot in ep["shots"]:
-            sid = shot.get("shot_id")
+            sid = shot.get("shot_id") if isinstance(shot, dict) else None
             if not isinstance(sid, str):
                 continue  # lint_shot reports the bad id
             if sid in seen_ids:
@@ -945,9 +981,12 @@ def lint_story(story, compiled=None, asset_root_override=None):
         out["errors"] += log_ep.errors
         out["warnings"] += log_ep.warnings
         for i, shot in enumerate(shots):
+            if not isinstance(shot, dict):   # Q-R4-8: reported once, then skipped
+                out["errors"].append(f"{ep.get('episode_id')}: SH-00 shot {i + 1} must be an object, got {type(shot).__name__}")
+                continue
             sid = shot.get("shot_id", f"<shot {i + 1}>")
-            prev = shots[i - 1] if i else None
-            c = (compiled or {}).get(sid)
+            prev = shots[i - 1] if i and isinstance(shots[i - 1], dict) else None
+            c = compiled_map.get(sid) if isinstance(sid, str) else None
             if isinstance(c, dict):
                 c = c["compiled_prompt"]
             r = lint_shot(shot, prof, reg, root, prev=prev, compiled_prompt=c)
@@ -956,8 +995,9 @@ def lint_story(story, compiled=None, asset_root_override=None):
             log = _Log(sid)
             _run(log, _check_window, shot, running, prof["fps"])
             out["errors"] += log.errors
-            ed = (shot.get("timing_and_lattice") or {}).get("editorial_frames")
-            running += ed if isinstance(ed, int) else 0
+            tl = shot.get("timing_and_lattice")
+            ed = tl.get("editorial_frames") if isinstance(tl, dict) else None
+            running += ed if isinstance(ed, int) and not isinstance(ed, bool) else 0   # bool is an int: True must not count as 1
             try:
                 text = c or compile_fl2va_prompt(shot, reg)["compiled_prompt"]
             except (KeyError, TypeError, ValueError, AttributeError):
@@ -970,8 +1010,12 @@ def lint_story(story, compiled=None, asset_root_override=None):
             r = lint_workflow(wf, shot, prof)
             out["errors"] += r["errors"]
             out["warnings"] += r["warnings"]
-        target = (ep.get("episode_plan") or {}).get("target_editorial_frames")
+        ep_plan = ep.get("episode_plan")
+        if ep_plan is not None and not isinstance(ep_plan, dict):
+            out["errors"].append(f"TM-05 episode {ep.get('episode_id')} episode_plan must be an object")
+            ep_plan = {}
+        target = ep_plan.get("target_editorial_frames") if ep_plan else None
         if target is not None and running != target:
-            last = shots[-1].get("shot_id", f"<shot {len(shots)}>") if shots else anchor
+            last = shots[-1].get("shot_id", f"<shot {len(shots)}>") if shots and isinstance(shots[-1], dict) else anchor
             out["errors"].append(f"{last}: TM-05 episode {ep['episode_id']} total editorial {running} != target {target}")
     return out
