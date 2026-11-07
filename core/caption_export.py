@@ -278,6 +278,8 @@ def contact_sheet_plan(ass_path, cards, width, height, out_dir, fontsdir=None,
     colour = str(bg)[1:] if str(bg).startswith("#") else str(bg)
     vf = f"subtitles={ass_name}" + (f":fontsdir={font_name}" if font_name else "")
     cwd = os.path.dirname(os.path.abspath(str(ass_path)))
+    if fontsdir and os.path.dirname(os.path.abspath(str(fontsdir))) != cwd:
+        entries.append(_entry(RULE, "WARN", "fonts dir is not next to the ass file: the relative fontsdir name will not resolve"))
     plans, seen = [], set()
     for idx, card in enumerate(cards):
         if not isinstance(card, dict):
@@ -294,7 +296,7 @@ def contact_sheet_plan(ass_path, cards, width, height, out_dir, fontsdir=None,
             entries.append(_entry(RULE, "WARN", f"card {cid!r} skipped: t must be a number >= 0"))
             continue
         seen.add(cid)
-        png = os.path.join(str(out_dir), f"{cid}.png")
+        png = os.path.join(os.path.abspath(str(out_dir)), f"{cid}.png")   # absolute: ffmpeg runs with cwd = the ass folder
         argv = [ffmpeg, "-hide_banner", "-y", "-f", "lavfi", "-i",
                 f"color=c={colour}:s={width}x{height}:r=24:d={t + 1}",
                 "-vf", vf]

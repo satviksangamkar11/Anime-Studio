@@ -243,7 +243,7 @@ def test_timing_error_stats_empty():
 def test_contact_sheet_plan_argv_exact_relative_names_and_cwd(tmp_path, no_subprocess):
     ass = tmp_path / "caps" / "ep1.ass"
     out = tmp_path / "sheet"
-    fonts = tmp_path / "fonts"
+    fonts = tmp_path / "caps" / "fonts"   # the relative fontsdir name only resolves when it sits beside the ass file
     plans, entries = ce.contact_sheet_plan(
         str(ass), [{"id": "c1", "t": 2.5}], 1080, 1920, str(out),
         fontsdir=str(fonts), bg="#202020", ffmpeg="ffmpeg")
@@ -341,3 +341,11 @@ def test_ffmpeg_preflight_real_call_returns_only_preflight_entries():
     entries = ce.ffmpeg_preflight()
     assert isinstance(entries, list)
     assert all(e["rule"] == "CAP-PREFLIGHT" for e in entries)
+
+
+def test_contact_sheet_plan_png_is_absolute_and_a_misplaced_fonts_dir_warns(tmp_path, no_subprocess, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    plans, entries = ce.contact_sheet_plan(str(tmp_path / "caps" / "a.ass"), [{"id": "c1", "t": 1}], 540, 960, "sheet",
+                                           fontsdir=str(tmp_path / "elsewhere" / "fonts"))
+    assert os.path.isabs(plans[0]["png"]) and plans[0]["png"] == str(tmp_path / "sheet" / "c1.png")
+    assert any("fonts dir is not next to the ass file" in e["message"] for e in entries)
