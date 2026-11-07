@@ -46,3 +46,6 @@ stories/*/RUNS.jsonl.lock
 stories/*/RUN_REPORT.md
 stories/*/story.json
 stories/*/links.json
+
+# personal Claude Code settings (auto-log hook)
+.claude/settings.local.json

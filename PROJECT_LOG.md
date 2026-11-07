@@ -746,3 +746,10 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 13:06 | me | EDIT | h3/router.py,h3/tests/test_r6_fixes.py | BACKFILL (~13:07): route_shot isinstance guard for non-object fl2va_keyframes (R6-1); +4 parametrized tests; h3 594 pass
 11-07 13:06 | me | COMMIT | v4-architecture-2026-11-07 | BACKFILL: c2e8397 router guard, f7a0fd8 docs, d5804ba round 6 docs; pushed d5804ba
 11-07 13:06 | me | DECISION | PROJECT_LOG.md | owner 2026-11-07: the project log and blot rules must never stop; log every step as it happens, backfill any gap at once
+11-07 13:06 | me | PUSH | origin v4-architecture-2026-11-07 | log backfill committed and pushed
+11-07 13:07 | me | DECISION | auto-log hook + fonts | owner said yes: build the automatic PROJECT_LOG hook and download the 4 zip-named fonts (Rajdhani, Yatra One, Inter, Noto Sans Devanagari)
+11-07 13:08 | me | EDIT | tools/auto_log.py,tools/test_auto_log.py | built the automatic PROJECT_LOG hook script + tests (owner yes)
+11-07 13:08 | me | EDIT | .claude/settings.local.json,.gitignore | registered the PostToolUse auto-log hook (Edit|Write|MultiEdit|NotebookEdit|Bash) in local project settings; file git-ignored
+11-07 13:08 | me | CHECK | auto-log hook | script tests 6 pass, settings registered, but a real edit produced no auto line: the settings watcher only sees .claude/ if it existed at session start, so the hook goes live in a NEW session; manual logging continues until then
+11-07 13:09 | me | EDIT | styles/fonts | downloaded Rajdhani (Medium, SemiBold, Bold), Yatra One, Inter (variable), Noto Sans Devanagari (variable) + 4 OFL licences from github.com/google/fonts (ofl/), owner yes; TTF magic bytes checked
+11-07 13:10 | me | COMMIT | universal-v1.1 | fonts added to styles/fonts (2.9 MB, OFL licences kept), P10 passes for deva_neon and braj_earth; director test updated; core 290, director 483, h3 178; NOT pushed
