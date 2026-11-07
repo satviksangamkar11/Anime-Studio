@@ -267,7 +267,7 @@ def test_story_json_loads_its_pack():
 def test_open_questions_sections():
     text = (ROOT / "OPEN_QUESTIONS.md").read_text(encoding="utf-8")
     for n in range(1, 9):
-        assert f"Q{n} " in text
-    for heading in ("## Owner questions", "## Auto-tagged neon colours (confirm, Q4)",
+        assert f"Q{n} CLOSED" in text   # all eight were closed on 2026-11-07 (the owner may reopen any of them)
+    for heading in ("## Closed 2026-11-07", "## Auto-tagged neon colours (confirm, Q4)",
                     "## Palettes under the dL* law (Q2)", "## Decisions taken without the owner"):
         assert heading in text

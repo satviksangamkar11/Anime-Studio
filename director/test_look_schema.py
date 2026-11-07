@@ -153,8 +153,8 @@ def test_a_style_key_inside_look_is_an_error():
     assert any("look.style" in p and not p.startswith("SHOT-07: WARN") for p in problems)
 
 
-def test_staged_brief_default_is_the_v22_file_text():
-    assert write_pack.staged_brief().read_text(encoding="utf-8") == (HERE / "MASTER_PROMPT_v2.2.md").read_text(encoding="utf-8")
+def test_staged_brief_default_is_the_v23_file_text():   # owner decision Q5, 2026-11-07: the staged default moved from v2.2 to v2.3
+    assert write_pack.staged_brief().read_text(encoding="utf-8") == (HERE / "MASTER_PROMPT_v2.3.md").read_text(encoding="utf-8")
     assert write_pack.staged_brief("v2.2").read_text(encoding="utf-8") == (HERE / "MASTER_PROMPT_v2.2.md").read_text(encoding="utf-8")
 
 

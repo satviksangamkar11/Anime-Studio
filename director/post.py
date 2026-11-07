@@ -3,7 +3,7 @@
 CLI:
   python director/post.py EPISODE_BUILD_DIR --story stories/<slug>/story.json [--episode-json PATH]
       [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd "CMD {in} {out}"] [--out FILE]
-      [--no-captions] [--dry-run]
+      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--dry-run]
 
 EPISODE_BUILD_DIR layout:
   episode.json          h3 episode {"episode_id", "shots": [h3 shots]}; --episode-json overrides the path
@@ -13,7 +13,11 @@ Output: <build>/<episode_id>_final.mp4 (or --out). Work files go to <build>/post
 colour_report.json is written to the build dir on every real run, also when refusing.
 Shot fields read: shot_id, timing_and_lattice (fps, trim_in_frame, trim_out_frame, editorial_frames,
 trim_in_sec, trim_out_sec, editorial_duration_sec), metadata.look (act, hook, impact_frames),
-optional metadata.captions ([{t0, t1, text, latin?}] in shot-editorial seconds).
+optional metadata.captions ([{t0, t1, text, latin?, emphasis?, words?}] in shot-editorial seconds; words = aligned
+words for karaoke), and metadata.look.hook.emphasis (list of hook words drawn larger in the emphasis colour).
+Captions: --platform picks core.safe_zone_templates (default: core.safe_zone_frac); the fonts dir is used to measure and
+wrap the text (at most 2 lines) and to check every glyph; a real run first checks that ffmpeg has libass and HarfBuzz and,
+after the final file is written, writes <final>.<lang>.srt and .vtt next to it (--no-sidecars turns that off).
 
 run_post() never raises: bad input becomes a POST FAIL entry. A dry run starts no subprocess and writes no file.
 """
@@ -37,6 +41,7 @@ for _p in (_REPO, _HERE):
 from PIL import Image  # noqa: E402
 
 from clip_tools import gates, last_frame, probe  # noqa: E402
+from core.caption_export import ffmpeg_preflight, write_sidecars  # noqa: E402
 from core.captions import build_ass  # noqa: E402
 from core.flash_check import REPORT_HEADER, check_flash  # noqa: E402
 from core.frame_metrics import extract_frames, mean_lab  # noqa: E402
@@ -119,11 +124,13 @@ def _shot_facts(shot):
         impacts.append({"at_s": float(imp["at_s"]), "type": imp["type"], "frames": imp["frames"]})
     hook = look.get("hook")
     caption = hook.get("caption") if isinstance(hook, dict) else None
+    emph = hook.get("emphasis") if isinstance(hook, dict) and isinstance(hook.get("emphasis"), list) else []
     caps = meta.get("captions") or []
     if not isinstance(caps, list):
         raise ValueError(f"shot {sid}: metadata.captions must be a list")
     return {"sid": sid, "ti": ti, "to": to, "ed": ed, "t": t, "act": look["act"], "impacts": impacts,
-            "hook_caption": caption if isinstance(caption, str) else None, "captions": caps, "raw": shot}
+            "hook_caption": caption if isinstance(caption, str) else None, "hook_emphasis": emph, "captions": caps,
+            "raw": shot}
 
 
 def _split_cmd(cmd):
@@ -200,18 +207,28 @@ def _version_line():
     return (r.stdout.splitlines() or [None])[0]
 
 
+def _with_post_shot(entries):
+    """Caption entries already carry rule, level, shot and episode; make sure the keys exist for the report."""
+    return [dict({"shot": None, "episode": None}, **e) for e in entries]
+
+
 def _caption_cues(facts, fps):
     """Hook caption at episode t0 (first shot, up to its end), then metadata.captions shifted to episode time."""
     cues = []
     first = facts[0]
     if first["hook_caption"] and first["hook_caption"].strip():
-        cues.append({"t0": 0.0, "t1": round(first["ed"] / fps, 3), "text": first["hook_caption"]})
+        cues.append({"t0": 0.0, "t1": round(first["ed"] / fps, 3), "text": first["hook_caption"],
+                     "emphasis": first["hook_emphasis"]})
     for f in facts:
         offset = f["start"] / fps
         for c in f["captions"]:
             if isinstance(c, dict) and _num(c.get("t0")) and _num(c.get("t1")):
-                cues.append({"t0": c["t0"] + offset, "t1": c["t1"] + offset,
-                             "text": c.get("text"), "latin": c.get("latin")})
+                words = c.get("words") if isinstance(c.get("words"), list) else None
+                if words:   # aligned words are in shot-editorial seconds like the cue: shift them to episode time
+                    words = [dict(w, t0=w["t0"] + offset, t1=w["t1"] + offset)
+                             if isinstance(w, dict) and _num(w.get("t0")) and _num(w.get("t1")) else w for w in words]
+                cues.append({"t0": c["t0"] + offset, "t1": c["t1"] + offset, "text": c.get("text"),
+                             "latin": c.get("latin"), "emphasis": c.get("emphasis"), "words": words})
             else:
                 cues.append({"t0": None, "t1": None, "text": None, "latin": None})  # build_ass reports it
     return cues
@@ -231,13 +248,14 @@ def _write_colour_report(build, report):
 
 
 def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts_dir=None, upscale_cmd=None,
-             out=None, captions=True, dry_run=False):
+             out=None, captions=True, dry_run=False, platform=None, sidecars=True):
     """Grade, insert impacts, caption, encode and gate one episode. Returns the report dict."""
     report = {"episode": None, "fail": False, "written": False, "output": None, "steps": [], "entries": [],
               "flash_note": REPORT_HEADER, "ffmpeg": None, "graph": "", "commands": [], "dry_run": bool(dry_run)}
     build = Path(build_dir)
     try:
-        _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run)
+        _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
+             platform, sidecars)
     except Exception as exc:  # the CLI never prints a traceback
         report["entries"].append(_entry("POST", "FAIL", f"unexpected error: {type(exc).__name__}: {exc}"))
     report["fail"] = report["fail"] or any(e["level"] == "FAIL" for e in report["entries"])
@@ -246,7 +264,8 @@ def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts
     return report
 
 
-def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run):
+def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
+         platform=None, sidecars=True):
     entries, steps = report["entries"], report["steps"]
 
     def fail(msg, shot=None):
@@ -466,10 +485,13 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
         if not cues:
             warn("no captions to burn in", None)
         else:
-            cap_text, cap_entries = build_ass(cues, pack, core, width, height, language)
-            entries.extend(cap_entries)
             has_font = fonts.is_dir() and any(p.suffix.lower() in (".ttf", ".otf", ".ttc")
                                               for p in fonts.iterdir())
+            cap_text, cap_entries = build_ass(cues, pack, core, width, height, language,
+                                              font_dir=fonts if has_font else None, template=platform)
+            entries.extend(cap_entries)
+            if not dry_run:   # one ffmpeg -buildconf query; a dry run starts no subprocess
+                entries.extend(_with_post_shot(ffmpeg_preflight()))
             opt = ""
             if not has_font:
                 warn(f"POST fonts missing in {fonts}: libass falls back", None)
@@ -546,6 +568,10 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
         shutil.move(str(tmp), str(final))
         report["written"] = True
         steps.append(f"written {final}")
+        if captions and sidecars and cues:   # YouTube sidecars from the same cues (9.1)
+            paths, sc_entries = write_sidecars({language: cues}, final.parent, final.stem)
+            entries.extend(_with_post_shot(sc_entries))
+            steps.append(f"sidecars: {len(paths)} file(s)")
 
 
 def main(argv=None):
@@ -558,11 +584,14 @@ def main(argv=None):
     p.add_argument("--upscale-cmd")
     p.add_argument("--out")
     p.add_argument("--no-captions", action="store_true")
+    p.add_argument("--no-sidecars", action="store_true")
+    p.add_argument("--platform", choices=("reels", "shorts", "youtube"))
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
     report = run_post(args.build_dir, args.story, episode_json=args.episode_json, styles_dir=args.styles_dir,
                       fonts_dir=args.fonts_dir, upscale_cmd=args.upscale_cmd, out=args.out,
-                      captions=not args.no_captions, dry_run=args.dry_run)
+                      captions=not args.no_captions, dry_run=args.dry_run, platform=args.platform,
+                      sidecars=not args.no_sidecars)
     print(json.dumps(report, indent=1, ensure_ascii=False))
     return 1 if report["fail"] else 0
 

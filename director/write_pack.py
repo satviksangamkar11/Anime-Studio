@@ -22,7 +22,7 @@ Usage: python write_pack.py story.md out_dir [--writer super-vl|ultra|opus] [--v
        python write_pack.py story.md out_dir --staged [--writer ...] [--via ...] [--model M] [--stage-via 2=nvidia,3=claude] [--stage-model 3=opus]
                                                        [--prompt-version v2.2|v2.3] [--style-pack ID]
   --prompt-version v2.3 (staged only) uses MASTER_PROMPT_v2.3.md and appends the STYLE PACK RULES of the pack named by --style-pack,
-  else by the story.json next to the story. The default stays v2.2."""
+  else by the story.json next to the story. The staged default is v2.3 (owner decision Q5, 2026-11-07); v2.2 stays available."""
 import argparse
 import json
 import os
@@ -78,7 +78,10 @@ def build_prompt(story_text):
     return BRIEF.read_text(encoding="utf-8") + "\n\n## THE STORY / SOURCE\n\n" + story_text.strip() + "\n"
 
 
-def staged_brief(version="v2.2"):
+DEFAULT_PROMPT_VERSION = "v2.3"
+
+
+def staged_brief(version=DEFAULT_PROMPT_VERSION):
     """Path of the staged brief. v2.2: today's file (BRIEF_V22, or BRIEF when that is missing). v2.3: MASTER_PROMPT_v2.3.md.
     Returns a Path for both (read it with .read_text), as before."""
     if version == "v2.2":
@@ -411,7 +414,7 @@ def merge_episodes(per_episode):
     return merged
 
 
-def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None, prompt_version="v2.2", style_rules=""):
+def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None, prompt_version=DEFAULT_PROMPT_VERSION, style_rules=""):
     """Stages 1, 2, 3e<N> per episode, 5. Writes PACK.md, bible.json, shots.json; returns the merged shots.
     rec: the run registry Recorder of this run (default: records nothing). Every stage and the whole run are steps in it.
     prompt_version: which staged brief to send; style_rules: text appended to that brief (empty = nothing appended)."""
@@ -505,7 +508,7 @@ def main(argv=None):
     ap.add_argument("--stage-via", default="", help="staged only: per-stage path, e.g. 2=nvidia,3=claude")
     ap.add_argument("--stage-model", default="", help="staged only: per-stage model, e.g. 3=opus")
     ap.add_argument("--prompt-version", default=None, choices=("v2.2", "v2.3"),
-                    help="staged only: the brief. v2.2 (default) or v2.3 (look and hook rules, plus the style pack rules)")
+                    help="staged only: the brief. v2.3 (default: look and hook rules, plus the style pack rules) or v2.2 (the old brief)")
     ap.add_argument("--style-pack", default=None,
                     help="staged + v2.3 only: style pack id (styles/<id>.json). Default: style_pack in the story.json next to the story")
     a = ap.parse_args(argv)
@@ -517,7 +520,7 @@ def main(argv=None):
         stage_model = parse_stage_map(a.stage_model, str) if a.staged else {}
     except ValueError as exc:
         ap.error(str(exc))
-    prompt_version = a.prompt_version or "v2.2"
+    prompt_version = a.prompt_version or DEFAULT_PROMPT_VERSION   # Q5 (2026-11-07): the staged default is v2.3
     style = ""
     if a.staged and prompt_version == "v2.3":
         pack_id = a.style_pack or story_pack_id(Path(a.story))

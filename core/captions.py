@@ -6,6 +6,9 @@ Output is deterministic: the same input gives byte-identical text.
 import math
 import re
 
+from pathlib import Path
+
+from core import caption_text as _ct
 from core.style_pack import _linear, _rgb_from, l_star
 
 # Documented caption constants (A19). The owner may change them here.
@@ -23,6 +26,10 @@ DEFAULT_GAP_1080 = 16
 REF_WIDTH = 1080
 FALLBACK_HEIGHT = 1920       # used only when the width or height given is junk
 DEVA_LANGS = ("hi", "mr")
+EMPHASIS_HEX = "#FFD84D"     # hook-word emphasis and the sung part of a karaoke line (9.4, 9.7); tune value
+EMPHASIS_SCALE = 112         # percent size of an emphasised word
+MAX_LINES = 2                # measured wrapping limit (research: max 2 lines)
+_EM_OPEN, _EM_CLOSE = "\ue000", "\ue001"   # private-use markers around an emphasised word, replaced by ASS tags
 _DEVA_CHAR = re.compile("[ऀ-ॿ]")
 
 
@@ -197,13 +204,79 @@ def _clean_cues(cues, entries):
             entries.append(_entry("WARN", f"cue {idx}: latin line ignored (not a string)"))
             latin = None
         latin = latin.strip() if isinstance(latin, str) and latin.strip() else None
+        emph = cue.get("emphasis")
+        emph = [w.strip() for w in emph if isinstance(w, str) and w.strip()] if isinstance(emph, list) else []
+        words = cue.get("words") if isinstance(cue.get("words"), list) and cue.get("words") else None
         valid.append({"index": idx, "t0": float(t0), "t1": float(t1),
-                      "text": text.strip(), "latin": latin})
+                      "text": text.strip(), "latin": latin, "emphasis": emph, "words": words})
     valid.sort(key=lambda c: (c["t0"], c["t1"], c["index"]))
     return valid
 
 
-def _build(cues, pack, core, width, height, language, entries):
+def _find_font(font_dir, family):
+    """Font file in font_dir whose normalised name starts with the family name (the way rule P10 matches); the shortest
+    file name wins, which is the regular or variable file. None when there is no font_dir, no family or no match."""
+    if not font_dir or not family:
+        return None
+    try:
+        files = [f for f in Path(font_dir).iterdir() if f.is_file() and f.suffix.lower() in (".ttf", ".otf")]
+    except OSError:
+        return None
+    want = re.sub(r"\s+", "", family.lower())
+    hits = [f for f in files if re.sub(r"[\s_\-]", "", f.name.lower()).startswith(want)]
+    return str(sorted(hits, key=lambda f: (len(f.name), f.name))[0]) if hits else None
+
+
+_PUNCT = ".,!?;:'\"()\u2026\u0964"
+
+
+def _mark_emphasis(line, words):
+    """Wraps each token of `line` that equals an emphasis word (punctuation ignored, case-insensitive) in private markers."""
+    if not words:
+        return line
+    wanted = {w.strip(_PUNCT).lower() for w in words}
+    return " ".join(_EM_OPEN + t + _EM_CLOSE if t.strip(_PUNCT) and t.strip(_PUNCT).lower() in wanted else t
+                    for t in line.split(" "))
+
+
+def _emphasis_tags(text):
+    on = "{\\1c" + _ass_colour(EMPHASIS_HEX) + "&\\fscx%d\\fscy%d}" % (EMPHASIS_SCALE, EMPHASIS_SCALE)
+    off = "{\\1c" + _ass_colour(FILL_HEX) + "&\\fscx100\\fscy100}"
+    return text.replace(_EM_OPEN, on).replace(_EM_CLOSE, off)
+
+
+def _line_markup(line, dev, lat):
+    """One caption line as ASS text. A line that mixes Devanagari and Latin gets explicit font overrides per script run (9.8)."""
+    scripts = [sc for sc, _ in _ct.script_runs(line) if sc != "other"]
+    if dev and lat and "deva" in scripts and "latin" in scripts:
+        primary = dev if scripts[0] == "deva" else lat
+        return "{\\fn%s}%s" % (primary, _ct.fallback_markup(line, dev, lat))
+    return _escape(line)
+
+
+def _karaoke_body(cue, font_file, size, text_w, entries):
+    """ASS karaoke text for a cue that carries aligned words, or None when the timing falls back to phrase mode (9.7)."""
+    from core import caption_export as cx   # lazy: caption_export imports this module
+    ass, mode, kents = cx.karaoke_text(cue["words"], line_t0=cue["t0"], line_t1=cue["end"])
+    entries.extend(kents)
+    if mode == "phrase":
+        return None
+    texts = [w.get("text", "") if isinstance(w, dict) else str(w) for w in cue["words"]]
+    if font_file:
+        lines, wents = _ct.wrap_lines(" ".join(texts), font_file, size, text_w, MAX_LINES)
+        entries.extend(wents)
+        pieces = re.findall(r"\{\\k\d+\}[^{]*", ass)
+        if len(pieces) == len(texts) and sum(len(ln.split(" ")) for ln in lines) == len(texts):
+            out, i = [], 0
+            for ln in lines:
+                n = len(ln.split(" "))
+                out.append("".join(pieces[i:i + n]).rstrip())
+                i += n
+            return "\\N".join(out)
+    return ass
+
+
+def _build(cues, pack, core, width, height, language, entries, font_dir=None, template=None):
     if not isinstance(cues, list):
         raise _Junk("cues must be a list")
     width, height = _dims(width, height)
@@ -214,6 +287,12 @@ def _build(cues, pack, core, width, height, language, entries):
     if not _is_num(min_px):
         raise _Junk("typography.min_px_at_1080w must be a number")
     band, right, min_on, min_contrast = _validate_core(core)
+    if template is not None:   # per-platform safe area (9.2): replaces the caption band and the right margin only
+        tpl = core.get("safe_zone_templates", {}).get(template) if isinstance(core.get("safe_zone_templates"), dict) else None
+        try:
+            band, right = _validate_core(dict(core, safe_zone_frac=tpl))[:2]
+        except _Junk:
+            entries.append(_entry("WARN", f"safe-zone template {template!r} is missing or invalid; using the default safe zone"))
 
     lang = language.strip().lower() if isinstance(language, str) else ""
     W, H = width, height
@@ -269,6 +348,8 @@ def _build(cues, pack, core, width, height, language, entries):
             else:
                 cue["end"] = new_end
 
+    dev_family, lat_family = _family(typo.get("subtitle_devanagari")), _family(typo.get("subtitle_latin"))
+    min_size = math.ceil(min_px * W / REF_WIDTH)
     outline_lead = math.ceil(round(lead_size * OUTLINE_FRAC, 9))
     outline_sub = math.ceil(round(latin_size * OUTLINE_FRAC, 9))
     dialogues = []
@@ -291,16 +372,38 @@ def _build(cues, pack, core, width, height, language, entries):
             entries.append(_entry("WARN", "caption pair shifted up to stay inside the caption band"))
         if lead_y - lead_size / 2 < band_top:
             entries.append(_entry("WARN", "caption is taller than the caption band"))
-        if wrap_estimate(cue["text"], lead_size) > text_w:
-            entries.append(_entry("WARN", f"cue {cue['index']}: text too long for one line at "
-                                          f"{lead_size} px; ASS wraps it"))
+        lead_file = _find_font(font_dir, family)
+        size_tag, k_tags, body = "", "", None
+        if cue["words"]:
+            body = _karaoke_body(cue, lead_file, lead_size, text_w, entries)
+            if body is not None:
+                k_tags = "\\1c" + _ass_colour(EMPHASIS_HEX) + "&\\2c" + _ass_colour(FILL_HEX) + "&"
+        if body is None:
+            if lead_file:   # measured wrapping with the real font file: explicit line breaks, at most MAX_LINES lines
+                lines, size_used, wents = _ct.fit_text(cue["text"], lead_file, lead_size, text_w, MAX_LINES,
+                                                       min_size_px=min_size)
+                entries.extend(wents)
+                if size_used != lead_size:
+                    size_tag = "\\fs%d" % size_used
+                gl = _ct.glyph_coverage(lead_file, cue["text"])
+                if not gl["ok"]:
+                    entries.append({"rule": "CAP-GLYPH", "level": "FAIL", "shot": None, "episode": None,
+                                    "message": f"cue {cue['index']}: glyph(s) {''.join(gl['missing'])!r} missing from "
+                                               f"{Path(lead_file).name}"})
+            else:
+                lines = [cue["text"]]
+                if wrap_estimate(cue["text"], lead_size) > text_w:
+                    entries.append(_entry("WARN", f"cue {cue['index']}: text too long for one line at "
+                                                  f"{lead_size} px; ASS wraps it"))
+            body = "\\N".join(_emphasis_tags(_line_markup(_mark_emphasis(ln, cue["emphasis"]), dev_family, lat_family))
+                              for ln in lines)
         if has_latin and wrap_estimate(cue["latin"], latin_size) > text_w:
             entries.append(_entry("WARN", f"cue {cue['index']}: latin line too long for one line; "
                                           "ASS wraps it"))
         t0s, t1s = ass_time(cue["t0"]), ass_time(cue["end"])
         override = f"\\fn{family}" if family != lead_family else ""
-        lead_tags = f"\\an5\\pos({x},{round(lead_y)}){override}"
-        dialogues.append(f"Dialogue: 0,{t0s},{t1s},Lead,,0,0,0,,{{{lead_tags}}}{_escape(cue['text'])}")
+        lead_tags = f"\\an5\\pos({x},{round(lead_y)}){override}{size_tag}{k_tags}"
+        dialogues.append(f"Dialogue: 0,{t0s},{t1s},Lead,,0,0,0,,{{{lead_tags}}}{body}")
         if has_latin:
             latin_tags = f"\\an5\\pos({x},{round(latin_y)})\\alpha&H{alpha:02X}&"
             dialogues.append(f"Dialogue: 0,{t0s},{t1s},Sub,,0,0,0,,{{{latin_tags}}}"
@@ -331,11 +434,16 @@ def _dedupe(entries):
     return out
 
 
-def build_ass(cues, pack, core, width, height, language="hi"):
-    """Return (ass_text, entries). Never raises; junk input gives a FAIL entry and a minimal ASS."""
+def build_ass(cues, pack, core, width, height, language="hi", font_dir=None, template=None):
+    """Return (ass_text, entries). Never raises; junk input gives a FAIL entry and a minimal ASS.
+    font_dir: folder with the font files; when given, text is wrapped by measuring the real font (at most 2 lines, explicit
+    line breaks, shrink down to the minimum size) and every glyph is checked. template: key of core.safe_zone_templates
+    (reels, shorts, youtube) replacing the caption band and the right margin.
+    A cue may carry `emphasis` (list of words drawn larger in the emphasis colour) and `words` (aligned words for karaoke;
+    low confidence or bad timing falls back to the plain line)."""
     entries = []
     try:
-        text = _build(cues, pack, core, width, height, language, entries)
+        text = _build(cues, pack, core, width, height, language, entries, font_dir, template)
         return text, _dedupe(entries)
     except _Junk as exc:
         return _minimal(width, height), [_entry("FAIL", f"captions not built: {exc}")]

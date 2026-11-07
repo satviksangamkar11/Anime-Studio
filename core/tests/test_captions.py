@@ -93,7 +93,7 @@ def test_positions_inside_caption_band():
     assert len(lines) == 3
     for line in lines:
         assert top <= _pos_y(line) <= bottom
-    assert _pos_y(lines[0]) == pytest.approx(0.7 * 1344, abs=1)
+    assert _pos_y(lines[0]) == pytest.approx(sum(BAND) / 2 * 1344, abs=1)   # the lead sits at the band centre
     assert not _warns(entries)
 
 
