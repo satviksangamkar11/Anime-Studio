@@ -753,3 +753,6 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 13:08 | me | CHECK | auto-log hook | script tests 6 pass, settings registered, but a real edit produced no auto line: the settings watcher only sees .claude/ if it existed at session start, so the hook goes live in a NEW session; manual logging continues until then
 11-07 13:09 | me | EDIT | styles/fonts | downloaded Rajdhani (Medium, SemiBold, Bold), Yatra One, Inter (variable), Noto Sans Devanagari (variable) + 4 OFL licences from github.com/google/fonts (ofl/), owner yes; TTF magic bytes checked
 11-07 13:10 | me | COMMIT | universal-v1.1 | fonts added to styles/fonts (2.9 MB, OFL licences kept), P10 passes for deva_neon and braj_earth; director test updated; core 290, director 483, h3 178; NOT pushed
+11-07 13:11 | me | COMMIT | v4-architecture-2026-11-07 | auto_log hook script + tests + gitignore; NOT pushed (owner push approval covered the earlier work only)
+11-07 13:14 | me | CHECK | open steps | owner asked: are all open steps closed; reading NOW block, checklist, OPEN_QUESTIONS, STATUS
+11-07 13:14 | me | EDIT | CHECKLIST_ARCHITECTURE_2026-11-07.md,HANDOFF_2026-11-07.md | ticked 7.2, 7.4, 11.2-11.4 with evidence; handoff update with open list

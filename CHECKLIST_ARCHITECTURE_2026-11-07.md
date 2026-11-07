@@ -54,12 +54,12 @@ Suites to stay green: director 603, h3 385, ui 178, flow 116 (counts grow).
 
 ## 7. Wrap up
 - [x] 7.1 All four suites green
-- [ ] 7.2 secret scan (tools/secret_scan.py) clean
+- [x] 7.2 secret scan (tools/secret_scan.py) clean (11-07: 18 files clean; regex scan of 81 V4 + 67 universal files clean)
 - [ ] 7.3 STATUS.md, README, HANDOFF ledger, PROJECT_LOG, memory updated
-- [ ] 7.4 Ask owner before any push
+- [x] 7.4 Ask owner before any push (owner approved 11-07; pushed d5804ba and 80252ec; later commits 674bcda, 9f7392c NOT pushed)
 
 ## 8. Waiting on the owner (do not start)
-- [ ] Captions and fonts (owner will provide)
+- [ ] Captions text (owner will provide); fonts DONE 11-07 (4 OFL families in universal styles/fonts)
 - [ ] Paid ElevenLabs use (needs go)
 - [ ] Stories: Kaliya defects, Mahadev 4th reel
 
@@ -79,6 +79,6 @@ Suites to stay green: director 603, h3 385, ui 178, flow 116 (counts grow).
 
 ## 11. Round-2 review (owner rule 5: review again after fixes)
 - [x] 11.1 Super VL round 2 r1-r5 done + Dots r1-r2 (r6-r8 pending)
-- [ ] 11.2 Triage + fix: W1-W4 done (director, h3 core, gate/controller, converter); W5 UI pending
-- [ ] 11.3 Round 3 on files fixed in 11.2 (repeat until no real defect)
-- [ ] 11.4 Suites green, secret scan clean, push
+- [x] 11.2 Triage + fix: W1-W5 done (see research/TRIAGE_R3..R6)
+- [x] 11.3 Rounds 3, 4, 5, 5B, 6 done; round 5B found 0 real defects, round 6 found 1 low (fixed); loop stopped
+- [x] 11.4 Suites green (h3 594, director 658, ui 253, flow 116), secret scan clean, pushed d5804ba
