@@ -65,3 +65,9 @@ Free reviewers are now Nemotron 3.5 Super VL (`nvidia/nemotron-3.5-super-vl:free
 
 ## RULE 13: DEVA NEON IS THE FIXED DEFAULT STYLE (owner, 2026-11-07)
 From now every story uses the `deva_neon` style pack unless its story.json names another one (`kaliya_mardan` stays on `braj_earth`). The default lives in `core/core.json` key `default_style_pack`; the writer, new story.json files and the UI read it from there. The UI and server let the owner choose the style per story (style chooser in step 1; `GET /api/styles`, `POST /api/story/<slug>/style`). Supersedes OPEN_QUESTIONS Q1 for new work. The Assay UI review (owner: "ASCII") runs AFTER the style chooser is built and the simplification is verified.
+
+## RULE 14: HEAVY FILES GO TO GOOGLE DRIVE (owner, 2026-11-07)
+All rendered files, images, videos and other heavy outputs are stored on Google Drive; local disk (C: is nearly full, D: has a few GB) is used only when there is no other option. Code, small text (SOURCE.md, plans, logs, reports) and tools that must run locally stay local. Never upload `secrets/`, keys or tokens. STATUS 2026-11-07: Drive is NOT yet reachable from this machine (no Drive connector in the session, no Google Drive for desktop drive letter); until it is, heavy outputs wait or use D: only with the owner's OK. When Drive is reachable: set the Drive folder, point `flow_outputs`/render outputs there, and move finished heavy files off D:.
+
+## RULE 15: PACE, PHONE CHECKS, AGENT STALLS (owner, 2026-11-07)
+Owner: skip the phone-size UI checks (desktop width only is enough; mark phone as not tested). Finish steps as fast as possible. An agent that writes no log line for 20 minutes is treated as stalled: replace it at once (Haiku xhigh coders stalled twice on the 2700-line pipeline.js; use Sonnet high for big UI files) and log a FAIL line. Every agent brief demands a log line at least every 5 minutes.

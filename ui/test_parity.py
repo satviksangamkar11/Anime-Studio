@@ -127,6 +127,8 @@ ROUTES = [
     ("GET", "/api/export", "'/api/export?", "", None, None),
     ("GET", "/api/file", "'/api/file?path='", "", None, None),
     ("GET", "/api/writers", "'/api/writers'", "", "T3", "T1"),
+    ("GET", "/api/styles", "'/api/styles'", "", "T3", "T3"),
+    ("POST", "/api/story/{slug}/style", "'/style'", "", "T3", "T3"),
     ("POST", "/api/preview", "'/api/preview'", "", None, None),
     ("POST", "/api/run", "'/api/run'", "", None, None),
     ("POST", "/api/packet", "'/api/packet'", "", None, None),
