@@ -251,16 +251,22 @@
 
   async function api(method, path, body) {
     var opts = { method: method, headers: {}, cache: 'no-store' };
+    opts.headers['X-UI'] = '1';   // every request, as the GUARD_403 text promises (server checks POST only today)
     if (method !== 'GET') {
-      opts.headers['X-UI'] = '1';
       opts.headers['Content-Type'] = 'application/json';
       opts.body = JSON.stringify(body || {});
     }
     var res;
+    // a hung server must not hang the modals and the poller forever: give up after 2 minutes (same as pipeline.js)
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 120000) : null;
+    if (ctl) opts.signal = ctl.signal;
     try {
       res = await fetch(path, opts);
     } catch (e) {
       throw fail(0, 'Cannot reach the studio server at ' + location.host + '. Is server.py running?');
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     var text = await res.text();
     var isJson = /json/.test(res.headers.get('Content-Type') || '');
@@ -587,7 +593,7 @@
   async function loadStory(pack) {
     try {
       var d = await api('GET', '/api/story');
-      S.slugs = (d && d.slugs) || [];
+      S.slugs = Array.isArray(d && d.slugs) ? d.slugs : [];
       if (!S.slugs.length) {
         fill($('story-slug'), [el('option', { value: '', text: '(no stories)' })]);
         renderPack(null);
@@ -1187,7 +1193,9 @@
   function h3Run() {
     var sc = scopeArgs();
     if (typeof sc === 'string') return showError(sc);
-    var args = { story: $('video-shotfile').value };
+    var shots = $('video-shotfile').value;
+    if (!shots) return showError('Pick a shot file.');
+    var args = { story: shots };
     Object.keys(sc).forEach(function (k) { args[k] = sc[k]; });
     runCommand({
       title: 'h3 prepare (no GPU)',

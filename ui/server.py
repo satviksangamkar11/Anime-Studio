@@ -411,8 +411,8 @@ def scope_ids(shots_file, scope, ids=None, reel=None):
     if scope == "shots":
         if not ids:
             raise bad("scope shots needs at least one shot id")
-        known = {s.get("id") for s in shots}
-        missing = [i for i in ids if i not in known]
+        known = {str(s.get("id")) for s in shots if s.get("id") is not None}   # text form: an unhashable id must not raise
+        missing = [i for i in ids if str(i) not in known]
         if missing:
             raise bad(f"not in the shot file: {', '.join(missing)}")
         return list(ids)
@@ -730,15 +730,25 @@ def read_pack(cfg, rel, check=False) -> dict:
     for s in shots:
         sid = str(s.get("id", ""))
         n_iss = sum(1 for i in issues if i.startswith(sid + ":"))
+        secs = s.get("editorial_duration_sec")
+        if secs is None:          # 0 is a real value; only a missing field falls back to 'seconds'
+            secs = s.get("seconds")
         rows.append({"id": sid, "episode": s.get("episode"), "mode": s.get("route") or s.get("mode"),
-                     "seconds": s.get("editorial_duration_sec") or s.get("seconds"),
+                     "seconds": max(0, secs) if isinstance(secs, (int, float)) and not isinstance(secs, bool)
+                     else 0,   # negative shows as 0; bool, None and any non-number (e.g. a string) as 0
                      "purpose": str(s.get("purpose") or "")[:200], "cut_in": s.get("cut_in"), "cut_out": s.get("cut_out"), "issues": n_iss})
-        e = eps.setdefault(s.get("episode"), {"n": s.get("episode"), "shots": 0, "seconds": 0.0, "issues": 0})
+        ep_key = s.get("episode")
+        if isinstance(ep_key, (list, dict)):
+            ep_key = str(ep_key)         # unhashable episode: its text form (the dict key must be hashable)
+        e = eps.setdefault(ep_key, {"n": ep_key, "shots": 0, "seconds": 0.0, "issues": 0})
         e["shots"] += 1
-        e["seconds"] += num(s.get("editorial_duration_sec") or s.get("seconds"))
+        e["seconds"] += max(0.0, num(secs))   # zero or negative seconds count as 0
         e["issues"] += n_iss
     episodes = []
-    for e in sorted(eps.values(), key=lambda x: (x["n"] is None, x["n"] or 0)):
+    # numbers sort among numbers, everything else among strings: mixed types must not raise TypeError
+    ep_key = lambda x: ((x["n"] is None, 0, x["n"]) if isinstance(x["n"], (int, float)) and not isinstance(x["n"], bool)
+                        else (x["n"] is None, 1, str(x["n"])))
+    for e in sorted(eps.values(), key=ep_key):
         e["seconds"] = round(e["seconds"], 1)
         if chk is None:
             e["check"] = "not checked"
@@ -848,9 +858,9 @@ def read_images(cfg, adhyay, slug=LEGACY_STORY) -> dict:
                     shot_entry(sid)["reviews"].append({"file": p.name, "candidate": Path(str(r.get("candidate") or "")).name,
                                                        "label": r.get("label"), "verdict": r.get("verdict"), "fix": r.get("fix")})
     q = queue_state(cfg, adhyay) if legacy else {"pending": [], "filed": [], "accepted": []}
-    finals = [{"name": p.name, "path": str(p), "bytes": p.stat().st_size} for p in sorted((root / "final").glob("*__final.png"))] \
+    finals = [{"name": p.name, "path": str(p), "bytes": _size(p)} for p in sorted((root / "final").glob("*__final.png"))] \
         if (root / "final").is_dir() else []
-    keyframes = [{"name": p.name, "path": str(p), "bytes": p.stat().st_size} for p in sorted((root / "keyframes_h3").glob("*.png"))] \
+    keyframes = [{"name": p.name, "path": str(p), "bytes": _size(p)} for p in sorted((root / "keyframes_h3").glob("*.png"))] \
         if (root / "keyframes_h3").is_dir() else []
     return {"adhyay": adhyay, "exists": root.is_dir(), "series": {s: items(s) for s in ("characters", "places", "props")},
             "sheets": sheets, "jobs": jobs, "shots": [shots[k] for k in sorted(shots)],
@@ -859,13 +869,21 @@ def read_images(cfg, adhyay, slug=LEGACY_STORY) -> dict:
             "filed": q["filed"], "accepted": q["accepted"], "finals": finals, "keyframes": keyframes}
 
 
+def _size(p: Path):
+    """File size in bytes, or None when the file vanished after the listing (a glob/stat race must not crash it)."""
+    try:
+        return p.stat().st_size
+    except OSError:
+        return None
+
+
 def _clips_in(results: Path) -> list:
     out = []
     if results.is_dir():
         for shot_dir in sorted(p for p in results.iterdir() if p.is_dir()):
             for mp4 in sorted(shot_dir.glob("*.mp4")):
                 qa = load_json(results / "qa" / f"{mp4.stem}_qa.json")
-                out.append({"shot": shot_dir.name, "take": mp4.stem, "file": str(mp4), "bytes": mp4.stat().st_size,
+                out.append({"shot": shot_dir.name, "take": mp4.stem, "file": str(mp4), "bytes": _size(mp4),
                             "seconds": qa.get("seconds") if isinstance(qa, dict) else None, "qa": bool(qa)})
     return out[:500]
 
@@ -883,8 +901,8 @@ def read_video(cfg) -> dict:
             man = load_json(b / "render_manifest.json")
             man = man if isinstance(man, dict) else {}
             run_py = b / "run.py"
-            batches.append({"name": b.name, "run_py_bytes": run_py.stat().st_size if run_py.is_file() else None,
-                            "run_ipynb_bytes": (b / "run.ipynb").stat().st_size if (b / "run.ipynb").is_file() else None,
+            batches.append({"name": b.name, "run_py_bytes": _size(run_py) if run_py.is_file() else None,
+                            "run_ipynb_bytes": _size(b / "run.ipynb") if (b / "run.ipynb").is_file() else None,
                             "settings": len(man["shots"]) if isinstance(man.get("shots"), list) else None,
                             "embed_mb": man.get("embed_mb_total"), "status": load_json(b / "results" / "status.json")})
             clips += _clips_in(b / "results")
@@ -1238,15 +1256,20 @@ class Api:
             if estimate_units(rec["gpu"], batch_clips(self.cfg, rec["batch"])) != rec["est"]:
                 raise ApiError(403, "the batch changed since the preview: preview again")
             self._spend_gate(rec["est"])
-            _ops_checks().record_spend(self.cfg.ledger, units=rec["est"], session=rec["session"], story=rec.get("story") or "",
-                                       reason=rec["command"])
         with self.lock:
             if rec["used"]:
                 raise ApiError(403, "this preview was already used: preview again")
             if self._active():   # re-check: another run may have started while the spend gate was working (Dots review 2026-11-06)
                 raise ApiError(409, "another job is running: wait for it or stop it")
-            rec["used"] = True
-            job = self._start(rec["command"], rec["argv"], rec["spend"], rec["session"], rec["post"])
+            if rec["spend"] and not rec.get("recorded"):   # owner 2026-11-07: no spend without a ledger row, so the row is written first
+                try:
+                    _ops_checks().record_spend(self.cfg.ledger, units=rec["est"], session=rec["session"], story=rec.get("story") or "",
+                                               reason=rec["command"])
+                except Exception as exc:
+                    raise ApiError(500, f"spend ledger write failed ({type(exc).__name__}: {exc}): the job was NOT started")
+                rec["recorded"] = True   # a retry after a Popen failure must not record the same spend twice
+            job = self._start(rec["command"], rec["argv"], rec["spend"], rec["session"], rec["post"])   # Popen failure raises here: preview stays usable
+            rec["used"] = True   # the job exists, so the preview is single-use from now on
         return {"job_id": job.id}
 
     def jobs_list(self) -> list:
@@ -1446,7 +1469,12 @@ class Api:
                   "cache": "fresh" if s.get("status") == "fresh" else ("stale or missing" if s.get("missing") else "not needed")}
                  for s in rep["shots"]]
         # the live run is not wired into the UI in v1: run_allowed stays False until the owner approves a live route
-        return {"pack": rel, "dry_run": True, "shots": shots, "problems": rep["problems"], "run_allowed": False,
+        missing = [{"shot_id": s["shot_id"], "fields": s["missing"]} for s in shots if s["missing"]]   # the panel reads derived, missing, cache
+        derived = {"count": sum(1 for s in rep["shots"] if s.get("derived"))}
+        cache = ("fresh" if shots and all(s["status"] == "fresh" for s in shots)
+                 else ("stale or missing" if missing else "not needed"))
+        return {"pack": rel, "dry_run": True, "shots": shots, "derived": derived, "missing": missing, "cache": cache,
+                "problems": rep["problems"], "run_allowed": False,
                 "run_note": "live author runs are not wired in the UI yet (owner go and ANIME_STUDIO_ALLOW_FREE_MODEL=1 needed)"}
 
     def link(self, slug, body) -> dict:
@@ -1537,10 +1565,10 @@ class Api:
         if not (self.cfg.studio / "stories" / slug / name).is_dir():
             raise ApiError(404, "no such pack")
         rel = f"stories/{slug}/{name}"
-        ids = [s.get("id") for s in shot_list(self.cfg.studio.joinpath(*rel.split("/")) / "shots.json") if s.get("episode") == n]
-        order = {sid: i for i, sid in enumerate(ids)}
-        clips = [c for root in self.results_roots(slug, name) for c in _clips_in(root) if c["shot"] in order]
-        clips.sort(key=lambda c: (order[c["shot"]], c["take"]))
+        ids = [s.get("id") for s in shot_list(self.cfg.studio.joinpath(*rel.split("/")) / "shots.json") if str(s.get("episode")) == str(n)]
+        order = {str(sid): i for i, sid in enumerate(ids)}   # text form: unhashable shot ids must not raise
+        clips = [c for root in self.results_roots(slug, name) for c in _clips_in(root) if str(c["shot"]) in order]
+        clips.sort(key=lambda c: (order[str(c["shot"])], c["take"]))
         reel_dir = self.cfg.studio / "reels" / f"reel_{n:02d}"
         files = sorted(p.name for p in reel_dir.iterdir() if p.is_file()) if reel_dir.is_dir() else []
         return {"reel": n, "pack": rel, "shot_ids": ids, "clips_in_order": clips, "assembly": "not built",

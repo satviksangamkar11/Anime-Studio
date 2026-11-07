@@ -95,10 +95,12 @@ def shot_route(shot: Dict[str, Any]) -> str:
 
 def shot_seconds(shot: Dict[str, Any]) -> float:
     """V4 rows: editorial_duration_sec; legacy rows: seconds."""
-    v = shot.get("editorial_duration_sec") or shot.get("seconds")
+    v = shot.get("editorial_duration_sec")
+    if v is None:          # 0 is a real value: only a missing field falls back to 'seconds'
+        v = shot.get("seconds")
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return 0.0
-    return float(v)
+    return max(0.0, float(v))   # zero or negative seconds count as 0
 
 
 def images_for_shot(shot: Dict[str, Any]) -> int:
@@ -131,6 +133,12 @@ def output_languages(studio: Path, slug: Optional[str]) -> List[str]:
 # --------------------------------------------------------------------------- #
 # Project pointer
 # --------------------------------------------------------------------------- #
+def takes_of(project: Dict[str, Any]) -> int:
+    """Takes per shot from project.json: a whole number 1-10 (the server's rule), else the default 3."""
+    t = project.get("takes", 3)
+    return t if isinstance(t, int) and not isinstance(t, bool) and 1 <= t <= 10 else 3
+
+
 def load_project(runs: Path) -> Dict[str, Any]:
     """runs/project.json. A file that cannot be read gives the empty pointer plus an 'error' note (never a silent default)."""
     default = dict(PROJECT_DEFAULT)
@@ -310,7 +318,7 @@ def gate_d_problems(studio: Path, slug: str, pack: str) -> List[str]:
     if gd is None:
         probs.append("Gate D plan not available")
     elif gd["status"] != "ready":
-        probs += gd["reasons"] or ["Gate D not ready"]
+        probs += gd.get("reasons") or ["Gate D not ready"]
     return probs
 
 
@@ -322,7 +330,7 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
     current = project.get("story_slug") == slug and project.get("pack") == pack
     images_dir = project.get("images_dir") if current else None
     results_dir = project.get("results_dir") if current else None
-    takes = project.get("takes", 3)
+    takes = takes_of(project)
 
     story_saved = False
     pack_stage_files = 0
@@ -348,7 +356,7 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
             if isinstance(shots_data, list) and isinstance(bible_data, dict):
                 shots_ready = True
                 rows = [s for s in shots_data if isinstance(s, dict)]
-                n_shots = len(shots_data)
+                n_shots = len(rows)   # non-dict items are not shots
                 expected_images = sum(images_for_shot(s) for s in rows)
                 planned_clips = n_shots * takes
 
@@ -376,6 +384,12 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
                             shot_id = entry.get("shot_id")
                             version = entry.get("version")
                             image_id = entry.get("image_id")
+                            if isinstance(image_id, (list, dict)):
+                                image_id = str(image_id)   # unhashable: its text form, as the other fixed ids do
+                                entry["image_id"] = image_id
+                            if isinstance(version, (list, dict)):
+                                version = str(version)   # unhashable: its text form, same as image_id
+                                entry["version"] = version
                             if shot_id is not None and version is not None and image_id is not None:
                                 dq_entries[(shot_id, version)] = entry
                         except Exception:
@@ -391,6 +405,10 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
                             entry = json.loads(line)
                             img_id = entry.get("image_id")
                             ver = entry.get("version")
+                            if isinstance(img_id, (list, dict)):
+                                img_id = str(img_id)   # same coercion as the queue side, so the lookup matches
+                            if isinstance(ver, (list, dict)):
+                                ver = str(ver)   # same coercion as the queue side, so the lookup matches
                             if img_id is not None and ver is not None:
                                 fl_set.add((img_id, ver))
                         except Exception:
@@ -647,7 +665,7 @@ def apply_gate(
 # --------------------------------------------------------------------------- #
 def summary(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[str] = None) -> Dict[str, Any]:
     slug, pack, project = scope(runs, story, pack)
-    takes = project.get("takes", 3)
+    takes = takes_of(project)
     if not slug or not pack:
         return _empty_summary()
 
@@ -668,6 +686,8 @@ def summary(studio: Path, runs: Path, story: Optional[str] = None, pack: Optiona
 
     for shot in rows:
         sid = shot.get("id")
+        if isinstance(sid, (list, dict)):   # unhashable id: compare its text form instead of raising TypeError
+            sid = str(sid)
         if sid in shot_ids:
             duplicate_ids = True
         shot_ids.add(sid)
@@ -675,19 +695,25 @@ def summary(studio: Path, runs: Path, story: Optional[str] = None, pack: Optiona
         sec = shot_seconds(shot)
         route = shot_route(shot)
         modes[route] = modes.get(route, 0) + 1
+        if sec <= 0:
+            all_have_seconds = False     # every shot counts here, with or without an episode
+        sec = max(sec, 0.0)              # a negative or zero shot must not reduce the totals
+        total_seconds += sec             # Q-R4-10: every shot counts toward the total, with or without an episode
         if ep is None:
             all_have_episode = False
             continue
-        if sec <= 0:
-            all_have_seconds = False
-        total_seconds += sec
+        if isinstance(ep, (list, dict)):
+            ep = str(ep)                 # unhashable episode: its text form, as for the shot id above
         if ep not in episodes_map:
             episodes_map[ep] = {"shots": 0, "seconds": 0.0}
         episodes_map[ep]["shots"] += 1
         episodes_map[ep]["seconds"] += sec
 
+    # numbers sort among numbers (2 before 10), everything else among strings; mixed types must not raise
+    ep_sort = lambda x: ((0, x[0], "") if isinstance(x[0], (int, float)) and not isinstance(x[0], bool)
+                         else (1, 0, str(x[0])))
     episodes_list = [{"episode": ep, "n": ep, "shots": v["shots"], "seconds": round(v["seconds"], 1)}
-                     for ep, v in sorted(episodes_map.items(), key=lambda x: str(x[0]))]
+                     for ep, v in sorted(episodes_map.items(), key=ep_sort)]
 
     characters = [c.get("name") for c in bible_items(bible_data, "characters") if c.get("name")]
     places = [e.get("name") for e in bible_items(bible_data, "environments") if e.get("name")]
@@ -829,7 +855,7 @@ def _per_language(plan: Dict[str, Any], render_dir: Path, chosen: List[str]) -> 
                 captions = False
             if not (ep_dir / "export" / f"{ep['id']}_{lang}.mp4").is_file():
                 final = False
-        reasons = [r for r in (gd["reasons"] if gd else []) if f" {lang}: " in r]
+        reasons = [r for r in ((gd.get("reasons") or []) if gd else []) if f" {lang}: " in r]
         if gd is None:
             reasons = ["Gate D not planned yet"]
         checks = [{"name": "audio plan", "ok": bool(gd and gd["status"] == "ready" and not reasons),

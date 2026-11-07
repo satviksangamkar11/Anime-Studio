@@ -293,8 +293,20 @@
     State.langPick = (st && st.output_languages || []).filter(function (c) { return LANGS.indexOf(c) >= 0; });
   }
 
-  // one request per panel; each panel shows its own error, none breaks the rest
+  // one detail load at a time: a poll that arrives mid-load is folded into one rerun,
+  // so an older response can never land on top of a newer one
   function loadDetail() {
+    if (State.detailBusy) { State.detailAgain = true; return State.detailBusy; }
+    State.detailBusy = loadDetailNow().then(finish, finish);
+    function finish() {
+      State.detailBusy = null;
+      if (State.detailAgain) { State.detailAgain = false; return loadDetail(); }
+    }
+    return State.detailBusy;
+  }
+
+  // one request per panel; each panel shows its own error, none breaks the rest
+  function loadDetailNow() {
     var project = projectOf();
     var slug = project.story_slug || '';
     var pack = project.pack || '';
@@ -720,7 +732,9 @@
             State.newSlug = '';
             State.overwrite = false;
             showSuccess('Story saved. Next: pick the languages below.');
-            return post('/api/pipeline/project', { story_slug: slug, pack: projectOf().pack || '' });
+            // a pack belongs to one story: keep the old pack only when the same story is still the project
+            var keepPack = slug === projectOf().story_slug ? (projectOf().pack || '') : '';
+            return post('/api/pipeline/project', { story_slug: slug, pack: keepPack });
           })
           .then(function () { return loadStoryList().then(function () { return refreshWizard(true); }); })
           .catch(function (err) { showError(errText(err)); })
@@ -972,7 +986,7 @@
         showError(errText(err));
         render(true);
       })
-      .finally(function () { State.busy = false; });
+      .finally(function () { if (!State.confirmPending) State.busy = false; });
   }
 
   function normalizeLink(res, job) {
@@ -1032,13 +1046,15 @@
             var argv = data.argv || [];
             var argvText = (data.route ? data.route + '\n' : '') + argv.join(' ');
             confirmDialog('Run story analysis for pack ' + pack + ' of story ' + slug + '?', argvText, function () {
+              State.busy = true;
               post('/api/run', { token: data.token })
                 .then(function () { return refreshWizard(true); })
-                .catch(function (err) { showError(errText(err)); });
+                .catch(function (err) { showError(errText(err)); })
+                .finally(function () { State.busy = false; });
             });
           })
           .catch(function (err) { showError(errText(err)); })
-          .finally(function () { State.busy = false; });
+          .finally(function () { if (!State.confirmPending) State.busy = false; });
       }
     });
     frag.appendChild(runBtn);
@@ -1262,7 +1278,7 @@
       })
       .catch(function (err) { showError(errText(err)); })
       .finally(function () {
-        State.busy = false;
+        if (!State.confirmPending) State.busy = false;
         btn.disabled = false;
       });
 
@@ -1434,13 +1450,15 @@
         post('/api/preview', { command: 'h3_prepare', args: { story: packPath(slug, pack) + '/shots.json', scope: 'all' } })
           .then(function (data) {
             confirmDialog('Prepare render?', (data.argv || []).join(' '), function () {
+              State.busy = true;
               post('/api/run', { token: data.token })
                 .then(function () { return refreshWizard(true); })
-                .catch(function (err) { showError(errText(err)); });
+                .catch(function (err) { showError(errText(err)); })
+                .finally(function () { State.busy = false; });
             });
           })
           .catch(function (err) { showError(errText(err)); })
-          .finally(function () { State.busy = false; });
+          .finally(function () { if (!State.confirmPending) State.busy = false; });
       }
     });
     frag.appendChild(prepareBtn);
@@ -1553,13 +1571,15 @@
       post('/api/preview', { command: 'h3_author', args: { pack: packPath(project.story_slug, project.pack) } })
         .then(function (data) {
           confirmDialog('Run the H3 field author with a free model for this pack? It writes the cache only.', (data.argv || []).join(' '), function () {
+            State.busy = true;
             post('/api/run', { token: data.token })
               .then(function () { delete State.drafts['author-phrase']; return refreshWizard(true); })
-              .catch(function (err) { showError(errText(err)); });
+              .catch(function (err) { showError(errText(err)); })
+              .finally(function () { State.busy = false; });
           });
         })
         .catch(function (err) { showError(errText(err)); })
-        .finally(function () { State.busy = false; });
+        .finally(function () { if (!State.confirmPending) State.busy = false; });
     }}));
     if (!allowed) box.appendChild(el('p', { class: 'hint', textContent: 'Off: the server must be started with ANIME_STUDIO_ALLOW_FREE_MODEL=1 before this runs.' }));
     return box;
@@ -1805,6 +1825,8 @@
   }
 
   function closeModal() {
+    // a confirm that is closed (Run, Cancel, X, Escape, backdrop) ends the command it was holding
+    if (State.confirmPending) { State.confirmPending = false; State.busy = false; }
     var modal = $('modal');
     if (!modal) return;
     modal.hidden = true;
@@ -1835,6 +1857,7 @@
       if (onConfirm) onConfirm();
     }});
     body.appendChild(el('div', { class: 'modal-btns', children: [cancelBtn, okBtn] }));
+    State.confirmPending = true;   // State.busy stays set while the user decides (see closeModal)
     openModal();
     cancelBtn.focus();
   }
