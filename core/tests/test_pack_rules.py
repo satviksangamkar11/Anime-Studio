@@ -228,10 +228,10 @@ def test_p1_fail_lists_at_most_five_errors_then_count(fonts):
     assert p1 and "+" in p1[0]["message"] and "more" in p1[0]["message"]
 
 
-def test_p1_warn_story_json_missing(fonts):
+def test_p1_fail_story_json_missing(fonts):
     out = run(fonts, story=None, story_path_exists=False)
     p1 = of(out, "P1")
-    assert len(p1) == 1 and p1[0]["level"] == "WARN"
+    assert len(p1) == 1 and p1[0]["level"] == "FAIL"
     assert "stories/<slug>/story.json not found" in p1[0]["message"]
 
 

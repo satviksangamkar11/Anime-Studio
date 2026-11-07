@@ -153,7 +153,7 @@ def rule_p1(ctx):
     out = []
     if not ctx.story_exists:
         if ctx.story_path_exists is False:
-            out.append(_entry("P1", "WARN", "stories/<slug>/story.json not found; story and pack checks skipped"))
+            out.append(_entry("P1", "FAIL", "stories/<slug>/story.json not found; story and pack checks skipped"))
         return out
     if ctx.story is None:
         out.append(_entry("P1", "FAIL", "stories/<slug>/story.json exists but could not be read"))
