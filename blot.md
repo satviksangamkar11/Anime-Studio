@@ -41,3 +41,18 @@ No Colab call of any kind (no colab CLI, no Colab runs, no sessions). Applies to
 
 ## RULE 5: REVIEW AGAIN AFTER FIXES (owner, 2026-11-07)
 Every review round is followed by fixes and then a SECOND review of the fixed files (Super VL + Dots, free models). Repeat until a round finds no real defect. Log each round start and finish.
+
+## RULE 6: REVIEWER CHECKS INSTRUCTIONS BEFORE THEY GO TO AGENTS (owner, 2026-11-07)
+Before any agent prompt or instruction file is sent to an agent, Super VL + Dots (free models) review it; I triage, fix, review again (rule 5), and only then send. Log review start, finish and the send. Prompts are saved as files under research/ (for example `_prompt_*.md`, `UI_PARALLEL_DISPATCH_*.md`).
+
+## RULE 7: UI COLOUR SYSTEM GUIDE (owner, 2026-11-07)
+SCOPE: the control-panel UI only (ui/static/), nothing else in the pipeline (owner, 2026-11-07). Owner's guide (v1, unchanged): `anime_studio_merge/docs/UI_COLOUR_SYSTEM_GUIDE_2026-11-07.md`. Research-hardened v2 (research agent): `..._v2.md` next to it; notes in `research/COLOUR_RESEARCH_NOTES_2026-11-07.md`. The colour work starts only after the wizard and expert-tool tasks (T3, T4) are verified, never in parallel with a coder that owns style.css or index.html. Never push; palette is research-informed, never "clinically proven".
+
+## RULE 8: REVIEW CAP (owner, 2026-11-07)
+Reviews of instructions and code: ONE pass plus ONE check of the fixes (free reviewers Nemotron Super VL + Dots, or Haiku medium when the owner asks). Not endless rounds; a round with no HIGH finding ends the review and the work starts. Log each review start and finish.
+
+## RULE 9: UI LANGUAGES AND SCOPE (owner, 2026-11-07)
+The UI is English + Marathi only (no Hindi UI). The research-based colour guide `docs/UI_COLOUR_SYSTEM_GUIDE_2026-11-07_v2.md` wins over v1 where they differ. Controls are MOVED or HIDDEN, never deleted (parity rows stay true). A UI task is not done until it has been tried in the browser at 375 and 1280 px in both languages, and an independent cold test (`research/UI_COLD_TEST_*.md` style) found no high defect.
+
+## RULE 10: LOG AND NOW UPKEEP (owner, 2026-11-07, repeated)
+The one log is `D:\aai work\anime_studio\PROJECT_LOG.md`; copies in worktrees are stale and never written. Every step gets its line in the same turn (a line for a step that did not happen is a FIX line). Overwrite the NOW block after every agent finish. `blot.md` in every worktree is kept equal to this one (sync on every rule change). Backfill gaps at once with BACKFILL lines.
