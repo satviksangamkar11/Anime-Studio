@@ -2,6 +2,7 @@
 
   C:\\Python314\\python.exe ui\\server.py                 spend OFF (default)
   C:\\Python314\\python.exe ui\\server.py --allow-spend   owner only: $ runs become possible; each still needs a preview token and the typed confirm
+  C:\\Python314\\python.exe ui\\server.py --allow-claude  owner only: the Claude writer becomes possible; each run still needs the typed word CLAUDE
 
 Stdlib only. Only the COMMANDS table can run anything; no shell; every argv is a list built from validated values.
 Test hooks: --root-override studio=PATH | flow=PATH | downloads=PATH | python=PATH | colab=PATH (test_ui.py points them at fake tools)."""
@@ -15,6 +16,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -43,7 +45,7 @@ FILE_EXTS = (".png", ".jpg", ".jpeg", ".mp4", ".json", ".md", ".txt", ".jsonl", 
 TEXT_EXTS = (".json", ".md", ".txt", ".jsonl", ".log")
 FORBIDDEN_PARTS = {"granthstudio", "animation_research_tool", "secrets"}
 BANNED_TOKENS = {"--logtostderr", "--allow-paid", "--push", "--fetch", "--stage-via"}
-BANNED_PAIRS = {("--via", "claude"), ("--via", "openrouter")}
+BANNED_PAIRS = {("--via", "claude"), ("--via", "openrouter"), ("--writer", "opus")}   # --writer opus: only write_pack_claude may carry it
 H3_MISSING = "h3 engine not built yet"
 LEGACY_STORY = "kaliya_mardan"                # the one legacy project: its own roots and style; other stories use story_links
 LANGS = ("en", "hi", "mr")
@@ -86,6 +88,7 @@ class Config:
     python: str = PYTHON
     colab: list = field(default_factory=lambda: list(COLAB))
     spend: bool = False
+    allow_claude: bool = False                # owner only (--allow-claude): the Claude writer may be chosen; each run still needs the typed word
     clock: Callable[[], float] = time.time
     total_cap: float | None = None            # owner sets a cumulative Colab cap; None = report only
     disk_paths: tuple = DISK_PATHS
@@ -307,11 +310,26 @@ PACK_REL = _rx(r"stories/[a-z0-9_]{1,40}/[a-z0-9_-]{1,40}", "pack")
 SIZE = _enum("size", "768x1344", "864x1536")
 GPU = _enum("gpu", *RATES)
 SCOPE = _enum("scope", "shots", "reel", "all")
-WRITER_MODEL = _enum("model", "nvidia/nemotron-3-ultra-550b-a55b")         # legacy single-call NVIDIA path (argv kept as before)
+WRITER_MODEL = _enum("model", "nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-super-vl-120b-a12b")   # legacy single-call NVIDIA path (argv kept as before)
 WRITER_NAME = _enum("writer", "super-vl", "ultra")                          # write_pack --writer shortcut; both are free OpenRouter models
 WRITER_ROUTE = {"super-vl": ("openrouter", "nvidia/nemotron-3.5-super-vl:free"),   # mirrors director/write_pack.py WRITERS (test_registry checks)
                 "ultra": ("openrouter", "nvidia/nemotron-3-ultra-550b-a55b:free")}
 DEFAULT_WRITER = "super-vl"
+CLAUDE_CONFIRM = "CLAUDE"                     # the typed word for the one Claude command (write_pack_claude)
+CLAUDE_OFF = "claude is off: the server was not started with --allow-claude"
+DEFAULT_WRITER_CHOICE = "or-super-vl"
+WRITER_CHOICES = (   # GET /api/writers, in display order; the page names each choice with the i18n keys writer.<id>.name / .desc
+    {"id": "nv-ultra", "group": "nvidia", "command": "write_pack", "args": {"model": "nvidia/nemotron-3-ultra-550b-a55b"},
+     "cost": "free", "speed": "slow", "quality": "high", "tested": True, "needs": "nvidia"},
+    {"id": "nv-super-vl", "group": "nvidia", "command": "write_pack", "args": {"model": "nvidia/nemotron-3.5-super-vl-120b-a12b"},
+     "cost": "free", "speed": "medium", "quality": "good", "tested": False, "needs": "nvidia"},
+    {"id": "or-super-vl", "group": "openrouter", "command": "write_pack", "args": {"writer": "super-vl"},
+     "cost": "free", "speed": "medium", "quality": "good", "tested": True, "needs": "openrouter"},
+    {"id": "or-ultra", "group": "openrouter", "command": "write_pack", "args": {"writer": "ultra"},
+     "cost": "free", "speed": "slow", "quality": "high", "tested": False, "needs": "openrouter"},
+    {"id": "claude-opus", "group": "claude", "command": "write_pack_claude", "args": {},
+     "cost": "subscription", "speed": "medium", "quality": "highest", "tested": True, "needs": "claude"},
+)
 VISION_MODEL = _enum("model", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "nvidia/nemotron-3.5-super-vl-120b-a12b")
 ADHYAY = _int(1, 12, "adhyay")
 REEL = _int(1, 99, "reel")
@@ -370,11 +388,14 @@ def normalize(cfg, spec, raw) -> dict:
     return out
 
 
-def check_argv(argv: list) -> None:
+def check_argv(argv: list, allow: frozenset = frozenset()) -> None:
     for i, tok in enumerate(argv):
         if tok in BANNED_TOKENS:
             raise bad(f"{tok} is never passed by the UI")
-        if i and (argv[i - 1], tok) in BANNED_PAIRS:
+        pair = (argv[i - 1], tok) if i else None
+        if pair in BANNED_PAIRS and pair not in allow:
+            if pair == ("--writer", "opus"):
+                raise bad("claude runs only through the Claude choice (write_pack_claude)")
             raise bad("claude and openrouter are not used by the UI")
 
 
@@ -426,8 +447,10 @@ def scope_ids(shots_file, scope, ids=None, reel=None):
     raise bad("scope must be shots, reel or all")
 
 
-def write_pack_route(a) -> str:
+def write_pack_route(a, writer=None) -> str:
     """The path and model a write_pack preview will run, as text for the owner."""
+    if writer == "opus":
+        return "writer opus: claude opus, effort medium (Claude subscription; may cost money)"
     if a.get("model"):
         return f"legacy NVIDIA path: nvidia {a['model']}"
     name = a.get("writer") or DEFAULT_WRITER
@@ -435,7 +458,8 @@ def write_pack_route(a) -> str:
     return f"writer {name}: {via} {model} (free model, streamed)"
 
 
-def b_write_pack(cfg, a):
+def b_write_pack(cfg, a, writer=None):
+    name = writer or a.get("writer") or DEFAULT_WRITER
     src = cfg.studio / "stories" / a["slug"] / "SOURCE.md"
     if not src.is_file():
         raise bad("save the story first: SOURCE.md is missing")
@@ -443,7 +467,7 @@ def b_write_pack(cfg, a):
     if (dest / "PACK.md").exists():   # a finished pack is never overwritten: a new run needs a new name
         rr = _registry()
         taken = {p.name for p in src.parent.iterdir() if p.is_dir()}
-        hint = rr.pack_name(a.get("writer") or DEFAULT_WRITER, taken=taken) if rr else "a new pack name"
+        hint = rr.pack_name(name, taken=taken) if rr else "a new pack name"
         raise bad(f"{a['pack']} is already finished (PACK.md exists): use {hint}")
     if a.get("model") and a.get("writer"):
         raise bad("give a writer or a model, not both")
@@ -452,7 +476,12 @@ def b_write_pack(cfg, a):
     lang = ["--out-lang", a["out_lang"]]
     if a.get("model"):
         return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--via", "nvidia", "--model", a["model"]] + lang
-    return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", a.get("writer") or DEFAULT_WRITER] + lang
+    return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", name] + lang
+
+
+def b_write_pack_claude(cfg, a):
+    """write_pack --writer opus (Claude). Reached only through CLAUDE_COMMANDS: the server must run with --allow-claude."""
+    return b_write_pack(cfg, {**a, "writer": None, "model": None}, writer="opus")
 
 
 def out_lang_arg(cfg, v):
@@ -572,12 +601,15 @@ def b_build_jobs(cfg, a):
 @dataclass(frozen=True)
 class Cmd:
     id: str
-    risk: str                 # R read-only, W writes local files, N free NVIDIA call, $ spends Colab units, R-ops stops a session
+    risk: str                 # R read-only, W writes local files, N free NVIDIA call, $ spends Colab units, R-ops stops a session, C Claude call
     spend: bool
     args: dict
     build: Callable
     needs_h3: bool = False
     post: str = ""            # "colab_verify": after the job, check the Colab session list
+    confirm: str = ""         # typed word asked before a command that is not a spend (write_pack_claude: CLAUDE)
+    needs: str = ""           # "claude": refused unless the server was started with --allow-claude
+    allow: frozenset = frozenset()   # argv pairs this command may carry (the only place --writer opus is allowed)
 
 
 def b_yt(cfg, a):
@@ -631,7 +663,15 @@ COMMANDS = {c.id: c for c in (
 )}
 
 
+CLAUDE_COMMANDS = {c.id: c for c in (   # apart from COMMANDS on purpose: test_ui pins COMMANDS to its own case table; command_spec reads both
+    Cmd("write_pack_claude", "C, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "out_lang": A(out_lang_arg)},
+        b_write_pack_claude, confirm=CLAUDE_CONFIRM, needs="claude", allow=frozenset({("--writer", "opus")})),
+)}
+
+
 def command_spec(name) -> Cmd:
+    if isinstance(name, str) and name in CLAUDE_COMMANDS:
+        return CLAUDE_COMMANDS[name]
     if not isinstance(name, str) or name not in COMMANDS:
         raise bad("unknown command")
     return COMMANDS[name]
@@ -1080,9 +1120,31 @@ class Api:
             running = [j.summary() for j in self.jobs.values() if j.state == "running"]
         return {"studio_ok": c.studio.is_dir(), "flow_ok": c.flow.is_dir(), "python": c.python, "colab_cli": Path(c.colab[0]).is_file(),
                 "nvidia_key_files": len(list((c.studio.parent / "secrets" / "nvidia").glob("nvidia_api_key*.txt"))),
-                "spend_allowed": c.spend, "spend_cap_units": CAP_UNITS, "job": running[0] if running else None,
+                "spend_allowed": c.spend, "claude_allowed": c.allow_claude, "spend_cap_units": CAP_UNITS, "job": running[0] if running else None,
                 "h3_built": h3_built(c), "time": now_iso(),
                 "disk": [_ops_checks().disk_free(p) for p in c.disk_paths], "build": _ops_checks().code_fingerprint(c.studio)}
+
+    def writers(self) -> dict:
+        """GET /api/writers: the step 2 choices and whether each can run now. Counts and yes/no only: never key text or paths."""
+        c = self.cfg
+        nv = len(list((c.studio.parent / "secrets" / "nvidia").glob("nvidia_api_key*.txt")))
+        orf = Path(os.environ.get("OPENROUTER_KEY_FILE") or c.studio.parent / "loop_p0" / "secrets" / "openrouter_paid_key.txt").is_file()
+        cli = shutil.which("claude") is not None
+
+        def reason(o):
+            if o["needs"] == "nvidia":
+                return "" if nv else "no_nvidia_key"
+            if o["needs"] == "openrouter":
+                return "" if orf else "no_openrouter_key"
+            if not c.allow_claude:
+                return "claude_off"
+            return "" if cli else "claude_missing"
+        opts = []
+        for o in WRITER_CHOICES:
+            why = reason(o)
+            opts.append({**{k: v for k, v in o.items() if k != "needs"}, "available": not why, "reason": why})
+        return {"default": DEFAULT_WRITER_CHOICE, "claude_allowed": c.allow_claude, "confirm_word": CLAUDE_CONFIRM,
+                "checks": {"nvidia_key_files": nv, "openrouter_key_file": orf, "claude_cli": cli}, "options": opts}
 
     def h3(self) -> dict:
         built = h3_built(self.cfg)
@@ -1207,25 +1269,29 @@ class Api:
     def preview(self, body) -> dict:
         spec = command_spec(body.get("command"))
         args = normalize(self.cfg, spec, body.get("args") or {})
+        if spec.needs == "claude" and not self.cfg.allow_claude:
+            raise ApiError(403, CLAUDE_OFF)
         if spec.needs_h3 and not h3_built(self.cfg):
             raise ApiError(409, H3_MISSING)
         argv = spec.build(self.cfg, args)
-        check_argv(argv)
-        route = write_pack_route(args) if spec.id == "write_pack" else None
-        est = balance = confirm = None
+        check_argv(argv, spec.allow)
+        route = write_pack_route(args, "opus" if spec.id == "write_pack_claude" else None) \
+            if spec.id in ("write_pack", "write_pack_claude") else None
+        est = balance = None
+        confirm = spec.confirm or None
         if spec.spend:
             est = estimate_units(args["gpu"], batch_clips(self.cfg, args["batch"]))
             balance = self._spend_gate(est) if self.cfg.spend else "not checked (spend is OFF)"
             confirm = f"EXECUTE {est:.1f}"
         token = secrets.token_urlsafe(18)
         rec = {"command": spec.id, "argv": argv, "digest": digest(argv), "spend": spec.spend, "est": est, "confirm": confirm,
-               "post": spec.post, "session": args.get("session"), "created": self.cfg.clock(), "used": False,
+               "needs": spec.needs, "post": spec.post, "session": args.get("session"), "created": self.cfg.clock(), "used": False,
                "gpu": args.get("gpu"), "batch": args.get("batch"), "story": args.get("story") or args.get("slug")}
         with self.lock:
             self.tokens[token] = rec
         self._audit("preview", command=spec.id, argv=argv, spend=spec.spend, estimate=est)
         return {"argv": argv, "risk": spec.risk, "estimate": est, "balance": balance, "token": token, "expires_s": TOKEN_TTL,
-                "needs_confirm": spec.spend, "confirm_text": confirm, "spend_allowed": self.cfg.spend, "route": route}
+                "needs_confirm": bool(confirm), "confirm_text": confirm, "spend_allowed": self.cfg.spend, "route": route}
 
     def run(self, body) -> dict:
         tok = body.get("token")
@@ -1247,7 +1313,9 @@ class Api:
                 raise ApiError(403, "arguments changed since the preview: preview again")
         if rec["spend"] and not self.cfg.spend:
             raise ApiError(403, "spend is OFF: the server was not started with --allow-spend")
-        if rec["spend"] and body.get("confirm") != rec["confirm"]:
+        if rec.get("needs") == "claude" and not self.cfg.allow_claude:
+            raise ApiError(403, CLAUDE_OFF)
+        if rec["confirm"] and body.get("confirm") != rec["confirm"]:
             raise bad(f"type exactly: {rec['confirm']}")
         with self.lock:
             if self._active():
@@ -1320,14 +1388,16 @@ class Api:
         return {"pid": os.getpid(), "started": STARTED, "server_mtime_at_start": SERVER_MTIME0, "server_mtime_now": now_mtime,
                 "stale": stale, "build": _ops_checks().code_fingerprint(self.cfg.studio)}
 
-    def ops(self) -> dict:
+    def ops(self, q=None) -> dict:
         ok = _ops_checks()
         disks = {name: ok.disk_free(path) for name, path in zip(("C", "D"), self.cfg.disk_paths)}
         ledger = ok.colab_spend_total(self.cfg.ledger)
-        listed = self._cli_text(["sessions"])
+        # B9: the Colab session list is read only when asked (?colab=1, the "Check Colab sessions" button), never on the 30 s poll
+        listed = self._cli_text(["sessions"]) if (q or {}).get("colab") == "1" else None
         return {"disk": disks, "server": {**self.version(), "build": ok.code_fingerprint(self.cfg.studio)},
                 "colab": {"ledger_total_units": ledger["total"], "ledger_today": ledger["today"], "cap_units": CAP_UNITS,
                           "total_cap_units": self.cfg.total_cap, "runs": jsonl(self.cfg.ledger)[-10:],
+                          "sessions_checked": listed is not None,
                           "sessions_listed": [r["name"] for r in parse_sessions(listed)] if listed is not None else None}}
 
     def story_state(self, slug) -> dict:
@@ -1653,6 +1723,14 @@ def yt_result(rc, text) -> dict:
             "overwrite_offer": status == "refused" and "exists" in reason}
 
 
+def fixed_file(cfg, parts, ctype) -> Raw:
+    """A file at a fixed place under the studio folder. The caller passes literal parts, never request text. 404 when missing."""
+    p = cfg.studio.joinpath(*parts)
+    if not p.is_file():
+        raise ApiError(404, "file is missing")
+    return Raw(ctype, p.read_bytes())
+
+
 def static_file(cfg, name) -> Raw:
     base = cfg.studio / "ui" / "static"
     if not (base / name).is_file():
@@ -1687,7 +1765,9 @@ def pipeline_get(api, what, q):
 
 def pipeline_gate(api, body):
     """POST /api/pipeline/gate {story, pack, gate, decision, note, confirm?}: the only write is runs/approvals.jsonl.
-    The story and pack must be the project pointer (409 otherwise)."""
+    The story and pack must be the project pointer (409 otherwise). An out-of-date server approves nothing (B1)."""
+    if api.version()["stale"]:
+        raise ApiError(409, "the studio server is out of date: restart it before you approve or reject")
     pl = _pipeline()
     try:
         gate = pl.apply_gate(api.cfg.studio, api.cfg.runs, str(body.get("gate", "")), str(body.get("decision", "")),
@@ -1705,12 +1785,19 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         m = re.fullmatch(r"/(?:static/)?([A-Za-z0-9_.-]{1,80}\.(?:css|js))", path)   # index.html links style.css and app.js relative to "/"
         if m:
             return static_file(api.cfg, m.group(1))
+        m = re.fullmatch(r"/i18n/(en|mr)\.json", path)   # the UI string tables (ui/static/i18n); two fixed names only
+        if m:
+            return fixed_file(api.cfg, ("ui", "static", "i18n", m.group(1) + ".json"), JSON_CT)
+        if path == "/fonts/NotoSansDevanagari-Variable.ttf":   # the bundled Devanagari font (offline)
+            return fixed_file(api.cfg, ("styles", "fonts", "NotoSansDevanagari-Variable.ttf"), "font/ttf")
         if path in ("/api/pipeline", "/api/pipeline/summary"):
             return pipeline_get(api, path.rsplit("/", 1)[-1], q)
         if path == "/api/version":
             return api.version()
         if path == "/api/ops":
-            return api.ops()
+            return api.ops(q)
+        if path == "/api/writers":
+            return api.writers()
         m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})/state", path)
         if m:
             return api.story_state(m.group(1))
@@ -1872,10 +1959,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Anime Studio control UI (local API on 127.0.0.1).")
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--allow-spend", action="store_true", help="enable $ runs; each still needs a preview token and the typed confirm")
+    ap.add_argument("--allow-claude", action="store_true",
+                    help="owner only: the Claude writer becomes possible; each run still needs a preview and the typed word CLAUDE")
     ap.add_argument("--root-override", action="append", default=[], metavar="NAME=PATH",
                     help="test hooks: studio, flow, downloads, python, colab")
     a = ap.parse_args(argv)
-    cfg = Config(spend=a.allow_spend)
+    cfg = Config(spend=a.allow_spend, allow_claude=a.allow_claude)
     for item in a.root_override:
         name, _, value = item.partition("=")
         if name == "colab":
@@ -1891,7 +1980,8 @@ def main(argv=None) -> int:
     except OSError as e:
         print(f"Anime Studio UI could not start on 127.0.0.1:{a.port} ({e}). Another copy may be running: stop it, then start again.", file=sys.stderr)
         return 1
-    print(f"Anime Studio UI: http://127.0.0.1:{srv.server_address[1]}  spend {'ON' if cfg.spend else 'OFF'}", flush=True)
+    print(f"Anime Studio UI: http://127.0.0.1:{srv.server_address[1]}  spend {'ON' if cfg.spend else 'OFF'}  claude {'ON' if cfg.allow_claude else 'OFF'}",
+          flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

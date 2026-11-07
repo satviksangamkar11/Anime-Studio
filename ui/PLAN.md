@@ -184,7 +184,7 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/registry/{slug}` | none | `{slug, story, summary, runs, steps, report}`; `report` is the RUN_REPORT text; 400 for a bad slug, 404 for no such story; read only |
 | GET | `/api/pack?pack=stories/<slug>/<name>` | none | `{stages: {"1": bool, "2": bool, "3e1": bool, ..., "5": bool}, gate1, episodes: [{n, shots, seconds}], characters, places, shots, check}` |
 | POST | `/api/preview` | `{command, args}` | `{argv, risk, estimate, token, expires_s: 60, needs_confirm}` |
-| POST | `/api/run` | `{token, confirm}` (`confirm` only for `$`, e.g. "EXECUTE 7.5") | `{job_id}`; 403 if spend is off; 409 if a job runs |
+| POST | `/api/run` | `{token, confirm}` (`confirm` for `$` commands, e.g. "EXECUTE 7.5", and for `write_pack_claude` the typed word "CLAUDE") | `{job_id}`; 403 if spend is off or claude is off; 409 if a job runs |
 | GET | `/api/jobs` | none | `[{id, command, state, rc, started, ended}]` |
 | GET | `/api/jobs/{id}/log?tail=200` | none | text, redacted |
 | GET | `/api/jobs/{id}/result` | none | parsed lines for known commands (bridge, reviewer exit, queue, collect) |
@@ -196,6 +196,9 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/colab` | none | `{sessions: [{name, gpu, status}], balance, rate}` (two read-only commands, 60 s timeout) |
 | GET | `/api/export?reel=N` | none | `{clips_in_order, assembly: "not built" or plan, reel_files}` |
 | GET | `/api/file?path=...` | none | bytes; allowed roots and extensions only; max 60 MB |
+| GET | `/api/writers` | none | `{default, claude_allowed, confirm_word, checks: {nvidia_key_files, openrouter_key_file, claude_cli}, options: [{id, group, command, args, cost, speed, quality, tested, available, reason}]}`; read only; never key text or paths |
+| GET | `/i18n/{lang}.json` | none | the UI string table for en or mr (JSON); 404 for any other name |
+| GET | `/fonts/NotoSansDevanagari-Variable.ttf` | none | the bundled Devanagari font (font/ttf) |
 
 ## 5. Files and data
 ```
