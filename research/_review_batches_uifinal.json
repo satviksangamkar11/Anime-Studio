@@ -1,0 +1,6 @@
+{
+ "f1_backend": ["ui/server.py", "ui/pipeline.py"],
+ "f2_wizard_js": ["ui/static/pipeline.js", "ui/static/index.html"],
+ "f3_expert_theme": ["ui/static/app.js", "ui/static/i18n.js", "ui/static/theme.js", "ui/static/tokens.css", "ui/static/style.css"],
+ "f4_contract": ["ui/static/pipeline.js", "ui/server.py"]
+}

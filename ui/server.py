@@ -1402,7 +1402,13 @@ class Api:
 
     def story_state(self, slug) -> dict:
         slug = SLUG(self.cfg, slug)
-        return _story_state_module().summarize(self.cfg.studio, slug)
+        out = _story_state_module().summarize(self.cfg.studio, slug)
+        # the wizard reads these three from story.json through this one call (director/story_state does not carry them)
+        sj = _pipeline().read_story_json(self.cfg.studio, slug)
+        out["output_languages"] = _pipeline().output_languages(self.cfg.studio, slug)
+        out["voice_engine"] = sj.get("voice_engine") if isinstance(sj.get("voice_engine"), dict) else {}
+        out["bgm"] = sj.get("bgm") if isinstance(sj.get("bgm"), dict) else {}
+        return out
 
     def _story_state_safe(self, slug) -> dict:
         try:
