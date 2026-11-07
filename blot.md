@@ -56,3 +56,6 @@ The UI is English + Marathi only (no Hindi UI). The research-based colour guide 
 
 ## RULE 10: LOG AND NOW UPKEEP (owner, 2026-11-07, repeated)
 The one log is `D:\aai work\anime_studio\PROJECT_LOG.md`; copies in worktrees are stale and never written. Every step gets its line in the same turn (a line for a step that did not happen is a FIX line). Overwrite the NOW block after every agent finish. `blot.md` in every worktree is kept equal to this one (sync on every rule change). Backfill gaps at once with BACKFILL lines.
+
+## RULE 11: NO RENDER CALLS AND NO OPUS CALLS (owner, 2026-11-07)
+No render of any kind and no Opus call (neither by me nor by any agent or script) until the owner lifts it. Applies with rule 4 (no Colab, no ElevenLabs, no paid calls). Agents use only the models the owner already named for their job (Haiku/Sonnet agents, free OpenRouter models); the UI's Claude/Opus choice stays behind its tick and typed word and is never clicked in tests.
