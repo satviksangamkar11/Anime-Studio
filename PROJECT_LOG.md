@@ -735,3 +735,6 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 13:01 | me | COMMIT | universal-v1.1 | prepare reads loudness.json first, docstring fixed, +1 test; core 290, director 483, h3 178
 11-07 13:01 | me | COMMIT | v4-architecture-2026-11-07 | 7f97e5a director, d262a62 h3, 8f6e65a ui (docs commit pending)
 11-07 13:01 | me | TRIAGE | R6 router Super VL | 1 REAL low fixed (route_shot guard), 2 FALSE; NOW block refreshed with owner permission; research/TRIAGE_R6_2026-11-07.md
+11-07 13:02 | dots | REVIEW-DONE | batch r6_router | 4614 chars
+11-07 13:02 | me | PUSH | origin v4-architecture-2026-11-07 (f7a0fd8) and universal-v1.1 (80252ec) | owner approved push of both branches; secret scan clean, no file over 1 MB
+11-07 13:02 | dots | REVIEW-DONE | batch r6_router | triaged: R6-1 confirmed (fixed), 2 FALSE/unverified; review loop stopped
