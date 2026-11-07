@@ -1,12 +1,11 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- State 11-07 13:01: owner said "approve all" (2026-11-07). V4 branch v4-architecture-2026-11-07: fixes Q-R4-4,5,8,9,10,13, ledger-first, export compare, Q-R5-1/2 and router guard applied and committed (7f97e5a director, d262a62 h3, 8f6e65a ui, then docs). Suites: h3 594, director 658, ui 253, flow 116.
-- Universal branch universal-v1.1: 16 local commits (last 80252ec: prepare reads loudness.json first). Suites: core 290, director 483, h3 178.
-- Review loop: rounds 1-5 + 5B done; round 6 (router.py) Super VL done (1 low fixed), Dots running. Loop stops after Dots r6 triage.
-- Pushes: both branches to satviksangamkar11/Anime-Studio (owner approved). Kaliya writer call ON HOLD until the owner supplies story, fonts (styles/fonts) and OPEN_QUESTIONS answers.
-- Owner rules: no Colab calls, no renders, no paid/ElevenLabs, answer in English, Haiku medium for build agents, reviews = Super VL + Dots, log every step (blot.md).
-- Waiting on owner: fonts, captions, story, OPEN_QUESTIONS Q1-Q8, A26 reference frames.
+- State 11-07 18:09: UI redesign: T0+T1 committed (f330c61); T2 coder RUNNING; dispatch file for T3/T4 revised after round-1 review, round-2 review running; coders T3/T4 NOT started. Colour guide (owner) saved in docs/, its research-agent prompt is under review (Super VL + Dots) before the agent starts. blot.md rules 6-7 added.
+- UI redesign (owner request): Haiku UI review done (research/UI_REVIEW_HAIKU_2026-11-07.md); Opus plan done (docs/UI_REDESIGN_PLAN_2026-11-07.md, tasks T0-T5, ~110 parity rows, none removed). T0+T1 (server, parity test) verified and committed locally f330c61. T2 (page shell, en/mr switch) is RUNNING (Haiku xhigh). Next: T3 wizard, T4 expert tools, T5 checks, reviewer bench, restart UI on 8765, push.
+- Owner rules: no feature dropped; Claude only behind --allow-claude + tick + typed CLAUDE; no Colab/render/paid/ElevenLabs without go; English answers; Haiku xhigh coders, Opus planner, reviews = Super VL + Dots; log every step (this file is the V4-tree copy D:/aai work/anime_studio/PROJECT_LOG.md, agents append here).
+- Waiting on owner: Marathi native check, plates, braj_earth grade numbers, LUT approval, story + captions per language, ElevenLabs voice files + go, PR into main yes/no.
+- Not built: Step 9 runner, Gate D assembly runner, live author run, any real render. Auto-log hook installed (.claude/settings.local.json) but not seen firing: manual logging continues.
 
 Purpose: one line per step so a new session or Claude account loses no context.
 Read with: `HANDOFF_2026-11-07.md` (rules, ledger, section 13 = latest owner decisions), `research/H3_V4_CONTRACT_2026-11-07.md`, `research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt`.
@@ -806,3 +805,168 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 14:12 | me | PUSH | origin v4-architecture-2026-11-07 (68b581a) and universal-v1.1 (dde38b9) | owner: close everything; secret scan clean (30 files), no file over 1 MB; Dots r7 batches 3-4 unfinished (empty answers), runner stopped; 7.3 ticked
 11-07 14:14 | me | DECISION | audit | owner asked for a full audit of every pipeline part: what each does and exactly what is done; gathering evidence from both trees, running suites and acceptance checks, then writing docs/PIPELINE_AUDIT_2026-11-07.md
 11-07 14:19 | me | EDIT | docs/PIPELINE_AUDIT_2026-11-07.md | full audit written from evidence: inventories of both branches, dry-run merge (4 files, 8 hunks conflict), suites re-run, spec 6.3 acceptance re-run, test-to-module cross-reference; verdict, stage table, ranked gaps
+11-07 14:25 | me | DECISION | owner: captions follow the output language (en/hi/mr) and show the real spoken script (H3 voice for English, ElevenLabs for Hindi and Marathi); merge when corrections are done; explain plates and LUTs. Plan: integration branch merge-v4-universal (local), verify caption language handling first
+11-07 14:26 | me | CMD | merge worktree D:/aai work/anime_studio_merge | branch merge-v4-universal-2026-11-07 from origin/v4; merging origin/universal-v1.1 (local only, nothing pushed)
+11-07 14:26 | me | EDIT | merge worktree: director/write_pack.py, h3/render_controller.py | conflicts resolved (write_pack: V4 out-lang/voice/StageFailed + universal prompt-version/style-pack; render_controller: both import lines)
+11-07 14:27 | me | EDIT | merge worktree README.md,STATUS.md | merged: V4 table + universal layout and commands; STATUS has V4 layer, universal layer and V4 older history
+11-07 14:31 | me | TEST | merge worktree | after resolving: core 390+1 skip, director 764+2 skip; fixes: convert_deva_shots --h3 now emits V4 mouth fields (MO-01), 4 tests re-pinned or fixed (deva h3 known errors, timeline fixture, CRLF-safe styles compare, fake run_staged signature, validator bypass in prompt test)
+11-07 14:32 | me | COMMIT | merge-v4-universal-2026-11-07 | merge committed locally; suites core 390, director 764, h3 614, flow 130 (+2 data-dependent), ui 252 (+1 data-dependent); NOT pushed
+11-07 14:35 | me | COMMIT | merge-v4-universal-2026-11-07 | per-language captions in post.py (spoken script, wrong-script FAIL, --language, output name _final_<lang>); suites core 390, director 769, h3 614; local only
+11-07 14:36 | me | EDIT | memory | merge branch and per-language caption rule recorded
+11-07 14:58 | me | CMD | owner: push all the new changes (read 'Psych' as Push): merge branch (new), V4 audit doc commit
+11-07 14:59 | me | PUSH | origin merge-v4-universal-2026-11-07 (new) and v4-architecture-2026-11-07 (audit doc) | delta scan: no key patterns; repo guard flags only files already public (old workflow JSON false positives, kaliya_mardan story files incl. story.json that universal-v1.1 already pushed); hooks not installed (core.hooksPath unset)
+11-07 15:24 | me | CMD | owner asked for the UI link: starting ui/server.py on 127.0.0.1:8765 (spend OFF) from the V4 tree
+11-07 15:35 | me | DECISION | owner re-attached the decision brief and asked 'are all gaps closed': answer no; implementing the brief on merge-v4-universal-2026-11-07: one caption engine + hook policy, voice mixing in post.py (--voice elevenlabs|h3), ungraded stamp, STATUS record
+11-07 15:42 | me | EDIT | core/caption_cues.py (new), core/captions.py, h3/gate_d_audio.py, tests | one caption engine: cue model + the one script validator + hook policy in core/caption_cues.py; engine gained cards, face avoidance, synthetic karaoke, required fonts, forbidden-top-zone FAIL; Gate D private builder deleted and calls the engine (build_captions); Gate D default fonts = styles/fonts (Inter + Noto Sans Devanagari); 13 old Gate D caption tests re-pointed (h3/tests/test_gate_d_captions.py)
+11-07 15:44 | me | EDIT | director/post.py, core/caption_cues.py | post.py builds cues through the shared engine (spoken script + hook policy, per-language hook via metadata.look.hook.caption_by_lang); post's private validator and cue builders removed; 7 post-language tests incl. hook rules pass
+11-07 15:50 | me | EDIT | director/post.py, h3/gate_d_audio.py + tests | voice mixing in post.py (--voice, --vo-dir, story voice_engine, VE-01, VO_MISSING refusal, vo_fit, shared build_voice_branch + loudnorm, voice planned before captions) and ungraded stamp (POST-UNGRADED warning, graded/graded_by_act in colour_report.json); 10 new tests
+11-07 15:53 | me | COMMIT | merge-v4-universal-2026-11-07 | decision brief implemented: caption engine unification + hook policy + voice mixing + ungraded stamp; core 417+1, h3 613, director 781+2, flow 130 (+2 data-dependent), ui 252 (+1); local, free review round 8 next
+11-07 15:53 | me | REVIEW-START | research/ROUND8_REVIEW_*_2026-11-07.md | free review of cue layer, engine, post voice mixing, gate d (rule 5)
+11-07 15:54 | me | PUSH | origin merge-v4-universal-2026-11-07 (dd39730) | decision brief implementation; reviews round 8 running
+11-07 15:54 | supervl | REVIEW-DONE | batch r8_cue_layer | 1685 chars
+11-07 15:57 | dots | REVIEW-DONE | batch r8_cue_layer | 586 chars
+11-07 16:00 | supervl | REVIEW-DONE | batch r8_engine | 1232 chars
+11-07 16:02 | me | DECISION | owner: loudness standard = -16 LUFS integrated, max true peak -1 dBTP, one source of truth (core.json) for post.py and Gate D; remove Gate D's own -14 target
+11-07 16:05 | supervl | REVIEW-DONE | batch r8_post_voice | 1274 chars
+11-07 16:06 | dots | REVIEW-DONE | batch r8_engine | 2321 chars
+11-07 16:06 | me | EDIT | core/core.json,h3/shot_table_spec.py,h3/assemble_reel.py,h3/gate_d_audio.py,h3/pipeline_contract.py,director/post.py,STATUS.md + tests | owner decision: -16 LUFS integrated, max TP -1 dBTP, single source core.json delivery.audio (tolerance 0.5, loudnorm TP -1.3, LRA 11); Gate D -14 profile removed; tests re-pinned + h3/tests/test_loudness_single_source.py; h3+core 1030 pass, director 781, ui 252(+1 known)
+11-07 16:07 | me | TRIAGE | R8 Super VL+Dots (cue layer, engine, post voice): caption_cues junk-input crashes REAL (3 items, same as Dots 1) FIXED +1 test; engine x anchor claim FALSE by design (same as R7-2); post.py voice batch: no defects (both reviewers); gate_d batch Super VL no defects, Dots pending
+11-07 16:08 | supervl | REVIEW-DONE | batch r8_gate_d | 1910 chars
+11-07 16:09 | me | PUSH | origin merge-v4-universal-2026-11-07 | loudness standard + review round 8 fixes; h3+core 1031 pass, post tests pass
+11-07 16:10 | dots | REVIEW-DONE | batch r8_post_voice | 1259 chars
+11-07 16:12 | me | FAIL | previous push ce74e37 went out with 2 failing Gate D tests (test_r3 captions_by_lang string, test_round2 string narration): my wrapper hid the failure; cause: cue-layer hardening coerced malformed blocks silently; fixed by raising clear ValueErrors; h3+core 1033 pass; pushed the fix
+11-07 16:19 | dots | REVIEW-DONE | batch r8_gate_d | 4755 chars
+11-07 16:19 | dots | REVIEW-DONE | round 8 all batches; reading findings
+11-07 16:20 | me | TRIAGE | R8 Dots gate_d batch: zero-length and non-string time_range crash claims FALSE (verified: PLAN-01); other items low/unverified; research/TRIAGE_R8_2026-11-07.md pushed on the merge branch; review loop stopped
+11-07 16:53 | me | CHECK | owner asked: did you close all gaps of the document, is the full pipeline properly working: re-running all suites, acceptance criteria, CLI smoke, cue equality
+11-07 16:56 | me | CHECK | suites re-run: core 418+1, h3 615, director 781+2, flow 130+2 known, ui 252+1 known; CLI smoke of post.py en/hi/mr on synthetic episodes: exit 0, written, yuv420p bt709 tv, audio, SRT+VTT per language; Gate D and post build cues with the same engine functions; main still 8b1119a, merge branch pushed
+11-07 17:00 | me | DECISION | owner (Hindi): push all changes; Haiku xhigh agent reviews the UI in the browser; Opus agent (explicitly asked) plans model picker (NVIDIA free / OpenRouter / Claude) + English and Marathi + simple 60-year-old-friendly design; Haiku xhigh codes; reviewer bench reviews; close idle runs
+11-07 17:01 | me | PUSH | all branches match their remotes (v4 c86a688, universal dde38b9, merge ff83ce9); main untouched | CHECK processes: no Claude session or background task of mine was running; stopped unused Ableton MCP (33060) and Kaggle MCP (47560) servers; kept the UI server (37320, port 8765, in use); left Codex app helpers (node/python at 18:35, 20:22, 21:06) alone | AGENT-START Haiku xhigh UI reviewer -> research/UI_REVIEW_HAIKU_2026-11-07.md
+11-07 17:15 | haiku-ui-review | AGENT-DONE | research/UI_REVIEW_HAIKU_2026-11-07.md | 52 screenshots, no button pressed; Advanced Video not opened (Colab); key: no model chooser, step 2 hard-wired to super-vl, [object Object] bug, phone shows only step 1, no language switch
+11-07 17:16 | me | AGENT-START | Opus planner (owner asked for Opus explicitly) -> D:/aai work/anime_studio_merge/docs/UI_REDESIGN_PLAN_2026-11-07.md : model chooser (NVIDIA free/OpenRouter free/Claude), English+Marathi, simple design for a 60-year-old user, per-step spec, coder task list; plan only, no code
+11-07 17:17 | me | DECISION | owner: no UI feature may be dropped; reinvent format/technique but keep full functionality: forwarded to the Opus planner (parity inventory, parity tests, tasks acceptance = inventory rows ticked); coder and reviewers must check parity
+11-07 17:34 | opus-planner | AGENT-DONE | docs/UI_REDESIGN_PLAN_2026-11-07.md (1085 lines, 6 tasks T0-T5, ~110 parity rows none removed; model chooser via /api/writers + separate write_pack_claude command with typed CLAUDE and --allow-claude; en/mr string tables; owner questions Q1-Q4)
+11-07 17:35 | me | DECISION | owner questions Q1-Q4 of the UI plan answered with the planner's defaults until the owner says otherwise: keep NVIDIA Super VL choice, Claude behind --allow-claude + tick + typed CLAUDE, Western digits 0-9 in Marathi, N3 prepare-render fix later | AGENT-START Haiku xhigh coder T0+T1 (parity test + server: /api/writers, write_pack_claude, i18n/font routes, stale guard, ops w/o Colab)
+11-07 17:35 | coderT01(haiku,xhigh) | AGENT-START | docs/UI_REDESIGN_PLAN_2026-11-07.md,ui/server.py,ui/test_parity.py,ui/test_redesign_server.py | read plan sections 1-9; T0+T1 start
+11-07 17:40 | coderT01(haiku,xhigh) | EDIT | ui/test_parity.py | T0 file: INVENTORY 108 rows, NEW_ROWS 13, commands, routes, section-9 completeness; 3 needles opening-quote form (plan typo)
+11-07 17:40 | coderT01(haiku,xhigh) | TEST | ui/test_parity.py | 209 pass 27 skip on unchanged code (T0 done-when 1 ticked)
+11-07 17:41 | coderT01(haiku,xhigh) | TEST | ui/test_redesign_server.py | red before T1 implementation (new file, 19 tests)
+11-07 17:43 | coderT01(haiku,xhigh) | EDIT | ui/server.py | T1: allow_claude flag, WRITER_MODEL+super-vl, WRITER_CHOICES, check_argv allow, Cmd confirm/needs/allow, CLAUDE_COMMANDS (apart from COMMANDS, see DECISIONS), writers(), ops(q), gate stale guard, i18n+font routes
+11-07 17:44 | coderT01(haiku,xhigh) | TEST | ui/test_redesign_server.py,ui/test_parity.py | T1 tests 20 pass; ui suite 481 pass 28 skip 1 known fail (test_14 real pack)
+11-07 17:48 | coderT01(haiku,xhigh) | DECISION | ui/server.py,ui/test_parity.py | write_pack_claude kept in CLAUDE_COMMANDS not COMMANDS: test_ui test_1 pins COMMANDS; needs test_ui retarget (REQUEST)
+11-07 17:48 | coderT01(haiku,xhigh) | DECISION | ui/test_parity.py | 4 plan needles had closing quote not in JS (/api/images?, /api/review?, /api/export?, /log?tail=): opening-quote form used
+11-07 17:48 | coderT01(haiku,xhigh) | EDIT | ui/PLAN.md | section 4: 3 new rows (/api/writers, /i18n, /fonts) + /api/run row mentions CLAUDE
+11-07 17:48 | coderT01(haiku,xhigh) | TEST | ui,h3,director,core | ui 482 pass 27 skip 1 known fail (test_14); h3 615; director 781 +2 skip; core 418 +1 skip; node check ok
+11-07 17:48 | coderT01(haiku,xhigh) | AGENT-DONE | ui/server.py,ui/test_parity.py,ui/test_redesign_server.py,ui/PLAN.md | T0 and T1 done-when ticked; NOW block not touched (main session); not committed
+11-07 17:49 | me | VERIFY | T0+T1 coder: ui 482 pass + 27 intentional skips + 1 known failure (re-run by me); server.py diff read: Claude path gated by BANNED_PAIRS (--writer opus only via write_pack_claude allow-set), allow_claude flag checked at preview and run, typed CLAUDE checked at run, /api/writers returns counts/booleans only | COMMIT merge branch local: T0+T1
+11-07 17:49 | me | AGENT-START | Haiku xhigh coder T2 (style.css, index.html, i18n.js, en.json, mr.json, test_i18n.py, test_static retargets); own test server on port 8766, owner server 8765 untouched
+11-07 17:50 | coderT2(haiku,xhigh) | AGENT-START | ui/static/index.html,style.css,test_static.py,test_parity.py | T2 shell start, worktree merge-v4-universal-2026-11-07
+11-07 17:02 | UI-REV(haiku,xhigh) | REVIEW-START | ui/static,ui/server.py | read-only UI review, report to research/UI_REVIEW_HAIKU_2026-11-07.md
+11-07 17:02 | UI-REV | CMD | http://127.0.0.1:8765 | navigate, read_page, screenshot desktop; no clicks yet
+11-07 17:02 | UI-REV | CMD | ui/static/index.html | read 361 lines
+11-07 17:02 | UI-REV | CMD | blot.md,PROJECT_LOG.md,CHECKLIST_ARCHITECTURE_2026-11-07.md | read rules, NOW block, checklist
+11-07 17:02 | UI-REV | DECISION | PROJECT_LOG.md | only log lines written to repo; review otherwise read-only
+11-07 17:02 | UI-REV | CMD | ui/static/pipeline.js | read 2105 lines (wizard, gates, story, analysis, images, render, export)
+11-07 17:02 | UI-REV | CMD | ui/static/app.js | read 1401 lines (advanced tools: story, images tabs, bridge, video, colab, export)
+11-07 17:03 | UI-REV | CMD | director/write_pack.py | read header docs, WRITERS table, resolve_route, argparse (lines 1-90, 266-305)
+11-07 17:03 | UI-REV | CMD | ui/server.py | read write_pack_route, b_write_pack, COMMANDS write_pack args (lines 425-466, 596-607)
+11-07 17:03 | UI-REV | CMD | ui/server.py,director/write_pack.py | grep model/via/writer options and banned tokens
+11-07 17:03 | UI-REV | CMD | ui/static/style.css | grep breakpoints (759/390/900), tablewrap, dark mode; not read in full
+11-07 17:03 | UI-REV | FAIL | ui/static/style.css | 8 selectors target removed #wiz-panels (dead CSS), not a visible fault
+11-07 17:03 | UI-REV | CMD | http://127.0.0.1:8765 | desktop 1280x800 emulated, screenshot 1 of desktop taken; no clicks
+11-07 17:03 | UI-REV | CMD | http://127.0.0.1:8765 | desktop scroll: screenshots 3-5 taken (scroll landed in story textarea, redo over margin)
+11-07 17:03 | UI-REV | CMD | http://127.0.0.1:8765 | desktop screenshots 6-8 (Story/Analysis/Gate A); read-only DOM check of button disabled flags; no clicks on actions
+11-07 17:04 | UI-REV | CMD | http://127.0.0.1:8765 | desktop screenshots 9-12 (Gate A, Read-out, Render, Ops, Runs); no clicks on actions
+11-07 17:04 | UI-REV | FAIL | ui/static/pipeline.js | Gate A Approve enabled while stale-server banner says restart first (safety gap)
+11-07 17:04 | UI-REV | CMD | http://127.0.0.1:8765 | desktop screenshots 13-14 (Runs table, page bottom); Advanced tools closed by default
+11-07 17:04 | UI-REV | CMD | http://127.0.0.1:8765 | expand Advanced tools (expand only, no action button pressed)
+11-07 17:04 | UI-REV | CMD | http://127.0.0.1:8765 | advanced Story section viewed: story dropdown shows ashtavakra_gita_katha, wizard shows upanishad_ganga_ep4 (two selectors)
+11-07 17:04 | UI-REV | DECISION | ui/static/app.js | Video section NOT opened: showSection(video) calls loadColab (Colab CLI), blot RULE 4 forbids; described from source
+11-07 17:05 | UI-REV | CMD | http://127.0.0.1:8765 | advanced nav Images opened (nav only); DOM check: logbar sticky 121px, nav li stray disc bullets
+11-07 17:05 | UI-REV | CMD | http://127.0.0.1:8765 | screenshots 15-18 taken (advanced nav, sticky log footer); total so far 18
+11-07 17:05 | UI-REV | CMD | http://127.0.0.1:8765 | Images tabs Jobs and Shots viewed (tab clicks only; Build*, Refresh, Queue actions not pressed); screenshots 19-21
+11-07 17:05 | UI-REV | FAIL | ui/static/app.js | Images Shots tab shows [object Object] in Q1-Q6 cells (fillReview String of object)
+11-07 17:05 | UI-REV | CMD | http://127.0.0.1:8765 | Images tabs Progress, Queue, Finals viewed via tab clicks (DOM verified); 25 images so far (24 screenshots + 1 zoom)
+11-07 17:05 | UI-REV | CMD | http://127.0.0.1:8765 | Images Finals and Series viewed (tab clicks only); screenshots 26-27
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | Advanced Bridge and Export viewed (nav only; Dry run, Write keyframes, Load not pressed); 29 images so far
+11-07 17:06 | UI-REV | DECISION | http://127.0.0.1:8765 | desktop walk done (no action button pressed); next: phone width 375 preset mobile, then reset desktop
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone 375x812 emulated; phone screenshots 30-32 (top, story, textarea); stepper shows only step 1 without swipe
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone screenshots 33-35 taken (textarea scroll, wasted); redo scrolling in left gutter
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone checks: voices, analysis, shot cards viewed; 9 phone images so far; total 38 images
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone: 57 shot cards stack vertically (very long scroll); 3 more phone images, total 41
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone JS: no horizontal overflow; stepper steps 2-6 off-screen to right; logbar sticky 152px; header 181px
+11-07 17:06 | UI-REV | CMD | http://127.0.0.1:8765 | phone Gate A card viewed (Approve enabled, not pressed); confirm dialog button text is Run; 43 images total
+11-07 17:07 | UI-REV | CMD | http://127.0.0.1:8765 | phone Runs cards viewed as stacked labels (good); phone nav: Export button offscreen (navScrollW 420 vs 310)
+11-07 17:07 | UI-REV | FAIL | http://127.0.0.1:8765 | phone Advanced toggle click did not expand (advancedOpen=false after click); checking for mis-target on a Runs row (read-only)
+11-07 17:07 | UI-REV | CMD | http://127.0.0.1:8765 | stray click on Runs row (no detail opened, no state change); Advanced expanded on phone via coordinate click; phone screenshots continue
+11-07 17:08 | UI-REV | CMD | http://127.0.0.1:8765 | phone Export and Ops panels viewed by scroll_to; 51 images so far
+11-07 17:08 | UI-REV | CMD | http://127.0.0.1:8765 | phone walk done (52 captures total: 51 screenshots incl 1 at 0.6 scale, 1 zoom); viewport reset to desktop
+11-07 17:08 | UI-REV | CMD | ui/static/style.css | read lines 1-100 (colour tokens, dark mode)
+11-07 17:08 | UI-REV | CMD | ui/server.py | status() checks Colab CLI via file exists only (no CLI call)
+11-07 17:10 | UI-REV | CMD | ui/static/pipeline.js,app.js,index.html | jargon check: LUT, token, gap G1/G12, argv, redacted, ALLOW_FREE_MODEL found on screen
+11-07 17:10 | UI-REV | DECISION | research/UI_REVIEW_HAIKU_2026-11-07.md | all evidence gathered; writing the report next (only log lines written to repo)
+11-07 17:15 | UI-REV | WRITE | research/UI_REVIEW_HAIKU_2026-11-07.md | report written, sections A-H; claim about run logs removed (no match), wiz-panels count hedged, open checks added to H
+11-07 17:15 | UI-REV | CORRECTION | PROJECT_LOG.md | earlier UI-REV line said LUT and token were found on screen; wrong: LUT is not on screen, token appears only in code
+11-07 17:53 | me | EDIT | PROJECT_LOG.md (both copies) | NOW block refreshed (was stale since 13:01); merge-branch copy synced to the V4-tree copy (agents had appended to two different files)
+11-07 17:54 | me | DECISION | owner re-confirmed: after EVERY step one line in PROJECT_LOG.md (blot.md rule 1), by me and by every agent; NOW block refreshed after every agent finish; agents' prompts carry the rule and the exact echo command; I check the log tail after each agent report
+11-07 17:55 | me | EDIT | CLAUDE.md (V4 tree and merge worktree) | owner asked: the logging rule is now written in CLAUDE.md (every step, one file, agents carry the command, NOW block refresh, backfill)
+11-07 17:55 | me | CHECK | owner asked expected time to finish: estimate from measured agent times (review 14 min, Opus plan 18 min, T0+T1 14 min): T2 ~30-40 min, T3 ~45-60, T4 ~45-60, T5 ~25, review bench ~40-70 (Dots slow), fix+second review ~30-60, my checks ~30 => about 4-5 h
+11-07 17:56 | coderT2(haiku,xhigh) | TEST | ui | baseline 482 pass 27 skip 1 known fail (test_14_real_pack)
+11-07 17:56 | me | DECISION | owner: use parallel agents. Plan: T3 and T4 run in parallel after T2 (disjoint files pipeline.js / app.js; shared i18n json via a locked merge helper ui/i18n_merge.py; ports 8767/8768; PARITY_BUILT env instead of editing test_parity); free reviewers start now on the finished T1 server batch
+11-07 17:56 | me | DECISION | owner: ask the reviewer BEFORE sending information (prompts/instructions) to agents. Holding the parallel T3/T4 dispatch: drafting research/UI_PARALLEL_DISPATCH_2026-11-07.md and the i18n merge helper, then the free reviewers (Super VL + Dots) review them; I triage and only then send to the coders. T2 coder (already running) is not given anything new
+11-07 17:57 | me | EDIT | ui/i18n_merge.py,ui/test_i18n_merge.py | new locked merge helper for en.json/mr.json so T3 and T4 coders can add key groups in parallel (group-limited, refuses changed text, same keys in both languages, atomic write); tests written; NOT yet sent to any agent (owner: reviewer first)
+11-07 17:57 | coderT2(haiku,xhigh) | EDIT | ui/static/i18n.js,ui/static/index.html | i18n helper and shell markup written (keys pending en/mr)
+11-07 17:58 | me | EDIT | research/UI_PARALLEL_DISPATCH_2026-11-07.md,_review_prompt_dispatch.txt,_review_batches_dispatch.json,_run_dispatch_reviews.py | drafted the parallel T3/T4 dispatch rules and the two exact coder prompts; sending them to the free reviewers (Super VL + Dots) FIRST (owner rule); no coder has received them
+11-07 17:58 | supervl | REVIEW-DONE | batch dispatch_rules | 110 chars FAILED
+11-07 17:58 | dots | REVIEW-DONE | batch dispatch_rules | 110 chars FAILED
+11-07 17:58 | coderT2(haiku,xhigh) | EDIT | ui/static/i18n/en.json,mr.json | 2 string tables written (draft Marathi)
+11-07 17:59 | me | FAIL | research/UI_PARALLEL_DISPATCH_2026-11-07.md | the Write was blocked by the worktree path guard, so the file did not exist and both reviewer runs (supervl, dots) failed with 110 chars; owner said to use the logs for context: rewriting the file now (relative path from the V4 tree), then re-running both reviewers
+11-07 18:00 | me | EDIT | research/UI_PARALLEL_DISPATCH_2026-11-07.md | dispatch file rewritten (earlier write was blocked); re-running both reviewers on dispatch_rules + merge_helper; still nothing sent to any coder
+11-07 18:00 | me | CHECK | owner screenshot of the last three messages (parallel agents / ask the reviewer before sending to agents / use the logs for context) matches the plan in progress: reviewers (Super VL + Dots) are reviewing the T3/T4 dispatch file now; nothing sent to coders until triaged
+11-07 18:00 | supervl | REVIEW-DONE | batch merge_helper | 2733 chars
+11-07 18:00 | me | EDIT | PROJECT_LOG.md | owner: log + blot every step: NOW block refreshed (T2 running; dispatch under review; T3/T4 not started); blot.md rule 1 already covers this, no change needed
+11-07 18:00 | dots | REVIEW-DONE | batch merge_helper | 4307 chars
+11-07 18:00 | coderT2(haiku,xhigh) | EDIT | ui/static/style.css,ui/test_static.py | CSS rewritten; test_static retargets 1-4 applied and checks 5-6 added
+11-07 18:01 | me | REVIEW-DONE | ui/i18n_merge.py | first-run reviews (dispatch file missing then) cover only the helper: Super VL 4 findings, Dots 6; real: en/mr pair not written together, stale lock after a crash (use age >120 s, not os.kill which kills on Windows), empty batch, prefix not validated, newline= on write_text; Dots claim that 'step,' breaks is wrong (empties are dropped). Fixing now; second runs (with the dispatch file) still running
+11-07 18:01 | me | TEST | ui/i18n_merge.py,ui/test_i18n_merge.py | fixed pair-atomic write with rollback, stale .lock (>120 s) removal, empty batch refused, prefix validated, open() newline; 8 tests pass (was 7). Waiting for the second reviewer runs on the dispatch file
+11-07 18:02 | me | CMD | git remote -v | owner asked for the git repository: read remote + branches
+11-07 18:02 | supervl | REVIEW-DONE | batch dispatch_rules | 7031 chars
+11-07 18:02 | dots | REVIEW-DONE | batch dispatch_rules | 8091 chars
+11-07 18:03 | coderT2(haiku,xhigh) | EDIT | index.html, i18n/en.json, i18n/mr.json | bridge <code> paths keyed as adv.bridge.dir_final and adv.bridge.dir_out; both keys added to en and mr
+11-07 18:03 | coderT2(haiku,xhigh) | EDIT | ui/test_i18n.py | test_7d ApiError attribute status changed to code
+11-07 18:04 | coderT2(haiku,xhigh) | TEST | ui full suite | 510 pass 24 skip 1 xfail 2 fail (test_i18n test_3 new; test_14 known)
+11-07 18:04 | coderT2(haiku,xhigh) | EDIT | ui/test_i18n.py | _used_keys also reads quoted key literals in i18n.js (STATUS_KEY, ERR_MAP); fixes test_3 false orphans
+11-07 18:04 | coderT2(haiku,xhigh) | TEST | ui/test_i18n.py | 16 pass 1 xfail
+11-07 18:04 | coderT2(haiku,xhigh) | CMD | ui/static app.js pipeline.js i18n.js | node --check all 3 OK
+11-07 18:05 | coderT2(haiku,xhigh) | TEST | ui full suite | 511 pass 24 skip 1 xfail 1 fail (test_14 known only)
+11-07 18:05 | supervl | REVIEW-DONE | batch merge_helper | 3193 chars
+11-07 18:05 | dots | REVIEW-DONE | batch merge_helper | 2783 chars
+11-07 18:05 | coderT2(haiku,xhigh) | CMD | index.html vs HEAD, app.js pipeline.js i18n.js ids | dropped only stale-banner stale-banner-text; 85 lookups, 0 missing; 0 ids built twice
+11-07 18:05 | me | REVIEW-DONE | research/UI_PARALLEL_DISPATCH_2026-11-07.md | Super VL 7 findings, Dots 10: real = test_i18n.py and test_parity.py edits contradict the ownership table, T4 xfail removal depends on T3, plan T3/T4 text still asks browser checks, PARITY_BUILT for final run, owner rules not restated, --prefix comma list, adv key collisions; not real = log append race (single-line), lock scope (already read-modify-write). Fixing the dispatch file now
+11-07 18:05 | coderT2(haiku,xhigh) | TEST | h3 core | 1033 pass 1 skip
+11-07 18:06 | me | EDIT | research/UI_PARALLEL_DISPATCH_2026-11-07.md | revision 2: test_i18n.py/test_parity.py lead-only, plan overrides section 2b (xfail by lead, browser checks skipped, --prefix comma list, adv collisions to REQUESTS, PARITY_BUILT for final run, bash log command), owner rules restated in both prompts
+11-07 18:06 | me | REVIEW-START | dispatch revision 2 + fixed i18n_merge.py | round 2 on Super VL + Dots (owner rule: review again after fixes); round-1 outputs kept as DISPATCH_REVIEW_R1_*; coders still not started
+11-07 18:07 | coderT2(haiku,xhigh) | TEST | director | 781 pass 2 skip
+11-07 18:07 | coderT2(haiku,xhigh) | CMD | ui/server.py --port 8766 | start own server for browser checks (not 8765)
+11-07 18:08 | coderT2(haiku,xhigh) | CMD | 8766 server | up: / 200, i18n/en.json 200, font 200
+11-07 18:08 | dots | REVIEW-DONE | batch dispatch_rules | 3587 chars
+11-07 18:09 | me | EDIT | docs/UI_COLOUR_SYSTEM_GUIDE_2026-11-07.md | owner's colour-system guide saved verbatim (merge worktree docs, uncommitted); contrast numbers recomputed: guide table correct; found borders 1.21/1.74 fail 3:1, light secondary 5.51 below the 7:1 plan target, no status colours
+11-07 18:09 | me | REVIEW-START | research/_prompt_colour_research.md | owner rule: reviewers check the research-agent prompt BEFORE it is sent; Super VL + Dots running (agent not started)
+11-07 18:09 | coderT2(haiku,xhigh) | CMD | t2_browser_check.tmp.mjs (worktree, deleted after run) | headless Chrome 9333 drives 8766: 4 viewport checks + screenshots
+11-07 18:09 | me | EDIT | blot.md | added RULE 6 (reviewer checks instructions before agents) and RULE 7 (colour guide location and order); NOW block refresh next
+11-07 18:09 | me | EDIT | PROJECT_LOG.md | NOW block refreshed
+11-07 18:09 | coderT2(haiku,xhigh) | TEST | browser 8766 headless Chrome | 1280x800 en+mr and 375x812 mr+en: hscroll 0, stepper 6x1 desktop / 2x3 phone, font 200, colab 0, reload keeps mr, 0 exceptions; script-written texts still English (app.spend_off etc., 10-11 per page)
+11-07 18:09 | coderT2(haiku,xhigh) | CMD | t2_browser_check.tmp.mjs deleted from worktree | cleanup
+11-07 18:10 | supervl | REVIEW-DONE | batch prompt | 2304 chars
+11-07 18:10 | me | OWNER | colour guide scope | owner: guide is for the UI only, not anywhere else in the pipeline
+11-07 18:10 | me | EDIT | research/_prompt_colour_research.md,blot.md | scope paragraph added (UI only, no pipeline file, section 6 reduced to one rule); blot RULE 7 states the scope; prompt needs a second review round before sending
+11-07 18:10 | dots | REVIEW-DONE | batch prompt | 3915 chars
+11-07 18:10 | coderT2(haiku,xhigh) | CMD | t2_shot_mr.tmp.mjs (worktree, deleted after run) | retake t2-desktop-mr.png scrolled to top (first take was scrolled)
+11-07 18:10 | coderT2(haiku,xhigh) | CMD | t2_shot_mr.tmp.mjs deleted | cleanup
+11-07 18:11 | supervl | REVIEW-DONE | batch dispatch_rules | 5721 chars
+11-07 18:11 | coderT2(haiku,xhigh) | CMD | 8766 server pid 54528 + headless chrome 9333 | stopped by agent; 8766 down, no processes left
+11-07 18:11 | coderT2(haiku,xhigh) | TEST | parity T2 rows H01-H13 T01 D04 D05 E00 E01 ER | all PASSED (H12 via new-row check); test_parity skips now T3-only
+11-07 18:12 | coderT2(haiku,xhigh) | TEST | ui/test_parity.py | 52 adv rows ES/EI/EB/EV/EX/EL PASSED; root font 125 confirmed; no FAILED in parity
+11-07 18:12 | coderT2(haiku,xhigh) | AGENT-DONE | ui/static index.html style.css i18n.js i18n/ test_i18n.py test_static.py test_parity.py | T2 done: ui 511p/24s/1x/1 known fail; h3+core 1033p; director 781p; 4 shots; NOW block left to parent
+11-07 18:12 | me | AGENT-DONE | coderT2 | report received: shell/styles/i18n core, 511 pass 1 xfail 1 known fail (own count); verifying now (re-run suites, node --check, diff, log lines, screenshots) before committing
+11-07 18:12 | supervl | REVIEW-DONE | batch merge_helper | 2986 chars

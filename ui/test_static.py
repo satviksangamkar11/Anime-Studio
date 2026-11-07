@@ -4,6 +4,7 @@ No server, no browser, no network. Reads static/index.html, static/style.css, st
 Run from D:\\aai work\\anime_studio\\ui:
     C:\\Python314\\python.exe -m pytest -q -p no:cacheprovider test_static.py
 """
+import json
 import re
 import shutil
 import subprocess
@@ -18,6 +19,9 @@ INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 CSS = (STATIC / "style.css").read_text(encoding="utf-8")
 JS = (STATIC / "app.js").read_text(encoding="utf-8")
 PLAN_TEXT = PLAN.read_text(encoding="utf-8")
+# English string table (T2, docs/UI_REDESIGN_PLAN_2026-11-07.md section 3). Empty dict when the file is missing.
+EN_JSON = STATIC / "i18n" / "en.json"
+EN = json.loads(EN_JSON.read_text(encoding="utf-8")) if EN_JSON.is_file() else {}
 
 SECTIONS = ["Story", "Images", "Bridge", "Video", "Export"]
 
@@ -120,7 +124,7 @@ def test_index_references_assets_relatively():
 def test_index_has_five_sections_and_nav():
     for name in SECTIONS:
         key = name.lower()
-        assert re.search(r">\s*%s\s*</button>" % name, INDEX), "nav button text missing: " + name
+        assert 'id="nav-%s"' % key in INDEX, "nav button missing: " + key   # T2: the label is translated, the id stays
         assert 'data-section="%s"' % key in INDEX, "data-section missing: " + key
         assert 'id="sec-%s"' % key in INDEX, "section container missing: " + key
 
@@ -223,9 +227,10 @@ PIPELINE_JS = (STATIC / "pipeline.js").read_text(encoding="utf-8")
 
 
 def test_image_jobs_button_id_and_commands_are_in_pipeline_js():
-    assert "id: 'images-build-jobs'" in PIPELINE_JS and "textContent: 'Build image jobs'" in PIPELINE_JS
+    assert "id: 'images-build-jobs'" in PIPELINE_JS
+    assert ("textContent: 'Build image jobs'" in PIPELINE_JS) or ("'pics.build_btn'" in PIPELINE_JS and EN.get("pics.build_btn"))
     assert "'build_spec'" in PIPELINE_JS and "'build_jobs_cmd'" in PIPELINE_JS
-    assert "Image jobs are not built yet (" in PIPELINE_JS
+    assert ("Image jobs are not built yet (" in PIPELINE_JS) or ("'pics.err_no_jobs'" in PIPELINE_JS and EN.get("pics.err_no_jobs"))
     assert not re.search(r"\.(inner|outer)HTML\s*\+?=(?!=)", PIPELINE_JS), "assignment to innerHTML/outerHTML in pipeline.js"
     assert not re.search(r"https?://", PIPELINE_JS), "pipeline.js contains an http(s) URL"
 
@@ -239,13 +244,15 @@ def test_pipeline_js_parses_with_node():
 
 
 def test_owner_rules_are_on_the_page():
-    assert "Flow agents run on Haiku, effort LOW" in JS
-    assert "Copy" in JS
-    assert "not available yet" in JS.lower() or "Not available yet" in JS
-    assert "--allow-spend" in JS
-    assert "gap G1" in JS and "gap G12" in JS
-    assert "EXECUTE " in JS
-    assert "I looked at full size" in JS
+    # T2: the owner's phrases may sit in app.js, pipeline.js or the English string table (en.json)
+    TEXT = JS + PIPELINE_JS + "\n".join(EN.values())
+    assert "Flow agents run on Haiku, effort LOW" in TEXT
+    assert "Copy" in TEXT
+    assert "not available yet" in TEXT.lower() or "Not available yet" in TEXT
+    assert "--allow-spend" in TEXT
+    assert "gap G1" in TEXT and "gap G12" in TEXT
+    assert "EXECUTE " in TEXT
+    assert "I looked at full size" in TEXT
 
 
 # ---------------------------------------------------------------------------
@@ -413,8 +420,8 @@ def test_css_breakpoints_one_column_phone_two_columns_desktop():
 
 
 def test_css_44px_touch_targets_and_pills():
-    assert re.search(r"(^|\n)button\s*\{[^}]*min-height:\s*44px", CSS), "button min-height 44px missing"
-    assert re.search(r"\n\.pill,\s*\.pill-btn\s*\{[^}]*min-height:\s*44px", CSS), "language pill min-height 44px missing"
+    assert re.search(r"(^|\n)button\s*\{[^}]*min-height:\s*48px", CSS), "button min-height 48px missing"
+    assert re.search(r"\n\.pill,\s*\.pill-btn\s*\{[^}]*min-height:\s*48px", CSS), "language pill min-height 48px missing"
 
 
 def test_css_focus_ring_is_three_pixels_on_every_control():
@@ -484,3 +491,25 @@ def test_text_contrast_meets_wcag_aa_in_light_and_dark():
         for fg, bg in TEXT_ON_BG:
             ratio = _ratio(_resolve(tokens, fg), _resolve(tokens, bg))
             assert ratio >= 4.5, "%s: %s on %s is %.2f:1 (need 4.5)" % (label, fg, bg, ratio)
+
+
+# ---------------------------------------------------------------------------
+# T2 checks (2026-11-07): body text contrast at 7:1 and no small type.
+# ---------------------------------------------------------------------------
+BODY_TEXT_PAIRS = [("fg", "panel"), ("fg", "page-bg"), ("muted", "panel"), ("muted", "page-bg"),
+                   ("err-fg", "tint-error-bar"), ("ok-fg", "tint-green"), ("amber-fg", "amber-bg")]
+
+
+def test_body_text_contrast_is_at_least_7():
+    for label, tokens in [("light", LIGHT_TOKENS), ("dark", DARK_TOKENS[0]), ("dark (explicit)", DARK_TOKENS[1])]:
+        for fg, bg in BODY_TEXT_PAIRS:
+            ratio = _ratio(_resolve(tokens, fg), _resolve(tokens, bg))
+            assert ratio >= 7.0, "%s: %s on %s is %.2f:1 (need 7)" % (label, fg, bg, ratio)
+
+
+def test_no_font_size_below_17px():
+    for num, unit in re.findall(r"font-size:\s*([0-9.]+)(rem|px)\b", CSS):
+        if unit == "rem":
+            assert float(num) >= 0.85, "font-size %srem is below 0.85rem" % num
+        else:
+            assert float(num) >= 17, "font-size %spx is below 17px" % num

@@ -3,358 +3,400 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anime Studio</title>
+<title data-i18n="app.title">Anime Studio</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<a class="skip-link" href="#wizard">Skip to the steps</a>
+<a class="skip-link" href="#wizard" data-i18n="app.skip">Go to the steps</a>
 
 <header class="topbar" id="header-chips">
-  <h1 class="brand">ANIME STUDIO</h1>
-  <span id="chip-story" class="chip-item">Story: <span id="project-name">(no story chosen)</span></span>
-  <span id="chip-pack" class="chip-item">Pack: none</span>
-  <span id="chip-languages" class="chip-item">Languages: none ticked</span>
-  <span id="spend-badge" class="badge b-grey">SPEND OFF</span>
-  <span id="job-badge" class="jobtext">job: none</span>
-  <span class="host">127.0.0.1</span>
-  <span id="server-state" class="jobtext"></span>
+  <div class="topbar-row">
+    <h1 class="brand" data-i18n="app.name">Anime Studio</h1>
+    <div class="lang-switch" role="group" data-i18n-attr="aria-label:app.lang_label" aria-label="Language">
+      <svg class="icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+      <button type="button" class="lang-btn" id="ui-lang-en" aria-pressed="true" data-i18n="lang.ui_en">English</button>
+      <button type="button" class="lang-btn" id="ui-lang-mr" aria-pressed="false" data-i18n="lang.ui_mr">मराठी</button>
+    </div>
+    <span id="spend-badge" class="badge b-grey" data-i18n="app.spend_off">Paid work: OFF (safe)</span>
+  </div>
+  <div class="topbar-row topbar-chips">
+    <span id="chip-story" class="chip-item"><span data-i18n="app.working_on">Working on:</span> <span id="project-name" data-i18n="app.no_story">(no story chosen)</span></span>
+    <span id="chip-pack" class="chip-item" data-i18n="app.plan_none">Plan: none</span>
+    <span id="chip-languages" class="chip-item" data-i18n="app.langs_none">Languages: none ticked</span>
+    <span id="job-badge" class="jobtext" data-i18n="app.job_none">Nothing is running</span>
+    <span id="server-state" class="jobtext"></span>
+  </div>
 </header>
 
-<div id="stale-banner" class="bar bar-error" role="alert" hidden>
-  <span id="stale-banner-text">The server is out of date. Stop it, start it again, then reload this page.</span>
+<div id="error-bar" class="bar bar-error" role="alert" hidden>
+  <span id="error-text" class="bar-main"></span>
+  <details id="error-details" class="expert">
+    <summary data-i18n="common.details_helper">Details for the helper</summary>
+    <pre id="error-raw" class="box" hidden></pre>
+  </details>
+  <button type="button" id="error-close" class="linkish" data-i18n="common.close">Close</button>
 </div>
 
-<div id="error-bar" class="bar bar-error" role="alert" hidden>
-  <span id="error-text"></span>
-  <button type="button" id="error-close" class="linkish">Dismiss</button>
-</div>
+<div id="working-on" class="workline" aria-live="polite"></div>
 
 <div class="wizard-layout">
-  <nav id="stepper" class="stepper" aria-label="Wizard steps">
+  <nav id="stepper" class="stepper" data-i18n-attr="aria-label:app.steps_aria" aria-label="The six steps">
     <ol>
       <li id="step-story" class="status-locked">
-        <span class="step-num">1</span>
-        <span class="step-title">Story</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-story">
+          <span class="step-num">1</span>
+          <span class="step-title" data-i18n="step.story.name">Story</span>
+          <span class="step-short" data-i18n="step.story.short">Story</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
       <li id="step-analysis" class="status-locked">
-        <span class="step-num">2</span>
-        <span class="step-title">Analysis</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-analysis">
+          <span class="step-num">2</span>
+          <span class="step-title" data-i18n="step.analysis.name">Plan the story</span>
+          <span class="step-short" data-i18n="step.analysis.short">Plan</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
       <li id="step-images" class="status-locked">
-        <span class="step-num">3</span>
-        <span class="step-title">Images</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-images">
+          <span class="step-num">3</span>
+          <span class="step-title" data-i18n="step.images.name">Pictures</span>
+          <span class="step-short" data-i18n="step.images.short">Pictures</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
       <li id="step-readout" class="status-locked">
-        <span class="step-num">4</span>
-        <span class="step-title">Read-out</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-readout">
+          <span class="step-num">4</span>
+          <span class="step-title" data-i18n="step.readout.name">Check the summary</span>
+          <span class="step-short" data-i18n="step.readout.short">Summary</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
       <li id="step-render" class="status-locked">
-        <span class="step-num">5</span>
-        <span class="step-title">Render</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-render">
+          <span class="step-num">5</span>
+          <span class="step-title" data-i18n="step.render.name">Make the video</span>
+          <span class="step-short" data-i18n="step.render.short">Video</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
       <li id="step-export" class="status-locked">
-        <span class="step-num">6</span>
-        <span class="step-title">Export</span>
-        <span class="step-status">Locked</span>
+        <button type="button" class="step-btn" id="step-btn-export">
+          <span class="step-num">6</span>
+          <span class="step-title" data-i18n="step.export.name">Final files</span>
+          <span class="step-short" data-i18n="step.export.short">Files</span>
+          <span class="step-status" data-i18n="status.locked">Not open yet</span>
+        </button>
       </li>
     </ol>
   </nav>
 
   <div class="wizard-col">
 
-    <!-- static job bar removed 2026-11-07: pipeline.js builds the job bar inside the wizard -->
-
     <main id="wizard">
       <noscript><p>This page needs JavaScript turned on.</p></noscript>
     </main>
 
-    <!-- wiz-panels removed 2026-11-07: pipeline.js builds all wizard panels itself; static copies duplicated every id -->
+    <details id="runs-details" class="runs-box">
+      <summary data-i18n="runs.title">Past work (records)</summary>
+      <div id="runs-slot"></div>
+    </details>
   </div>
 </div>
 
 <details id="advanced-tools" class="advanced">
-  <summary>Advanced tools (manual controls)</summary>
+  <summary data-i18n="adv.title">For the helper: expert tools</summary>
 
-  <div id="msg-bar" class="bar bar-ok" role="status" hidden></div>
+  <div class="advanced-body">
+    <p class="adv-intro" data-i18n="adv.intro">These tools are for your helper. Some of them change files. Paid tools stay off unless the helper switched them on.</p>
+    <p class="expert-host"><span class="host" data-i18n="app.host">This computer only (127.0.0.1)</span></p>
 
-  <div class="layout">
-    <nav class="sidebar" aria-label="Sections">
-      <ul class="navlist">
-        <li><button type="button" class="navbtn" id="nav-story" data-section="story">Story</button></li>
-        <li><button type="button" class="navbtn" id="nav-images" data-section="images">Images</button></li>
-        <li><button type="button" class="navbtn" id="nav-bridge" data-section="bridge">Bridge</button></li>
-        <li><button type="button" class="navbtn" id="nav-video" data-section="video">Video</button></li>
-        <li><button type="button" class="navbtn" id="nav-export" data-section="export">Export</button></li>
-      </ul>
-    </nav>
+    <div id="expert-ops" class="expert-ops"></div>
 
-    <div class="content">
+    <div id="msg-bar" class="bar bar-ok" role="status" hidden></div>
 
-      <!-- STORY -->
-      <section id="sec-story" class="screen" data-section="story" hidden>
-        <h2>Story</h2>
-        <div class="formrow">
-          <label class="field">Story (slug) <select id="story-slug"></select></label>
-          <label class="field">Pack <select id="story-pack"></select></label>
-          <div class="field">
-            <span class="field-label">Writer</span>
-            <span id="story-writer-route" class="fixed">Free writer (set by the server)</span>
+    <div class="layout">
+      <nav class="sidebar" data-i18n-attr="aria-label:adv.nav.aria" aria-label="Expert sections">
+        <ul class="navlist">
+          <li><button type="button" class="navbtn" id="nav-story" data-section="story" data-i18n="adv.nav.story">Story text</button></li>
+          <li><button type="button" class="navbtn" id="nav-images" data-section="images" data-i18n="adv.nav.images">Pictures</button></li>
+          <li><button type="button" class="navbtn" id="nav-bridge" data-section="bridge" data-i18n="adv.nav.bridge">Key frames</button></li>
+          <li><button type="button" class="navbtn" id="nav-video" data-section="video" data-i18n="adv.nav.video">Video clips</button></li>
+          <li><button type="button" class="navbtn" id="nav-export" data-section="export" data-i18n="adv.nav.export">Final files</button></li>
+        </ul>
+      </nav>
+
+      <div class="content">
+
+        <!-- STORY -->
+        <section id="sec-story" class="screen" data-section="story" hidden>
+          <h2 data-i18n="adv.story.title">Story text</h2>
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.story.slug_label">Story</span> <select id="story-slug"></select></label>
+            <label class="field"><span data-i18n="adv.story.pack_label">Plan</span> <select id="story-pack"></select></label>
+            <div class="field">
+              <span class="field-label" data-i18n="adv.story.writer_label">Writer</span>
+              <span id="story-writer-route" class="fixed" data-i18n="adv.story.writer_fixed">Free writer (set by the server)</span>
+            </div>
+            <label class="field"><span data-i18n="adv.story.model_label">AI writer (free choices)</span> <select id="story-model"></select></label>
           </div>
-          <label class="field">Writer model <select id="story-model"></select></label>
-        </div>
-        <p id="story-status" class="muted" aria-live="polite"></p>
+          <p id="story-status" class="muted" aria-live="polite"></p>
 
-        <label class="field">Story text (max 200 KB) <span id="story-bytes" class="muted"></span>
-          <textarea id="story-text" rows="12" spellcheck="false"></textarea>
-        </label>
-        <div class="btnrow">
-          <button type="button" id="story-load">Load story</button> <span class="risk risk-R" title="R = read-only">R</span>
-          <label class="inline"><input type="checkbox" id="story-overwrite"> Replace the saved story if it exists</label>
-          <button type="button" id="story-save" class="primary">Save story</button> <span class="risk risk-W" title="W = writes local files">W</span>
-        </div>
-
-        <div class="formrow">
-          <label class="field">New pack name <input id="story-newpack" maxlength="40" placeholder="pack_name" autocomplete="off"></label>
-          <button type="button" id="story-run-new" data-gate="job" data-title="Writer call: free model, rate-limited">Run writer: new pack</button>
-          <span class="risk risk-N" title="N = free model call">N</span><span class="risk risk-W" title="W = writes local files">W</span>
-          <button type="button" id="story-resume" data-gate="job">Resume pack</button>
-          <span class="risk risk-N" title="N = free model call">N</span><span class="risk risk-W" title="W = writes local files">W</span>
-          <button type="button" id="story-check">Check pack</button> <span class="risk risk-R" title="R = read-only">R</span>
-        </div>
-
-        <h2>Stages</h2>
-        <div id="story-stages" class="badges"></div>
-
-        <h2>Gate 1 (story analysis as written)</h2>
-        <pre id="story-gate1" class="box"></pre>
-
-        <h2>Episodes</h2>
-        <div class="tablewrap"><table id="story-episodes"></table></div>
-
-        <div class="two">
-          <div>
-            <h2>Characters (bible)</h2>
-            <ul id="story-characters"></ul>
-          </div>
-          <div>
-            <h2>Places (bible)</h2>
-            <ul id="story-places"></ul>
-          </div>
-        </div>
-
-        <h2>Shots</h2>
-        <div class="tablewrap"><table id="story-shots"></table></div>
-
-        <h2>Check pack result (JSON)</h2>
-        <pre id="story-check-json" class="box"></pre>
-      </section>
-
-      <!-- IMAGES -->
-      <section id="sec-images" class="screen" data-section="images" hidden>
-        <h2>Images</h2>
-        <div class="formrow">
-          <label class="field">Adhyay
-            <select id="img-adhyay"><option value="1">1</option></select>
+          <label class="field"><span data-i18n="adv.story.text_label">Story text (max 200 KB)</span> <span id="story-bytes" class="muted"></span>
+            <textarea id="story-text" rows="12" spellcheck="false"></textarea>
           </label>
-          <button type="button" id="img-refresh">Refresh</button> <span class="risk risk-R" title="R = read-only">R</span>
-        </div>
-
-        <div class="tabs" role="tablist">
-          <button type="button" role="tab" class="tabbtn" id="tab-series" data-tab="series">Series</button>
-          <button type="button" role="tab" class="tabbtn" id="tab-jobs" data-tab="jobs">Jobs</button>
-          <button type="button" role="tab" class="tabbtn" id="tab-shots" data-tab="shots">Shots</button>
-          <button type="button" role="tab" class="tabbtn" id="tab-progress" data-tab="progress">Progress</button>
-          <button type="button" role="tab" class="tabbtn" id="tab-queue" data-tab="queue">Queue</button>
-          <button type="button" role="tab" class="tabbtn" id="tab-finals" data-tab="finals">Finals</button>
-        </div>
-
-        <div id="img-series" class="tabpanel">
-          <p class="muted">Series and sheets from the series file. Read-only.</p>
-          <div class="tablewrap"><table id="series-table"></table></div>
-        </div>
-
-        <div id="img-jobs" class="tabpanel" hidden>
-          <p class="muted">Job files already on disk. Image jobs are built in the wizard (step 3), not here.</p>
-          <div class="tablewrap"><table id="jobs-table"></table></div>
-        </div>
-
-        <div id="img-shots" class="tabpanel" hidden>
-          <p class="muted">One block per shot. Q1 to Q6 and the verdict come from the review of each candidate. Reviewer = Flow review_shot (NVIDIA).</p>
-          <div class="tablewrap"><table id="shots-table"></table></div>
-          <div id="review-detail" class="box" hidden></div>
-        </div>
-
-        <div id="img-progress" class="tabpanel" hidden>
-          <p class="muted">Rows with no decided_by are old (written before the progress check). They are greyed out.</p>
-          <div class="tablewrap"><table id="progress-table"></table></div>
-        </div>
-
-        <div id="img-queue" class="tabpanel" hidden>
-          <div id="queue-counts" class="counts"></div>
           <div class="btnrow">
-            <button type="button" id="btn-collect" data-gate="job" data-title="Copies from Downloads into final. Refuses existing outputs.">Collect</button>
-            <span class="risk risk-W" title="W = writes local files">W</span>
-            <button type="button" id="btn-tidy" data-gate="job" data-title="Dry run: shows what would move. Moves nothing.">Tidy plan</button>
-            <span class="risk risk-R" title="R = read-only">R</span>
+            <button type="button" id="story-load" data-i18n="adv.story.load_btn">Load the saved story</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
+            <label class="inline"><input type="checkbox" id="story-overwrite"> <span data-i18n="adv.story.overwrite_label">Replace the saved story if it exists</span></label>
+            <button type="button" id="story-save" class="primary" data-i18n="adv.story.save_btn">Save story (writes the file)</button> <span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
           </div>
-          <pre id="tidy-out" class="box" hidden></pre>
-        </div>
 
-        <div id="img-finals" class="tabpanel" hidden>
-          <p id="finals-count" class="muted"></p>
-          <div id="finals-grid" class="grid"></div>
-        </div>
-      </section>
-
-      <!-- BRIDGE -->
-      <section id="sec-bridge" class="screen" data-section="bridge" hidden>
-        <h2>Bridge (Flow 2K to video keyframes)</h2>
-        <p>Source: <code>adhyay_01\final</code> (10 LEAP keyframes expected). Output: <code>keyframes_h3\</code>. Existing files are not overwritten.</p>
-        <div class="formrow">
-          <label class="field">Target size
-            <select id="bridge-size">
-              <option value="768x1344">768x1344 (tested in T0)</option>
-              <option value="864x1536">864x1536 (untested on sing8, about 28% more compute)</option>
-            </select>
-          </label>
-          <button type="button" id="bridge-dry" data-gate="job">Dry run</button> <span class="risk risk-R" title="R = read-only">R</span>
-          <button type="button" id="bridge-write" data-gate="job" class="primary">Write keyframes</button> <span class="risk risk-W" title="W = writes local files">W</span>
-        </div>
-        <div class="tablewrap"><table id="bridge-table"></table></div>
-      </section>
-
-      <!-- VIDEO -->
-      <section id="sec-video" class="screen" data-section="video" hidden>
-        <h2>Video</h2>
-
-        <div class="formrow">
-          <label class="field">Shot file <select id="video-shotfile"></select></label>
-          <label class="field">Batch <input id="video-batch" value="leap01_05_sing8" maxlength="40" autocomplete="off"></label>
-          <div class="field">
-            <span class="field-label">Route</span>
-            <span id="video-route" class="fixed">From the shot file (sing8 for LEAP)</span>
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.story.newpack_label">New plan name</span> <input id="story-newpack" maxlength="40" placeholder="pack_name" autocomplete="off"></label>
+            <button type="button" id="story-run-new" data-gate="job" data-i18n="adv.story.run_new_btn" data-title="Writer call: free model, rate-limited" data-i18n-attr="data-title:adv.story.run_new_title">Make a new plan with the free AI</button>
+            <span class="risk risk-N" title="N = free model call" data-i18n-attr="title:risk.n">N</span><span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+            <button type="button" id="story-resume" data-gate="job" data-i18n="adv.story.resume_btn">Continue an unfinished plan</button>
+            <span class="risk risk-N" title="N = free model call" data-i18n-attr="title:risk.n">N</span><span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+            <button type="button" id="story-check" data-i18n="adv.story.check_btn">Check the plan (changes nothing)</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
           </div>
-        </div>
 
-        <fieldset class="scope">
-          <legend>Scope</legend>
-          <label class="inline"><input type="radio" name="scope" id="video-scope-shots" value="shots" checked> Shots</label>
-          <label class="sr-only" for="video-ids">Shot ids, separated by commas</label>
-          <input id="video-ids" placeholder="SHOT-01, SHOT-02" maxlength="400" autocomplete="off">
-          <label class="inline"><input type="radio" name="scope" id="video-scope-reel" value="reel"> Reel</label>
-          <label class="sr-only" for="video-reel">Reel number</label>
-          <input id="video-reel" type="number" min="1" max="999" value="1" class="small">
-          <label class="inline"><input type="radio" name="scope" id="video-scope-all" value="all"> All</label>
-        </fieldset>
+          <h2 data-i18n="adv.story.stages_h">Parts of the plan</h2>
+          <div id="story-stages" class="badges"></div>
 
-        <div class="formrow">
-          <label class="field">Keyframes folder
-            <input id="video-keyframes" value="" placeholder="empty = the server default keyframes folder" class="wide">
-          </label>
-          <span class="muted">Profile 5, target Colab</span>
-          <div class="field">
-            <span class="field-label">Resolution</span>
-            <span id="video-resolution" class="fixed">As in the keyframes folder (set in Bridge)</span>
+          <h2 data-i18n="adv.story.gate1_h">Plan text as written</h2>
+          <pre id="story-gate1" class="box"></pre>
+
+          <h2 data-i18n="adv.story.episodes_h">Parts</h2>
+          <div class="tablewrap"><table id="story-episodes"></table></div>
+
+          <div class="two">
+            <div>
+              <h2 data-i18n="adv.story.people_h">People</h2>
+              <ul id="story-characters"></ul>
+            </div>
+            <div>
+              <h2 data-i18n="adv.story.places_h">Places</h2>
+              <ul id="story-places"></ul>
+            </div>
           </div>
-        </div>
 
-        <div class="btnrow">
-          <button type="button" id="video-prepare" data-gate="job" class="primary">1 Prepare batch (no GPU)</button>
-          <span class="risk risk-W" title="W = writes local files">W</span>
-        </div>
-        <h3>Batches</h3>
-        <div class="tablewrap"><table id="video-batches"></table></div>
+          <h2 data-i18n="adv.story.shots_h">Scenes</h2>
+          <div class="tablewrap"><table id="story-shots"></table></div>
 
-        <h2>H3 engine (prepare only)</h2>
-        <div id="h3-status" class="box"></div>
-        <pre id="h3-cmd" class="argv" hidden></pre>
-        <div class="btnrow">
-          <button type="button" id="h3-run" data-gate="job h3">Prepare (H3, no GPU)</button>
-          <span class="risk risk-W" title="W = writes local files">W</span>
-        </div>
+          <h2 data-i18n="adv.story.check_h">Check result (for the helper)</h2>
+          <pre id="story-check-json" class="box"></pre>
+        </section>
 
-        <h2>Colab</h2>
-        <p>
-          Balance: <strong id="colab-balance">unknown</strong>
-          &nbsp; Rate: <span id="colab-rate">unknown</span>
-        </p>
-        <div class="btnrow">
-          <button type="button" id="colab-check">Check Colab</button> <span class="risk risk-R" title="R = read-only network check">R</span>
-          <button type="button" id="colab-run" class="danger" data-gate="spend colab job" data-title="Starts a paid GPU session">Run on Colab... (spend gate)</button>
-          <span class="risk risk-usd" title="$ = spends Colab units or GPU time">$</span>
-        </div>
-        <div class="tablewrap"><table id="colab-sessions"></table></div>
+        <!-- IMAGES -->
+        <section id="sec-images" class="screen" data-section="images" hidden>
+          <h2 data-i18n="adv.images.title">Pictures</h2>
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.images.chapter_label">Chapter</span>
+              <select id="img-adhyay"><option value="1">1</option></select>
+            </label>
+            <button type="button" id="img-refresh" data-i18n="adv.images.refresh_btn">Reload the list</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
+          </div>
 
-        <h2>Live</h2>
-        <pre id="video-live" class="log">No job output yet.</pre>
-        <div class="btnrow">
-          <button type="button" id="video-stop" data-gate="busy" data-title="Kills the local process only. A paid job may keep running on Colab.">Stop job (local process only)</button>
-          <span class="risk risk-OPS" title="OPS = stops a process">OPS</span>
-        </div>
-        <p>Clips home: <strong id="clips-home">0</strong></p>
+          <div class="tabs" role="tablist">
+            <button type="button" role="tab" class="tabbtn" id="tab-series" data-tab="series" data-i18n="adv.images.tab_series">Characters and places</button>
+            <button type="button" role="tab" class="tabbtn" id="tab-jobs" data-tab="jobs" data-i18n="adv.images.tab_jobs">Work list</button>
+            <button type="button" role="tab" class="tabbtn" id="tab-shots" data-tab="shots" data-i18n="adv.images.tab_shots">Pictures per scene</button>
+            <button type="button" role="tab" class="tabbtn" id="tab-progress" data-tab="progress" data-i18n="adv.images.tab_progress">Progress</button>
+            <button type="button" role="tab" class="tabbtn" id="tab-queue" data-tab="queue" data-i18n="adv.images.tab_queue">Waiting</button>
+            <button type="button" role="tab" class="tabbtn" id="tab-finals" data-tab="finals" data-i18n="adv.images.tab_finals">Finished</button>
+          </div>
 
-        <h2>Clips</h2>
-        <div class="tablewrap"><table id="clips-table"></table></div>
-      </section>
+          <div id="img-series" class="tabpanel">
+            <p class="muted" data-i18n="adv.images.series_note">Series and sheets from the series file. Read-only.</p>
+            <div class="tablewrap"><table id="series-table"></table></div>
+          </div>
 
-      <!-- EXPORT -->
-      <section id="sec-export" class="screen" data-section="export" hidden>
-        <h2>Export</h2>
-        <div class="formrow">
-          <label class="field">Reel <input id="export-reel" type="number" min="1" max="999" value="1" class="small"></label>
-          <button type="button" id="export-load">Load</button> <span class="risk risk-R" title="R = read-only">R</span>
-        </div>
+          <div id="img-jobs" class="tabpanel" hidden>
+            <p class="muted" data-i18n="adv.images.jobs_note">Job files already on disk. Image jobs are built in the wizard (step 3), not here.</p>
+            <div class="tablewrap"><table id="jobs-table"></table></div>
+          </div>
 
-        <h2>Clips in order</h2>
-        <ol id="export-clips" class="box-list"></ol>
+          <div id="img-shots" class="tabpanel" hidden>
+            <p class="muted" data-i18n="adv.images.shots_note">One block per shot. Q1 to Q6 and the verdict come from the review of each candidate. Reviewer = Flow review_shot (NVIDIA).</p>
+            <div class="tablewrap"><table id="shots-table"></table></div>
+            <div id="review-detail" class="box" hidden></div>
+          </div>
 
-        <h2>Assembly plan</h2>
-        <div id="export-assembly" class="box"></div>
+          <div id="img-progress" class="tabpanel" hidden>
+            <p class="muted" data-i18n="adv.images.progress_note">Rows with no decided_by are old (written before the progress check). They are greyed out.</p>
+            <div class="tablewrap"><table id="progress-table"></table></div>
+          </div>
 
-        <h2>Reel files</h2>
-        <div id="export-files" class="box"></div>
+          <div id="img-queue" class="tabpanel" hidden>
+            <div id="queue-counts" class="counts"></div>
+            <div class="btnrow">
+              <button type="button" id="btn-collect" data-gate="job" data-i18n="adv.images.collect_btn" data-title="Copies from Downloads into final. Refuses existing outputs." data-i18n-attr="data-title:adv.images.collect_title">Copy finished pictures in from Downloads</button>
+              <span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+              <button type="button" id="btn-tidy" data-gate="job" data-i18n="adv.images.tidy_btn" data-title="Dry run: shows what would move. Moves nothing." data-i18n-attr="data-title:adv.images.tidy_title">Show what would be moved (moves nothing)</button>
+              <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
+            </div>
+            <pre id="tidy-out" class="box" hidden></pre>
+          </div>
 
-        <div class="btnrow">
-          <button type="button" id="export-open" disabled data-title="Not available yet: no folder-open command in v1">Open folder</button>
-          <span class="risk risk-X" title="X = not available yet">X</span>
-        </div>
-      </section>
+          <div id="img-finals" class="tabpanel" hidden>
+            <p id="finals-count" class="muted"></p>
+            <div id="finals-grid" class="grid"></div>
+          </div>
+        </section>
 
+        <!-- BRIDGE (key frames) -->
+        <section id="sec-bridge" class="screen" data-section="bridge" hidden>
+          <h2 data-i18n="adv.bridge.title">Key frames (from the 2K pictures)</h2>
+          <p><span data-i18n="adv.bridge.source">Source:</span> <code data-i18n="adv.bridge.dir_final">adhyay_01\final</code> <span data-i18n="adv.bridge.expect">(10 LEAP key frames expected).</span> <span data-i18n="adv.bridge.output">Output:</span> <code data-i18n="adv.bridge.dir_out">keyframes_h3\</code>. <span data-i18n="adv.bridge.no_overwrite">Existing files are not overwritten.</span></p>
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.bridge.size_label">Picture size (use the first one)</span>
+              <select id="bridge-size">
+                <option value="768x1344" data-i18n="adv.bridge.size_768">768x1344 (tested)</option>
+                <option value="864x1536" data-i18n="adv.bridge.size_864">864x1536 (not tested on sing8; about 28% more work)</option>
+              </select>
+            </label>
+            <button type="button" id="bridge-dry" data-gate="job" data-i18n="adv.bridge.dry_btn">See what would be made (nothing changes)</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
+            <button type="button" id="bridge-write" data-gate="job" class="primary" data-i18n="adv.bridge.write_btn">Make the key frames (writes files)</button> <span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+          </div>
+          <div class="tablewrap"><table id="bridge-table"></table></div>
+        </section>
+
+        <!-- VIDEO -->
+        <section id="sec-video" class="screen" data-section="video" hidden>
+          <h2 data-i18n="adv.video.title">Video clips</h2>
+
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.video.shotfile_label">Which scene list</span> <select id="video-shotfile"></select></label>
+            <label class="field"><span data-i18n="adv.video.batch_label">Name of this clip group</span> <input id="video-batch" value="leap01_05_sing8" maxlength="40" autocomplete="off"></label>
+            <div class="field">
+              <span class="field-label" data-i18n="adv.video.route_label">Method</span>
+              <span id="video-route" class="fixed" data-i18n="adv.video.route_fixed">From the shot file (sing8 for LEAP)</span>
+            </div>
+          </div>
+
+          <fieldset class="scope">
+            <legend data-i18n="adv.video.scope_legend">Which clips</legend>
+            <label class="inline"><input type="radio" name="scope" id="video-scope-shots" value="shots" checked> <span data-i18n="adv.video.scope_shots">some scenes</span></label>
+            <label class="sr-only" for="video-ids" data-i18n="adv.video.scope_ids_label">Scene ids, separated by commas</label>
+            <input id="video-ids" placeholder="SHOT-01, SHOT-02" maxlength="400" autocomplete="off">
+            <label class="inline"><input type="radio" name="scope" id="video-scope-reel" value="reel"> <span data-i18n="adv.video.scope_reel">one part</span></label>
+            <label class="sr-only" for="video-reel" data-i18n="adv.video.reel_label">Part number</label>
+            <input id="video-reel" type="number" min="1" max="999" value="1" class="small">
+            <label class="inline"><input type="radio" name="scope" id="video-scope-all" value="all"> <span data-i18n="adv.video.scope_all">all</span></label>
+          </fieldset>
+
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.video.keyframes_label">Key frames folder (leave empty)</span>
+              <input id="video-keyframes" value="" data-i18n-attr="placeholder:adv.video.keyframes_ph" placeholder="empty = the server default key frames folder" class="wide">
+            </label>
+            <span class="muted" data-i18n="adv.video.profile_note">Quality 5, for Colab</span>
+            <div class="field">
+              <span class="field-label" data-i18n="adv.video.res_label">Size</span>
+              <span id="video-resolution" class="fixed" data-i18n="adv.video.res_fixed">As in the key frames folder (set in Key frames)</span>
+            </div>
+          </div>
+
+          <div class="btnrow">
+            <button type="button" id="video-prepare" data-gate="job" class="primary" data-i18n="adv.video.prepare_btn">Get the clip group ready (no payment)</button>
+            <span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+          </div>
+          <h3 data-i18n="adv.video.batches_h">Groups ready</h3>
+          <div class="tablewrap"><table id="video-batches"></table></div>
+
+          <h2 data-i18n="adv.video.h3_h">Video engine (prepare only)</h2>
+          <div id="h3-status" class="box"></div>
+          <pre id="h3-cmd" class="argv" hidden></pre>
+          <div class="btnrow">
+            <button type="button" id="h3-run" data-gate="job h3" data-i18n="adv.video.h3_btn">Prepare the video engine files (no payment)</button>
+            <span class="risk risk-W" title="W = writes local files" data-i18n-attr="title:risk.w">W</span>
+          </div>
+
+          <h2 data-i18n="adv.video.colab_h">Google Colab (paid GPU service)</h2>
+          <p>
+            <span data-i18n="adv.video.balance_label">Balance:</span> <strong id="colab-balance" data-i18n="common.unknown">unknown</strong>
+            &nbsp; <span data-i18n="adv.video.rate_label">Rate:</span> <span id="colab-rate" data-i18n="common.unknown">unknown</span>
+          </p>
+          <div class="btnrow">
+            <button type="button" id="colab-check" data-i18n="adv.video.colab_check_btn">Check the Colab account (contacts Google, free)</button> <span class="risk risk-R" title="R = read-only network check" data-i18n-attr="title:adv.video.risk_r_net">R</span>
+            <button type="button" id="colab-run" class="danger" data-gate="spend colab job" data-i18n="adv.video.colab_run_btn" data-title="Starts a paid GPU session" data-i18n-attr="data-title:adv.video.colab_run_title">Start a paid GPU session (costs money)</button>
+            <span class="risk risk-usd" title="$ = spends Colab units or GPU time" data-i18n-attr="title:risk.usd">$</span>
+          </div>
+          <h3 data-i18n="adv.video.sessions_h">Open sessions</h3>
+          <div class="tablewrap"><table id="colab-sessions"></table></div>
+
+          <h2 data-i18n="adv.video.live_h">What is happening now</h2>
+          <pre id="video-live" class="log" data-i18n="adv.video.live_idle">No job output yet.</pre>
+          <div class="btnrow">
+            <button type="button" id="video-stop" data-gate="busy" data-i18n="adv.video.stop_btn" data-title="Kills the local process only. A paid job may keep running on Colab." data-i18n-attr="data-title:adv.video.stop_title">Stop the work on this computer (the cloud part may keep running)</button>
+            <span class="risk risk-OPS" title="OPS = stops a process" data-i18n-attr="title:risk.ops">OPS</span>
+          </div>
+          <p><span data-i18n="adv.video.clips_home">Clips ready here:</span> <strong id="clips-home">0</strong></p>
+
+          <h2 data-i18n="adv.video.clips_h">Clips</h2>
+          <div class="tablewrap"><table id="clips-table"></table></div>
+        </section>
+
+        <!-- EXPORT (final files) -->
+        <section id="sec-export" class="screen" data-section="export" hidden>
+          <h2 data-i18n="adv.export.title">Final files</h2>
+          <div class="formrow">
+            <label class="field"><span data-i18n="adv.export.reel_label">Part number</span> <input id="export-reel" type="number" min="1" max="999" value="1" class="small"></label>
+            <button type="button" id="export-load" data-i18n="adv.export.load_btn">Show</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
+          </div>
+
+          <h2 data-i18n="adv.export.clips_h">Clips in order</h2>
+          <ol id="export-clips" class="box-list"></ol>
+
+          <h2 data-i18n="adv.export.assembly_h">How the video will be joined (not yet)</h2>
+          <div id="export-assembly" class="box"></div>
+
+          <h2 data-i18n="adv.export.files_h">Final files for this part</h2>
+          <div id="export-files" class="box"></div>
+
+          <div class="btnrow">
+            <button type="button" id="export-open" disabled data-i18n="adv.export.open_btn" data-title="Not available yet: no folder-open command in v1" data-i18n-attr="data-title:adv.export.open_title">Open folder (not available yet)</button>
+            <span class="risk risk-X" title="X = not available yet" data-i18n-attr="title:risk.x">X</span>
+          </div>
+        </section>
+
+      </div>
     </div>
+
+    <footer class="logbar">
+      <div class="logtop">
+        <strong data-i18n="adv.log.title">What the program is doing (last lines)</strong>
+        <span id="log-job" class="muted-light" data-i18n="adv.log.job_default">(last 12 lines, redacted)</span>
+        <button type="button" id="log-stop" data-gate="busy" data-i18n="adv.log.stop_btn" data-title="Kills the local process only" data-i18n-attr="data-title:adv.log.stop_title">Stop the work now</button>
+      </div>
+      <pre id="log-tail" class="log" data-i18n="adv.log.idle">No job running.</pre>
+    </footer>
   </div>
-
-  <footer class="logbar">
-    <div class="logtop">
-      <strong>Job log tail</strong>
-      <span id="log-job" class="muted-light">(last 12 lines, redacted)</span>
-      <button type="button" id="log-stop" data-gate="busy" data-title="Kills the local process only">Stop job</button>
-    </div>
-    <pre id="log-tail" class="log">No job running.</pre>
-  </footer>
 </details>
 
 <!-- Dialog: command preview, spend gate and packet text -->
 <div id="modal" class="overlay" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <div class="dialog-head">
-      <h2 id="modal-title">Command</h2>
-      <button type="button" id="modal-close">Close</button>
+      <h2 id="modal-title" data-i18n="adv.modal.title_default">Command</h2>
+      <button type="button" id="modal-close" data-i18n="common.close">Close</button>
     </div>
     <div id="modal-body"></div>
   </div>
 </div>
 
 <div id="lightbox" class="overlay lightbox" hidden>
-  <button type="button" id="lightbox-close" class="lightbox-close">Close picture</button>
-  <img id="lightbox-img" alt="Final picture, full size">
+  <button type="button" id="lightbox-close" class="lightbox-close" data-i18n="common.close">Close</button>
+  <img id="lightbox-img" alt="Final picture, full size" data-i18n-attr="alt:adv.lightbox.alt">
 </div>
 
+<footer class="pagefoot">
+  <p data-show-lang="mr" hidden data-i18n="app.mr_draft">Marathi text is a draft: a native speaker still has to check it.</p>
+</footer>
+
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script src="pipeline.js"></script>
 </body>
