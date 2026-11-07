@@ -351,9 +351,11 @@ def process_group(items):
     return out
 
 
-def run(final, originals=ORIGINALS, intermediates=INTERMEDIATES, overwrite=False):
+def run(final, originals=ORIGINALS, intermediates=INTERMEDIATES, overwrite=False, skip_done=False):
     backup, inter, report_dir = final / originals, final / intermediates, final / "_sparkle_check2"
     inputs = input_titles(final, originals, intermediates)
+    if skip_done:   # audit B 11-08: a second batch cleans only the new pictures; nothing existing is touched
+        inputs = {t: p for t, p in inputs.items() if not (inter / f"{t}__candidate_v01__clean.png").exists()}
     check_free([inter / f"{t}__candidate_v01__clean.png" for t in inputs], overwrite)     # refuse before any work
     backup.mkdir(exist_ok=True)
     inter.mkdir(exist_ok=True)
@@ -391,9 +393,10 @@ def main(argv=None):
     ap.add_argument("final", nargs="?", type=Path, default=FINAL, help="the chapter's final/ folder (default: the Kaliya adhyay_01 final/)")
     ap.add_argument("--originals", default=ORIGINALS, help="sub-folder of final/ with the watermarked originals (default %(default)s)")
     ap.add_argument("--intermediates", default=INTERMEDIATES, help="sub-folder of final/ for __clean.png (default %(default)s)")
+    ap.add_argument("--skip-done", action="store_true", help="clean only titles that have no __clean.png yet (for a second batch)")
     ap.add_argument("--overwrite", action="store_true", help="replace __clean.png files that already exist (default: refuse)")
     a = ap.parse_args(argv)
-    run(a.final, a.originals, a.intermediates, a.overwrite)
+    run(a.final, a.originals, a.intermediates, a.overwrite, a.skip_done)
 
 
 if __name__ == "__main__":

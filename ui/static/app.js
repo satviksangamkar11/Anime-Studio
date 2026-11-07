@@ -1024,7 +1024,7 @@
       if (next >= pairs.length) return Promise.resolve();
       var p = pairs[next];
       next += 1;
-      return api('GET', '/api/review?shot=' + enc(p.shot) + '&cand=' + enc(p.cand) + '&adhyay=' + enc(ay)).then(function (r) {
+      return api('GET', '/api/review?shot=' + enc(p.shot) + '&cand=' + enc(p.cand) + '&adhyay=' + enc(ay) + (projectStory() ? '&story=' + enc(projectStory()) : '')).then(function (r) {
         if (gen === S.reviewGen) fillReview(p, r, null);
       }, function (e) {
         if (gen !== S.reviewGen) return;
@@ -1095,7 +1095,7 @@
       command: 'neighbour_sheet',
       risk: 'W',
       note: t('adv.shots.neighbours_note'),
-      args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow() }
+      args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow(), story: projectStory() || undefined }
     });
   }
 
@@ -1105,7 +1105,7 @@
       command: 'review_shot',
       risk: 'N W',
       note: t('adv.shots.reviewer_note'),
-      args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow() },
+      args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow(), story: projectStory() || undefined },
       onEnd: function () { return loadImages(true); }
     });
   }
@@ -1123,7 +1123,7 @@
           hint: t('adv.queue.edit_hint') },
         { name: 'note', label: t('adv.queue.note'), pattern: PAT.note, required: true, hint: t('adv.queue.note_hint') }
       ],
-      args: function (v) { return { shot: shot, version: v.version, edit: v.edit, jobs: jobs, note: v.note, adhyay: adhyayNow() }; },
+      args: function (v) { return { shot: shot, version: v.version, edit: v.edit, jobs: jobs, note: v.note, adhyay: adhyayNow(), story: projectStory() || undefined }; },
       onEnd: function () { return loadImages(true); }
     });
   }
@@ -1140,7 +1140,7 @@
         { name: 'version', label: t('adv.queue.version'), value: m ? m[0] : '', pattern: PAT.version, required: true, hint: t('adv.queue.version_hint') },
         { name: 'note', label: t('adv.accept.owner_note'), pattern: PAT.note, required: true, hint: t('adv.queue.note_hint') }
       ],
-      args: function (v) { return { shot: shot, version: v.version, note: v.note, adhyay: adhyayNow() }; },
+      args: function (v) { return { shot: shot, version: v.version, note: v.note, adhyay: adhyayNow(), story: projectStory() || undefined }; },
       onEnd: function () { return loadImages(true); }
     });
   }
@@ -1188,7 +1188,7 @@
       command: 'queue_collect',
       risk: 'W',
       note: t('adv.images.collect_note'),
-      args: { adhyay: adhyayNow() },
+      args: { adhyay: adhyayNow(), story: projectStory() || undefined },
       onEnd: function () { return loadImages(true); }
     });
   }
@@ -1199,7 +1199,7 @@
       command: 'tidy_plan',
       risk: 'R',
       note: t('adv.images.tidy_note'),
-      args: { adhyay: adhyayNow() },
+      args: { adhyay: adhyayNow(), story: projectStory() || undefined },
       onEnd: function (j) { return showTidy(j); }
     });
   }
@@ -1246,7 +1246,7 @@
       command: cmd,
       risk: dry ? 'R' : 'W',
       note: dry ? t('adv.bridge.dry_note', { size: size }) : t('adv.bridge.write_note', { size: size }),
-      args: { size: size, adhyay: adhyayNow() },
+      args: { size: size, adhyay: adhyayNow(), story: projectStory() || undefined },
       onEnd: function (j) { return showBridge(j); }
     });
   }

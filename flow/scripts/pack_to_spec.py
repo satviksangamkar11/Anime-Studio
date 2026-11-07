@@ -35,7 +35,7 @@ from build_jobs import DEFAULT_FORBIDDEN_WORDS
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")  # fullmatch of ^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$
 FLOW_DIR = Path(__file__).resolve().parent.parent  # the studio flow/ folder
 
-OUTPUTS_ROOT_TEMPLATE = "D:/aai work/flow_outputs/{slug}"
+OUTPUTS_ROOT_TEMPLATE = "D:/aai work/flow_outputs/anime_{slug}"   # audit B 11-08: same folder as ui flow_root(story)
 STYLE_CHIP = "STYLE_CHIP_SHEET__v01"
 TAIL = ("Full-frame picture, edge to edge, no border, no inset. "
         "No text, no letters, no modern objects, no halo.")

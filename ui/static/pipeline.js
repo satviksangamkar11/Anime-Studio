@@ -2135,7 +2135,11 @@
   }
 
   function coversAll(have, ids) {
-    return ids.length > 0 && ids.every(function (id) { return have[String(id)] === true; });
+    // a pack shot SHOT-001 is covered by the job ids SHOT-001A / SHOT-001B too (audit 11-08)
+    return ids.length > 0 && ids.every(function (id) {
+      id = String(id);
+      return have[id] === true || have[id + 'A'] === true;
+    });
   }
 
   // ---------- Image jobs: build_spec, then build_jobs_cmd (files only: no model call, no spend) ----------

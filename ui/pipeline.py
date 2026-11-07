@@ -372,6 +372,8 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
 
     if images_dir:
         img_path = Path(images_dir)
+        if (img_path / "adhyay_01").is_dir():   # audit B/D 11-08: the real layout is <flow folder>/adhyay_01/{final,shots,queue,log}
+            img_path = img_path / "adhyay_01"
         if img_path.is_dir():
             final_dir = img_path / "final"
             if final_dir.is_dir():
@@ -393,10 +395,10 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
                             entry = json.loads(line)
                             shot_id = entry.get("shot_id")
                             version = entry.get("version")
-                            image_id = entry.get("image_id")
+                            image_id = entry.get("image_id", shot_id)   # download_queue.py items carry shot_id only; the filer logs image_id == shot_id
                             if isinstance(image_id, (list, dict)):
                                 image_id = str(image_id)   # unhashable: its text form, as the other fixed ids do
-                                entry["image_id"] = image_id
+                            entry["image_id"] = image_id
                             if isinstance(version, (list, dict)):
                                 version = str(version)   # unhashable: its text form, same as image_id
                                 entry["version"] = version

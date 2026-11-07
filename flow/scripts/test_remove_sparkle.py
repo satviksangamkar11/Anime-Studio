@@ -126,3 +126,13 @@ def test_find_input_order(tmp_path):
         (places[name] / "x.png").unlink()
     with pytest.raises(FileNotFoundError):
         rs.find_input(final, "x.png")
+
+
+def test_skip_done_cleans_only_new_titles(tmp_path):
+    final, _ = make_final(tmp_path)
+    inter = final / INTER
+    inter.mkdir()
+    (inter / "t1__candidate_v01__clean.png").write_bytes(b"earlier")
+    rs.run(final, skip_done=True)                                                # no FileExistsError, the old file stays
+    assert (inter / "t1__candidate_v01__clean.png").read_bytes() == b"earlier"
+    assert (inter / "t0__candidate_v01__clean.png").is_file()

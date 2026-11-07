@@ -598,6 +598,8 @@ def b_bridge(dry):
         adh = _adh(cfg, a)
         argv = _py(cfg, "flow", "scripts", "bridge_flow_to_h3.py") + ["--final-dir", str(adh / "final"), "--out-dir", str(adh / "keyframes_h3"),
                                                                        "--size", a["size"], "--json"]
+        if a.get("story") and a["story"] != LEGACY_STORY:   # audit B 11-08: the default pattern is Kaliya's LEAP-*; other stories' shot finals are SHOT-*
+            argv += ["--pattern", "SHOT-*__candidate_v01__final.png"]
         return argv + (["--dry-run"] if dry else [])
     return build
 
@@ -659,14 +661,34 @@ def b_colab_run(go):
     return build
 
 
+def _convert_pack_to_h3(cfg, pack_dir: Path) -> str:
+    """Writes <pack>/h3_story.json from the writer pack (files only, no model call); the story's own languages come from story.json."""
+    if str(cfg.studio) not in sys.path:
+        sys.path.insert(0, str(cfg.studio))
+    from h3 import v4_to_h3
+    meta = load_json(pack_dir.parent / "story.json", {})
+    langs = meta.get("output_languages") if isinstance(meta, dict) and isinstance(meta.get("output_languages"), list) else None
+    try:
+        res = v4_to_h3.convert_pack(str(pack_dir), languages=langs)
+    except (OSError, ValueError, KeyError) as exc:
+        raise bad(f"the pack cannot be read for H3 ({exc!r}): it needs shots.json and bible.json")
+    if res["story"] is None:
+        raise bad("the pack cannot be converted: " + "; ".join(res["problems"][:3]))
+    out = pack_dir / "h3_story.json"
+    out.write_text(json.dumps(res["story"], indent=1, ensure_ascii=False), encoding="utf-8")
+    return str(out)
+
+
 def b_h3(cfg, a):
     if a["scope"] == "shots" and not a.get("ids"):
         raise bad("scope shots needs ids")
     if a["scope"] == "reel" and not a.get("reel"):
         raise bad("scope reel needs a reel number")
+    if Path(a["story"]).name == "shots.json":
+        a = {**a, "story": _convert_pack_to_h3(cfg, Path(a["story"]).parent)}   # audit C/D 11-08: the wizard sends the pack's shots.json
     story = load_json(a["story"], None)
     if not isinstance(story, dict) or not isinstance(story.get("episodes"), list) or not isinstance(story.get("registry"), dict):
-        raise bad("the story file must be an H3 story (episodes + registry); shots.json is not accepted here")
+        raise bad("the story file must be an H3 story (episodes + registry)")
     tail = {"shots": a.get("ids") or [], "reel": [f"EP_{int(a['reel']):02d}"] if a.get("reel") else [], "all": []}[a["scope"]]
     return [cfg.python, "-m", "h3.render_controller", "--story-file", a["story"], "--scope", a["scope"], *tail, "--mode", "prepare-only"]
 
@@ -718,15 +740,15 @@ def b_author(cfg, a):
 BATCH_ARGS = {"batch": A(NAME, True), "gpu": A(GPU, False, "G4"), "session": A(SESSION, False, "t0-kaliya")}
 ADH = A(ADHYAY, False, 1)
 STORY = A(SLUG)                     # optional: the story whose Flow folder is meant (flow_root); none = the legacy Kaliya folder
-SHOT_ARGS = {"adhyay": ADH, "shot": A(SHOT, True), "version": A(VERSION, True)}
+SHOT_ARGS = {"adhyay": ADH, "story": STORY, "shot": A(SHOT, True), "version": A(VERSION, True)}
 COMMANDS = {c.id: c for c in (
     Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "writer": A(WRITER_NAME), "model": A(WRITER_MODEL),
                                       "out_lang": A(out_lang_arg)}, b_write_pack),
     Cmd("check_pack", "R", False, {"pack": A(PACK_REL, True)}, b_check_pack),
     Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH, "story": STORY}, b_bridge(True)),
     Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH, "story": STORY}, b_bridge(False)),
-    Cmd("neighbour_sheet", "W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_neighbour),
-    Cmd("review_shot", "N, W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_review),
+    Cmd("neighbour_sheet", "W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH, "story": STORY}, b_neighbour),
+    Cmd("review_shot", "N, W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH, "story": STORY}, b_review),
     Cmd("queue_add", "W", False, {**SHOT_ARGS, "edit": A(EDIT, True), "jobs": A(JSON_FILE, True), "note": A(NOTE, False, "")}, b_queue_add),
     Cmd("queue_status", "R", False, {"adhyay": ADH, "story": STORY}, lambda c, a: _dq(c, "status", a, "--json")),
     Cmd("queue_collect", "W", False, {"adhyay": ADH, "story": STORY}, lambda c, a: _dq(c, "collect", a, "--downloads", str(c.downloads))),
@@ -769,7 +791,7 @@ def b_wm(kind):
     def build(cfg, a):
         final = str(_adh(cfg, a) / "final")
         if kind == "clean":
-            return _py(cfg, "flow", "scripts", "remove_sparkle.py") + [final]
+            return _py(cfg, "flow", "scripts", "remove_sparkle.py") + [final, "--skip-done"]
         if kind == "lama":
             return _py(cfg, "flow", "scripts", "lama_inpaint.py") + [final]
         return _py(cfg, "flow", "scripts", "lama_inpaint.py") + ["finalize", final, str(_adh(cfg, a) / "watermark_choices.json")]
@@ -968,7 +990,8 @@ def read_images(cfg, adhyay, slug=LEGACY_STORY) -> dict:
         root = cfg.flow / f"adhyay_{adhyay:02d}"
         series_file = cfg.studio / "flow" / "flow_series_kaliya.json"
     else:
-        root = _story_image_root(cfg, slug) or (cfg.studio / "flow" / "__no_images_folder__")
+        own = flow_root(cfg, slug) / f"adhyay_{adhyay:02d}"   # audit B/D 11-08: the story's own Flow folder first, then a linked folder
+        root = own if own.is_dir() else (_story_image_root(cfg, slug) or (cfg.studio / "flow" / "__no_images_folder__"))
         series_file = cfg.studio / "flow" / "generated" / slug / f"{slug}_flow_series.json"
     series = load_json(series_file, {})
     series = series if isinstance(series, dict) else {}
@@ -1346,7 +1369,13 @@ class Api:
         pl = _pipeline()
         with self.lock:
             project = pl.load_project(self.cfg.runs)
+            new = changes.get("story_slug")
+            if new and new != project.get("story_slug"):
+                # audit B/D 11-08: switching story must not keep the old pack or folders; pictures live in the story's own Flow folder
+                project.update({"pack": None, "images_dir": str(flow_root(self.cfg, new)), "results_dir": None})
             project.update(changes)
+            if project.get("story_slug") and not project.get("images_dir"):
+                project["images_dir"] = str(flow_root(self.cfg, project["story_slug"]))
             pl.save_project(self.cfg.runs, project)
         return project
 
@@ -1738,11 +1767,12 @@ class Api:
                        encoding="utf-8")
         return {"saved": len(choices), "file": str(out)}
 
-    def review(self, shot, cand, adhyay) -> dict:
+    def review(self, shot, cand, adhyay, story=None) -> dict:
         shot, adh = SHOT(self.cfg, shot), ADHYAY(self.cfg, adhyay)
+        story = SLUG(self.cfg, story) if story else None
         if not isinstance(cand, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,160}\.(?:png|jpg|jpeg)", cand):
             raise bad("cand must be a picture file name")
-        shots_dir = _adh(self.cfg, {"adhyay": adh}) / "shots"
+        shots_dir = _adh(self.cfg, {"adhyay": adh, "story": story}) / "shots"
         cand_path = Path(safe_path(self.cfg, str(shots_dir / cand), ("flow",), (".png", ".jpg", ".jpeg"), True, "file"))
         rev_path = shots_dir / (cand_path.stem + "__review.json")
         data = load_json(rev_path, {})
@@ -1762,16 +1792,18 @@ class Api:
         if Path(jobs_path).parent.name != slug:
             raise bad("the jobs file must be in flow/generated/<story>/ of the same story")
         shots = body.get("shots")
-        if not isinstance(shots, list) or not 1 <= len(shots) <= 60:
-            raise bad("shots must be a list of 1 to 60 shot ids")
+        if not isinstance(shots, list) or not 1 <= len(shots) <= 500:
+            raise bad("shots must be a list of 1 to 500 shot ids")
         ids = [SHOT(self.cfg, s) for s in shots]
         entries = {str(j.get("shot_id")): j for j in load_list(jobs_path) if isinstance(j, dict)}
         lines = packet_header(self.cfg, slug, jobs_path)
         for sid in ids:
-            j = entries.get(sid)
-            if j is None:
+            # audit B/D 11-08: a pack shot SHOT-001 has two frame jobs SHOT-001A / SHOT-001B; an exact id still wins
+            hits = [sid] if sid in entries else sorted(k for k in entries if re.fullmatch(re.escape(sid) + "[A-Z]", k))
+            if not hits:
                 raise bad(f"{sid} is not in the jobs file")
-            lines += packet_job(self.cfg, slug, jobs_path, sid, j)
+            for h in hits:
+                lines += packet_job(self.cfg, slug, jobs_path, h, entries[h])
         md = "\n".join(lines)
         if has_secret(md):
             raise bad("packet not written: key-like text found in the job text")
@@ -2022,7 +2054,7 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         if path == "/api/watermark":
             return api.watermark(q.get("adhyay", "1"), q.get("story") or None)
         if path == "/api/review":
-            return api.review(q.get("shot", ""), q.get("cand", ""), q.get("adhyay", "1"))
+            return api.review(q.get("shot", ""), q.get("cand", ""), q.get("adhyay", "1"), q.get("story") or None)
         if path == "/api/video":
             return api.video()
         if path == "/api/colab":

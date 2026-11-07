@@ -58,3 +58,20 @@ def test_each_story_has_its_own_flow_folder(api):
     assert ok.endswith(f"anime_{SLUG}")
     with pytest.raises(ApiError):
         server.safe_path(cfg, str(cfg.flow.parent / "adhyay_01"), ("flow",), None, True, "dir")
+
+
+def test_queue_review_commands_use_the_story_folder(api):
+    cfg = api.cfg
+    root = str(server.flow_root(cfg, SLUG))
+    base = {"adhyay": 1, "story": SLUG, "shot": "SHOT-001", "version": "v01"}
+    for cid, extra in (("queue_add", {"edit": "e" * 36, "jobs": "j.json", "note": "n"}), ("queue_accept", {"note": "n"})):
+        assert root in server.command_spec(cid).build(cfg, {**base, **extra}), cid
+    assert root in " ".join(server.b_neighbour(cfg, {**base, "jobs": "j.json", "candidates": ["a.png"]}))
+
+
+def test_packet_expands_a_pack_shot_to_its_frame_jobs(api):
+    gen = api.cfg.studio / "flow" / "generated" / SLUG / "jobs.json"
+    base = json.loads(gen.read_text(encoding="utf-8"))[0]
+    gen.write_text(json.dumps([{**base, "shot_id": "SHOT-007A"}, {**base, "shot_id": "SHOT-007B"}]), encoding="utf-8")
+    md = api.packet({"story": SLUG, "pack": "pack_a", "jobs": f"flow/generated/{SLUG}/jobs.json", "shots": ["SHOT-007"]})["markdown"]
+    assert "SHOT-007A" in md and "SHOT-007B" in md

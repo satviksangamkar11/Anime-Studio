@@ -122,8 +122,12 @@ def test_reel_scope_maps_to_episode_id_and_prepare_refuses_shots_json(world):
     _w(cfg.studio / "h3/render_controller.py", "# built\n")
     got = api.preview({"command": "h3_prepare", "args": {"story": "stories/kaliya_mardan/h3_story.json", "scope": "reel", "reel": 2}})
     assert "EP_02" in got["argv"]
+    # audit 11-08: the wizard sends the pack's shots.json; the server converts it to <pack>/h3_story.json first
+    got = api.preview({"command": "h3_prepare", "args": {"story": PACK_PATH + "/shots.json", "scope": "all"}})
+    assert any(str(x).endswith("h3_story.json") for x in got["argv"])
+    (cfg.studio / PACK_PATH / "bible.json").unlink(missing_ok=True)
     with pytest.raises(ApiError) as e:
-        api.preview({"command": "h3_prepare", "args": {"story": PACK_PATH + "/shots.json", "scope": "reel", "reel": 2}})
+        api.preview({"command": "h3_prepare", "args": {"story": PACK_PATH + "/shots.json", "scope": "all"}})
     assert e.value.code == 400
 
 
