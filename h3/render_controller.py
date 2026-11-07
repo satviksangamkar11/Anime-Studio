@@ -1,4 +1,4 @@
-"""Pre-render controller for the h3 sing8 route. Story-agnostic. Pre-render only: no network, no ffmpeg, no GPU.
+"""Pre-render controller for the h3 sing8 route. Story-agnostic. Pre-render only: no network, no GPU. ffmpeg runs only for the G3 colour-seam check, and only when every clip.mp4 already exists.
 
 Run from D:/aai work/anime_studio:
   python -m h3.render_controller --story-file STORY.json --scope shots --ids A,B
@@ -316,6 +316,7 @@ def prepare(story, groups, out_root, *, second_pass=False, allow_partial=False, 
                 try:
                     for sid in sel:  # assert every shot folder stays inside ep_dir before compile_episode writes into it
                         _safe_join(ep_dir, sid)
+                    load_loudness_plan(os.path.join(str(ep_dir), "loudness.json"))   # a corrupt file raises ValueError before any shot file is written
                     written = compile_episode(story, ep_id, str(ep_dir), shot_ids=sel, second_pass=second_pass)
                     written_ids = set(sel)
                     assembly = _write_assembly(ep, g["shots"], str(ep_dir))

@@ -253,3 +253,15 @@ def test_controller_source_imports_no_network_or_ffmpeg_or_colab():
         src = f.read()
     assert not re.search(r"^\s*(import|from)\s+(requests|subprocess|colab|urllib|http)\b", src, re.M)
     assert "subprocess" not in src and "os.system" not in src
+
+
+def test_corrupt_loudness_json_blocks_before_any_shot_file_is_written(story, tmp_path, capsys):
+    path, out = _write(tmp_path, story), str(tmp_path / "out")
+    ep = os.path.join(out, "SYN_EP1")
+    os.makedirs(ep)
+    with open(os.path.join(ep, "loudness.json"), "w", encoding="utf-8") as f:
+        f.write("{not json")
+    code, text = _run(_argv(path, out), capsys)
+    assert code == 1 and "loudness.json" in text
+    for sid in SHOT_IDS:
+        assert not os.path.exists(os.path.join(ep, sid, "prompt.txt"))
