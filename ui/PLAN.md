@@ -199,6 +199,8 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/export?reel=N` | none | `{clips_in_order, assembly: "not built" or plan, reel_files}` |
 | GET | `/api/file?path=...` | none | bytes; allowed roots and extensions only; max 60 MB |
 | GET | `/api/styles` | none | `{default, styles: [{id, status, acts, has_grade_numbers, default}]}`; the style packs on disk and the fixed default (Deva Neon); read only |
+| GET | `/api/watermark?adhyay=N` | none | `{rows: [{title, sheet, method, final}], methods}`; pictures waiting for the watermark pick, from final/_sparkle_check3/report.json; read only |
+| POST | `/api/watermark/choices` | `{adhyay, choices: {title: method}}` | `{saved, file}`; writes <chapter>/watermark_choices.json for wm_finalize; 400 for an unknown picture or method |
 | GET | `/api/writers` | none | `{default, claude_allowed, confirm_word, checks: {nvidia_key_files, openrouter_key_file, claude_cli}, options: [{id, group, command, args, cost, speed, quality, tested, available, reason}]}`; read only; never key text or paths |
 | GET | `/i18n/{lang}.json` | none | the UI string table for en or mr (JSON); 404 for any other name |
 | GET | `/fonts/NotoSansDevanagari-Variable.ttf` | none | the bundled Devanagari font (font/ttf) |

@@ -1,11 +1,14 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- State 11-07 22:39: merge worktree HEAD e71933d (Deva Neon default style); UNCOMMITTED: style backend (server.py/pipeline.py/PLAN.md/test_style_routes.py/test_parity/test_ui) done+tested by lead (134 pass in 3 files); wizard/expert UI edits in progress. Live site http://127.0.0.1:8765/ is the OLD server process serving half-edited static files (restart pending).
-- RUNNING: coderW3(sonnet,high) = pipeline.js (i18n fixes, one status, More fold, plan errors, style card); coderE3(sonnet,high) = index.html/app.js/style.css expert view; Kalika Opus high writer on parts 1+2 (stage 1,2 done, 14 episodes x 68 s; stages 3e1..3e14,5 running; reported cost so far 3.56 USD). Xing R1 review done (3 of 4 outputs oversized, check before use).
-- NEXT: verify W3/E3 (pytest all suites, node --check), restart server 8765, desktop browser check en+mr, fix pass from Nemotron/Xing findings, commit; then Assay (owner: 'ASCII') on a fake-tools test server; Kalika plan validator + Gate A to owner.
-- Owner rules now: no render/Colab/ElevenLabs/paid; Opus ONLY for Kalika writer (owner order); heavy files to Google Drive (not reachable yet); skip phone checks; reviewers Nemotron+Xing, cap 1+1; no push without go; EN+MR UI only; Deva Neon default style.
-- Parked for owner: Drive setup choice (connector in new session or Drive for desktop with cache on D:), place pictures, deva_neon LUT approval, Marathi check, push go, later Kalika parts. Ashtavakra paused.
+- State 11-07 23:07: merge worktree HEAD c71cbcb (UI W3/E3 + style chooser + R1 fixes, writer --web, validator fix, blot 16-17); ui 550 pass, director 789 pass; NOT pushed.
+- Site http://localhost:8765/ running fresh from merge ui/server.py (preview anime-ui); desktop 1280 checked en+mr; phone not tested (rule 15).
+- RUNNING: Kalika Opus high writer WITH live web (--web), fresh run into stories/kalika_puran_bhag1/pack_opus_high_20261107_v3_web (log writer_run_opus_high_v3_web.log); old v2_parts12 kept (stage 2 had failed on a validator bug, fixed).
+- New rules: 16 internet for every writer (Claude live; free models get WEB_NOTES.md from a Haiku low agent), 17 log+blot in the same step.
+- BLOCKED: Assay: 'assay-ui' is not on npm; need the owner's exact link/name before install.
+- NEXT: Kalika stage checks + plan validator + Gate A to owner; Assay once named; Xing reviews unusable (retry or drop).
+- Parked for owner: push go, Drive setup, place pictures, deva_neon LUT, Marathi check, later Kalika parts. Ashtavakra paused.
+
 | Time | Who | Model / effort | Provider | Files | What / result |
 |---|---|---|---|---|---|
 | 11-06 13:38-23:53 | earlier sessions | see notes | NVIDIA scheduler + OpenRouter free | flow/scripts/*, h3/*, ui/*, director/*, stories/* | Flow image tools, H3 prompt engine, UI wizard gates A-D, run registry, Whisper fallback, 4 story packs (Kaliya, Ashtavakra, Mahadev, Upanishad Ganga). Committed 11-06 23:21 as 4 commits (5240377, 55df3d2, 359dccf, 8b1119a). Older UI coders were Haiku; reviewers Nemotron + Dots. |
@@ -1356,3 +1359,29 @@
 11-07 23:05 | me | EDIT | ui/static/pipeline.js, i18n en/mr | warnings no_run_report + open_run showed the vague warn.other line; own easy text en+mr added
 11-07 23:05 | me | TEST | ui | 550 passed, 10 skipped in 20.87s
 11-07 23:06 | me | CHECK | browser 1280 mr | step 1 style card in Marathi (व्रज माती / देव निऑन सुचवलेला), new warning texts shown, step 2 plan view ok, console clean; phone not tested (rule 15)
+11-07 23:06 | me | CMD | git commit c71cbcb (merge worktree) | UI W3/E3 + style chooser + R1 fixes + warning texts, writer --web, validator fix, blot 16-17; ui 550 pass, director 789 pass; not pushed
+11-07 23:06 | me | FAIL | npm view assay-ui | 404 not on npm; Assay identity unknown; not installing a guess; asking owner for the link
+11-07 23:06 | me | EDIT | PROJECT_LOG.md NOW block | overwritten (c71cbcb, site up, Kalika web run, rules 16-17, Assay blocked)
+11-07 23:08 | me | OWNER | Assay link | owner: assay-ui on PyPI (pip), repo github.com/awss1i/assay; verifying before install
+11-07 23:09 | me | CHECK | assay-ui | PyPI 0.3.1 by awss1i = github awss1i/assay (MIT, 110 stars), dep playwright only; installing in D:/tools/assay-venv
+11-07 23:10 | me | OWNER | story access | owner disappointed: no visible way in the UI to choose and continue the unfinished stories; Assay paused to check this first
+11-07 23:11 | me | EDIT | ui/static/pipeline.js, i18n en/mr | top 'Your stories' box on every page (all stories + plan state, Open and continue); step-1 picker shares openStory()
+11-07 23:11 | me | OWNER | UI audit | owner: audit the whole UI properly; no hidden steps, the user is 60 years old
+11-07 23:11 | me | EDIT | blot.md canonical + merge copy | rule 18 nothing hidden, built for a 60-year-old; supersedes rule 9 'hidden'
+11-07 23:13 | me | OWNER | pipeline elements | owner asks: where are image generation and watermark removal, are elements being dropped; checking
+11-07 23:14 | me | EDIT | ui/static/pipeline.js, i18n en/mr | rule 18: all reachable steps open, locked show only why; story-more, youtube, other writers, sum-more, pics rules now visible sections; stage detail + next text plain; 'More' -> 'Technical details (for your helper)'
+11-07 23:14 | me | CHECK | image system vs wizard | wizard runs only build_spec/build_jobs/packet; review_shot, queue add/collect/accept, tidy, bridge, clip/visual QA only in hidden expert view; watermark removal (lama_inpaint, remove_sparkle) has NO UI/server command at all (never wired, not deleted)
+11-07 23:16 | me | CHECK | Kalika v3_web | stage 1 (23:05) + stage 2 (23:12) passed with live web; now writing episode stages 3e1..3e14, then 5
+11-07 23:17 | me | EDIT | i18n en/mr | removed orphan step.open_btn; ui 550 pass
+11-07 23:17 | me | OWNER | steps before images | answered: writer finish, plan check, Gate A (owner), build jobs, Flow packet
+11-07 23:18 | me | CHECK | watermark tools | lama weights at anime_studio/flow/lama_weights/big-lama.pt (200 MB), torch 2.12 + cv2 ok; flow doc: clean -> lama variants -> owner picks per image -> finalize -> tidy
+11-07 23:22 | me | EDIT | ui/server.py | IMAGE_COMMANDS wm_clean (remove_sparkle), wm_lama (lama_inpaint), wm_finalize (lama finalize + watermark_choices.json); GET /api/watermark, POST /api/watermark/choices
+11-07 23:22 | me | EDIT | ui/static/pipeline.js, i18n en/mr | step 3 'After the pictures are made: all steps in order' 1-7 visible: agents make/check, bring in from Downloads, remove watermark, pick per picture (sheet + 3 radios), tidy, Gate B, key frames
+11-07 23:22 | me | EDIT | ui/PLAN.md, test_parity.py, new test_watermark_routes.py | routes registered, IMAGE_COMMANDS in parity, 6 tests
+11-07 23:23 | me | TEST | ui | 563 passed, 10 skipped in 21.29s
+11-07 23:24 | me | EDIT | research/_run_assay_ui.py | Assay runner: fake-tools world (test_ui.make_world), real ui/static, 3 real watermark sheets, Gate A approved in the fake world only; --serve for browser check
+11-07 23:24 | me | FIX: | research/_run_assay_ui.py | project/gate via HTTP got 403 (page-origin guard, correct); now in-process dispatch
+11-07 23:26 | me | CHECK | fake-tools server step 3 | 'After the pictures' 7 steps visible, 3 real watermark sheets load (1632 px), 5 buttons enabled after Gate A; EDIT niceName for Flow titles (ENV_X_Y -> X y)
+11-07 23:26 | me | CMD | assay on fake-tools world (research/_run_assay_ui.py) | started; browsers path D:/tools/ms-playwright
+11-07 23:26 | me | TEST | ui | 563 pass
+11-07 23:26 | me | CHECK | Kalika v3_web | stage 3e1 done 23:23 (~11 min per episode): 14 episodes -> about 01:45

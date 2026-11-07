@@ -104,7 +104,9 @@
     openStep: '',                  // '' = the server's current step
     openDetails: {},               // open state of every details box, by its id (survives re-renders)
     showAllShots: false,
-    imageJobs: null,               // image jobs listed for this plan (null = not counted)
+    imageJobs: null,
+    wm: null,                      // GET /api/watermark: pictures waiting for the watermark pick
+    wmPick: {},                    // the owner's pick per picture title, until saved               // image jobs listed for this plan (null = not counted)
     detailBusy: null,
     detailAgain: false,
     refreshBusy: null,             // the wizard refresh in flight (W10: one at a time)
@@ -254,6 +256,14 @@
     return d;
   }
 
+  // rule 18: a titled block that is always visible (used where a fold used to hide needed controls)
+  function shownSection(id, title, kids) {
+    var box = el('div', { class: 'gate-card', id: 'sec-' + id });
+    box.appendChild(el('h4', { textContent: title }));
+    appendKids(box, kids);
+    return box;
+  }
+
   function helperDetails(id, kids) {
     return foldDetails(id, t('warn.more'), kids);
   }
@@ -264,6 +274,7 @@
     var words;
     if (/^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$/.test(s)) words = s.split('-').slice(1).join(' ').toLowerCase();
     else if (/^[a-z0-9_]+$/.test(s)) words = s.replace(/_/g, ' ');
+    else if (/^[A-Z0-9]+(_[A-Z0-9]+)+$/.test(s)) words = s.replace(/^(ENV|CHAR|PROP)_/, '').replace(/_/g, ' ').toLowerCase();   // Flow titles: ENV_KADAMBA_BANK_DAWN -> Kadamba bank dawn
     else return s;
     return words.replace(/\s+/g, ' ').trim().replace(/^./, function (c) { return c.toUpperCase(); });
   }
@@ -1024,6 +1035,7 @@
       working.appendChild(jobBar());
     }
 
+    wizard.appendChild(storySwitcher(project));
     wizard.appendChild(progressLine(stages, view));
     stages.forEach(function (stage) {
       wizard.appendChild(mkStageCard(stage, current, project, view));
@@ -1176,7 +1188,7 @@
   }
 
   function mkStageCard(stage, current, project, view) {
-    var open = view.open === stage.id;
+    var open = view.open === stage.id || stage.status !== 'locked';   // rule 18: no hidden steps
     var row = view.rows[stage.id] || { status: stage.status, word: statusWord(stage.status) };
     var card = el('div', { class: 'card step stage-' + stage.id + (stage.id === current ? ' is-current' : '') + (open ? ' is-open' : '') });
 
@@ -1192,9 +1204,7 @@
     }
 
     if (!open) {
-      if (stage.status === 'locked') card.appendChild(el('p', { class: 'muted', textContent: lockedWhy(stage) }));
-      card.appendChild(el('button', { type: 'button', class: 'btn-quiet', id: 'open-step-' + stage.id, textContent: t('step.open_btn'),
-        onclick: function () { openStep(stage.id); } }));
+      card.appendChild(el('p', { class: 'muted', textContent: lockedWhy(stage) }));
       return card;
     }
 
@@ -1221,7 +1231,7 @@
     });
 
     if (stage.detail) {
-      card.appendChild(helperDetails('stage-' + stage.id, [el('p', { class: 'muted', textContent: stageDetail(stage.detail) })]));
+      card.appendChild(el('p', { class: 'detail', textContent: stageDetail(stage.detail) }));
     }
     return card;
   }
@@ -1250,6 +1260,39 @@
     return 'next';
   }
 
+  // open a story for the whole page (top box and step-1 picker share this)
+  function openStory(slug, project) {
+    if (!slug) { showError(t('story.err_new_hint')); return; }
+    if (State.storyDirty) { showError(t('story.err_unsaved_switch')); render(true); return; }
+    if (slug === project.story_slug) { State.pickSlug = ''; return; }
+    var row = (State.storyList || []).filter(function (s) { return s.slug === slug; })[0];
+    State.busy = true;
+    post('/api/pipeline/project', { story_slug: slug, pack: row && row.latest_pack ? row.latest_pack : '' })
+      .then(function () { State.pickSlug = ''; return refreshWizard(true); })
+      .catch(function (err) { showApiError(err); render(true); })
+      .finally(function () { State.busy = false; });
+  }
+
+  // always on top: every story with its state, pick one and continue where it stopped
+  function storySwitcher(project) {
+    var box = el('div', { class: 'gate-card', id: 'story-switch' });
+    box.appendChild(el('h3', { textContent: t('switch.title') }));
+    var sel = el('select', { id: 'top-story-pick', 'aria-label': t('switch.label') });
+    var shown = State.pickSlug && State.pickSlug !== 'new' ? State.pickSlug : project.story_slug;
+    (State.storyList || []).forEach(function (s) {
+      sel.appendChild(el('option', { value: s.slug, selected: s.slug === shown,
+        textContent: niceName(s.slug) + ': ' + (s.latest_pack ? t('wiz.pick_has_plan') : t('wiz.pick_no_plan'))
+          + (s.slug === project.story_slug ? ' (' + t('switch.open_now') + ')' : '') }));
+    });
+    sel.addEventListener('change', function () { State.pickSlug = sel.value; });
+    box.appendChild(el('label', { 'for': 'top-story-pick', textContent: t('switch.label') }));
+    box.appendChild(sel);
+    box.appendChild(el('button', { type: 'button', id: 'top-story-open', textContent: t('switch.open'),
+      onclick: function () { openStory(sel.value, project); } }));
+    box.appendChild(el('p', { class: 'hint', textContent: t('switch.hint') }));
+    return box;
+  }
+
   function storyActions(project) {
     var frag = document.createDocumentFragment();
     var ns = State.storyState;
@@ -1269,7 +1312,7 @@
       var nxStage = nx.stage || NEXT_STAGE[nx.key] || '';
       var nxText = nextText(nx.key, nx.label || nx.text || '');
       nextBox.appendChild(el('p', { textContent: nxText ? t('next.label', { text: nxText }) : t('next.nothing') }));
-      if (nx.text) nextBox.appendChild(helperDetails('next', [el('p', { class: 'muted', textContent: String(nx.text) })]));
+      if (nx.text) nextBox.appendChild(el('p', { class: 'detail', textContent: String(nx.text) }));
       if (nxStage) {
         var target = { stage: nxStage, pack: nx.pack || ns.latest_pack || '' };
         nextBox.appendChild(el('button', { type: 'button', id: 'btn-continue', class: 'btn-quiet', textContent: t('next.continue'),
@@ -1301,18 +1344,8 @@
     });
     slugSelect.addEventListener('change', function () { State.pickSlug = slugSelect.value || 'new'; });
     frag.appendChild(slugSelect);
-    frag.appendChild(el('button', { type: 'button', id: 'wiz-story-open', class: 'btn-quiet', textContent: t('wiz.picker_open_btn'), onclick: function () {
-      var slug = slugSelect.value;
-      if (!slug) { showError(t('story.err_new_hint')); return; }
-      if (State.storyDirty) { showError(t('story.err_unsaved_switch')); render(true); return; }
-      if (slug === project.story_slug) { State.pickSlug = ''; return; }
-      var row = (State.storyList || []).filter(function (s) { return s.slug === slug; })[0];
-      State.busy = true;
-      post('/api/pipeline/project', { story_slug: slug, pack: row && row.latest_pack ? row.latest_pack : '' })
-        .then(function () { State.pickSlug = ''; return refreshWizard(true); })
-        .catch(function (err) { showApiError(err); render(true); })
-        .finally(function () { State.busy = false; });
-    }}));
+    frag.appendChild(el('button', { type: 'button', id: 'wiz-story-open', class: 'btn-quiet', textContent: t('wiz.picker_open_btn'),
+      onclick: function () { openStory(slugSelect.value, project); } }));
     frag.appendChild(el('p', { class: 'hint', textContent: t('wiz.picker_open_hint') }));
 
     frag.appendChild(el('label', { textContent: t('story.new_slug_label'), 'for': 'wiz-story-new-slug' }));
@@ -1368,12 +1401,12 @@
     frag.appendChild(languagesBox(project, main));
     frag.appendChild(styleBox(project));
     if (project.story_slug) {
-      frag.appendChild(foldDetails('story-more', t('story.more_choices'), [voiceEngineBox(project), bgmBox(project), voiceMapBox(project)]));
-      frag.appendChild(foldDetails('story-youtube', t('story.youtube_title'), [linkBox(project)]));
+      frag.appendChild(shownSection('story-more', t('story.more_choices'), [voiceEngineBox(project), bgmBox(project), voiceMapBox(project)]));
+      frag.appendChild(shownSection('story-youtube', t('story.youtube_title'), [linkBox(project)]));
       frag.appendChild(el('button', { type: 'button', id: 'btn-story-next', class: main === 'next' ? 'btn-main' : 'btn-quiet',
         textContent: t('story.next_btn'), onclick: function () { openStep('analysis'); } }));
     } else {
-      frag.appendChild(foldDetails('story-youtube', t('story.youtube_title'), [linkBox(project)]));
+      frag.appendChild(shownSection('story-youtube', t('story.youtube_title'), [linkBox(project)]));
     }
 
     return [frag];
@@ -1709,7 +1742,7 @@
       others.push(group);
     });
     if (picked !== State.writers.default) State.openDetails['details-writers-other'] = true;
-    box.appendChild(foldDetails('writers-other', t('wiz.other_writers'), others));
+    box.appendChild(shownSection('writers-other', t('wiz.other_writers'), others));
     var sel = selectedOpt();
     if (sel && sel.id === 'claude-opus') box.appendChild(claudeWarnBox());
     return box;
@@ -1983,7 +2016,7 @@
 
     frag.appendChild(el('p', { class: 'hint', textContent: t('pics.rule_full') }));
     // the agent's model and effort are the owner's rule for the helper: they sit in More (W3, W4)
-    frag.appendChild(helperDetails('pics-rule', [el('p', { class: 'muted', textContent: t('pics.rule_haiku') }), el('p', { class: 'muted', textContent: t('pics.rule_raw') })]));
+    frag.appendChild(shownSection('pics-rule', t('pics.rule_title'), [el('p', { class: 'detail', textContent: t('pics.rule_haiku') }), el('p', { class: 'detail', textContent: t('pics.rule_raw') })]));
 
     if (State.summary && State.summary.images) {
       var imgs = State.summary.images;
@@ -1993,7 +2026,96 @@
         el('span', { textContent: t('pics.checked', { n: imgs.reviewed }) })
       ]}));
     }
+    frag.appendChild(afterPictures(project));
     return [frag];
+  }
+
+  // one command, previewed, confirmed in plain words, run, waited for; then the page refreshes
+  function runCommand(command, args, message, failText) {
+    if (State.busy) { showError(t('story.err_busy')); return Promise.resolve(null); }
+    State.busy = true;
+    return post('/api/preview', { command: command, args: args })
+      .then(function (data) {
+        return new Promise(function (resolve) {
+          confirmDialog(message, (data.argv || []).join(' '), function () {
+            State.busy = true;
+            post('/api/run', { token: data.token })
+              .then(function (r) { return waitForJob(r.job_id); })
+              .then(function (job) { return job.state === 'done' ? job : failedJob(job, failText); })
+              .then(function (job) { showSuccess(t('after.done')); resolve(job); return refreshWizard(true); })
+              .catch(function (err) { showApiError(err); resolve(null); })
+              .finally(function () { State.busy = false; });
+          }, function () { resolve(null); }, { yes: t('dialog.yes_start') });
+        });
+      })
+      .catch(function (err) { showApiError(err); return null; })
+      .finally(function () { if (!State.confirmPending) State.busy = false; });
+  }
+
+  function loadWatermark() {
+    return once('wm', function () {
+      return get('/api/watermark?adhyay=' + BUILD_ADHYAY)
+        .then(function (d) { State.wm = d; render(true); })
+        .catch(function (err) { State.wm = { rows: [] }; showApiError(err); });
+    });
+  }
+
+  // rule 18: the whole picture chain after the Flow agents, in order, every step visible (IMAGE_SYSTEM_FULL.md sections 5, 6, 13)
+  function afterPictures(project) {
+    var A = { adhyay: BUILD_ADHYAY };
+    var ok = !!(project.story_slug && project.pack && gateState('A') === 'approved');
+    var box = el('div', { class: 'gate-card', id: 'pics-after' });
+    box.appendChild(el('h4', { textContent: t('after.title') }));
+    box.appendChild(el('p', { class: 'detail', textContent: t('after.intro') }));
+    function stepRow(n, title, hint, btnText, id, onclick) {
+      box.appendChild(el('h5', { textContent: n + '. ' + title }));
+      box.appendChild(el('p', { class: 'hint', textContent: hint }));
+      if (btnText) box.appendChild(el('button', { type: 'button', id: id, textContent: btnText, disabled: !ok, onclick: onclick }));
+    }
+    stepRow(1, t('after.make_title'), t('after.make_hint'), '', '', null);
+    stepRow(2, t('after.collect_title'), t('after.collect_hint'), t('after.collect_btn'), 'after-collect',
+      function () { runCommand('queue_collect', A, t('after.collect_confirm'), t('after.err')); });
+    stepRow(3, t('after.wm_title'), t('after.wm_hint'), t('after.wm_btn'), 'after-wm', function () {
+      runCommand('wm_clean', A, t('after.wm_confirm_clean'), t('after.err')).then(function (job) {
+        if (job) runCommand('wm_lama', A, t('after.wm_confirm_lama'), t('after.err')).then(function (j2) { if (j2) { State.wm = null; loadWatermark(); } });
+      });
+    });
+    stepRow(4, t('after.pick_title'), t('after.pick_hint'), '', '', null);
+    if (State.wm === null) loadWatermark();
+    var rows = (State.wm && State.wm.rows) || [];
+    if (!rows.length) box.appendChild(el('p', { class: 'muted', textContent: t('after.pick_none') }));
+    var grid = el('div', { class: 'grid', id: 'wm-grid' });
+    rows.forEach(function (r) {
+      var picked = State.wmPick[r.title] || r.method || 'lama';
+      var cell = el('div', { class: 'card' });
+      cell.appendChild(el('strong', { textContent: niceName(r.title) + (r.final ? ' (' + t('after.pick_has_final') + ')' : '') }));
+      if (r.sheet) cell.appendChild(el('img', { src: '/api/file?path=' + enc(r.sheet), alt: niceName(r.title), loading: 'lazy', style: { width: '100%' } }));
+      var grp = el('div', { role: 'radiogroup', 'aria-label': niceName(r.title) });
+      [['lama', t('after.m_lama')], ['lama_on_clean', t('after.m_lama_on_clean')], ['clean', t('after.m_clean')]].forEach(function (m) {
+        var id = 'wm-' + safeId(r.title) + '-' + m[0];
+        var rb = el('input', { type: 'radio', name: 'wm-' + safeId(r.title), id: id, value: m[0], checked: picked === m[0] });
+        rb.addEventListener('change', function () { State.wmPick[r.title] = m[0]; });
+        grp.appendChild(el('label', { class: 'pill', 'for': id, children: [rb, ' ' + m[1]] }));
+      });
+      cell.appendChild(grp);
+      grid.appendChild(cell);
+    });
+    box.appendChild(grid);
+    if (rows.length) box.appendChild(el('button', { type: 'button', id: 'after-wm-save', textContent: t('after.pick_btn'), disabled: !ok, onclick: function () {
+      var choices = {};
+      rows.forEach(function (r) { if (!r.final) choices[r.title] = State.wmPick[r.title] || r.method || 'lama'; });
+      if (!Object.keys(choices).length) { showError(t('after.pick_all_done')); return; }
+      post('/api/watermark/choices', { adhyay: BUILD_ADHYAY, choices: choices })
+        .then(function () { return runCommand('wm_finalize', A, t('after.pick_confirm', { n: String(Object.keys(choices).length) }), t('after.err')); })
+        .then(function (job) { if (job) { State.wm = null; State.wmPick = {}; loadWatermark(); } })
+        .catch(function (err) { showApiError(err); });
+    }}));
+    stepRow(5, t('after.tidy_title'), t('after.tidy_hint'), t('after.tidy_btn'), 'after-tidy',
+      function () { runCommand('tidy_apply', A, t('after.tidy_confirm'), t('after.err')); });
+    stepRow(6, t('after.gateb_title'), t('after.gateb_hint'), '', '', null);
+    stepRow(7, t('after.kf_title'), t('after.kf_hint'), t('after.kf_btn'), 'after-keyframes',
+      function () { runCommand('bridge_write', { adhyay: BUILD_ADHYAY, size: '768x1344' }, t('after.kf_confirm'), t('after.err')); });
+    return box;
   }
 
   // /api/images lists job rows {file, shot_id}. The packet needs one jobs file that holds every shot id of the pack.
@@ -2180,8 +2302,8 @@
       el('strong', { textContent: t('sum.tile_clips') + ': ' }), document.createTextNode(String(clipsPlanned)), el('br'),
       el('strong', { textContent: t('sum.tile_minutes') + ': ' }), document.createTextNode(summary.estimate ? String(summary.estimate.minutes) : '0')
     ]}));
-    if (summary.estimate) more.push(helperDetails('sum-gpu', [el('p', { class: 'muted', textContent: t('sum.gpu', { units: String(summary.estimate.g4_units) }) })]));
-    frag.appendChild(foldDetails('sum-more', t('sum.more_title'), more));
+    if (summary.estimate) more.push(el('p', { class: 'detail', textContent: t('sum.gpu', { units: String(summary.estimate.g4_units) }) }));
+    frag.appendChild(shownSection('sum-more', t('sum.more_title'), more));
 
     frag.appendChild(el('h4', { textContent: t('sum.checks_title') }));
     var rawChecks = [];

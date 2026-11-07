@@ -669,9 +669,34 @@ CLAUDE_COMMANDS = {c.id: c for c in (   # apart from COMMANDS on purpose: test_u
 )}
 
 
+# Flow watermark (sparkle) removal, IMAGE_SYSTEM_FULL.md section 13: clean -> LaMa variants + sheets -> owner picks -> finalize.
+# Apart from COMMANDS for the same reason as CLAUDE_COMMANDS (test_ui pins COMMANDS); test_parity checks these are in the wizard.
+WM_METHODS = ("lama", "lama_on_clean", "clean")
+
+
+def b_wm(kind):
+    def build(cfg, a):
+        final = str(_adh(cfg, a) / "final")
+        if kind == "clean":
+            return _py(cfg, "flow", "scripts", "remove_sparkle.py") + [final]
+        if kind == "lama":
+            return _py(cfg, "flow", "scripts", "lama_inpaint.py") + [final]
+        return _py(cfg, "flow", "scripts", "lama_inpaint.py") + ["finalize", final, str(_adh(cfg, a) / "watermark_choices.json")]
+    return build
+
+
+IMAGE_COMMANDS = {c.id: c for c in (
+    Cmd("wm_clean", "W", False, {"adhyay": ADH}, b_wm("clean")),
+    Cmd("wm_lama", "W", False, {"adhyay": ADH}, b_wm("lama")),
+    Cmd("wm_finalize", "W", False, {"adhyay": ADH}, b_wm("finalize")),
+)}
+
+
 def command_spec(name) -> Cmd:
     if isinstance(name, str) and name in CLAUDE_COMMANDS:
         return CLAUDE_COMMANDS[name]
+    if isinstance(name, str) and name in IMAGE_COMMANDS:
+        return IMAGE_COMMANDS[name]
     if not isinstance(name, str) or name not in COMMANDS:
         raise bad("unknown command")
     return COMMANDS[name]
@@ -1590,6 +1615,36 @@ class Api:
     def images(self, adhyay, story=LEGACY_STORY) -> dict:
         return read_images(self.cfg, ADHYAY(self.cfg, adhyay), SLUG(self.cfg, story))
 
+    def watermark(self, adhyay) -> dict:
+        """Pictures waiting for the watermark pick: one comparison sheet per title (from lama_inpaint.py), and whether a final exists."""
+        adh = _adh(self.cfg, {"adhyay": ADHYAY(self.cfg, adhyay)})
+        check = adh / "final" / "_sparkle_check3"
+        try:
+            report = json.loads((check / "report.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            report = {}
+        rows = [{"title": t, "sheet": str(check / f"{t}__sheet.png") if (check / f"{t}__sheet.png").is_file() else "",
+                 "method": (r or {}).get("method", "") if isinstance(r, dict) else "",
+                 "final": (adh / "final" / f"{t}__candidate_v01__final.png").is_file()} for t, r in sorted(report.items())]
+        return {"rows": rows, "methods": list(WM_METHODS)}
+
+    def watermark_choices(self, body) -> dict:
+        """Saves the owner's pick per picture as <chapter>/watermark_choices.json, the input of wm_finalize."""
+        adh_n = ADHYAY(self.cfg, body.get("adhyay", 1))
+        choices = body.get("choices")
+        known = {r["title"] for r in self.watermark(adh_n)["rows"]}
+        if not isinstance(choices, dict) or not choices:
+            raise bad("choices must be a non-empty object {title: method}")
+        for t, m in choices.items():
+            if t not in known:
+                raise bad(f"unknown picture {t!r}")
+            if m not in WM_METHODS:
+                raise bad(f"method must be one of {', '.join(WM_METHODS)}")
+        out = _adh(self.cfg, {"adhyay": adh_n}) / "watermark_choices.json"
+        out.write_text(json.dumps({t: {"method": m, "verdict": "owner pick in the UI"} for t, m in choices.items()}, indent=1),
+                       encoding="utf-8")
+        return {"saved": len(choices), "file": str(out)}
+
     def review(self, shot, cand, adhyay) -> dict:
         shot, adh = SHOT(self.cfg, shot), ADHYAY(self.cfg, adhyay)
         if not isinstance(cand, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,160}\.(?:png|jpg|jpeg)", cand):
@@ -1877,6 +1932,8 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
             return api.job_log(m.group(1), q) if m.group(2) == "log" else api.job_result(m.group(1))
         if path == "/api/images":
             return api.images(q.get("adhyay", "1"), q.get("story", LEGACY_STORY))
+        if path == "/api/watermark":
+            return api.watermark(q.get("adhyay", "1"))
         if path == "/api/review":
             return api.review(q.get("shot", ""), q.get("cand", ""), q.get("adhyay", "1"))
         if path == "/api/video":
@@ -1903,6 +1960,8 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
             return api.job_stop(m.group(1))
         if path == "/api/packet":
             return api.packet(body)
+        if path == "/api/watermark/choices":
+            return api.watermark_choices(body)
         if path == "/api/pipeline/gate":
             return pipeline_gate(api, body)
         if path == "/api/pipeline/project":

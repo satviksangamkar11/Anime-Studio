@@ -129,6 +129,8 @@ ROUTES = [
     ("GET", "/api/writers", "'/api/writers'", "", "T3", "T1"),
     ("GET", "/api/styles", "'/api/styles'", "", "T3", "T3"),
     ("POST", "/api/story/{slug}/style", "'/style'", "", "T3", "T3"),
+    ("GET", "/api/watermark", "'/api/watermark?adhyay='", "", "T3", "T3"),
+    ("POST", "/api/watermark/choices", "'/api/watermark/choices'", "", "T3", "T3"),
     ("POST", "/api/preview", "'/api/preview'", "", None, None),
     ("POST", "/api/run", "'/api/run'", "", None, None),
     ("POST", "/api/packet", "'/api/packet'", "", None, None),
@@ -235,7 +237,7 @@ def test_inventory_lists_every_section9_row():
     assert len(rows) == len(set(rows)), "a row id appears twice in section 9.1"
 
 
-ALL_COMMANDS = sorted(set(server.COMMANDS) | set(getattr(server, "CLAUDE_COMMANDS", {})))
+ALL_COMMANDS = sorted(set(server.COMMANDS) | set(getattr(server, "CLAUDE_COMMANDS", {})) | set(getattr(server, "IMAGE_COMMANDS", {})))
 
 
 @pytest.mark.parametrize("cmd", ALL_COMMANDS)

@@ -77,3 +77,6 @@ Web context matters most for getting the story context right. `write_pack.py --w
 
 ## RULE 17: LOG AND BLOT IN THE SAME STEP (owner, 2026-11-07, repeated)
 Every change, even a one-line one, gets its PROJECT_LOG line in the same step, and blot.md is updated in the same step whenever a rule changes (both copies: anime_studio and anime_studio_merge).
+
+## RULE 18: NOTHING HIDDEN, BUILT FOR A 60-YEAR-OLD (owner, 2026-11-07)
+The UI user is 60. No step, action or needed fact sits behind a "More" fold, a hidden section, a hash-only link or a hover. Everything needed to move a story forward is visible on the page, in order, with large clear text. Story choice is always visible at the top. Locked future steps stay visible with the reason they are locked. Only raw technical details (file paths, logs, JSON) may sit in a fold. Supersedes rule 9's "moved or hidden": controls are MOVED, never hidden.
