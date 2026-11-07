@@ -365,7 +365,7 @@ def _checked(ev: dict) -> dict:
             raise ValueError(f"output_languages must be a non-empty, non-repeating list from {OUTPUT_LANGUAGES}")
     engines = ev.get("voice_engine")
     if engines is not None:  # optional dict lang -> engine
-        if not (isinstance(engines, dict) and all(k in OUTPUT_LANGUAGES for k in engines)
+        if not (isinstance(engines, dict) and engines and all(k in OUTPUT_LANGUAGES for k in engines)
                 and all(v in VOICE_ENGINES for v in engines.values())
                 and all(v != "h3" or k == "en" for k, v in engines.items())):   # h3 voice is English only
             raise ValueError(f"voice_engine must map {OUTPUT_LANGUAGES} to {VOICE_ENGINES}")

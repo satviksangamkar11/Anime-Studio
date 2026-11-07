@@ -164,6 +164,8 @@ def call_with_retry(fn, *, model: str = "", policy: Policy = DEFAULT_POLICY, bre
     """Call fn() until it answers. `check(result)` returns a kind (a bad answer) or None (good). Returns the result.
     Raises CircuitOpen (breaker open), or ModelGaveUp (fatal, switch kind, attempts or wait budget spent): the caller then
     moves to the next model. The original error is chained as __cause__."""
+    if policy.max_attempts < 1:
+        raise ValueError(f"policy.max_attempts must be at least 1, got {policy.max_attempts}")
     breaker = breaker or CircuitBreaker(clock=clock)
     rng = rng or random.Random()
     if not breaker.allow():                       # the breaker decides whether a call may START; attempts inside it follow the policy

@@ -103,6 +103,17 @@ def envelope(text, finish, via, model):
                        "finish_reason": finish})
 
 
+def envelope_check(raw):
+    """The retry check reads the saved envelope's text and finish reason (the envelope JSON itself is never empty)."""
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return retry_policy.answer_kind(raw)          # plain text (no envelope): judge the text itself
+    if not isinstance(data, dict):
+        return retry_policy.answer_kind(raw)
+    return retry_policy.answer_kind(data.get("result"), data.get("finish_reason"))
+
+
 def call_claude(prompt, model, effort):
     with tempfile.TemporaryDirectory() as empty:
         mcp = Path(empty).parent / "empty_mcp_anime.json"
@@ -234,7 +245,7 @@ def call_path(prompt, via, model, effort, allow_paid, policy=None, sleep=None):
     if sleep:
         kw["sleep"] = sleep
     try:
-        return retry_policy.call_with_retry(one, model=model, check=lambda text: retry_policy.answer_kind(text), **kw)
+        return retry_policy.call_with_retry(one, model=model, check=envelope_check, **kw)
     except retry_policy.ModelGaveUp as gave_up:
         if gave_up.kind == retry_policy.FATAL and gave_up.__cause__ is not None:
             raise gave_up.__cause__ from None            # a plain refusal (e.g. paid model): the caller sees the real error
@@ -369,16 +380,19 @@ def episodes_from(text):
     """Episode numbers named by stage 1: its ```json story block (V4), else a ```json episodes block, else lines 'Episode N' / 'Ep N'."""
     story = STORY_BLOCK.search(text)
     block = EPISODES_BLOCK.search(text)
-    if story and isinstance(json.loads(story.group(1)).get("episodes"), list):
-        found = [e["episode"] for e in json.loads(story.group(1))["episodes"] if isinstance(e, dict) and isinstance(e.get("episode"), int)]
+    story_data = json.loads(story.group(1)) if story else None
+    if isinstance(story_data, dict) and isinstance(story_data.get("episodes"), list):   # a story block that is not an object is not used
+        found = [e["episode"] for e in story_data["episodes"] if isinstance(e, dict) and isinstance(e.get("episode"), int) and not isinstance(e.get("episode"), bool)]
     elif block:
         try:
             values = json.loads(block.group(1))
         except json.JSONDecodeError as exc:
             raise ValueError(f"the ```json episodes block is not valid JSON ({exc.msg}): fix the block and rerun") from exc
+        if not isinstance(values, list):   # null or a bare number: a stage failure, not a TypeError
+            raise ValueError("the ```json episodes block must be a JSON list of episode numbers or objects")
         found = [v if isinstance(v, int) and not isinstance(v, bool) else v.get("episode") if isinstance(v, dict) else None
                  for v in values]
-        if not all(isinstance(v, int) for v in found):
+        if not all(isinstance(v, int) and not isinstance(v, bool) for v in found):
             raise ValueError("the ```json episodes block must hold episode numbers or objects with an integer 'episode'")
     else:
         found = [int(n) for n in EPISODE_LINE.findall(text)] or [int(n) for n in EPISODE_ROW.findall(text)]
@@ -815,6 +829,19 @@ def record_output_language(story_dir, langs, engines=None):
         print(f"write_pack: output_language not recorded in story.json ({type(exc).__name__}: {exc})", file=sys.stderr)
 
 
+def _stage5_item(item):
+    """A stage 5 item with a wrong JSON type in a text field becomes empty there: the validator reports the missing text; the run does not crash."""
+    def lists(d):
+        return {k: (v if isinstance(v, list) else []) for k, v in d.items()} if isinstance(d, dict) else {}
+    out = dict(item)
+    out["cards"] = out["cards"] if isinstance(out.get("cards"), list) else []
+    out["dialogue_texts"] = out["dialogue_texts"] if isinstance(out.get("dialogue_texts"), list) else []
+    out["captions_by_lang"] = lists(out.get("captions_by_lang"))
+    out["dialogue_texts_by_lang"] = lists(out.get("dialogue_texts_by_lang"))
+    out["narration_text_by_lang"] = out["narration_text_by_lang"] if isinstance(out.get("narration_text_by_lang"), dict) else {}
+    return out
+
+
 def apply_captions(shots, items, langs):
     """Stage 5 onto the shot rows. One language: captions (the cards), narration text and dialogue texts. Several languages: the per
     language captions_by_lang, narration_by_lang and dialogue_by_lang texts, and the flat narration, dialogue and captions mirror the
@@ -826,6 +853,7 @@ def apply_captions(shots, items, langs):
         item = by_id.get(shot.get("source_id")) or by_id.get(shot.get("id"))
         if not item:
             continue
+        item = _stage5_item(item)
         track = shot.get("audio_and_dialogue_track") if isinstance(shot.get("audio_and_dialogue_track"), dict) else None
         if not multi_lang(langs):
             shot["captions"] = list(item.get("cards") or [])
@@ -910,7 +938,11 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         done.append(("1", text1))
         text2, bible = stage("2", parse_bible, lambda d: gate("2", d, None))
         done.append(("2", text2))
-        per_episode, episodes, seconds = [], episodes_from(text1), episode_seconds(plan)
+        try:
+            episodes = episodes_from(text1)
+        except ValueError as exc:       # stage 1 passed its checks but names no usable episodes: a failed stage, not a traceback
+            raise StageFailed(f"stage 1 answer is unusable: {exc}; delete {out.name}/stage_1_raw.json to redo it") from exc
+        per_episode, seconds = [], episode_seconds(plan)
         for ep in episodes:
             first = 1 + sum(len(s) for s in per_episode)
             check = (lambda shots, ep=ep: gate("3", {"episode": ep, "shots": shots}, bible,
@@ -952,7 +984,10 @@ def run_single(story_text, out, via, model, effort, allow_paid, rec=None):
                 text = checked_call("single", call_path, prompt, via, model, effort, allow_paid)
                 raw_path.write_text(text, encoding="utf-8")
                 st.chars = run_registry.envelope_info(text).get("chars")
-        text, shots = parse(raw_path.read_text(encoding="utf-8"))
+        try:
+            text, shots = parse(raw_path.read_text(encoding="utf-8"))
+        except ValueError as exc:       # a bad saved answer stops the run with a message, not a traceback
+            raise StageFailed(f"the saved answer is unusable: {exc}; delete {out.name}/raw_response.json to redo it") from exc
         (out / "PACK.md").write_text(text, encoding="utf-8")
         (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
         run.files = [f"{out.name}/{n}" for n in ("PACK.md", "shots.json")]

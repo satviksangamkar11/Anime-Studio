@@ -495,6 +495,8 @@ def _check_languages(rows, output_languages, lang_check, errs):
                     _e(errs, "ML-01", f"{w}.narration_by_lang.{lang}", "needs text and time_range [start, end]")
                     seqs[lang] = ["invalid"]
                     continue
+                if e.get("language") not in (None, lang):      # the block's key is the language; a wrong label is copied into the flat mirror
+                    _e(errs, "ML-01", f"{w}.narration_by_lang.{lang}.language", f"language {e.get('language')!r} does not match key {lang!r}")
                 seqs[lang] = [_range_key(rng)]
                 if editorial is not None and rng[1] > editorial + TIME_TOL:
                     _e(errs, "ML-06", f"{w}.narration_by_lang.{lang}.time_range",
@@ -645,7 +647,7 @@ def _s55_6(shots, bible, errs, warns):
         pp, cp = _positions(prev), _positions(cur)
         flips = []
         for cid in sorted(set(pp) & set(cp)):
-            for label, a, b in (("screen", pp[cid][0], cp[cid][0]), ("eyeline", pp[cid][1], cp[cid][1])):
+            for label, a, b in (("screen", pp[cid][0], cp[cid][0]), ("facing", pp[cid][1], cp[cid][1])):
                 if a and b and a != b:
                     flips.append(f"{cid} {label} {a}->{b}")
         la, lb = _lighting_side(prev), _lighting_side(cur)
@@ -839,9 +841,12 @@ def _check_voice(rows, bible, engines, output_languages, errs, warns):
         track = _d(r.get("audio_and_dialogue_track"))
         narr = track.get("narration")
         primary = narr.get("language") if isinstance(narr, dict) else (langs[0] if langs else None)
-        if isinstance(narr, dict) and narr.get("language") and engine_for(engines, narr["language"]) == "elevenlabs":
+        if isinstance(narr, dict) and isinstance(narr.get("language"), str) and narr["language"] and engine_for(engines, narr["language"]) == "elevenlabs":
             if not _d(vm.get(ve.NARRATOR)).get(narr["language"]):
                 _e(errs, "VM-01", f"{w}.narration", f"no voice_map.{ve.NARRATOR} voice id for {narr['language']}")
+        for lang in _d(_by_lang(r, "narration_by_lang")):   # multilingual narration: each ElevenLabs language needs its narrator voice
+            if engine_for(engines, lang) == "elevenlabs" and not _d(vm.get(ve.NARRATOR)).get(lang):
+                _e(errs, "VM-01", f"{w}.narration_by_lang.{lang}", f"no voice_map.{ve.NARRATOR} voice id for {lang}")
         if isinstance(narr, dict) and narr.get("language") == "en" and engine_for(engines, "en") == "h3":
             warns.append({"code": "VE-05", "where": f"{w}.narration",
                           "message": "English narration on h3 has no H3 voice path yet: needs an owner decision"})
@@ -968,27 +973,35 @@ def _load(path, errs, code):
         return None
 
 
+def _story_file(d):
+    """The parsed stage 1 block: story_plan.json (written by a staged run), else stage_1.json; None when neither exists."""
+    for name in ("story_plan.json", "stage_1.json"):
+        if (d / name).is_file():
+            return d / name
+    return None
+
+
 def _peek_output_languages(d):
-    """output_languages from the first stage_1 file that carries them; None when none does."""
-    for p in sorted(d.glob("stage_1*.json")):
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(data, dict) and isinstance(data.get("output_languages"), list):
-            return data["output_languages"]
+    """output_languages from the stage 1 block; None when it does not carry them."""
+    src = _story_file(d)
+    try:
+        data = json.loads(src.read_text(encoding="utf-8")) if src else None
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, dict) and isinstance(data.get("output_languages"), list):
+        return data["output_languages"]
     return None
 
 
 def _peek_voice_engines(d):
-    """voice_engine from the first stage_1 file that carries it; None when none does."""
-    for p in sorted(d.glob("stage_1*.json")):
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(data, dict) and isinstance(data.get("voice_engine"), dict):
-            return data["voice_engine"]
+    """voice_engine from the stage 1 block; None when it does not carry one."""
+    src = _story_file(d)
+    try:
+        data = json.loads(src.read_text(encoding="utf-8")) if src else None
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, dict) and isinstance(data.get("voice_engine"), dict):
+        return data["voice_engine"]
     return None
 
 
@@ -1013,14 +1026,11 @@ def validate_pack(pack_dir, legacy=False, *, output_languages=None, lang_check=N
                                                    lang_check=lang_check, voice_engines=voice_engines))
     if bible is not None:
         _absorb(errs, warns, stats, validate_stage("bible", bible))
-    for p in sorted(d.glob("stage_1*.json")):
-        data = _load(p, errs, "PACK-01")
+    story_src = _story_file(d)   # the parsed stage 1 block; the *_raw.json envelopes are model output, never story data
+    if story_src is not None:
+        data = _load(story_src, errs, "PACK-01")
         if data is not None:
             _absorb(errs, warns, stats, validate_stage("story", data))
-    for p in sorted(d.glob("stage_2*.json")):
-        data = _load(p, errs, "PACK-01")
-        if data is not None:
-            _absorb(errs, warns, stats, validate_stage("bible", data))
     return _rep(errs, warns, stats)
 
 

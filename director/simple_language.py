@@ -44,7 +44,7 @@ _NOT_DEV_AFTER = "(?![" + _DEV + "])"
 _SEP = re.compile(r"[\s।॥.,;:!?\"'“”‘’()\[\]{}\-–—/|…]+")
 _EN_TOKEN = re.compile(r"[A-Za-z]+")
 _EN_COUNT = re.compile(r"[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*")
-_SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+|\n+")
+_SENT_SPLIT = re.compile(r"(?<=[.!?…][\"'”’»])\s+|(?<=[.!?…])\s+|\n+")   # a closing quote may follow the stop
 _LANG_ALIASES = {"hi": "hi", "hindi": "hi", "mr": "mr", "marathi": "mr", "en": "en", "english": "en"}
 
 # Detection markers (token-level). MR_MARK / HI_MARK come from asr_transcribe.
@@ -440,15 +440,12 @@ def check_shot_texts(shots, default_lang=None, data_dir=None) -> list:
         caps = _captions(row)
         has_cap_block = any(s for _, _, _, s in caps)
         for where, text, hint, strict in caps:
-            if strict:
-                lang = _lang_code(hint)
-                if lang is None:
-                    _add(res, None, [_lang_key_flag(where, hint)], [])
-                    continue
-            elif has_cap_block:
+            lang = _lang_code(hint)
+            if lang is None and (strict or hint is not None):   # an unknown language key is flagged, strict or not
+                _add(res, None, [_lang_key_flag(where, hint)], [])
                 continue
-            else:
-                lang = _lang_code(hint)
+            if not strict and has_cap_block:
+                continue
             lg, f, n = _item(where, text, lang, fallback, data_dir, caption=True)
             _add(res, lg, f, n)
         results.append(_finish(res))
