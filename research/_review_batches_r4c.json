@@ -1,0 +1,6 @@
+{
+ "r4c_director": ["director/write_pack.py", "director/pack_validator.py"],
+ "r4c_h3": ["h3/gate_d_audio.py", "h3/schema_and_linter.py", "h3/voice_manifest.py", "h3/render_controller.py"],
+ "r4c_ui": ["ui/pipeline.py", "ui/server.py"],
+ "r4c_tests": ["director/test_r4_fixes.py", "h3/tests/test_r4_fixes.py", "ui/test_r4_fixes.py"]
+}

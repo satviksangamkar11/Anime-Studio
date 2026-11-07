@@ -1,0 +1,40 @@
+{
+ "r1_director": [
+  "director/pack_validator.py",
+  "director/write_pack.py",
+  "director/story_state.py"
+ ],
+ "r2_registry_retry": [
+  "director/run_registry.py",
+  "director/retry_policy.py",
+  "director/simple_language.py"
+ ],
+ "r3_h3_core": [
+  "h3/schema_and_linter.py",
+  "h3/compile_h3_sing8.py",
+  "h3/router.py"
+ ],
+ "r4_h3_gate_ctrl": [
+  "h3/gate_d_audio.py",
+  "h3/render_controller.py",
+  "h3/voice_engine.py"
+ ],
+ "r5_h3_convert_author": [
+  "h3/v4_to_h3.py",
+  "h3/h3_author.py",
+  "h3/pipeline_contract.py",
+  "h3/voice_manifest.py"
+ ],
+ "r6_ui_server": [
+  "ui/server.py",
+  "ui/pipeline.py"
+ ],
+ "r7_ui_js": [
+  "ui/static/pipeline.js"
+ ],
+ "r8_ui_app_html_css": [
+  "ui/static/app.js",
+  "ui/static/index.html",
+  "ui/static/style.css"
+ ]
+}

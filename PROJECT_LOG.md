@@ -1,11 +1,12 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- State 04:16: round-2 review (Super VL + Dots) fixes done by Haiku W1-W4 (director, h3 core, gate/controller, converter/author). Suites: director 634, h3 537, ui 223, flow 116; secret scan clean. Branch v4-architecture-2026-11-07 (last push df2a21e; round-2 fixes NOT pushed yet).
-- Pending (usage limit hit at 11-07 04:16): W5 UI fixes from Super VL r6-r8, Dots round-2 leftovers (see last LIVE LOG line), then ROUND 3 review, then push. No agents running.
-- Owner rules: Haiku subagents do the work; reviewers Super VL + Dots (act on Super VL first); no Colab calls; no render; stories/captions/colour audit set aside (checklist 9, 10).
-- Resume: read blot.md, this NOW block, last 30 LIVE LOG lines, CHECKLIST_ARCHITECTURE_2026-11-07.md (section 11 = review rounds), HANDOFF section 0 + 13/13b.
-- Not built: Step 9 runner, Gate D assembly runner, live author run, any render; ElevenLabs/live model calls need owner go.
+- State 11-07 13:01: owner said "approve all" (2026-11-07). V4 branch v4-architecture-2026-11-07: fixes Q-R4-4,5,8,9,10,13, ledger-first, export compare, Q-R5-1/2 and router guard applied and committed (7f97e5a director, d262a62 h3, 8f6e65a ui, then docs). Suites: h3 594, director 658, ui 253, flow 116.
+- Universal branch universal-v1.1: 16 local commits (last 80252ec: prepare reads loudness.json first). Suites: core 290, director 483, h3 178.
+- Review loop: rounds 1-5 + 5B done; round 6 (router.py) Super VL done (1 low fixed), Dots running. Loop stops after Dots r6 triage.
+- Pushes: both branches to satviksangamkar11/Anime-Studio (owner approved). Kaliya writer call ON HOLD until the owner supplies story, fonts (styles/fonts) and OPEN_QUESTIONS answers.
+- Owner rules: no Colab calls, no renders, no paid/ElevenLabs, answer in English, Haiku medium for build agents, reviews = Super VL + Dots, log every step (blot.md).
+- Waiting on owner: fonts, captions, story, OPEN_QUESTIONS Q1-Q8, A26 reference frames.
 
 Purpose: one line per step so a new session or Claude account loses no context.
 Read with: `HANDOFF_2026-11-07.md` (rules, ledger, section 13 = latest owner decisions), `research/H3_V4_CONTRACT_2026-11-07.md`, `research/OWNER_MASTER_PROMPT_V4_2026-11-07.txt`.
@@ -286,3 +287,451 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 04:14 | W4 | AGENT-DONE | h3/v4_to_h3,h3_author,voice_manifest | 6 fixed (authored non-dict, check wrapped, cli, lattice keys, location dup, story_gate_checks copied); h3 537 pass
 11-07 04:16 | me | EDIT | PROJECT_LOG.md NOW block,CHECKLIST | owner: limit reaching, log updated; NOW block rewritten with full resume state
 11-07 04:16 | me | DECISION | usage limit reached | STOPPED. Pending for next session (in order): (1) W5 Haiku fix UI round-2: server.py record_spend only after _start succeeds; read_pack episode sort TypeError (key str); pipeline.py total_seconds only sec>0; pipeline.js stale pack on Save story (pipeline.js:723), overlapping polls/stale loadDetail; REJECTED r6 #1 (_verify_stop stays fail-safe, spend must be verified); wait for Super VL r8 (app.js/index.html/css) in research/ROUND2_REVIEW_SUPERVL_2026-11-07.md. (2) Dots round-2 leftovers: simple_language.py:41 regex range check, run_registry detect_language digits, lint_story malformed compiled/timing_and_lattice/episode_plan non-dict (schema_and_linter.py), compile_episode second-pass ValueError, router reference lists. (3) ROUND 3 review (Super VL+Dots, free) of all fixed files, then push. Suites at stop: director 634, h3 537, ui 223, flow 116. Last push 1741452.
+11-07 04:18 | dots | REVIEW-DONE | batch r4_h3_gate_ctrl | 1682 chars
+11-07 04:19 | supervl | REVIEW-DONE | batch r8_ui_app_html_css | 2887 chars
+11-07 04:21 | dots | REVIEW-DONE | batch r5_h3_convert_author | 2235 chars
+11-07 04:25 | me | CMD | blot.md,CHECKLIST,ui/server.py,ui/pipeline.py,ui/static/app.js,ui/static/pipeline.js | read rules; NOW; verified open items: server record_spend+sort, pipeline total, pipeline.js Save story pack+polls, app.js X-UI+slugs
+11-07 04:25 | me | EDIT | ui/static/app.js,ui/static/pipeline.js,ui/server.py,ui/pipeline.py | UI W5 fixes: X-UI all requests, slugs array, Save-story pack scope, single-flight loadDetail, record_spend after start, episode sort mixed types, negative seconds
+11-07 04:26 | me | EDIT | h3/schema_and_linter.py,h3/tests/test_w5_dots_leftovers.py | lint_story non-object shot timing + episode_plan guarded; 3 new tests
+11-07 04:26 | me | DECISION | director/simple_language.py,director/run_registry.py | Dots #1,#3,#4 (Devanagari range/digits) REJECTED: range compiles, digits inside U+0900-097F, verified by run
+11-07 04:28 | me | EDIT | h3/router.py,h3/compile_h3_sing8.py,h3/tests/test_w5_dots_leftovers.py | RF-03 non-list refs; compile_episode wraps TypeError/ValueError/AttributeError; 5 new tests
+11-07 04:28 | me | DECISION | h3/router.py,h3/compile_h3_sing8.py | Dots lint leftovers fixed; compile_episode second-pass and router refs guarded
+11-07 04:29 | dots | REVIEW-DONE | batch r6_ui_server | 4415 chars
+11-07 04:32 | me | REVIEW-START | research/_run_round3_reviews.py | round 3 on 19 round-2 fixed files; supervl + dots in background (OpenRouter free)
+11-07 04:33 | me | CMD | git worktree D:/aai work/anime_studio_universal | branch universal-v1.1 from main 8b1119a; DEVA zip not on disk (blocks deva_neon pack + DEVA fixtures)
+11-07 04:34 | me | TEST | uni worktree baseline (main 8b1119a) | director 385, h3 159, flow/scripts 114 pass 2 fail (test_pack_to_spec real pack), ui 161 pass 1 fail (test_14 real pack); failures pre-exist on main
+11-07 04:34 | me | OWNER | universal-v1.2 spec PDF | owner: wait, will give more (DEVA-NEON zip expected); WP0-WP9 NOT started; round-3 reviews running in background
+11-07 04:40 | supervl | REVIEW-DONE | batch r1_director | 2104 chars
+11-07 04:41 | me | CMD | uni/_inputs | DEVA zip extracted from scratch dir; spec text, colour audit, blot.md staged (untracked, excluded from git)
+11-07 04:43 | A1(haiku,medium) | CMD | _inputs rules+interfaces+brief | read rules + brief
+11-07 04:44 | me | AGENT-START | A1(haiku,medium) WP0+WP1 | files: kaliya_mardan.json,STATUS.md,test_bible_consistency.py,core/{core.json,style_pack.py,tests/test_style_pack.py}
+11-07 04:45 | A1(haiku,medium) | EDIT | director/style/kaliya_mardan.json, STATUS.md | WP0 3 text edits applied (skin_range, treatment, STATUS l16)
+11-07 04:45 | A1(haiku,medium) | TEST | director/test_bible_consistency.py | 2 pass; positive check also passes on OLD texts (no literal phrase hit), negative test plants phrase
+11-07 04:46 | A1(haiku,medium) | EDIT | core/__init__.py, core/tests/__init__.py, core/tests/test_style_pack.py | empty inits + test file written (TDD red next)
+11-07 04:46 | A1(haiku,medium) | EDIT | core/core.json | spec 3.1 with version 1.2 and gates.sat_avg_ceiling null; valid JSON
+11-07 04:46 | supervl | REVIEW-DONE | batch r2_registry_retry | 1621 chars
+11-07 04:46 | A1(haiku,medium) | EDIT | core/style_pack.py | load/validate/srgb_to_lab/delta_e_2000/l_star written, stdlib only
+11-07 04:46 | A1(haiku,medium) | TEST | core/tests/test_style_pack.py | core 25 pass (Sharma 5 pairs, L*, validate broken=10 errors, load_pack)
+11-07 04:46 | B2(haiku,medium) | CMD | AGENT_RULES, INTERFACES, brief B2 | read rules + brief
+11-07 04:47 | me | AGENT-START | B2(haiku,medium) WP3 | owns shot_schema.py,MASTER_PROMPT_v2.3.md,write_pack.py,test_look_schema.py,h3/tests/test_look_metadata.py
+11-07 04:47 | me | OWNER | focus | owner: skip chapter/polish loops, focus on completing architecture; round-3 reviews non-blocking
+11-07 04:47 | me | OWNER | project log | owner: logs completely working fine; keep logging every step
+11-07 04:47 | dots | REVIEW-DONE | batch r7_ui_js | 4390 chars
+11-07 04:47 | A1(haiku,medium) | AGENT-DONE | bible, STATUS.md, director/test_bible_consistency.py, core/{__init__,core.json,style_pack}.py, core/tests/* | director 387, h3 159, flow 114+2F, ui 161+1F, core 25
+11-07 04:48 | B2(haiku,medium) | CMD | director, h3 baseline | director 387 pass (brief said 385), h3 159 pass
+11-07 04:48 | B2(haiku,medium) | EDIT | director/test_look_schema.py | written: look shape, brief, style_rules, CLI tests (before impl)
+11-07 04:48 | B2(haiku,medium) | EDIT | director/shot_schema.py | look_problems + reveal check added in validate_shot
+11-07 04:48 | B2(haiku,medium) | TEST | director/test_look_schema.py | shot-schema look tests pass (24), test_shot_schema 12 pass
+11-07 04:48 | B2(haiku,medium) | TEST | h3/tests/test_look_metadata.py | 2 pass (metadata look no SC-01; top-level look SC-01) - guard tests, linter already allows metadata
+11-07 04:48 | me | DECISION | uni WP0+WP1 | A1 verified (core 25 pass, bible diffs exact); consistency test strengthened (catches real old text); committed WP0 + WP1 locally on universal-v1.1, not pushed
+11-07 04:49 | B2(haiku,medium) | EDIT | director/write_pack.py | BRIEF_V23, staged_brief(version), style_rules, story_pack_id, run_staged kw params, CLI flags
+11-07 04:49 | B1(haiku,medium) | CMD | - | read rules + brief
+11-07 04:49 | B5(haiku,medium) | CMD | _inputs AGENT_RULES, INTERFACES, briefs/B5 | read rules + brief
+11-07 04:49 | B3(haiku,medium) | CMD | - | read rules + brief
+11-07 04:50 | me | AGENT-START | B1(haiku,medium) WP2 | owns tools/convert_bible.py,convert_deva_bible.py,lint_pack.py,styles/*,stories/kaliya_mardan/story.json,OPEN_QUESTIONS.md,core/tests/test_styles.py
+11-07 04:50 | me | AGENT-START | B3(haiku,medium) WP6 | owns core/frame_metrics.py,flash_check.py,clip_tools.py gates,tests
+11-07 04:50 | me | AGENT-START | B5(haiku,medium) WP5 | owns flow/scripts/palette_check.py,file_flow_download.py hook,tools/measure_plate.py,test_palette_check.py
+11-07 04:50 | B2(haiku,medium) | EDIT | director/MASTER_PROMPT_v2.3.md | v2.2 copy + 4.5-head line, COLOUR AND RETENTION FIELDS, R1-R10 section
+11-07 04:50 | B2(haiku,medium) | TEST | director/test_look_schema.py | fixed test shot length (5.2 s beats); staged v2.3 prompt test
+11-07 04:51 | B3(haiku,medium) | CMD | - | env check: python, PIL, ffmpeg, existing test_style_pack header read
+11-07 04:51 | B5(haiku,medium) | CMD | read spec 112-144,387-401,626-639,A10,A24,A27; core/style_pack.py; filer+fingerprint+test_filer | spec read, tools/ dir absent
+11-07 04:51 | B3(haiku,medium) | EDIT | core/core.json | added red_ratio_min 0.8, red_min_luma 0.05 in flash object
+11-07 04:51 | B2(haiku,medium) | TEST | director, h3, flow, ui, core | director 422 (was 387), h3 161 (was 159), flow 114+2F, ui 161+1F, core 25
+11-07 04:51 | B2(haiku,medium) | AGENT-DONE | director/shot_schema.py, write_pack.py, MASTER_PROMPT_v2.3.md, test_look_schema.py, h3/tests/test_look_metadata.py | director 422, h3 161 pass
+11-07 04:51 | B3(haiku,medium) | TEST | core/tests/test_frame_metrics.py | written, expected FAIL (no module yet)
+11-07 04:51 | B5(haiku,medium) | TEST | flow/scripts/test_palette_check.py | written; run fails before impl (expected, modules missing)
+11-07 04:51 | B4a(haiku,medium) | CMD | read rules + brief | rules, interfaces, brief read
+11-07 04:51 | B4b(haiku,medium) | CMD | - | read rules + brief
+11-07 04:51 | B4c(haiku,medium) | CMD | _inputs/AGENT_RULES.md, INTERFACES.md, briefs/B4c.md | read rules + brief
+11-07 04:51 | B1(haiku,medium) | CMD | read style_pack.py, spec, bible | read 3 rules files, style_pack.py, spec 3.2/WP2/A3-A24/Q1-8, art_bible, kaliya bible: 11 chars, 6 envs
+11-07 04:51 | B5(haiku,medium) | EDIT | flow/scripts/palette_check.py | measure, check_keyframe, check_download, CLI written
+11-07 04:52 | me | DECISION | uni WP3 | B2 verified (109 director + 2 h3 tests pass, v2.2 prompt untouched); committed WP3 locally
+11-07 04:52 | B3(haiku,medium) | TEST | core/tests/test_frame_metrics.py core/frame_metrics.py | 9 pass (ffmpeg tests run)
+11-07 04:52 | B5(haiku,medium) | EDIT | tools/measure_plate.py | written; measure_plate tests run
+11-07 04:52 | B1(haiku,medium) | TEST | core/tests/test_styles.py | wrote 17 tests (TDD), run before code: all FAIL as expected (no tools/styles yet)
+11-07 04:52 | B4b(haiku,medium) | CMD | - | read spec P0-P13, A4/A22, existing style_pack.py + core.json
+11-07 04:52 | B3(haiku,medium) | TEST | core/tests/test_flash_check.py | written, expected FAIL (no module yet)
+11-07 04:52 | B1(haiku,medium) | EDIT | tools/convert_bible.py styles/braj_earth.json | converter written, ran twice for braj_earth.json
+11-07 04:52 | me | AGENT-START | B4a,B4b,B4c(haiku,medium) WP4 timeline+P-rules+R-rules; B9a(haiku,medium) WP9a visual_qa colour,cvd,retention_report,docs
+11-07 04:52 | B1(haiku,medium) | EDIT | tools/convert_bible.py | stopword skip added to colour labels; braj regenerated
+11-07 04:52 | B1(haiku,medium) | TEST | core/tests/test_styles.py -k braj | 1 failed, 8 passed, 9 deselected in 0.19s
+11-07 04:52 | B9a(haiku,medium) | CMD | read rules + brief | ok
+11-07 04:53 | B3(haiku,medium) | EDIT | core/flash_check.py | F1/F2/find_transitions/with_header/check_flash written
+11-07 04:53 | B3(haiku,medium) | TEST | core/tests/test_flash_check.py | 14 pass; core/tests/test_styles.py (not mine) 11 FAIL ignored
+11-07 04:53 | B5(haiku,medium) | EDIT | flow/scripts/file_flow_download.py | G1 hook + env reads added; existing lines untouched
+11-07 04:53 | B1(haiku,medium) | EDIT | tools/convert_deva_bible.py styles/deva_neon.json | DEVA converter written; ran on art_bible twice
+11-07 04:53 | B3(haiku,medium) | CMD | core/tests/test_flash_check.py | correction: flash test count is 13 (not 14); core/test_frame_metrics 9; both 22 pass
+11-07 04:53 | B1(haiku,medium) | EDIT | tools/lint_pack.py | lint_pack written; ran on deva_neon and braj_earth
+11-07 04:53 | B4b(haiku,medium) | DECISION | core/pack_rules.py | P1 WARN when story.json missing (story_path_exists False); P2 look required only when story exists
+11-07 04:53 | B1(haiku,medium) | EDIT | styles/braj_earth.json tests | regenerated braj after converter fix; fixed fixture colours in test_lint_fixture
+11-07 04:54 | B8a(haiku,medium) | CMD | read rules + brief | ok
+11-07 04:54 | B4c(haiku,medium) | CMD | SPEC 229-247,323-383,112-144,210-228,840-850; core.json; style_pack.py | spec + existing files read
+11-07 04:54 | B1(haiku,medium) | EDIT | stories/kaliya_mardan/story.json OPEN_QUESTIONS.md | story.json and OPEN_QUESTIONS.md written (Q1-Q8, neon list, dL lint, decisions)
+11-07 04:54 | B1(haiku,medium) | TEST | core suite | 1 error in 0.41s
+11-07 04:54 | B4b(haiku,medium) | EDIT | core/tests/test_pack_rules.py | 60+ rule tests written (TDD red step)
+11-07 04:54 | me | AGENT-START | B8a(haiku,medium) WP8a core/lut.py + tools/make_lut.py
+11-07 04:54 | B5(haiku,medium) | TEST | flow/scripts suite | fixed filer test paths (sub arg empty -> adhyay_01 root); rerun
+11-07 04:54 | B9a(haiku,medium) | TEST | director/ baseline | 13 failed, 422 passed in 2.25s
+11-07 04:54 | B9a(haiku,medium) | TEST | core/ baseline before my files | see console
+11-07 04:54 | B4a(haiku,medium) | CMD | read spec 229-247,210-228,355-368,842-856,931-940; h3 schema keys; h3_director frames_for_shot; synth.py | read done
+11-07 04:54 | B3(haiku,medium) | TEST | director/test_clip_gates.py | written; expected FAIL (no gates yet)
+11-07 04:54 | B4c(haiku,medium) | TEST | core/tests/test_retention_rules.py | red: 0 pass, module missing (TDD step 1)
+11-07 04:54 | B9a(haiku,medium) | CMD | baseline: director 13 FAIL in test_clip_gates.py (not mine), 422 pass; visual_qa 11 pass; core collection error in core/tests/test_pack_rules.py (not mine)
+11-07 04:54 | B5(haiku,medium) | TEST | suites director,h3,ui,core,flow | see final counts
+11-07 04:54 | B4a(haiku,medium) | EDIT | core/tests/test_timeline.py | 24 tests written (TDD red step)
+11-07 04:55 | B3(haiku,medium) | EDIT | director/clip_tools.py | gates() + _gates_cli + helpers added; main dispatches gates
+11-07 04:55 | B4c(haiku,medium) | EDIT | core/retention_rules.py | R1-R10 rules + check_retention_rules written
+11-07 04:55 | B4c(haiku,medium) | TEST | core/tests/test_retention_rules.py | 34 pass (green)
+11-07 04:55 | B9a(haiku,medium) | TEST | director/test_visual_qa_colour.py written (red) | see console
+11-07 04:55 | supervl | REVIEW-DONE | batch r3_h3_core | 3123 chars
+11-07 04:55 | B1(haiku,medium) | TEST | scratchpad verify_deva.py | deva hex/usage/role vs art_bible: deva colour mismatches: 0
+11-07 04:56 | B4a(haiku,medium) | EDIT | core/timeline.py | first implementation written
+11-07 04:56 | B9a(haiku,medium) | EDIT | director/visual_qa.py: RUBRIC_COLOUR, RUBRIC_FULL, judge_any, pack param, --style-pack | see TEST line
+11-07 04:56 | B9a(haiku,medium) | TEST | visual_qa colour 18 pass; test_visual_qa.py 11 pass (unchanged file) | checklist box 1 part A ok
+11-07 04:56 | B8a(haiku,medium) | DECISION | core/lut.py | srgb_to_lab takes ints only: shot match quantises pixel to 0-255 for forward Lab; brief 0.7297 is gamma 2.2, sRGB gives ~0.686 (tests use sRGB fns)
+11-07 04:56 | B8a(haiku,medium) | CMD | spec A2/A17/A19 + style_pack read | ok
+11-07 04:56 | B4c(haiku,medium) | TEST | core/tests/test_retention_rules.py | core minus other agents' test_pack_rules/test_timeline: 99 pass; h3 161 pass; director 450 pass 3 FAIL (test_visual_qa_colour, not mine)
+11-07 04:56 | B4c(haiku,medium) | AGENT-DONE | core/retention_rules.py, core/tests/test_retention_rules.py | 34 pass; R1-R10 green
+11-07 04:56 | B3(haiku,medium) | TEST | core, director, h3, flow, ui | core: my 22 + style_pack pass; core full run blocked by others' test_pack_rules.py/test_timeline.py (modules missing); director 435 pass excl others' test_visual_qa_colour.py; h3 161 pass; flow 130 pass 2 known FAIL; ui 161 pass 1 known FAIL
+11-07 04:56 | B4a(haiku,medium) | TEST | core/tests/test_timeline.py | 24 pass after 3 fixes (test expectations + static-word check)
+11-07 04:56 | B9a(haiku,medium) | TEST | core/tests/test_cvd.py written, run red | ImportError expected
+11-07 04:56 | me | AGENT-START | B8c(haiku,medium) WP8c core/captions.py + tests
+11-07 04:56 | me | DECISION | uni WP4 check_pack | exit code 1 on FAIL only with --strict (UI run_tool_json drops JSON on non-zero exit; A8 says no UI change); to confirm with owner
+11-07 04:56 | B4b(haiku,medium) | EDIT | core/pack_rules.py | P0-P13 implemented (first pass)
+11-07 04:56 | B1(haiku,medium) | TEST | core/tests/test_styles.py | 18 passed in 0.17s; deva hex check 0 mismatches
+11-07 04:56 | B8c(haiku,medium) | CMD | - | read rules + brief
+11-07 04:56 | B9a(haiku,medium) | EDIT | core/cvd.py written | see TEST line
+11-07 04:56 | B8a(haiku,medium) | TEST | core/tests/test_lut.py test_make_lut.py | RED: written, run fails before code (import/no tool) as expected
+11-07 04:56 | B9a(haiku,medium) | TEST | core/tests/test_cvd.py 9 pass
+11-07 04:56 | B4b(haiku,medium) | TEST | core/tests/test_pack_rules.py | 59 pass (new); core/style_pack+frame_metrics 93 pass; core collect ERR in test_lut/test_make_lut (core.lut missing, not mine)
+11-07 04:56 | B8a(haiku,medium) | EDIT | core/lut.py | lut.py written (grade, cube io, shot match, act_reference_lab)
+11-07 04:57 | B1(haiku,medium) | FAIL | core suite | core collection blocked by other workers' test_pack_rules.py and test_cvd.py (missing modules) after 3x60s wait; REQUEST to lead
+11-07 04:57 | B1(haiku,medium) | AGENT-DONE | styles/braj_earth.json styles/deva_neon.json tools/*.py stories/kaliya_mardan/story.json OPEN_QUESTIONS.md core/tests/test_styles.py | test_styles 18 pass; test_style_pack 25 pass; core full blocked by 2 foreign files
+11-07 04:57 | B4a(haiku,medium) | FAIL | core suite collection errors in test_lut.py, test_make_lut.py, test_cvd.py, test_pack_rules.py (other workers' files) | not mine, reported under PROBLEMS
+11-07 04:57 | B5(haiku,medium) | FAIL | core suite | 2 collection errors (test_pack_rules, test_timeline: core modules missing, other worker) after 60 s wait
+11-07 04:57 | B8a(haiku,medium) | EDIT | tools/make_lut.py | make_lut CLI written (DRAFT title, refuse non-DRAFT, identity+WARN, exit 2)
+11-07 04:57 | B8a(haiku,medium) | TEST | core/tests/test_lut.py test_make_lut.py | fix: write_cube mkdir parent; rerun
+11-07 04:57 | B9a(haiku,medium) | TEST | core/tests/test_retention_report.py written, run red | ImportError expected
+11-07 04:57 | B8a(haiku,medium) | TEST | core suite | core run: collection error in other agent's test_retention_report.py (retention_report missing); waiting 60s per rule 11
+11-07 04:57 | B4a(haiku,medium) | TEST | core/tests/test_timeline.py | 24 pass; core suite has other workers' failures (make_lut, cvd, pack_rules, lut)
+11-07 04:57 | B4a(haiku,medium) | AGENT-DONE | core/timeline.py, core/tests/test_timeline.py | timeline 24 pass; core suite not green due to other files
+11-07 04:57 | B8c(haiku,medium) | CMD | core/core.json core/style_pack.py spec 112-144,682-685,740-750,880-910 | read done
+11-07 04:57 | B8a(haiku,medium) | TEST | core suite | after 60s wait rerun; my 2 files rerun
+11-07 04:58 | B5(haiku,medium) | TEST | flow suite 130 pass + 2 known fail; palette 16 new pass; test_filer 16 pass | final
+11-07 04:58 | B9a(haiku,medium) | EDIT | core/retention_report.py written | see TEST line
+11-07 04:58 | me | DECISION | uni WP2 | B1 verified (43 style tests pass, braj byte-identical, lint 13.4/36.0/46.1); committed
+11-07 04:58 | B8c(haiku,medium) | EDIT | core/tests/test_captions.py | 30 tests written (TDD first)
+11-07 04:58 | B5(haiku,medium) | AGENT-DONE | flow/scripts/palette_check.py, flow/scripts/file_flow_download.py, flow/scripts/test_palette_check.py, tools/measure_plate.py | palette 16 new pass; flow 130 pass +2 known fail; test_filer 16 pass; core in flux (other workers)
+11-07 04:58 | dots | REVIEW-DONE | batch r8_ui_app_html_css | 1018 chars
+11-07 04:58 | B3(haiku,medium) | TEST | core, director | after 60s wait: director 453 pass (incl my 18 clip tests); core minus others' test_pack_rules.py: see next line
+11-07 04:58 | B9a(haiku,medium) | CMD | docs/ dir created; reviewed sources for RESEARCH_SOURCES (digest, audit sources, spec l.143 l.474) | ok
+11-07 04:59 | B8a(haiku,medium) | FAIL | core/tests/test_retention_report.py | other agent's file: ImportError retention_report missing; not fixed; listed under PROBLEMS
+11-07 04:59 | me | DECISION | uni WP5 | B5 verified (flow palette+filer 32 pass); committed
+11-07 04:59 | B9a(haiku,medium) | EDIT | docs/RESEARCH_SOURCES.md, docs/COLOUR_RESEARCH.md drafted | checking claims
+11-07 04:59 | B8c(haiku,medium) | EDIT | core/captions.py | first full implementation written
+11-07 04:59 | B3(haiku,medium) | TEST | core | full core run blocked by others' test_captions.py and test_pack_rules.py (missing modules); my 47 incl style_pack pass
+11-07 04:59 | B3(haiku,medium) | TEST | core/flash_check.py director/clip_tools.py | smoke check_flash on 2s jump clip -> []; no D:\ paths in my files; test_clip_tools.py unchanged
+11-07 04:59 | B3(haiku,medium) | AGENT-DONE | core/frame_metrics.py core/flash_check.py core/core.json director/clip_tools.py + 3 tests | 35 new pass; director 453 pass; core full blocked by others' test_captions/test_pack_rules
+11-07 04:59 | B9a(haiku,medium) | TEST | final: visual_qa+colour pass; test_cvd 9 pass; test_retention_report 24 pass; full core see line
+11-07 05:04 | dots | REVIEW-DONE | batch r1_director | 6122 chars
+11-07 05:05 | supervl | REVIEW-DONE | batch r4_h3_gate_ctrl | 2112 chars
+11-07 05:12 | supervl | REVIEW-DONE | batch r5_h3_convert_author | 2079 chars
+11-07 05:14 | supervl | REVIEW-DONE | batch r6_ui_server | 3039 chars
+11-07 05:15 | dots | REVIEW-DONE | batch r2_registry_retry | 3419 chars
+11-07 05:21 | supervl | REVIEW-DONE | batch r7_ui_js | 1180 chars
+11-07 05:22 | dots | REVIEW-DONE | batch r3_h3_core | 4929 chars
+11-07 05:24 | supervl | REVIEW-DONE | batch r8_ui_app_html_css | 2878 chars
+11-07 05:32 | dots | REVIEW-DONE | batch r4_h3_gate_ctrl | 4230 chars
+11-07 05:36 | dots | REVIEW-DONE | batch r5_h3_convert_author | 388 chars
+11-07 06:04 | dots | REVIEW-DONE | batch r6_ui_server | 1618 chars
+11-07 06:15 | dots | REVIEW-DONE | batch r7_ui_js | 4413 chars
+11-07 06:33 | dots | REVIEW-DONE | batch r8_ui_app_html_css | 4178 chars
+11-07 08:11 | me | RESUME | universal worktree after session cut | stopped agents a0cfeef1 (WP6), a81df7d9 (WP4b), ac50001b (WP9a), ab0e61f7 (WP8a), a4e88f90 (WP8c) and shell tasks left files, no hand-backs; verified by re-running tests instead
+11-07 08:11 | me | TEST | core 271 pass, director 453 pass, h3 161 pass (before commits) | ok
+11-07 08:11 | me | COMMIT | 20615f5 WP6 | frame_metrics, flash_check, clip_tools gates, core.json flash keys; legacy clip_tools CLI kept (qa/last/2-arg); WP6 tests 40 pass
+11-07 08:11 | me | COMMIT | 9591092 WP4 | timeline, pack_rules P0-P13, retention_rules R1-R10 modules + tests
+11-07 08:11 | me | COMMIT | a2b8dbe WP8a | lut.py, make_lut tool + tests
+11-07 08:11 | me | COMMIT | 039a20a WP8c | captions.py + tests
+11-07 08:11 | me | COMMIT | 416a941 WP9a | visual_qa colour criteria, cvd, retention_report, docs research notes
+11-07 08:11 | me | DECISION | WP8a/8c/9a | no hand-back received; accepted on green tests + static check (no D:\ paths, no media, no music); their agents' diffs not individually re-read
+11-07 08:11 | me | LAUNCH | B7 (haiku,medium) and B4d (haiku,medium) in parallel; B8b waits for B7
+11-07 08:12 | B7(haiku,medium) | CMD | read rules + brief | AGENT_RULES, INTERFACES, B7 read
+11-07 08:12 | B4d(haiku,medium) | CMD | _inputs/AGENT_RULES.md, INTERFACES.md, briefs/B4d.md | read rules + brief
+11-07 08:12 | B4d(haiku,medium) | TEST | director | baseline 453 passed (rules said 385)
+11-07 08:13 | B7(haiku,medium) | CMD | baseline h3 161 pass, core 271 pass, director 453 pass | before edits
+11-07 08:14 | B7(haiku,medium) | TEST | h3/tests/test_wp7_assembly.py | FAIL as expected: ImportError attach_colour_seams (red first)
+11-07 08:14 | B7(haiku,medium) | EDIT | h3/assemble_reel.py h3/render_controller.py h3/tests/test_wp7_assembly.py h3/tests/test_assemble_reel.py | implemented WP7; 1 assertion edited (concat tail)
+11-07 08:15 | B7(haiku,medium) | TEST | h3 177 pass (161+16 new), core 271 pass, director 453 pass | ffmpeg-dependent WP7 tests ran (not skipped)
+11-07 08:15 | B7(haiku,medium) | AGENT-DONE | h3/assemble_reel.py h3/render_controller.py h3/tests/test_wp7_assembly.py h3/tests/test_assemble_reel.py | h3 177 pass, core 271, director 453
+11-07 08:15 | B4d(haiku,medium) | EDIT | director/check_pack.py | check(pack_dir, story_path) + rules + --strict CLI written (TDD order not kept for this file)
+11-07 08:15 | B4d(haiku,medium) | EDIT | core/tests/fixtures/deva_shots_template.json | byte copy of DEVA template (cmp SAME)
+11-07 08:16 | me | VERIFY | B7 (a2293c0c) | h3 177 pass, core 271, director 453; diff read: delivery flags from core.json, G3 window = editorial frames, loudness pass-through
+11-07 08:16 | me | COMMIT | WP7 (h3/assemble_reel.py, h3/render_controller.py, h3/tests/test_assemble_reel.py, h3/tests/test_wp7_assembly.py) | 1 assertion edited (concat tail), 16 new tests
+11-07 08:16 | me | OPEN | render_controller.prepare | corrupt loudness.json raises after compile_episode wrote shot files; shot files remain on disk; fix = read loudness before compile (outside WP7 ownership, not changed)
+11-07 08:16 | me | OPEN | render_controller docstring | still says "no ffmpeg"; attach_colour_seams runs ffmpeg when clips exist; not edited
+11-07 08:16 | me | OPEN | G3 | nothing blocks on G3 in assembly; post.py (B8b) refuses on G3
+11-07 08:16 | B4d(haiku,medium) | TEST | core/tests/test_convert_deva_shots.py | 9 tests written, run before converter exists (expected FAIL)
+11-07 08:16 | me | LAUNCH | B8b (haiku,medium) post.py; prerequisites WP6, WP7, WP8a, WP8c committed; B4d still running
+11-07 08:16 | B8b(haiku,medium) | CMD | _inputs/AGENT_RULES.md _inputs/INTERFACES.md _inputs/briefs/B8b.md | read rules + brief
+11-07 08:16 | B4d(haiku,medium) | EDIT | tools/convert_deva_shots.py | flat-mode converter + CLI written
+11-07 08:16 | B4d(haiku,medium) | TEST | core/tests/test_convert_deva_shots.py | 9 pass after hook-note fix
+11-07 08:16 | B4d(haiku,medium) | CMD | scratch DEVA run: convert + check_pack CLI | run done, see report
+11-07 08:17 | B4d(haiku,medium) | TEST | director/test_check_pack_rules.py | new fixture tests run
+11-07 08:17 | me | STATUS | owner asked to restart remaining work to close | B4d (ae2b9106) and B8b (af658ef9) still running, not restarted to avoid file clashes
+11-07 08:17 | me | GAP | spec 6.3 check | A25 --h3 converter mode not written (B4d is flat only); A26 sat_avg_ceiling still null; WP9 QA sheet panels and retention CLI not confirmed; README.md 15 lines and STATUS.md 53 lines not updated
+11-07 08:17 | me | LAUNCH | C2 (haiku,medium) WP9 remaining: QA sheet thumbnail+CVD panel, retention_report CLI; A26 left null as open question
+11-07 08:17 | C2(haiku,medium) | CMD | _inputs/AGENT_RULES.md, INTERFACES.md | read rules + brief
+11-07 08:17 | B4d(haiku,medium) | TEST | director/test_check_pack_rules.py | strobe and slow fixtures fixed to edit_frames (director caps one render at 15.08 s)
+11-07 08:18 | B8b(haiku,medium) | DECISION | director/post.py | sws_dither: both scale-filter option and global -sws_dither accepted on ffmpeg 8.1.1; using scale filter option sws_dither=ed
+11-07 08:18 | C2(haiku,medium) | CMD | core/ director/ | baseline: core 280 pass, director 469 pass, clip_gates+clip_tools 18 pass
+11-07 08:18 | C2(haiku,medium) | DECISION | retention_report.py, its test | CLI, 31.0 s test and mapping already exist; no change needed
+11-07 08:18 | C2(haiku,medium) | DECISION | core.json, A26 | sat_avg_ceiling already null; no release test added (would fail suite); OPEN_QUESTION
+11-07 08:18 | C2(haiku,medium) | DECISION | clip_tools.qa | core/cvd.panel exists; qa sheet lacks panels; adding them
+11-07 08:18 | C2(haiku,medium) | EDIT | director/test_qa_sheet_panels.py | new test written (panels expected)
+11-07 08:18 | C2(haiku,medium) | EDIT | director/clip_tools.py | qa adds _add_colour_panels (core.cvd) and panels key
+11-07 08:18 | B4d(haiku,medium) | TEST | director 469 pass (453 base +16 new); core 280 pass; h3 177 pass; flow 130 pass 2 FAIL (known); ui 161 pass 1 FAIL (known test_14)
+11-07 08:19 | B4d(haiku,medium) | AGENT-DONE | director/check_pack.py, director/test_check_pack_rules.py, tools/convert_deva_shots.py, core/tests/test_convert_deva_shots.py, core/tests/fixtures/deva_shots_template.json | director 469, core 280, ui 161+1 known FAIL, no commits
+11-07 08:19 | C2(haiku,medium) | AGENT-DONE | director/clip_tools.py, director/test_qa_sheet_panels.py | core 280 pass; director 471 pass; clip_gates+clip_tools+panels 20 pass
+11-07 08:20 | me | VERIFY | B4d (ae2b9106) | director 471 pass, core 280, h3 177; read report; decisions: --strict opt-in exit, BANNED narrowed, converter VFX/impact rules
+11-07 08:20 | me | DECISION | P1 missing story.json | FAIL, not WARN (spec 6.1 line 619). Changed core/pack_rules.py rule_p1 and 2 tests; the spec table says P1 FAIL
+11-07 08:20 | me | COMMIT | 149f503 WP4d | check_pack, rules wiring, --strict, DEVA flat converter, fixtures
+11-07 08:20 | me | VERIFY | C2 (a27354eb) | QA sheet panels 2 tests pass; retention CLI already existed (test at 31.0 s); A26 left null
+11-07 08:20 | me | COMMIT | 3ee558e WP9 | QA sheet thumbnail + deuteranopia panels
+11-07 08:20 | me | OPEN | P10 fonts | styles/fonts not in repo, so real packs get P10 FAIL "font directory not found"; fonts must come from owner (not a code fix)
+11-07 08:20 | me | OPEN | DEVA template check | P5 SHOT-02 as expected, plus P10 (fonts), R1 focal CHAR-SHIVA not in cast, R6 static gaps on 3-4 s shots; content problems, not converter bugs
+11-07 08:20 | me | LAUNCH | A25 (haiku,medium) convert_deva_shots --h3 mode + linter test
+11-07 08:21 | A25 | START | A25 build agent: --h3 mode in tools/convert_deva_shots.py + core/tests/test_convert_deva_h3.py (worktree universal-v1.1)
+11-07 08:20 | A25(haiku,medium) | CMD | read AGENT_RULES, INTERFACES, brief check
+11-07 08:20 | me | CHECK | Kaliya real pack | stories/kaliya_mardan/milestone_leap has DIRECTION.md only, no shots.json: check_pack P0 FAIL (missing file). 6.3 Kaliya item NOT met on real data
+11-07 08:20 | me | CHECK | Kaliya t0 shots (director/t0_pack/t0_shots.json, 8 shots, old flat format, scratch copy) | P2 FAIL x8 (no look block), R6 FAIL x8, R1 FAIL x1, P10 FAIL (fonts); no P1 or P4 FAIL. Needs v2.3 writer shots with look blocks (model call, not run without owner go)
+11-07 08:21 | B8b(haiku,medium) | EDIT | director/post.py, director/test_post.py | written (first draft), tests not yet run
+11-07 08:22 | A25(haiku,medium) | CMD | flat baseline sha256 captured before edit; h3 plan: metadata holds look+converter_notes (SC-01 forbids top-level extras)
+11-07 08:23 | B8b(haiku,medium) | DECISION | director/post.py | RGB conversion via explicit scale (no auto_scale); tags via -x264-params (color_transfer was unknown)
+11-07 08:24 | A25(haiku,medium) | EDIT | tools/convert_deva_shots.py | --h3 mode + to_h3 added; flat sha check run
+11-07 08:25 | me | FIX | NOW block | was stale at 04:16; overwritten with 08:30 state (blot NOW BLOCK rule)
+11-07 08:25 | me | TEST | v4 tree working copy | ui 223 pass, director 634, h3 543, flow 116 pass; node --check ui/static/pipeline.js app.js ok
+11-07 08:25 | me | REVIEW-DONE | v4 round-3 files | research/ROUND3_REVIEW_SUPERVL and _DOTS exist (not triaged); checklist 11.2 W5 and 11.3 open
+11-07 08:25 | me | CHECK | W5 UI diff read | server.py record_spend after _start under spend flag; ep sort mixed types; pipeline.js loadDetail single-flight; keepPack on Save story; app.js X-UI on all requests
+11-07 08:25 | A25(haiku,medium) | TEST | core/tests/test_convert_deva_h3.py | 16 passed (core convert deva shots+h3 files); h3 suite 177 passed (no h3 files touched; AGENT_RULES baseline said 159)
+11-07 08:25 | A25(haiku,medium) | DECISION | tools/convert_deva_shots.py | h3 defaults: seams/poses/tags/location UNSET/cadence thirds/camera rule table/stage6=trim_out+-6 (MO-03)/tail 24-47/head 12
+11-07 08:25 | A25(haiku,medium) | FAIL | core/tests/test_convert_deva_h3.py | linter 15 ERRORs left, all template/registry content: KF-02 x8, SD-01 x2, CM-01 x1, PR-05 x4; no commit
+11-07 08:25 | A25(haiku,medium) | AGENT-DONE | tools/convert_deva_shots.py, core/tests/test_convert_deva_h3.py | core+h3 tests green (16 / 177)
+11-07 08:25 | T-DIR(haiku,low) | CMD | blot.md | read rules, LIVE LOG tail read
+11-07 08:25 | T-H3(haiku,high) | START | h3 triage round3 batches r3_h3_core,r4_h3_gate_ctrl,r5_h3_convert_author
+11-07 08:25 | me | CMD | read blot.md, branch v4-architecture-2026-11-07
+11-07 08:25 | me | CMD | grep batch names in research/ (ROUND3 review files)
+11-07 08:25 | T-DIR(haiku,low) | CMD | research/ROUND3_REVIEW_SUPERVL,ROUND3_REVIEW_DOTS | read both review files; scope r1_director + r2_registry_retry
+11-07 08:26 | me | VERIFY | A25 (a764d074) | core convert tests 16 pass, h3 177 pass; read report; linter leftovers = 15 known template gaps (keyframe PNGs missing, SD-01, PR-05, CM-01)
+11-07 08:26 | me | COMMIT | 6cb1f1c A25 | tools/convert_deva_shots.py --h3 + core/tests/test_convert_deva_h3.py
+11-07 08:26 | T-UI(haiku,high) | START | ui r6_ui_server,r7_ui_js,r8_ui_app_html_css triage | read blot.md, NOW, batches
+11-07 08:26 | T-DIR(haiku,low) | TEST | director | baseline 634 passed (before work)
+11-07 08:26 | T-H3(haiku,high) | CMD | read ROUND3 SUPERVL+DOTS; r3_h3_core 3+3, r4 2+7, r5 3+garbled (dots r5 unreadable)
+11-07 08:26 | B8b(haiku,medium) | TEST | director/test_post.py | 12 passed (test_post.py)
+11-07 08:26 | B8b(haiku,medium) | TEST | director | 483 passed (full director suite; B4d not affecting)
+11-07 08:26 | B8b(haiku,medium) | AGENT-DONE | director/post.py, director/test_post.py | test_post 12 passed; director 483 passed; no commits
+11-07 08:27 | T-UI(haiku,high) | CMD | ui/pipeline.py 85-110,340-365,660-700,268-290,845-865 | read r6 spots: 96,351,855,670 real; 279 inside try (FALSE)
+11-07 08:26 | me | TEST | h3 baseline before triage
+11-07 08:28 | T-UI(haiku,high) | CMD | ui/server.py 170-180,716-760,1225-1255 | server 734,738 real (no clamp); 1249 used-before-start real low; 742 sort already mixed-safe
+11-07 08:29 | T-UI(haiku,high) | CMD | h3/asset_manifest.py:198-203 | pipeline.py:855 FALSE: load_manifest enforces clips dict inside try
+11-07 08:30 | T-UI(haiku,high) | CMD | ui/static/app.js 245-285,590-600,685-695,765-780,1100-1116,1168-1205,1316-1326 | api no timeout REAL; 690 FALSE (parsed JSON); h3Run guard missing REAL
+11-07 08:31 | T-UI(haiku,high) | CMD | ui/static/pipeline.js 620-632,1834-1854; grep StudioWizard,slugs server | r8 app.js:1321 FALSE (pipeline.js:2086 defines it), app.js:596 FALSE (server always sets slug)
+11-07 08:32 | T-UI(haiku,high) | CMD | pipeline.js 950-992 (runLink) | confirm busy reset REAL pattern; fix_failed_stage: story_state always sends stage? check
+11-07 08:27 | me | TEST | probe scratchpad p1.py: S-r3-1 raises ValueError, S-r3-2 fps0 ZeroDivision, S-r3-3 regex raises; missing exec_profile KeyError is documented
+11-07 08:34 | T-UI(haiku,high) | DECISION | r6/r7/r8 triage | REAL: pipeline.py shot_seconds, 351, 670, 690; server.py 734/738, 1249; app.js api timeout, h3Run guard; pipeline.js busy x5. FALSE: 855,279,NEXT_STAGE,690js,596,1321. UNVERIFIED: openPacket,qaDirFor
+11-07 08:36 | T-UI(haiku,high) | EDIT | ui/pipeline.py | shot_seconds, n_shots, unhashable id, episode sort (4 fixes)
+11-07 08:37 | T-UI(haiku,high) | EDIT | ui/server.py | read_pack seconds clamp; Api.run used flag set after _start
+11-07 08:38 | T-UI(haiku,high) | EDIT | ui/static/app.js | api() 120 s abort timeout; h3Run shot-file guard
+11-07 08:39 | T-UI(haiku,high) | CMD | ui/static/pipeline.js busy sites list | checking closeModal paths before busy fix
+11-07 08:28 | me | DECISION | D-r3-1 FALSE (lint_story docstring: structure KeyError by design); D-r3-2 FALSE (lint compiles same prompt first, raises ValueError before line 199)
+11-07 08:28 | me | TEST | probe p2/p3 gate_d_audio: 5 AttributeError crashes confirmed (r4 1,2,3,5,6); D-r4-7 FALSE (continue skips warning)
+11-07 08:28 | me | TEST | probe render_controller S-r4-1 FALSE for stated case (lint compiles same prompt); S-r4-2 REAL low
+11-07 08:41 | T-UI(haiku,high) | EDIT | ui/static/pipeline.js | confirmPending flag: busy kept during confirm, closeModal resets, 5 sites
+11-07 08:28 | T-DIR(haiku,low) | FAIL | shell | stray cat hung 120s, task stopped; no file change
+11-07 08:42 | T-UI(haiku,high) | TEST | ui (pytest) after edits | 223 passed; node --check pipeline.js app.js ok
+11-07 08:29 | T-DIR(haiku,low) | CMD | director/write_pack,pack_validator,run_registry,retry_policy,simple_language | probed 12 findings via scratch script
+11-07 08:29 | me | TEST | probe p4/p5/p7: S-r5-1 OverflowError(inf) ValueError(nan); S-r5-2 TypeError; S-r5-3 AttributeError; D-r3-3 REAL (SX-01 suppressed when dialogue malformed)
+11-07 08:29 | me | DECISION | REAL: S-r3-1(base_res/aspect part) S-r3-2 S-r3-3 S-r4-2 D-r4-1..6 S-r5-1..3 D-r3-3; FALSE: D-r3-1 D-r3-2 D-r4-7; S-r4-1 FALSE(stated case)
+11-07 08:45 | T-UI(haiku,high) | EDIT | ui/test_r3_fixes.py | regression tests for 6 REAL fixes (new file)
+11-07 08:47 | T-UI(haiku,high) | TEST | ui/test_r3_fixes.py | 9 passed (after fixture fix)
+11-07 08:29 | T-DIR(haiku,low) | DECISION | triage | verdicts: F1 ML-03 FALSE(by design), F5 FALSE, F8 FALSE, F9 FALSE(no threaded caller), F6 REAL but prior skip decision kept as OPEN_QUESTION; F2 F3 F4 F7 F10 F11 F12 REAL-low/medium fix
+11-07 08:30 | T-DIR(haiku,low) | EDIT | director/write_pack.py,pack_validator.py,run_registry.py,retry_policy.py,simple_language.py | 7 fixes (F2 F3 F4 F7 F10 F11 F12); not yet tested
+11-07 08:30 | me | VERIFY | B8b (af658ef9) | test_post 12 pass; director 483; core 290 (before flash fix); h3 177; read post.py grep: no D:\ paths, no music
+11-07 08:30 | me | DECISION | core/flash_check.py _worst_window | flashes = ceil(transitions/2); 8 alternating frames were 3 flashes (not refused) vs owner acceptance 4-flash second refuses; spec line 650. Owner may revert
+11-07 08:30 | me | FIX | director/test_post.py injected flash | 8 alternating frames (was 24); refuse asserted
+11-07 08:30 | me | TEST | core/tests/test_flash_count.py | 3 pass (8 frames FAIL, 6 frames pass, single flash pass); director 483, core 290, h3 177 pass
+11-07 08:30 | me | COMMIT | 5eed5e7 WP8b post.py | 21fd11b F1 counting | 2 commits
+11-07 08:48 | T-UI(haiku,high) | TEST | ui full suite | 232 passed (223 baseline + 9 new)
+11-07 08:30 | D-UNI(haiku,medium) | CMD | _inputs/AGENT_RULES.md,_inputs/blot.md,README.md,STATUS.md | read rules, blot, README, STATUS
+11-07 08:50 | T-UI(haiku,high) | DECISION | research/TRIAGE_R3_UI_2026-11-07.md | 6 REAL fixed (R6-1,2,4,5,6,7; R7-1,2; R8-1,2 = 10 items); 6 FALSE; 2 UNVERIFIED
+11-07 08:50 | T-UI(haiku,high) | AGENT-DONE | ui/ + research/TRIAGE_R3_UI_2026-11-07.md | ui 232 pass; node ok; not committed
+11-07 08:51 | T-UI(haiku,high) | FIX | research/TRIAGE_R3_UI_2026-11-07.md log line | correction: 10 REAL items fixed (not 6), 6 FALSE, 2 UNVERIFIED
+11-07 08:30 | me | EDIT | h3/schema_and_linter.py | lint_profile type checks PO-01/02/06; PR-08 regex guard; _check_mouth_lock own _run
+11-07 08:30 | me | EDIT | h3/render_controller.py,h3/gate_d_audio.py | secs clamp 0; AttributeError added to 3 except tuples
+11-07 08:30 | me | EDIT | h3/v4_to_h3.py,h3/voice_manifest.py | _is_num isfinite; positions list guard; skip non-dict shots
+11-07 08:30 | T-DIR(haiku,low) | TEST | director/test_r3_*.py | 13 new regression tests written (1 fixed own assertion)
+11-07 08:31 | D-UNI(haiku,medium) | EDIT | README.md | rewritten: layout, commands, test commands (docs only)
+11-07 08:31 | D-UNI(haiku,medium) | EDIT | STATUS.md | rewritten to current state, 5 open items, owner inputs (docs only)
+11-07 08:31 | D-UNI(haiku,medium) | AGENT-DONE | README.md,STATUS.md | docs only; git status: 2 files modified; tests not run
+11-07 08:31 | T-DIR(haiku,low) | TEST | director | director 647 passed (634 base +13 new)
+11-07 08:31 | T-DIR(haiku,low) | DECISION | research/TRIAGE_R3_DIR_2026-11-07.md | 12 findings: 7 REAL fixed, 3 FALSE, 1 REAL deferred (Q2), 1 latent FALSE; open Q1-Q3; RULE 5 re-review not run
+11-07 08:31 | T-DIR(haiku,low) | AGENT-DONE | director/write_pack,pack_validator,run_registry,retry_policy,simple_language + test_r3_*.py | director 647 pass; no commit; no h3/ui edits
+11-07 08:31 | me | EDIT | h3/tests/test_r3_schema_and_linter.py,h3/tests/test_r3_gate_d_audio.py,h3/tests/test_r3_v4_to_h3.py,h3/tests/test_r3_voice_manifest.py,h3/tests/test_r3_render_controller.py | regression tests written (5 files)
+11-07 08:31 | me | COMMIT | 5096134 docs | README.md STATUS.md (docs agent adfa6b7b, checked by lead)
+11-07 08:32 | me | TEST | h3 full suite after fixes
+11-07 08:32 | me | TEST | r3 tests fail on HEAD versions of 4 modules (12 of 12), pass on fixed
+11-07 08:32 | me | EDIT | research/TRIAGE_R3_H3_2026-11-07.md | triage 20 rows: 14 REAL 5 FALSE 1 UNVERIFIED
+11-07 08:33 | T-H3(haiku,high) | AGENT-DONE | h3 triage r3 done: 14 REAL fixed in h3/, 5 FALSE, 1 UNVERIFIED; h3 560 pass
+11-07 08:34 | R4(haiku,high) | CMD | blot.md,PROJECT_LOG.md | read blot rules and LIVE LOG tail; starting round-4 review
+11-07 08:34 | me | EDIT | research/_review_batches_r4.json | 4 batches: director 5, h3 5, ui 4, tests 11 files
+11-07 08:34 | me | EDIT | research/_run_round4_reviews.py | copy of round-3 runner; outputs ROUND4_REVIEW_<WHICH>; reuses round3 prompt
+11-07 08:34 | me | REVIEW-START | dots,supervl | round4 batches r4_director,r4_h3,r4_ui,r4_tests (free models)
+11-07 08:35 | me | TEST | director,h3,ui baseline before R4 fixes | director 647 pass; h3 560 pass; ui 232 pass; node --check ok
+11-07 08:36 | supervl | REVIEW-DONE | batch r4_director | 1761 chars
+11-07 08:39 | me | REVIEW-DONE | supervl r4_director | 5 findings checked: all FALSE (AST parses, setdefault and _safe correct)
+11-07 08:39 | me | DECISION | S-r4-1..5 retry_policy.py:52,55,229 run_registry.py:387,489 | FALSE: Pass/set Default/set_field/getattr_fn not in files; ast ok
+11-07 08:39 | me | FAIL | research/_r4_dots.out | dots attempt 1 empty (token budget); retry at 48000
+11-07 08:42 | dots | REVIEW-DONE | batch r4_director | 3698 chars
+11-07 08:47 | supervl | REVIEW-DONE | batch r4_h3 | 2977 chars
+11-07 08:49 | me | FAIL | probe_r4/probe_d.py call_path | unmocked call_path hit NVIDIA endpoint with fake model (HTTP 404, no paid); probes now mock calls
+11-07 08:49 | me | TEST | probe D4 _check_voice list language | TypeError unhashable (REAL); D1 answer_kind(envelope)=None, empty answer never retried (REAL)
+11-07 08:50 | me | REVIEW-DONE | dots r4_director | 5 findings triaged (see TRIAGE_R4)
+11-07 08:50 | me | DECISION | D-r4-1 write_pack.py:237 REAL high (check gets envelope JSON); D-r4-4 pack_validator.py:844 REAL low (unhashable language); D-r4-2 precedence FALSE; D-r4-3 colon FALSE by design; D-r4-5 FALSE unreachable
+11-07 08:50 | me | DECISION | H-r4-1 gate_d_audio.py:803 REAL (raises before TIME-01); H-r4-2 render_controller.py:328 FALSE (lint compiles same prompt schema_and_linter.py:985); H-r4-3 schema_and_linter.py:937 FALSE by design (structure errors raise, D-r3-1); H-r4-4 schema_and_linter.py:504 REAL low (bool frames pass TM-02, probe zero errors)
+11-07 08:50 | me | CMD | PROJECT_LOG.md, CHECKLIST_ARCHITECTURE_2026-11-07.md | read NOW block and checklist per CLAUDE.md
+11-07 08:52 | me | EDIT | director/write_pack.py,pack_validator.py,h3/gate_d_audio.py,h3/schema_and_linter.py | R4 fixes: envelope_check, narration str guard, _editorial_len, TM-02 bool
+11-07 08:53 | me | TEST | director,h3,ui after R4 fixes | see next line
+11-07 08:53 | me | TEST | director,h3,ui after R4 fixes | director 650 pass; h3 562 pass; ui 232 pass; node ok
+11-07 08:56 | supervl | REVIEW-DONE | batch r4_ui | 2491 chars
+11-07 08:57 | supervl | REVIEW-DONE | batch r4_tests | 3158 chars
+11-07 08:58 | me | EDIT | ui/pipeline.py,ui/server.py,ui/test_r4_fixes.py | UI R4 fixes: unhashable episode key x2, seconds flag before episode skip; 3 tests
+11-07 08:59 | me | TEST | director,h3,ui after all R4 fixes | director 650; h3 562; ui 235 (232+3 r4); node ok
+11-07 08:59 | me | DECISION | research/TRIAGE_R4_2026-11-07.md | written: 9 REAL fixed (D-r4-1,4 H-r4-1,4 U-r4-1,2,3 T-r4-1); rest FALSE/UNVERIFIED; Dots h3,ui pending
+11-07 09:03 | dots | REVIEW-DONE | batch r4_h3 | 4351 chars
+11-07 09:06 | me | REVIEW-DONE | dots r4_h3 | 5 findings to triage (Dots still running r4_ui, r4_tests)
+11-07 09:08 | me | EDIT | h3/voice_manifest.py,h3/render_controller.py,h3/tests/test_r4_fixes.py | Dots h3: DH-r4-4 VO_UNREADABLE, DH-r4-5 AttributeError in main; 2 tests
+11-07 09:08 | me | DECISION | DH-r4-1,2,3 | OPEN_QUESTIONS Q-R4-4,5,6 (owner or spec decision, not changed)
+11-07 09:08 | me | EDIT | research/_review_batches_r4b.json,research/_run_round4b_reviews.py | RULE 5 second review batches (changed files only)
+11-07 09:08 | me | REVIEW-START | supervl | RULE5 second review batches r4b_director,r4b_h3,r4b_ui,r4b_tests
+11-07 09:15 | supervl | REVIEW-DONE | batch r4b_director | 4594 chars
+11-07 09:16 | me | REVIEW-DONE | supervl r4b_director | 5 claims: 2 FALSE (dict kw override), 1 FALSE (ROW-02 validator gate), 1 unverified (claude stdout, no Claude calls), 2 REAL fixed
+11-07 09:16 | me | EDIT | director/write_pack.py,director/pack_validator.py,director/test_r4_fixes.py | episodes non-list ValueError; VM-01 narration_by_lang per language; 652 pass
+11-07 09:21 | supervl | REVIEW-DONE | batch r4b_h3 | 3786 chars
+11-07 09:22 | dots | REVIEW-DONE | batch r4_ui | 1494 chars
+11-07 09:26 | me | EDIT | h3/voice_manifest.py,h3/gate_d_audio.py,h3/tests/test_r4_fixes.py | corrupt narration block coerced; BGM isfinite(b); SFX len via _editorial_len; 2 tests
+11-07 09:26 | me | TEST | director,h3,ui after RULE5 h3 fixes | director 652; h3 564; ui 235; node ok
+11-07 09:26 | me | DECISION | research/TRIAGE_R4 | UI/H3 second-round: 4 REAL fixed (RH-1, RH-3, RH-5 + DU none); Q-R4-8,9,10 open
+11-07 09:27 | me | REVIEW-START | dots | RULE5 second review batches r4b_* (changed files)
+11-07 09:29 | supervl | REVIEW-DONE | batch r4b_ui | 1189 chars
+11-07 09:30 | supervl | REVIEW-DONE | batch r4b_tests | 1282 chars
+11-07 09:31 | me | EDIT | ui/pipeline.py,ui/test_r4_fixes.py | takes_of() helper for project.json takes (string/float crashed estimate); 1 test; ui 236
+11-07 09:31 | me | REVIEW-DONE | supervl r4b_h3, r4b_ui | r4b_h3 5 items: 3 REAL fixed, 1 FALSE (BGM), 1 OPEN; r4b_ui 1 REAL fixed (takes)
+11-07 09:32 | dots | REVIEW-DONE | batch r4_tests | 3215 chars
+11-07 09:32 | me | REVIEW-DONE | dots r4_tests, supervl r4b_tests | no real defect in r4 tests (dots: cosmetic comment only; supervl: none)
+11-07 09:37 | dots | REVIEW-DONE | batch r4b_director | 5384 chars
+11-07 09:47 | dots | REVIEW-DONE | batch r4b_h3 | 4263 chars
+11-07 09:49 | me | DECISION | dots r4b_director triage | REAL fixed: HIGH validate_pack staged envelopes (story_plan), bool episode, narration_by_lang row-level; eyeline label; 655 pass
+11-07 09:51 | me | EDIT | h3/gate_d_audio.py,h3/tests/test_r4_fixes.py | _sid helper: shot_id key (HIGH, PLAN-01 KeyError on real shots); 1 test
+11-07 09:51 | me | TEST | director,h3,ui after RULE5 round-2 fixes | director 655; h3 565; ui 236; node ok
+11-07 09:51 | me | REVIEW-START | supervl,dots | RULE5 third and final round (r4c_*) on files changed after round 2
+11-07 09:55 | dots | REVIEW-DONE | batch r4c_director | 1990 chars
+11-07 09:55 | dots | REVIEW-DONE | batch r4b_ui | 4760 chars
+11-07 09:58 | me | EDIT | ui/pipeline.py,ui/test_r4_fixes.py | takes_of range 1-10 (server rule); 1 test; ui 237
+11-07 09:58 | me | DECISION | dots r4b_ui triage | REAL: takes 0 (fixed); FALSE: HUMAN_CHOICES defined, asset_manifest defs exist; OPEN: gate_d step keys from own writer, episode str/int, story_links.check contract; r4c_director dots 0 defects
+11-07 09:58 | supervl | REVIEW-DONE | batch r4c_director | 3706 chars
+11-07 10:01 | me | EDIT | director/write_pack.py,director/test_r4_fixes.py | episodes_from non-object story block; _stage5_item wrong types; 657 director pass
+11-07 10:03 | dots | REVIEW-DONE | batch r4c_h3 | 4853 chars
+11-07 10:03 | dots | REVIEW-DONE | batch r4b_tests | 5027 chars
+11-07 10:08 | me | DECISION | round limit | 3 review rounds reached; round-3 findings triaged, not fixed (no 4th review allowed); report as not clean
+11-07 10:10 | supervl | REVIEW-DONE | batch r4c_h3 | 3215 chars
+11-07 10:14 | dots | REVIEW-DONE | batch r4c_ui | 2618 chars
+11-07 10:25 | dots | REVIEW-DONE | batch r4c_tests | 5412 chars
+11-07 10:25 | supervl | REVIEW-DONE | batch r4c_ui | 2516 chars
+11-07 10:26 | supervl | REVIEW-DONE | batch r4c_tests | 3900 chars
+11-07 10:27 | me | DECISION | research/TRIAGE_R4 | round 3 triaged: no fixes; 19 open questions Q-R4-1..19 recorded
+11-07 10:28 | me | DECISION | R4 final | 3 review rounds done, NOT clean (round 3 REAL-unfixed items); nothing committed; NOW block not refreshed (write denied by permission)
+11-07 10:29 | me | DECISION | review loop R4 | 3 rounds, NOT CLEAN; round-3 backlog real-but-unfixed sent to BF agent; owner decisions Q-R4-4,5,9,10 left open (triage file)
+11-07 10:29 | me | CHECK | NOW block | agent overwrite was denied by permission classifier; NOT retried; NOW still says 08:25; owner to permit refresh
+11-07 10:29 | BF(haiku,high) | AGENT-START | blot.md,research/TRIAGE_R4_2026-11-07.md | read rules and triage; starting backlog fix 1-9
+11-07 10:30 | me | TEST | h3,ui,director | baseline h3 565 pass, ui 237 pass, director 657 pass
+11-07 10:31 | me | CMD | h3/gate_d_audio.py,h3/schema_and_linter.py,h3/voice_manifest.py,h3/voice_engine.py,h3/render_controller.py,ui/server.py,ui/pipeline.py | read all 9 target sites; re-checked lines (1 same_timing 864, 2 running total 984, 3 manifest 48, 4 anchor/compiled sites, 5 _qc_result 523, 6 row seconds, 7 preview used, 8 jsonl)
+11-07 10:31 | me | EDIT | h3/gate_d_audio.py | item1 same_timing skips no-range langs; item4 non-dict *_by_lang guarded (TIME-01 entry kept)
+11-07 10:31 | me | EDIT | h3/schema_and_linter.py | item2 bool excluded from running total; item4 voice_anchor/compiled non-dict guarded (VA-01 / PR-00 entries)
+11-07 10:32 | me | EDIT | h3/voice_manifest.py | item3 non-dict track -> VO_BAD_TRACK error entry; dialogue guarded; item4 dialogue non-list guarded
+11-07 10:32 | me | EDIT | h3/render_controller.py | item5 AttributeError added to _qc_result except
+11-07 10:32 | me | EDIT | ui/server.py | item6 row seconds bool/None -> 0
+11-07 10:32 | me | EDIT | ui/server.py | item7 used=True after job start; ledger failure returns warning (not silent); single-use kept
+11-07 10:32 | me | EDIT | ui/pipeline.py | item8 list/dict image_id coerced to str in both JSONL loops
+11-07 10:32 | me | CMD | h3,ui,director | running suites after edits 1-8 before tests
+11-07 10:33 | me | FAIL | h3/gate_d_audio.py | r3 test pins PLAN-01 for captions_by_lang string; reverted that guard (already an error entry)
+11-07 10:34 | me | EDIT | h3/tests/test_bf_fixes.py | new file, 11 regression tests for items 1-5
+11-07 10:34 | me | EDIT | ui/test_bf_fixes.py,director/test_bf_fixes.py | ui 4 tests pass (items 6,7,8); director test for item 9 added
+11-07 10:35 | me | DECISION | research/TRIAGE_R4_BF_2026-11-07.md | addendum written: items 1-9 verdicts; item7 used-after-start design; 4e voice_engine not editable
+11-07 10:35 | me | TEST | h3,ui,director | after fixes: h3 576 pass, ui 241 pass, director 658 pass (baseline 565/237/657)
+11-07 12:03 | me | CMD | research/_review_batches_r5.json,research/_run_round5_reviews.py | written: r5_h3 (4 files), r5_ui (2), r5_tests (3)
+11-07 12:03 | me | REVIEW-START | research/ROUND5_REVIEW_DOTS_2026-11-07.md | dots round 5 started in background
+11-07 12:03 | me | REVIEW-START | research/ROUND5_REVIEW_SUPERVL_2026-11-07.md | supervl round 5 started in background (OpenRouter free)
+11-07 12:04 | me | CHECK | R5 runs | no runner process found after agent stopped at 12:04; relaunched both from repo root as lead background jobs
+11-07 12:04 | me | REVIEW-START | ROUND5 dots + supervl relaunched by lead (background)
+11-07 12:12 | supervl | REVIEW-DONE | batch r5_h3 | 3454 chars
+11-07 12:12 | me | FIX | R5 runs | duplicate dots runner (lead relaunch PID 48986 at 12:04) killed; original runner (12:03) kept to avoid double-writes to ROUND5_REVIEW_DOTS
+11-07 12:12 | me | FIX | R5 runs | duplicate supervl runner (lead relaunch PID 48984) killed; original 12:03 runner kept
+11-07 12:12 | me | CHECK | R5 runs | one runner per reviewer now: dots PID 48869, supervl PID 48873 (both 12:03). Super VL batch r5_h3 done; r5_ui and r5_tests pending; Dots first batch on empty-answer retry
+11-07 12:14 | dots | REVIEW-DONE | batch r5_h3 | 3952 chars
+11-07 12:15 | me | TRIAGE | R5 r5_h3 (dots+supervl) | 6 real fixed by R5F (gate_d check_music_presence, voice_ids_for dialogue_by_lang, vo_fit ed<=0, render bool, shot_id unhashable, NO_VO speech-less); open: empty BGM tracks (2 tests pin both sides), execution_profile KeyError (contract), non-dict shot rows (Q-R4-8)
+11-07 12:15 | R5F(haiku,unset) | CMD | blot.md,PROJECT_LOG.md | read blot.md, NOW and LIVE LOG; starting R5 six fixes in h3
+11-07 12:15 | R5F(haiku,unset) | EDIT | h3/gate_d_audio.py | fix1 _is_db guard in check_music_presence; fix3 skip ed<=0 in existing; fix6 any_speech gate on NO_VO_FILES (not yet tested)
+11-07 12:16 | R5F(haiku,unset) | EDIT | h3/voice_manifest.py,h3/render_controller.py,h3/schema_and_linter.py | fix2 dialogue_by_lang; fix4 bool in _num and pixel_frames; fix5 compiled_map.get only for str sid (not yet tested)
+11-07 12:16 | R5F(haiku,unset) | EDIT | h3/tests/test_r5_fixes.py | created 6 regression tests, one per fix (not yet run)
+11-07 12:16 | R5F(haiku,unset) | TEST | h3/tests/test_r5_fixes.py | 6 passed
+11-07 12:17 | R5F(haiku,unset) | TEST | h3 | full suite 580 pass, 2 fail: old NO_VO_FILES pins in test_gate_d_audio.py:437 and test_voice_gate_d.py:62 (no-speech language now gets no NO_VO_FILES by fix6)
+11-07 12:17 | R5F(haiku,unset) | DECISION | h3/tests/test_gate_d_audio.py,h3/tests/test_voice_gate_d.py | updated 2 pins to new rule: NO_VO_FILES only when speech in language
+11-07 12:17 | R5F(haiku,unset) | TEST | h3 | h3 582 pass (baseline 576 + 6 new); director not run (not touched)
+11-07 12:17 | R5F(haiku,unset) | EDIT | research/TRIAGE_R5_H3_FIX_2026-11-07.md | triage written: 6 REAL fixed, 0 open
+11-07 12:18 | me | VERIFY | R5F fixes | h3 582 pass, director 658 pass; test pins changed: test_gate_d_audio.py:437 and test_voice_gate_d.py:62 (no NO_VO for language with no speech; fixture confirmed hi has no speech); owner to confirm
+11-07 12:18 | dots | REVIEW-DONE | batch r5_ui | 1571 chars
+11-07 12:19 | me | TRIAGE | R5 r5_ui Dots | 4 high items FALSE for this repo: cited modules exist (h3/voice_engine.py, director/story_state.py, director/story_links.py); item 5 unverified; no change; logged in research/TRIAGE_R5_2026-11-07.md
+11-07 12:21 | supervl | REVIEW-DONE | batch r5_ui | 2908 chars
+11-07 12:21 | me | TRIAGE | R5 r5_ui Super VL | 5 real-but-low fixed by R5U (agent a7826095); stat race left open; round-5 review loop still not converged (robustness nits keep appearing)
+11-07 12:22 | R5U(haiku,unset) | CMD | blot.md,PROJECT_LOG.md | read blot.md, NOW and LIVE LOG tail; starting R5U five ui fixes
+11-07 12:22 | supervl | REVIEW-DONE | batch r5_tests | 3203 chars
+11-07 12:24 | R5U(haiku,unset) | CMD | ui/server.py,ui/pipeline.py | read target lines for items 1-5; line numbers confirmed (server 414,1556,737; pipeline 321,853,385-412)
+11-07 12:22 | me | TRIAGE | R5 r5_tests Super VL | 2 minor test nits OPEN; 4 claims FALSE (already handled or by design or param exists); router unverified; logged in research/TRIAGE_R5_2026-11-07.md
+11-07 12:26 | R5U(haiku,unset) | EDIT | ui/server.py,ui/pipeline.py | items 1-5 applied (scope_ids, export order, read_pack seconds, gate_d reasons x2, facts version x2)
+11-07 12:28 | R5U(haiku,unset) | EDIT | ui/test_r5u_fixes.py | 5 regression tests written (one per item)
+11-07 12:31 | R5U(haiku,unset) | TEST | ui | ui 246 pass (241 baseline + 5 new), 0 fail
+11-07 12:31 | R5U(haiku,unset) | EDIT | research/TRIAGE_R5_UI_FIX_2026-11-07.md | triage written: 5 REAL fixed, 0 FALSE, 0 OPEN-new
+11-07 12:24 | me | VERIFY | R5U fixes | ui 246, h3 582, director 658 pass; node ok; Dots r5_tests still running (PID 48869)
+11-07 12:28 | dots | REVIEW-DONE | batch r5_tests | 4263 chars
+11-07 12:28 | me | CMD | research/ROUND5_REVIEW_*_2026-11-07.md | all 6 batches done; reading outputs for triage
+11-07 12:28 | me | DECISION | research/TRIAGE_R5 | starting verification of round-5 findings against current code
+11-07 12:29 | me | TEST | h3,ui,director | before triage fixes: h3 582 pass, ui 246 pass, director 658 pass
+11-07 12:29 | me | DECISION | ui/server.py:861-897 | stat race REAL low; fixing with _size helper + test; other R5 items verified (see TRIAGE_R5)
+11-07 12:30 | me | EDIT | ui/server.py | _size() helper (None on OSError) used at finals, keyframes, clips, batch run files
+11-07 12:30 | me | TEST | ui | after _size fix: ui 247 pass (+1 regression test)
+11-07 12:30 | me | REVIEW-START | research/ROUND5B_REVIEW_DOTS_2026-11-07.md,ROUND5B_REVIEW_SUPERVL_2026-11-07.md | second round on ui/server.py and ui/test_bf_fixes.py (RULE 5)
+11-07 12:30 | me | DECISION | research/TRIAGE_R5_2026-11-07.md | written: 1 REAL (SU5-6 fixed), 3 OPEN design, rest FALSE with evidence
+11-07 12:34 | me | TEST | h3,director,ui | after SU5-6 _size fix: h3 582 pass, director 658 pass, ui 247 pass (verifies the subagent's unverified h3/director claim)
+11-07 12:36 | supervl | REVIEW-DONE | batch r5b_ui_server | 1750 chars
+11-07 12:36 | me | REVIEW-DONE | research/ROUND5B_REVIEW_SUPERVL_2026-11-07.md | batch r5b_ui_server: FINAL no real defects (verified file)
+11-07 12:37 | supervl | REVIEW-DONE | batch r5b_tests | 2314 chars
+11-07 12:37 | me | DECISION | research/TRIAGE_R5 round2 | Super VL r5b_tests: 0 REAL; 1 test gap (record_spend order) OPEN; rest FALSE by evidence
+11-07 12:38 | me | REVIEW-DONE | research/ROUND5B_REVIEW_SUPERVL_2026-11-07.md | batch r5b_tests: 5 items; disk_paths FALSE, bool-duration FALSE (BF-6 design), record_spend order = OPEN Q-R5-2 (reviewer said medium, triage says low)
+11-07 12:47 | dots | REVIEW-DONE | batch r5b_ui_server | 3258 chars
+11-07 12:47 | me | REVIEW-DONE | research/ROUND5B_REVIEW_DOTS_2026-11-07.md | batch r5b_ui_server read for triage
+11-07 12:48 | me | DECISION | ui/server.py:1563 | Dots r5b export episode str vs int: OPEN (same contract as Q-R4-14), not changed
+11-07 12:48 | me | TRIAGE | R5B Dots r5b_ui_server | 1 finding: export() ui/server.py:1563 compares episode == int n, string episodes give empty clips; REAL low (pre-existing), OPEN Q-R4-14, not changed; Dots r5b_tests still running
+11-07 12:55 | dots | REVIEW-DONE | batch r5b_tests | 4804 chars
+11-07 12:55 | me | REVIEW-DONE | research/ROUND5B_REVIEW_DOTS_2026-11-07.md | batch r5b_tests read for triage
+11-07 12:55 | me | EDIT | h3/v4_to_h3.py,schema_and_linter.py,gate_d_audio.py,tests/test_gate_d_audio.py | owner approve-all: Q-R4-4 registry voice_engine, Q-R4-5 reuse resolves + KF-06 uses resolved frames, Q-R4-13 empty BGM valid
+11-07 12:55 | me | DECISION | research/TRIAGE_R5_2026-11-07.md | round 2 triaged: 0 REAL; OPEN Q-R5-1 Q-R5-2 Q-R5-3 Q-R5-4, Q-R4-14; rest FALSE
+11-07 12:56 | me | EDIT | h3/schema_and_linter.py,tests/test_v4_to_h3.py | Q-R4-8 non-dict shot rows -> SH-00 lint error; test pinned old Q-R4-4 behaviour updated
+11-07 12:56 | me | TEST | h3,ui,director | final after R5 fix: suites run (see line)
+11-07 12:56 | me | TEST | h3/tests/test_r6_fixes.py | 8 new tests (Q-R5-1, Q-R4-5, Q-R4-8) pass
+11-07 12:57 | me | FAIL | h3 | one transient failure in first final run (581 pass, 1 fail); not reproduced in 3 reruns; total now 590 pass
+11-07 12:57 | me | TEST | h3,ui,director | final: h3 590 pass (3 reruns stable), ui 247 pass, director 658 pass
+11-07 12:59 | me | TEST | h3,director,ui,flow | after approved fixes: h3 590, director 658, ui 253, flow 116 pass
+11-07 12:59 | me | REVIEW-START | research/ROUND6_REVIEW_DOTS_2026-11-07.md,ROUND6_REVIEW_SUPERVL_2026-11-07.md | final batch h3/router.py (Q-R4-3), owner-approved
+11-07 13:00 | supervl | REVIEW-DONE | batch r6_router | 2531 chars
+11-07 13:01 | me | COMMIT | universal-v1.1 | prepare reads loudness.json first, docstring fixed, +1 test; core 290, director 483, h3 178
+11-07 13:01 | me | COMMIT | v4-architecture-2026-11-07 | 7f97e5a director, d262a62 h3, 8f6e65a ui (docs commit pending)
+11-07 13:01 | me | TRIAGE | R6 router Super VL | 1 REAL low fixed (route_shot guard), 2 FALSE; NOW block refreshed with owner permission; research/TRIAGE_R6_2026-11-07.md

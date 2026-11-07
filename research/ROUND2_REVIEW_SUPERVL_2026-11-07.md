@@ -136,3 +136,36 @@ FINAL: server.py:1041 (_verify_stop stop_failed permanently blocks spend), serve
 # BATCH r7_ui_js (supervl) 11-07 04:11
 
 medium, pipeline.js:723, After saving a story the project is re-scoped with `projectOf().pack`, which still holds the previous story's pack because the pipeline project hasn't been reloaded from the server yet. A newly saved or switched-to story can be bound to a nonexistent pack from another story. Story "alpha" has pack "p1"; create story "beta", click Save story, and the project becomes story=
+
+
+# BATCH r8_ui_app_html_css (supervl) 11-07 04:14
+
+Reasoning: I reviewed the three provided files against the owner spec and the Round-1 fix list. The UI (app.js) is the only file with logic; index.html is static markup (panels removed, scripts load app.js then pipeline.js) and style.css is presentational. I checked the API contract, gate logic, modal preview/run flow, field validation patterns, all section renderers, and trust-boundary handling of server responses.
+
+Key observations:
+- `api()` is the sole fetch and documents in its own comment/GUARD_403 that "Every request needs header X-UI and Host", yet it only attaches `X-UI` for non-GET methods. All GET reads omit it.
+- `loadStory` coerces `d.slugs` with `(d && d.slugs) || []` and then calls `S.slugs.some(...)` unconditionally, so a non-array truthy `slugs` from `/api/story` throws.
+- Gates, field patterns (`PAT.*`), modal confirm typing, `jobOk` review_shot rc handling, `|| []` list guards in most renderers, and element references all check out against index.html. No spec violation is visible in the UI for ElevenLabs/Colab/ffmpeg/default model calls (those are explicit user actions), 127.0.0.1 binding, or per-story+pack scoping (those are server/wizard concerns).
+
+=== FILE app.js ===
+severity: high
+file: app.js:252-258
+why: `api()` only sets the `X-UI` header when `method !== 'GET'`, but the page's own documented contract (comment and GUARD_403 text) states "Every request needs header X-UI and Host". Every GET read (status, jobs, story, pack, images, review, video, h3, colab, export, file, log, result) omits `X-UI`; if the server enforces the documented guard on GET, all reads are refused 403 and the UI is non-functional.
+fix: Move `opts.headers['X-UI'] = '1';` outside the `if (method !== 'GET')` block so it is sent on every request.
+unverified: whether the server enforces X-UI on GET; if it only guards mutating requests, this is latent.
+
+severity: medium
+file: app.js:589-590
+why: `loadStory` does `S.slugs = (d && d.slugs) || [];` and then unconditionally calls `S.slugs.some(...)`. A non-array truthy `slugs` value from `/api/story` (e.g. a string) makes `.some` throw TypeError and crashes story load; the same unguarded `|| []` assumption recurs for other server-provided lists.
+fix: Coerce server lists before array methods, e.g. `S.slugs = Array.isArray(d.slugs) ? d.slugs : [];`.
+unverified: whether the server ever returns a non-array for `slugs`.
+
+=== FILE index.html ===
+no findings
+
+=== FILE style.css ===
+no findings
+
+FINAL:
+- app.js:252-258 `api()` omits the `X-UI` header on GET requests, violating its own documented "every request needs X-UI" contract — all read API calls can be refused 403 if the server enforces the guard on GET (enforcement unverified).
+- app.js:589-590 `loadStory` assumes `/api/story` `slugs` is an array and crashes via `S.slugs.some()` on a non-array truthy value (trust-boundary input; trigger unverified).

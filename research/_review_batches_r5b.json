@@ -1,0 +1,4 @@
+{
+ "r5b_ui_server": ["ui/server.py"],
+ "r5b_tests": ["ui/test_bf_fixes.py"]
+}

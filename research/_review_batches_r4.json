@@ -1,0 +1,35 @@
+{
+ "r4_director": [
+  "director/pack_validator.py",
+  "director/write_pack.py",
+  "director/run_registry.py",
+  "director/retry_policy.py",
+  "director/simple_language.py"
+ ],
+ "r4_h3": [
+  "h3/schema_and_linter.py",
+  "h3/render_controller.py",
+  "h3/gate_d_audio.py",
+  "h3/v4_to_h3.py",
+  "h3/voice_manifest.py"
+ ],
+ "r4_ui": [
+  "ui/pipeline.py",
+  "ui/server.py",
+  "ui/static/app.js",
+  "ui/static/pipeline.js"
+ ],
+ "r4_tests": [
+  "director/test_r3_pack_validator.py",
+  "director/test_r3_retry_policy.py",
+  "director/test_r3_run_registry.py",
+  "director/test_r3_simple_language.py",
+  "director/test_r3_write_pack.py",
+  "h3/tests/test_r3_gate_d_audio.py",
+  "h3/tests/test_r3_render_controller.py",
+  "h3/tests/test_r3_schema_and_linter.py",
+  "h3/tests/test_r3_v4_to_h3.py",
+  "h3/tests/test_r3_voice_manifest.py",
+  "ui/test_r3_fixes.py"
+ ]
+}

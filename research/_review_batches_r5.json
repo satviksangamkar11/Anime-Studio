@@ -1,0 +1,17 @@
+{
+ "r5_h3": [
+  "h3/gate_d_audio.py",
+  "h3/schema_and_linter.py",
+  "h3/voice_manifest.py",
+  "h3/render_controller.py"
+ ],
+ "r5_ui": [
+  "ui/server.py",
+  "ui/pipeline.py"
+ ],
+ "r5_tests": [
+  "h3/tests/test_bf_fixes.py",
+  "ui/test_bf_fixes.py",
+  "director/test_bf_fixes.py"
+ ]
+}
