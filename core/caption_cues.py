@@ -48,18 +48,14 @@ def parse_time_range(value):
 def lang_track(trk, lang):
     """(narration, dialogue) of one shot for one language. Shots with *_by_lang maps use them. Single-language shots
     keep the old fields and serve only their narration language (dialogue is taken as that language)."""
-    if not isinstance(trk, dict):
-        return None, []
     if trk.get("narration_by_lang") is not None or trk.get("dialogue_by_lang") is not None:
         nbl, dbl = trk.get("narration_by_lang"), trk.get("dialogue_by_lang")
         nbl = nbl if isinstance(nbl, dict) else {}
         dbl = dbl if isinstance(dbl, dict) else {}
-        narr, dia = nbl.get(lang), dbl.get(lang)
-        return (narr if isinstance(narr, dict) else None), (dia if isinstance(dia, list) else [])
+        return nbl.get(lang), dbl.get(lang) or []
     narr = trk.get("narration")
     if isinstance(narr, dict) and narr.get("language") == lang:
-        dia = trk.get("dialogue")
-        return narr, (dia if isinstance(dia, list) else [])
+        return narr, trk.get("dialogue") or []
     return None, []
 
 
@@ -68,11 +64,22 @@ def spoken_cues(shots, offsets, lang):
     on the narration time). Otherwise the narration and dialogue text of that language is captioned."""
     cues = []
     for shot, t0 in zip(shots, offsets):
-        trk = shot.get("audio_and_dialogue_track") if isinstance(shot, dict) else None
-        trk = trk if isinstance(trk, dict) else {}
+        if not isinstance(shot, dict):
+            raise ValueError("shot must be an object")
+        trk = shot.get("audio_and_dialogue_track")
+        if trk is None:
+            continue
+        if not isinstance(trk, dict):
+            raise ValueError("audio_and_dialogue_track must be an object")
         narr, dia = lang_track(trk, lang)
+        if narr is not None and not isinstance(narr, dict):
+            raise ValueError("narration must be an object")
+        if not isinstance(dia, list) or not all(isinstance(d, dict) for d in dia):
+            raise ValueError("dialogue must be a list of objects")
         cbl = trk.get("captions_by_lang")
-        cap = cbl.get(lang) if isinstance(cbl, dict) else None
+        if cbl is not None and not isinstance(cbl, dict):
+            raise ValueError("captions_by_lang must be an object")
+        cap = cbl.get(lang) if cbl else None
         items = []
         if isinstance(cap, dict):
             items.append((cap.get("text"), cap.get("time_range") or (narr or {}).get("time_range")))
@@ -80,7 +87,7 @@ def spoken_cues(shots, offsets, lang):
             items.append((cap, narr.get("time_range")))
         else:
             items.append(((narr or {}).get("text"), (narr or {}).get("time_range")))
-            items += [(d.get("text"), d.get("time_range")) for d in dia if isinstance(d, dict)]
+            items += [(d.get("text"), d.get("time_range")) for d in dia]
         for text, rng in items:
             if str(text or "").strip() and rng:
                 s, e = parse_time_range(rng)
