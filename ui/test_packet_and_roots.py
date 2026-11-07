@@ -85,3 +85,15 @@ def test_packet_uses_the_story_flow_project_when_story_json_names_one(api):
     (api.cfg.studio / "stories" / SLUG / "story.json").write_text(json.dumps({"flow_project": "https://evil.example/x"}), encoding="utf-8")
     md = api.packet({"story": SLUG, "pack": "pack_a", "jobs": f"flow/generated/{SLUG}/jobs.json", "shots": ["SHOT-001"]})["markdown"]
     assert server.FLOW_PROJECT_URL in md and "evil.example" not in md
+
+
+def test_finished_jobs_record_their_registry_step(api):
+    from types import SimpleNamespace
+    folder = api.cfg.studio / "stories" / SLUG
+    job = SimpleNamespace(command="build_jobs_cmd", rc=0, id="j1",
+                          argv=["py", "build_jobs.py", "--spec", str(api.cfg.studio / "flow" / "generated" / SLUG / "spec.json")])
+    api._record_step(job)
+    lines = (folder / "RUNS.jsonl").read_text(encoding="utf-8").splitlines() if (folder / "RUNS.jsonl").exists() else []
+    assert any('"jobs_built"' in x for x in lines), lines
+    api._record_step(SimpleNamespace(command="build_jobs_cmd", rc=1, id="j2", argv=job.argv))       # a failed job records nothing
+    assert sum('"jobs_built"' in x for x in (folder / "RUNS.jsonl").read_text(encoding="utf-8").splitlines()) == 1

@@ -1225,6 +1225,23 @@ class Api:
         self._audit("end", command=job.command, job=job.id, rc=rc, state=job.state)
         if job.command == "write_pack" and job.state in ("stopped", "failed"):
             self._close_run(job)
+        self._record_step(job)
+
+    STEP_EVENTS = {"build_spec": "spec_built", "build_jobs_cmd": "jobs_built", "h3_prepare": "render_prepare", "review_shot": "image_review"}
+
+    def _record_step(self, job):
+        """audit D 11-08: a finished spec/jobs/review/prepare job writes its run-registry event, so the story's next step moves on
+        (director/story_state.py reads these kinds; nothing wrote them, so the step list stayed stuck at 'build the image jobs')."""
+        kind = self.STEP_EVENTS.get(job.command)
+        ok = job.rc == 0 or (job.command == "review_shot" and job.rc in (1, 3))   # review exit 0 PASS, 1 BLOCK, 3 UNSURE: it ran
+        if not kind or not ok:
+            return
+        m = re.search(r"(?:stories|generated)[\\/]([a-z0-9_]+)[\\/]", " ".join(str(x) for x in job.argv))
+        folder = self.cfg.studio / "stories" / m.group(1) if m else None
+        if folder is not None and folder.is_dir():
+            rr = _registry()
+            if rr is not None:
+                self._hook("append_event", folder, rr.run_id(kind), kind, None, "ok", note=f"ui job {job.id}")
 
     def _close_run(self, job):
         """A write_pack job that was stopped or failed: its open steps get a closing line in the run log."""
