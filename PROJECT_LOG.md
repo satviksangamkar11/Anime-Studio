@@ -1397,3 +1397,31 @@
 11-07 23:54 | me | EDIT | ui/static/style.css | all checkboxes/radios 24x24 (Assay surface showed 4 at 13x13: overwrite, H3, bgm, link overwrite)
 11-07 23:54 | me | EDIT | ui/static/style.css | flex:none on checkbox/radio; live site: all 14 visible boxes 24 px
 11-07 23:54 | me | EDIT | ui/server.py, .gitignore | /index.html served; assay_out + logs ignored (heavy)
+11-07 23:54 | me | CMD | git commit 880ddc0 (merge) | Assay fixes + 24 px boxes; ui 563 pass; not pushed
+11-07 23:56 | me | FAIL | Kalika v3_web writer | stopped 23:5x at stage 3e4 after 1 repair: S55-6 Virini screen left->right SHOT-040->041 unmarked (structured positions; real slip, validator right)
+11-07 23:56 | me | CHECK | Kalika v3_web cost | CLI total_cost_usd: stages 1,2,3e1-3e4 = 11.18 USD (~2.2 per episode incl repairs); 10 episodes + stage 5 left ~ 25 USD more (billing basis of CLI figure unknown)
+11-07 23:56 | me | DECISION | Kalika resume | asking owner before resuming (projected ~25 USD more Opus)
+11-08 00:19 | me | OWNER | Kalika resume | owner: 'Yes, resume' (Opus, ~25 USD more)
+11-08 00:19 | me | CMD | rm v3_web stage_3e4 raw+validation; write_pack.py resume --web (stages 1-3e3 reused) | log writer_run_opus_high_v3_web_resume.log
+11-08 00:21 | me | OWNER | parallel steps? | answered: chain is sequential; each episode prompt carries all earlier episodes (done list) + shot numbering from previous counts; only parallel candidate = reference sheets from stage 2 bible (not built)
+11-08 00:24 | me | OWNER | style | owner: follow the new format, the new style (Deva Neon)
+11-08 00:24 | me | CHECK | director/write_pack.py style_rules | deva_neon rules sent to the writer = guardrail + act names only; palettes, frame_law, neon look NOT sent; v3_web bible style_lock = generic earth tones (off-style)
+11-08 00:24 | me | CMD | Kalika v3_web writer (bv81acxqk) | stopped during 3e4 so no more Opus spend on an off-style bible; stages 1,2,3e1-3e3 kept; no orphan process
+11-08 00:24 | me | OWNER | packet | owner asks: is anything missing in the Flow packet for generation and download
+11-08 00:24 | me | CHECK | ui/server.py packet() vs IMAGE_SYSTEM_FULL | 10 gaps: project link, aspect, base_edit_id, prev/next+neighbour chips, safety, fix loop, review cmds, rename/queue/progress, phase-2 download, flow root hard-wired to anime_kaliya (per-story folder missing)
+11-08 00:24 | me | DECISION | order | 1 Deva Neon full rules to writer, 2 packet + per-story flow folder, 3 Kalika stage 2 + episodes redo (cost shown to owner first)
+11-08 00:25 | me | OWNER | pipeline | owner: fix the pipeline properly so the same kind of error never comes again; log everything in project log and blot
+11-08 00:25 | me | EDIT | director/write_pack.py style_rules | + _look_rules: per-act brightness/saturation, frame law, every palette (hex, role, neon, special laws, focal hints), forms/avatars inherit palette, no generic earth tones
+11-08 00:25 | me | EDIT | director/MASTER_PROMPT_v2.3.md rule 8 | root cause: hard-coded Braj earth-tone look for every story; now the style pack decides, earth tones only without a pack
+11-08 00:32 | me | EDIT | director/write_pack.py | guard STYLE-01 (palette characters incl. forms take >=3 swatches from their palette) + STYLE-02 (style_lock uses pack colours) in the stage-2 gate; load_style_pack; STYLE_PACK set from the chosen pack
+11-08 00:32 | me | CHECK | style guard on Kalika v3_web stage 2 | catches 4 errors (Shiva, Shiva-Brahmachari, Kali, style_lock): the off-style bible would now fail at stage 2
+11-08 00:32 | me | FIX: | director/write_pack.py | scripted edit wrote a backspace char in the HEX regex (same class as 23:1x newline slip); replaced with a lookahead; 0 control chars
+11-08 00:32 | me | EDIT | director/conftest.py (new), test_writer_v4.py | fake-bible tests run with no pack; real_style marker for the 2 guard tests
+11-08 00:32 | me | TEST | director | 791 pass
+11-08 00:32 | me | EDIT | blot.md canonical + merge copy | rule 19 chosen style enforced (full pack to writer, master rule 8 defers, STYLE-01/02 gate); rule 20 control-char check after scripted edits
+11-08 00:36 | me | EDIT | ui/server.py | flow_root(cfg, story): own folder flow_outputs/anime_<slug> per story (Kaliya keeps anime_kaliya); safe_path allows anime_* only (Granth folders out); optional story arg on queue_status/collect, tidy, bridge, wm_*; watermark endpoints take story
+11-08 00:36 | me | EDIT | ui/server.py packet | packet_header + packet_job: project link, own tab, story folder, safety stops, aspect, method + base_edit_id, prev/next, attempt cap, neighbour chips, fix loop, Omni/Super VL review + neighbour sheet cmds, rename/queue/progress, phase-2 2K download + save_dl + collect
+11-08 00:36 | me | EDIT | ui/static/pipeline.js | picture chain + watermark calls pass the story; watermark list reset on story switch
+11-08 00:36 | me | EDIT | ui/test_packet_and_roots.py (new) | guard: packet must carry 18 required items and the story's own folder; per-story roots; Granth folder refused
+11-08 00:36 | me | TEST | ui 565 pass, flow/scripts 132 pass, director 791 pass
+11-08 00:36 | me | EDIT | blot.md canonical + merge copy | rule 21 own Flow folder per story, complete packet (test-guarded)

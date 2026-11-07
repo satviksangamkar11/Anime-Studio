@@ -1268,7 +1268,7 @@
     var row = (State.storyList || []).filter(function (s) { return s.slug === slug; })[0];
     State.busy = true;
     post('/api/pipeline/project', { story_slug: slug, pack: row && row.latest_pack ? row.latest_pack : '' })
-      .then(function () { State.pickSlug = ''; return refreshWizard(true); })
+      .then(function () { State.pickSlug = ''; State.wm = null; State.wmPick = {}; return refreshWizard(true); })
       .catch(function (err) { showApiError(err); render(true); })
       .finally(function () { State.busy = false; });
   }
@@ -2054,7 +2054,7 @@
 
   function loadWatermark() {
     return once('wm', function () {
-      return get('/api/watermark?adhyay=' + BUILD_ADHYAY)
+      return get('/api/watermark?adhyay=' + BUILD_ADHYAY + '&story=' + enc((projectOf() || {}).story_slug || ''))
         .then(function (d) { State.wm = d; render(true); })
         .catch(function (err) { State.wm = { rows: [] }; showApiError(err); });
     });
@@ -2062,7 +2062,7 @@
 
   // rule 18: the whole picture chain after the Flow agents, in order, every step visible (IMAGE_SYSTEM_FULL.md sections 5, 6, 13)
   function afterPictures(project) {
-    var A = { adhyay: BUILD_ADHYAY };
+    var A = { adhyay: BUILD_ADHYAY, story: project.story_slug };   // each story's own Flow folder (flow_root)
     var ok = !!(project.story_slug && project.pack && gateState('A') === 'approved');
     var box = el('div', { class: 'gate-card', id: 'pics-after' });
     box.appendChild(el('h4', { textContent: t('after.title') }));
@@ -2105,7 +2105,7 @@
       var choices = {};
       rows.forEach(function (r) { if (!r.final) choices[r.title] = State.wmPick[r.title] || r.method || 'lama'; });
       if (!Object.keys(choices).length) { showError(t('after.pick_all_done')); return; }
-      post('/api/watermark/choices', { adhyay: BUILD_ADHYAY, choices: choices })
+      post('/api/watermark/choices', { adhyay: BUILD_ADHYAY, story: project.story_slug, choices: choices })
         .then(function () { return runCommand('wm_finalize', A, t('after.pick_confirm', { n: String(Object.keys(choices).length) }), t('after.err')); })
         .then(function (job) { if (job) { State.wm = null; State.wmPick = {}; loadWatermark(); } })
         .catch(function (err) { showApiError(err); });
@@ -2114,7 +2114,7 @@
       function () { runCommand('tidy_apply', A, t('after.tidy_confirm'), t('after.err')); });
     stepRow(6, t('after.gateb_title'), t('after.gateb_hint'), '', '', null);
     stepRow(7, t('after.kf_title'), t('after.kf_hint'), t('after.kf_btn'), 'after-keyframes',
-      function () { runCommand('bridge_write', { adhyay: BUILD_ADHYAY, size: '768x1344' }, t('after.kf_confirm'), t('after.err')); });
+      function () { runCommand('bridge_write', { adhyay: BUILD_ADHYAY, story: project.story_slug, size: '768x1344' }, t('after.kf_confirm'), t('after.err')); });
     return box;
   }
 

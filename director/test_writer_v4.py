@@ -498,3 +498,32 @@ def test_make_web_notes_uses_haiku_low_with_web_and_reuses_the_file(monkeypatch,
     assert calls == [("haiku", "low", True, False)]
     w.make_web_notes(story)
     assert len(calls) == 1 and (tmp_path / "WEB_NOTES.md").exists()
+
+
+@pytest.mark.real_style
+def test_style_rules_send_the_whole_look():
+    import write_pack as w
+    r = w.style_rules("deva_neon")
+    assert "Frame law: at most 1 neon colour per shot" in r and "#27E0FC" in r and "durga_kali_shakti" in r
+    assert "every form or avatar of them" in r
+
+
+@pytest.mark.real_style
+def test_style_pack_errors_catch_an_off_style_bible_and_pass_a_good_one():
+    import write_pack as w
+    pack = w.load_style_pack("deva_neon")
+    shiva = [c["hex"] for c in pack["palettes"]["shiva_neelkanth"]["colors"].values()]
+    kali = [c["hex"] for c in pack["palettes"]["durga_kali_shakti"]["colors"].values()]
+    bad = {"style_lock": {"colour": "earth tones first"},
+           "characters": {"CHAR-SHIVA": {"sheet_prompt": "swatches #E8E6DF #7A4A2A #C98A2E"},
+                          "CHAR-ADYA-KALI": {"sheet_prompt": "swatches #111111 #222222"},
+                          "CHAR-SATI": {"sheet_prompt": "swatches #C9925E"}}}
+    errs = w.style_pack_errors(bad, pack)
+    assert sorted(e.split(" at ")[0] + " " + e.split(" at ")[1].split(":")[0] for e in errs) == [
+        "STYLE-01 characters.CHAR-ADYA-KALI", "STYLE-01 characters.CHAR-SHIVA", "STYLE-02 style_lock"]
+    good = {"style_lock": {"colour": f"night key {shiva[0]} with {kali[0]} accents"},
+            "characters": {"CHAR-SHIVA": {"sheet_prompt": "swatches " + " ".join(shiva[:3])},
+                           "CHAR-ADYA-KALI": {"sheet_prompt": "swatches " + " ".join(kali[:3])},
+                           "CHAR-SATI": {"sheet_prompt": "swatches #C9925E"}}}
+    assert w.style_pack_errors(good, pack) == []
+    assert w.style_pack_errors(bad, {"palettes": {}}) == []

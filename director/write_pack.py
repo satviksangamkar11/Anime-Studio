@@ -101,6 +101,17 @@ def _strings(value):
     return [x for x in value if isinstance(x, str)] if isinstance(value, list) else []
 
 
+def load_style_pack(pack_id, styles_dir=None):
+    """The pack as a dict, or None (empty or unsafe id, missing or unreadable file)."""
+    if not isinstance(pack_id, str) or not PACK_ID.fullmatch(pack_id):
+        return None
+    try:
+        pack = json.loads((Path(styles_dir or STYLES_DIR) / f"{pack_id}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return pack if isinstance(pack, dict) else None
+
+
 def style_rules(pack_id, styles_dir=None):
     """The '## STYLE PACK RULES' section for a pack: guardrails, forbidden words, act names and phase ids.
     "" when the pack id is empty or unsafe, the file is missing, or it is not a readable JSON object. Never raises."""
@@ -127,7 +138,93 @@ def style_rules(pack_id, styles_dir=None):
         lines += [f"Act names for look.act: {', '.join(acts)}", ""]
     if phases:
         lines += [f"Phase ids for look.phase: {', '.join(phases)}", ""]
+    lines += _look_rules(pack)
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _look_rules(pack):
+    """The pack's look as writer rules (owner 2026-11-08: the writer must follow the chosen style): grade ranges per act, frame law,
+    and every palette with its colours and roles. The style_lock colour line and the locked swatches come from here."""
+    out = []
+    acts = pack.get("acts") if isinstance(pack.get("acts"), dict) else {}
+    act_lines = []
+    for name, a in acts.items():
+        if isinstance(a, dict) and isinstance(a.get("luma_mean"), list) and isinstance(a.get("sat_mean"), list):
+            act_lines.append(f"- {name}: brightness {a['luma_mean'][0]}-{a['luma_mean'][1]}, saturation {a['sat_mean'][0]}-{a['sat_mean'][1]}")
+    if act_lines:
+        out += ["Look per act (mean brightness and saturation, 0-1; write light and colour to land inside these):"] + act_lines + [""]
+    fl = pack.get("frame_law") if isinstance(pack.get("frame_law"), dict) else {}
+    law = []
+    if fl.get("max_neon_hues_per_shot") is not None:
+        law.append(f"at most {fl['max_neon_hues_per_shot']} neon colour per shot")
+    if isinstance(fl.get("area_split"), list) and len(fl["area_split"]) == 3:
+        law.append("colour area split {}/{}/{} (dominant/secondary/accent)".format(*fl["area_split"]))
+    if fl.get("min_dL_focal_vs_bg") is not None:
+        law.append(f"the hero must stand out from the background by lightness (dL* at least {fl['min_dL_focal_vs_bg']})")
+    if fl.get("pure_white_area_cap_frac") is not None:
+        law.append(f"pure white covers at most {round(fl['pure_white_area_cap_frac'] * 100)} percent of the frame")
+    if law:
+        out += ["Frame law: " + "; ".join(law) + ".", ""]
+    pals = pack.get("palettes") if isinstance(pack.get("palettes"), dict) else {}
+    if pals:
+        out += ["Palettes. The style_lock colour line, every CHAR sheet's locked swatches and every shot's colours use these. A palette",
+                "belongs to the characters listed AND to every form or avatar of them (for example any form of Kali, Durga or Chandika",
+                "uses the Kali palette). A character with no palette takes the colours of the palette nearest to its role, never a",
+                "generic earth-tone set. Neon colours are accents only and follow the frame law."]
+        for pid, p in pals.items():
+            if not isinstance(p, dict):
+                continue
+            cols = p.get("colors") if isinstance(p.get("colors"), dict) else {}
+            col = "; ".join(f"{n} {c.get('hex')} ({c.get('role')}{', neon' if c.get('neon') else ''})"
+                            for n, c in cols.items() if isinstance(c, dict))
+            who = ", ".join(_strings(p.get("characters")))
+            out.append(f"- {pid} [{who}]: {col}")
+            for law_ in p.get("special_laws") or []:
+                if isinstance(law_, dict) and law_.get("color") and law_.get("only_roles"):
+                    out.append(f"  rule: {law_['color']} only for {', '.join(_strings(law_['only_roles']))}")
+            fh = p.get("focal_hints")
+            if isinstance(fh, dict) and fh.get("hero") and fh.get("bg"):
+                out.append(f"  hero colour {fh['hero']} against background {fh['bg']}")
+        out.append("")
+    return out
+
+
+STYLE_PACK = None   # the chosen style pack (dict), set in main; stage 2 is checked against it (STYLE-01, STYLE-02)
+HEX = re.compile(r"#[0-9A-Fa-f]{6}(?![0-9A-Fa-f])")
+
+
+def style_pack_errors(bible, pack):
+    """Owner 2026-11-08: the plan must follow the chosen style. STYLE-01: a character covered by a palette (by id, or a form of it:
+    CHAR-ADYA-KALI is a form of CHAR-KALI) takes at least 3 locked swatches from that palette. STYLE-02: the style lock uses at
+    least 2 of the pack's colours. Empty when the pack has no palettes."""
+    pals = pack.get("palettes") if isinstance(pack, dict) and isinstance(pack.get("palettes"), dict) else {}
+    if not pals or not isinstance(bible, dict):
+        return []
+    by_char, every = {}, set()
+    for pid, p in pals.items():
+        hexes = {c.get("hex", "").upper() for c in (p.get("colors") or {}).values() if isinstance(c, dict)}
+        every |= hexes
+        for cid in _strings(p.get("characters")):
+            by_char[cid.split("-", 1)[-1]] = (pid, hexes)
+    errs = []
+    chars = bible.get("characters") if isinstance(bible.get("characters"), dict) else {}
+    for cid, c in chars.items():
+        words = set(str(cid).upper().split("-")[1:])
+        hit = next((v for k, v in by_char.items() if k in words), None)
+        if hit is None or not isinstance(c, dict):
+            continue
+        used = {h.upper() for h in HEX.findall(str(c.get("sheet_prompt", "")))}
+        if len(used & hit[1]) < 3:
+            errs.append(f"STYLE-01 at characters.{cid}: locked swatches must take at least 3 colours from the {hit[0]} palette "
+                        f"({', '.join(sorted(hit[1]))}); found {len(used & hit[1])}")
+    lock = json.dumps(bible.get("style_lock", ""), ensure_ascii=False)
+    names = {n.lower() for p in pals.values() for n in (p.get("colors") or {})}
+    found = {h.upper() for h in HEX.findall(lock)} & every
+    found_names = {n for n in names if n in lock.lower()}
+    if len(found) + len(found_names) < 2:
+        errs.append("STYLE-02 at style_lock: the colour line must use the style pack's palette colours (at least 2 hex values or "
+                    "colour names from STYLE PACK RULES), not a generic palette")
+    return errs
 
 
 def story_pack_id(story_path):
@@ -1051,7 +1148,7 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
     with rec.step("analysis_done", None, via=via, model=model, effort=effort) as run:
         text1, plan = stage("1", story_parse, lambda d: gate("1", d, None))
         done.append(("1", text1))
-        text2, bible = stage("2", parse_bible, lambda d: gate("2", d, None))
+        text2, bible = stage("2", parse_bible, lambda d: with_language(gate("2", d, None), style_pack_errors(d, STYLE_PACK)))
         done.append(("2", text2))
         try:
             episodes = episodes_from(text1)
@@ -1166,6 +1263,8 @@ def main(argv=None):
     if a.staged and prompt_version == "v2.3":
         pack_id = a.style_pack or story_pack_id(Path(a.story))
         style = style_rules(pack_id) if pack_id else ""
+        global STYLE_PACK
+        STYLE_PACK = load_style_pack(pack_id)
     out = Path(a.out_dir)
     rec = run_registry.Recorder(run_registry.story_folder(Path(a.story)), run_registry.writer_tag(writer, via, model),
                                 pack=out.name, via=via, model=model, effort=effort)

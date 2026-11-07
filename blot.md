@@ -80,3 +80,12 @@ Every change, even a one-line one, gets its PROJECT_LOG line in the same step, a
 
 ## RULE 18: NOTHING HIDDEN, BUILT FOR A 60-YEAR-OLD (owner, 2026-11-07)
 The UI user is 60. No step, action or needed fact sits behind a "More" fold, a hidden section, a hash-only link or a hover. Everything needed to move a story forward is visible on the page, in order, with large clear text. Story choice is always visible at the top. Locked future steps stay visible with the reason they are locked. Only raw technical details (file paths, logs, JSON) may sit in a fold. Supersedes rule 9's "moved or hidden": controls are MOVED, never hidden.
+
+## RULE 19: THE CHOSEN STYLE IS ENFORCED, NOT JUST NAMED (owner, 2026-11-08)
+The writer receives the WHOLE style pack (per-act look, frame law, every palette with hex and role) through `style_rules()`, and `MASTER_PROMPT_v2.3.md` rule 8 defers to it (no story's look is hard-coded). Stage 2 is gated by STYLE-01/STYLE-02 (`style_pack_errors`): an off-style bible fails and gets its repair call. Before any image work, check the bible's swatches against the pack. A new style pack field that changes the look must be added to `_look_rules` with a test.
+
+## RULE 20: SCRIPTED EDITS ARE CHECKED FOR CONTROL CHARACTERS (2026-11-08)
+After any edit made by a script (python heredoc), check the file parses and has no control characters (`grep -c $'\x08\x0c'`, `ast.parse`, `node --check`). Two such slips happened on 11-07/11-08 (a real newline inside a string, a backspace inside a regex). Prefer the Edit tool for code with escapes.
+
+## RULE 21: EVERY STORY HAS ITS OWN FLOW FOLDER; THE PACKET IS COMPLETE (owner, 2026-11-08)
+Pictures of a story live only in `flow_outputs/anime_<slug>` (`server.flow_root`; Kaliya keeps `anime_kaliya`). The server reaches only `anime_*` folders, never Granth ones. The Flow agent packet carries everything for making AND downloading (project link, aspect, edit base, neighbours, safety stops, fix loop, reviewer commands, queue, progress, phase-2 2K download); `ui/test_packet_and_roots.py` fails if any item goes missing.

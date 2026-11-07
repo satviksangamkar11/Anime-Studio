@@ -203,12 +203,14 @@ def safe_path(cfg, raw, roots=("studio", "flow"), exts=None, must_exist=True, wa
     if not p.is_absolute():
         p = cfg.studio / p
     real = Path(os.path.realpath(p))
-    bases = {"studio": cfg.studio, "flow": cfg.flow}
+    bases = {"studio": [cfg.studio], "flow": [cfg.flow] + story_flow_roots(cfg)}
     base = None
     for name in roots:
-        b = Path(os.path.realpath(bases[name]))
-        if real == b or real.is_relative_to(b):
-            base = b
+        for b in (Path(os.path.realpath(x)) for x in bases[name]):
+            if real == b or real.is_relative_to(b):
+                base = b
+                break
+        if base is not None:
             break
     if base is None:
         raise bad("path is outside the allowed folders")
@@ -358,6 +360,76 @@ def _gen_root(cfg) -> Path:
     return Path(os.path.realpath(cfg.studio / "flow" / "generated"))
 
 
+# ---------------------------------------------------------------- Flow agent packet (flow/IMAGE_SYSTEM_FULL.md sections 1, 4, 5)
+FLOW_PROJECT_URL = "https://labs.google/fx/tools/flow/project/6a7ab793-d05f-476d-91a2-aaeb00c234a0"
+
+
+def packet_header(cfg, slug, jobs_path) -> list:
+    """Everything an agent needs that is the same for every job (owner 2026-11-08: nothing missing for making AND downloading)."""
+    root = flow_root(cfg, slug)
+    py = cfg.python
+    s = cfg.studio / "flow" / "scripts"
+    return [
+        f"# Flow agent packet ({now_iso()}) - story {slug}", "",
+        "## Where", f"- Flow project: {FLOW_PROJECT_URL} (never another project). Open it in YOUR OWN browser tab and pass your tabId on every call.",
+        f"- Jobs file: {jobs_path}", f"- This story's picture folder: {root}\\adhyay_01 (candidates in shots\\, finals in final\\). Never file into another story's folder.", "",
+        "## Rules (owner)",
+        "- Agents that operate Flow run on Haiku, effort LOW. One scene per agent.",
+        "- Model chip: Nano Banana 2.1, count x2, no fallback. Credits shown must stay 0. Fix the model chip first if Flow reset it.",
+        "- Never delete anything in Flow; never click Upgrade, Share or Trash. STOP and report on any sign-in, CAPTCHA, payment or terms page.",
+        "- Phase 1 has NO downloads. Phase 2 (below) runs only after the owner's OK.", "",
+        "## Per job (phase 1: make and review)",
+        "1. Re-read your job below. Look once at its previous and next scene and its sheets; write one line on what it continues from.",
+        "2. Aspect: as stated in the job. Attach chips with '@': type @, wait 3 s, search the exact name, attach ONLY if exactly one row matches. "
+        "Chips = exactly the job's chips, in order. Screenshot the chip names before submit.",
+        "3. Paste the prompt exactly (edit job: open the base edit id's /edit/ page and type the edit instruction). Submit once, wait 60 s; "
+        "no tile -> reload and look before submitting again.",
+        "4. Open both new tiles until the URL has /edit/; note both edit ids; zoom on each picture and save the zoom as the candidate "
+        f"files <TITLE>__candA.png / __candB.png in {root}\\adhyay_01\\shots\\.",
+        f"5. Picture review (NVIDIA Nemotron Omni, fallback Super VL; free): {py} {s}\\review_shot.py --jobs {jobs_path} --shot <ID> "
+        "--candidate <candA.png> <candB.png>  (exit 0 PASS, 1 BLOCK, 3 UNSURE). Neighbour sheet: "
+        f"{py} {s}\\neighbour_sheet.py --jobs {jobs_path} --shot <ID> --candidate <A> <B> --out {root}\\adhyay_01\\shots\\<ID>__neighbours.jpg",
+        "6. Your own check of the same sheet: Q1 people, Q2 action and gaze, Q3 place and props, Q4 continuity, Q5 style and framing, Q6 nothing invented.",
+        "7. Decide. PASS on one and agreed -> keep. Both bad -> fix loop: EDIT first for one local defect ('Change only <defect>. Keep everything else "
+        "exactly the same: ...'), one sharper edit with neighbour chips, REGENERATE when identity, age, framing or pose is wrong (prompt + the "
+        "reviewer's REGEN_SENTENCE, replaced not stacked). Same failure twice -> NEEDS_REVIEW. Stop after the job's attempt cap (8 submits or edits). "
+        "UNSURE or disagreement -> NEEDS_REVIEW.",
+        "8. Keep: rename the tile to the job's flow_title (the FIRST 'Editable text' on the edit page), then queue it: "
+        f"{py} {s}\\download_queue.py add --root {root} --adhyay 1 --shot <ID> --version v01 --edit-id <36-char id> --jobs {jobs_path} "
+        "--model \"Nano Banana 2.1 x2\"",
+        f"9. Append one progress line to {root}\\adhyay_01\\shots_progress.jsonl: shot_id, status (DONE only when both reviews pass), "
+        "flow_title, edit_id, attempts, decided_by, reviewer, haiku, time, notes.",
+        "10. Old tiles you replace: rename OLD-<ID>-v01 so the @ picker stays unique. Other agents' tiles appear too: identify yours by title and edit id.", "",
+        "## Phase 2: download (only after the owner's OK)",
+        f"1. {py} {s}\\download_queue.py status --root {root} --adhyay 1  lists PENDING tiles.",
+        "2. For each: open its edit URL, three dots -> Download media -> 2K Upscaled (never 1K or 4K; repeat once if nothing happens). "
+        "After an edit, download first and rename after.",
+        "3. The built-in browser pane does not save downloads: hook HTMLAnchorElement.prototype.click in javascript_tool so the file is "
+        f"fetched into window.__dl, save the result, then {py} {s}\\save_dl.py <result files> (writes into Downloads).",
+        f"4. {py} {s}\\download_queue.py collect --root {root} --adhyay 1 --downloads \"{cfg.downloads}\"  files every 2K picture by EXACT "
+        "title; repeat until 0 pending. Then the UI's step 3 continues: watermark removal, pick, tidy, Gate B, key frames.", "",
+    ]
+
+
+def packet_job(cfg, slug, jobs_path, sid, j) -> list:
+    model = j.get("model") if isinstance(j.get("model"), dict) else {}
+    aspect = j.get("aspect") or model.get("aspect") or "as written in the prompt"
+    out = [f"## {sid}  ({j.get('flow_title', '')})",
+           f"- method: {j.get('method') or 'generate'}" + (f"; base edit id: {j['base_edit_id']}" if j.get("base_edit_id") else ""),
+           f"- aspect: {aspect}",
+           f"- chips (in order): {', '.join(j.get('chips') or []) or 'none'}",
+           f"- previous scene: {j.get('previous_shot') or 'none'}; next scene: {j.get('next_shot') or 'none'}",
+           f"- attempt cap: {j.get('attempt_cap') or 8}",
+           f"- prompt sha256: {j.get('prompt_sha256', '')}"]
+    if j.get("neighbour_chips"):
+        out.append(f"- neighbour chips (from the 2nd regeneration on): {', '.join(j['neighbour_chips'])}; {j.get('neighbour_sentence', '')}")
+    if j.get("edit_instruction"):
+        out.append(f"- edit instruction: {j['edit_instruction']}")
+    if j.get("unaccepted_sheets"):
+        out.append(f"- WARNING: these sheets are not accepted yet: {', '.join(j['unaccepted_sheets'])}")
+    return out + ["- prompt:", "", "```text", str(j.get("prompt", "")), "```", ""]
+
+
 def gen_json(cfg, raw, what) -> str:
     """A .json file directly inside flow/generated/<slug>/ (where pack_to_spec and build_jobs write). Returns the real path."""
     real = Path(safe_path(cfg, raw, ("studio",), (".json",), True, "file"))
@@ -408,12 +480,30 @@ def _py(cfg, *parts):
     return [cfg.python, str(cfg.studio.joinpath(*parts))]
 
 
+def flow_root(cfg, slug=None) -> Path:
+    """The Flow output folder of one story (owner 2026-11-08: no story's pictures in another story's folder). The legacy Kaliya
+    story keeps cfg.flow (flow_outputs/anime_kaliya); every other story gets flow_outputs/anime_<slug> next to it."""
+    if not slug or slug == LEGACY_STORY:
+        return cfg.flow
+    return cfg.flow.parent / f"anime_{slug}"
+
+
+def story_flow_roots(cfg) -> list:
+    """The per-story Flow folders that exist (anime_* next to cfg.flow), for safe_path. Granth folders stay out."""
+    parent = cfg.flow.parent
+    try:
+        return [d for d in parent.iterdir() if d.is_dir() and d.name.startswith("anime_") and d != cfg.flow]
+    except OSError:
+        return []
+
+
 def _adh(cfg, a) -> Path:
-    return cfg.flow / f"adhyay_{a['adhyay']:02d}"
+    return flow_root(cfg, a.get("story")) / f"adhyay_{a['adhyay']:02d}"
 
 
 def _dq(cfg, verb, a, *more):
-    return _py(cfg, "flow", "scripts", "download_queue.py") + [verb, "--root", str(cfg.flow), "--adhyay", str(a["adhyay"]), *more]
+    return _py(cfg, "flow", "scripts", "download_queue.py") + [verb, "--root", str(flow_root(cfg, a.get("story"))),
+                                                               "--adhyay", str(a["adhyay"]), *more]
 
 
 def _batch(cfg, name) -> Path:
@@ -532,7 +622,7 @@ def b_queue_accept(cfg, a):
 
 def b_tidy(apply):
     def build(cfg, a):
-        return _py(cfg, "flow", "scripts", "tidy_final.py") + ["--root", str(cfg.flow), "--adhyay", str(a["adhyay"])] + (["--apply"] if apply else [])
+        return _py(cfg, "flow", "scripts", "tidy_final.py") + ["--root", str(flow_root(cfg, a.get("story"))), "--adhyay", str(a["adhyay"])] + (["--apply"] if apply else [])
     return build
 
 
@@ -627,21 +717,22 @@ def b_author(cfg, a):
 
 BATCH_ARGS = {"batch": A(NAME, True), "gpu": A(GPU, False, "G4"), "session": A(SESSION, False, "t0-kaliya")}
 ADH = A(ADHYAY, False, 1)
+STORY = A(SLUG)                     # optional: the story whose Flow folder is meant (flow_root); none = the legacy Kaliya folder
 SHOT_ARGS = {"adhyay": ADH, "shot": A(SHOT, True), "version": A(VERSION, True)}
 COMMANDS = {c.id: c for c in (
     Cmd("write_pack", "N, W", False, {"slug": A(SLUG, True), "pack": A(NAME, True), "writer": A(WRITER_NAME), "model": A(WRITER_MODEL),
                                       "out_lang": A(out_lang_arg)}, b_write_pack),
     Cmd("check_pack", "R", False, {"pack": A(PACK_REL, True)}, b_check_pack),
-    Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(True)),
-    Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH}, b_bridge(False)),
+    Cmd("bridge_dry", "R", False, {"size": A(SIZE, True), "adhyay": ADH, "story": STORY}, b_bridge(True)),
+    Cmd("bridge_write", "W", False, {"size": A(SIZE, True), "adhyay": ADH, "story": STORY}, b_bridge(False)),
     Cmd("neighbour_sheet", "W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_neighbour),
     Cmd("review_shot", "N, W", False, {"jobs": A(JSON_FILE, True), "shot": A(SHOT, True), "candidates": A(CANDS, True), "adhyay": ADH}, b_review),
     Cmd("queue_add", "W", False, {**SHOT_ARGS, "edit": A(EDIT, True), "jobs": A(JSON_FILE, True), "note": A(NOTE, False, "")}, b_queue_add),
-    Cmd("queue_status", "R", False, {"adhyay": ADH}, lambda c, a: _dq(c, "status", a, "--json")),
-    Cmd("queue_collect", "W", False, {"adhyay": ADH}, lambda c, a: _dq(c, "collect", a, "--downloads", str(c.downloads))),
+    Cmd("queue_status", "R", False, {"adhyay": ADH, "story": STORY}, lambda c, a: _dq(c, "status", a, "--json")),
+    Cmd("queue_collect", "W", False, {"adhyay": ADH, "story": STORY}, lambda c, a: _dq(c, "collect", a, "--downloads", str(c.downloads))),
     Cmd("queue_accept", "W", False, {**SHOT_ARGS, "note": A(NOTE, False, "")}, b_queue_accept),
-    Cmd("tidy_plan", "R", False, {"adhyay": ADH}, b_tidy(False)),
-    Cmd("tidy_apply", "W", False, {"adhyay": ADH}, b_tidy(True)),
+    Cmd("tidy_plan", "R", False, {"adhyay": ADH, "story": STORY}, b_tidy(False)),
+    Cmd("tidy_apply", "W", False, {"adhyay": ADH, "story": STORY}, b_tidy(True)),
     Cmd("clip_qa", "W", False, {"clip": A(CLIP, True), "out_dir": A(CLIP_NEW, True)}, b_clip_qa),
     Cmd("visual_qa", "N, W", False, {"clip": A(CLIP, True), "direction": A(JSON_FILE, True), "out_dir": A(CLIP_NEW, True),
                                     "model": A(VISION_MODEL, True), "bible": A(JSON_FILE)}, b_visual),
@@ -686,9 +777,9 @@ def b_wm(kind):
 
 
 IMAGE_COMMANDS = {c.id: c for c in (
-    Cmd("wm_clean", "W", False, {"adhyay": ADH}, b_wm("clean")),
-    Cmd("wm_lama", "W", False, {"adhyay": ADH}, b_wm("lama")),
-    Cmd("wm_finalize", "W", False, {"adhyay": ADH}, b_wm("finalize")),
+    Cmd("wm_clean", "W", False, {"adhyay": ADH, "story": STORY}, b_wm("clean")),
+    Cmd("wm_lama", "W", False, {"adhyay": ADH, "story": STORY}, b_wm("lama")),
+    Cmd("wm_finalize", "W", False, {"adhyay": ADH, "story": STORY}, b_wm("finalize")),
 )}
 
 
@@ -1615,9 +1706,10 @@ class Api:
     def images(self, adhyay, story=LEGACY_STORY) -> dict:
         return read_images(self.cfg, ADHYAY(self.cfg, adhyay), SLUG(self.cfg, story))
 
-    def watermark(self, adhyay) -> dict:
+    def watermark(self, adhyay, story=None) -> dict:
         """Pictures waiting for the watermark pick: one comparison sheet per title (from lama_inpaint.py), and whether a final exists."""
-        adh = _adh(self.cfg, {"adhyay": ADHYAY(self.cfg, adhyay)})
+        story = SLUG(self.cfg, story) if story else None
+        adh = _adh(self.cfg, {"adhyay": ADHYAY(self.cfg, adhyay), "story": story})
         check = adh / "final" / "_sparkle_check3"
         try:
             report = json.loads((check / "report.json").read_text(encoding="utf-8"))
@@ -1631,8 +1723,9 @@ class Api:
     def watermark_choices(self, body) -> dict:
         """Saves the owner's pick per picture as <chapter>/watermark_choices.json, the input of wm_finalize."""
         adh_n = ADHYAY(self.cfg, body.get("adhyay", 1))
+        story = SLUG(self.cfg, body["story"]) if body.get("story") else None
         choices = body.get("choices")
-        known = {r["title"] for r in self.watermark(adh_n)["rows"]}
+        known = {r["title"] for r in self.watermark(adh_n, story)["rows"]}
         if not isinstance(choices, dict) or not choices:
             raise bad("choices must be a non-empty object {title: method}")
         for t, m in choices.items():
@@ -1640,7 +1733,7 @@ class Api:
                 raise bad(f"unknown picture {t!r}")
             if m not in WM_METHODS:
                 raise bad(f"method must be one of {', '.join(WM_METHODS)}")
-        out = _adh(self.cfg, {"adhyay": adh_n}) / "watermark_choices.json"
+        out = _adh(self.cfg, {"adhyay": adh_n, "story": story}) / "watermark_choices.json"
         out.write_text(json.dumps({t: {"method": m, "verdict": "owner pick in the UI"} for t, m in choices.items()}, indent=1),
                        encoding="utf-8")
         return {"saved": len(choices), "file": str(out)}
@@ -1673,18 +1766,12 @@ class Api:
             raise bad("shots must be a list of 1 to 60 shot ids")
         ids = [SHOT(self.cfg, s) for s in shots]
         entries = {str(j.get("shot_id")): j for j in load_list(jobs_path) if isinstance(j, dict)}
-        lines = [f"# Flow agent packet ({now_iso()})", "", "Rules (owner, plan section 11.7):",
-                 "- Flow generation and download agents run on Haiku, effort LOW.", "- One scene per agent; each agent uses its own browser tab id.",
-                 "- Model chip: Nano Banana 2.1 x2.", "- No downloads in phase 1.", ""]
+        lines = packet_header(self.cfg, slug, jobs_path)
         for sid in ids:
             j = entries.get(sid)
             if j is None:
                 raise bad(f"{sid} is not in the jobs file")
-            lines += [f"## {sid}  ({j.get('flow_title', '')})", f"- chips: {', '.join(j.get('chips') or []) or 'none'}",
-                      f"- prompt sha256: {j.get('prompt_sha256', '')}"]
-            if j.get("edit_instruction"):
-                lines.append(f"- edit instruction: {j['edit_instruction']}")
-            lines += ["- prompt:", "", "```text", str(j.get("prompt", "")), "```", ""]
+            lines += packet_job(self.cfg, slug, jobs_path, sid, j)
         md = "\n".join(lines)
         if has_secret(md):
             raise bad("packet not written: key-like text found in the job text")
@@ -1933,7 +2020,7 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         if path == "/api/images":
             return api.images(q.get("adhyay", "1"), q.get("story", LEGACY_STORY))
         if path == "/api/watermark":
-            return api.watermark(q.get("adhyay", "1"))
+            return api.watermark(q.get("adhyay", "1"), q.get("story") or None)
         if path == "/api/review":
             return api.review(q.get("shot", ""), q.get("cand", ""), q.get("adhyay", "1"))
         if path == "/api/video":
