@@ -6,7 +6,9 @@ This branch is the merge of `v4-architecture-2026-11-07` (writer, validator, H3,
 - [x] V4 architecture built and reviewed (Super VL + Dots): validator, writer V4 + voice_map, H3 router/compiler/locks, Gate D audio + captions, Step 9 QC functions, fallback ladder, asset manifest, voice engine, UI wizard.
 - [x] Suites before the merge: director 663, h3 595, ui 253, flow/scripts 116.
 - [ ] Not built: Step 9 runner, Gate D assembly runner, live author run, any real render (no Colab calls, owner rule), ElevenLabs use (needs owner go).
-- [ ] Gate D has its own caption engine; it must be replaced by `core/captions.py` + `core/caption_export.py` (one caption engine; captions are the spoken script of each output language).
+- [x] Captions follow the output language (owner rule 2026-11-07): `director/post.py --language en|hi|mr` burns the SPOKEN script of that language (cues from `h3.gate_d_audio.caption_cues`; the voice is H3 for English, ElevenLabs for Hindi and Marathi; H3 speech is English only, rule VE-01). A caption in the wrong script is a FAIL.
+- [ ] Still two caption renderers: Gate D's own `.ass` builder (its audio mix path) and `core/captions.py` (post). Next: make Gate D call `core/captions.py` so there is one engine.
+- [ ] Not built: the step that mixes the per-language voice (ElevenLabs or H3) into the post.py reel; post.py today keeps the H3 audio.
 
 ## Universal layer (colour, retention, flash, captions, post)
 ## Current state

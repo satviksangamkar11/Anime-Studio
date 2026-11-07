@@ -666,6 +666,8 @@ def _caption_cues(shots, offsets, lang):
     return cues
 
 
+caption_cues = _caption_cues   # public name: director/post.py burns the spoken script of the output language
+
 def _bgm_track(bgm_manifest):
     """(errors, path of the one continuous BGM track). Accepts the parsed manifest or a path to the json file."""
     doc = bgm_manifest

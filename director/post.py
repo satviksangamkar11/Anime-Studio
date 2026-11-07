@@ -3,7 +3,7 @@
 CLI:
   python director/post.py EPISODE_BUILD_DIR --story stories/<slug>/story.json [--episode-json PATH]
       [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd "CMD {in} {out}"] [--out FILE]
-      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--dry-run]
+      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--language en|hi|mr] [--dry-run]
 
 EPISODE_BUILD_DIR layout:
   episode.json          h3 episode {"episode_id", "shots": [h3 shots]}; --episode-json overrides the path
@@ -15,6 +15,13 @@ Shot fields read: shot_id, timing_and_lattice (fps, trim_in_frame, trim_out_fram
 trim_in_sec, trim_out_sec, editorial_duration_sec), metadata.look (act, hook, impact_frames),
 optional metadata.captions ([{t0, t1, text, latin?, emphasis?, words?}] in shot-editorial seconds; words = aligned
 words for karaoke), and metadata.look.hook.emphasis (list of hook words drawn larger in the emphasis colour).
+Caption language (owner rule 2026-11-07): one reel per output language. English gets English captions, Hindi Hindi,
+Marathi Marathi, and the text is the SPOKEN script of that language (the voice: H3 for English, ElevenLabs for Hindi and
+Marathi). When the shots carry audio_and_dialogue_track, the cues come from h3.gate_d_audio.caption_cues (captions_by_lang
+wins, else the narration and dialogue text of the language, on the shot's time_range). Only without a spoken script does
+post fall back to the hook caption and metadata.captions, with a WARN. A caption in the wrong script is a FAIL:
+Devanagari in an English reel, or no Devanagari in a Hindi or Marathi reel. --language overrides story.json language and
+names the output <episode>_final_<lang>.mp4.
 Captions: --platform picks core.safe_zone_templates (default: core.safe_zone_frac); the fonts dir is used to measure and
 wrap the text (at most 2 lines) and to check every glyph; a real run first checks that ffmpeg has libass and HarfBuzz and,
 after the final file is written, writes <final>.<lang>.srt and .vtt next to it (--no-sidecars turns that off).
@@ -212,6 +219,35 @@ def _with_post_shot(entries):
     return [dict({"shot": None, "episode": None}, **e) for e in entries]
 
 
+def _spoken_cues(facts, fps, language):
+    """Cues of the spoken script of `language`, or None when no shot carries audio_and_dialogue_track.
+    Same rules as Gate D: captions_by_lang wins, else the narration and dialogue text of the language."""
+    shots = [f["raw"] for f in facts]
+    if not any(isinstance(s.get("audio_and_dialogue_track"), dict) for s in shots):
+        return None
+    from h3.gate_d_audio import caption_cues   # lazy: keeps post.py importable without the audio module
+    offsets = [f["start"] / fps for f in facts]
+    return [{"t0": c["start"], "t1": c["end"], "text": c["text"]} for c in caption_cues(shots, offsets, language)]
+
+
+_DEVA = re.compile("[\u0900-\u097F]")
+_LATIN = re.compile("[A-Za-z]")
+
+
+def _script_problems(cues, language):
+    """Messages for caption lead texts in the wrong script for the output language (first three only)."""
+    out = []
+    for c in cues:
+        text = c.get("text")
+        if not isinstance(text, str) or not text.strip():
+            continue
+        if language == "en" and _DEVA.search(text):
+            out.append(f"English reel: caption {text[:30]!r} contains Devanagari")
+        elif language in ("hi", "mr") and _LATIN.search(text) and not _DEVA.search(text):
+            out.append(f"{language} reel: caption {text[:30]!r} has no Devanagari")
+    return out[:3]
+
+
 def _caption_cues(facts, fps):
     """Hook caption at episode t0 (first shot, up to its end), then metadata.captions shifted to episode time."""
     cues = []
@@ -248,14 +284,14 @@ def _write_colour_report(build, report):
 
 
 def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts_dir=None, upscale_cmd=None,
-             out=None, captions=True, dry_run=False, platform=None, sidecars=True):
+             out=None, captions=True, dry_run=False, platform=None, sidecars=True, language=None):
     """Grade, insert impacts, caption, encode and gate one episode. Returns the report dict."""
     report = {"episode": None, "fail": False, "written": False, "output": None, "steps": [], "entries": [],
               "flash_note": REPORT_HEADER, "ffmpeg": None, "graph": "", "commands": [], "dry_run": bool(dry_run)}
     build = Path(build_dir)
     try:
         _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
-             platform, sidecars)
+             platform, sidecars, language)
     except Exception as exc:  # the CLI never prints a traceback
         report["entries"].append(_entry("POST", "FAIL", f"unexpected error: {type(exc).__name__}: {exc}"))
     report["fail"] = report["fail"] or any(e["level"] == "FAIL" for e in report["entries"])
@@ -265,7 +301,7 @@ def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts
 
 
 def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
-         platform=None, sidecars=True):
+         platform=None, sidecars=True, language_override=None):
     entries, steps = report["entries"], report["steps"]
 
     def fail(msg, shot=None):
@@ -286,6 +322,10 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
         if not isinstance(pack_id, str):
             raise ValueError("story.json needs a string style_pack")
         language = story.get("language") if isinstance(story.get("language"), str) else "hi"
+        if language_override is not None:
+            if language_override not in ("en", "hi", "mr"):
+                raise ValueError(f"--language must be en, hi or mr, got {language_override!r}")
+            language = language_override
         pack = load_pack(pack_id, styles_dir=styles_dir)
     except ValueError as exc:
         fail(str(exc))
@@ -359,7 +399,8 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
     total = cum
     steps.append(f"{len(facts)} shots, {total} editorial frames at {fps} fps")
 
-    report["output"] = os.path.abspath(str(out) if out else build / f"{episode_id}_final.mp4")
+    suffix = f"_{language_override}" if language_override else ""
+    report["output"] = os.path.abspath(str(out) if out else build / f"{episode_id}_final{suffix}.mp4")
     final = Path(report["output"])
     tmp_name = f"{final.stem}.tmp.mp4"
 
@@ -476,7 +517,22 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
 
     # 6. the ONE conversion to 8-bit (A13), then captions on 8-bit
     cs, rng, pix = delivery["colorspace"], delivery["color_range"], delivery["pix_fmt"]
-    cues = _caption_cues(facts, fps) if captions else []
+    cues = []
+    if captions:
+        try:
+            spoken = _spoken_cues(facts, fps, language)
+        except (ValueError, TypeError, KeyError) as exc:
+            fail(f"spoken script of {language} could not be read: {exc}")
+            spoken = None
+        if spoken:
+            cues = spoken
+            steps.append(f"captions: spoken {language} script, {len(cues)} cue(s)")
+        else:
+            cues = _caption_cues(facts, fps)
+            if cues:
+                warn(f"no spoken {language} script on the shots: captions are the hook caption and metadata.captions")
+        for msg in _script_problems(cues, language):
+            fail(msg)
     burn = bool(captions and cues)
     parts.append(f"[{cur}]scale=out_color_matrix={cs}:out_range={rng}:flags=accurate_rnd+full_chroma_int"
                  f":sws_dither=ed,format={pix}[{'vconv' if burn else 'vout'}]")
@@ -586,12 +642,13 @@ def main(argv=None):
     p.add_argument("--no-captions", action="store_true")
     p.add_argument("--no-sidecars", action="store_true")
     p.add_argument("--platform", choices=("reels", "shorts", "youtube"))
+    p.add_argument("--language", choices=("en", "hi", "mr"))
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
     report = run_post(args.build_dir, args.story, episode_json=args.episode_json, styles_dir=args.styles_dir,
                       fonts_dir=args.fonts_dir, upscale_cmd=args.upscale_cmd, out=args.out,
                       captions=not args.no_captions, dry_run=args.dry_run, platform=args.platform,
-                      sidecars=not args.no_sidecars)
+                      sidecars=not args.no_sidecars, language=args.language)
     print(json.dumps(report, indent=1, ensure_ascii=False))
     return 1 if report["fail"] else 0
 
