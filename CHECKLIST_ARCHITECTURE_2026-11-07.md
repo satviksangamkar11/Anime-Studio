@@ -55,7 +55,7 @@ Suites to stay green: director 603, h3 385, ui 178, flow 116 (counts grow).
 ## 7. Wrap up
 - [x] 7.1 All four suites green
 - [x] 7.2 secret scan (tools/secret_scan.py) clean (11-07: 18 files clean; regex scan of 81 V4 + 67 universal files clean)
-- [ ] 7.3 STATUS.md, README, HANDOFF ledger, PROJECT_LOG, memory updated
+- [x] 7.3 STATUS.md, README, HANDOFF ledger, PROJECT_LOG, memory updated (11-07 close-out)
 - [x] 7.4 Ask owner before any push (owner approved 11-07; pushed d5804ba and 80252ec; later commits 674bcda, 9f7392c NOT pushed)
 
 ## 8. Waiting on the owner (do not start)
