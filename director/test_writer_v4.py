@@ -523,6 +523,13 @@ def test_plan_errors_catch_a_broken_stage_1_plan():
     assert w.plan_errors({"episodes": [{"episode": 1, "seconds": 70}, {"episode": 1, "seconds": 70}]})[0].startswith("PLAN-03")
 
 
+def test_a_story_json_that_is_not_an_object_is_ignored(tmp_path, story, fake_claude, monkeypatch, simple_language):
+    fake_validator(monkeypatch, lambda *a: [])
+    (story.parent / "story.json").write_text("[1, 2]", encoding="utf-8")
+    fake_claude["state"]["answers"] = canned(["en"])
+    run(story, tmp_path / "pack_v1")                       # no flags: must not crash on meta_story.get
+
+
 def test_every_claude_call_uses_stream_json(monkeypatch):
     import write_pack as w
     seen = {}

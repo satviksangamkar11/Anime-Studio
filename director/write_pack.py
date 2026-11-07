@@ -1365,7 +1365,9 @@ def main(argv=None):
         meta_story = json.loads((Path(a.story).parent / "story.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         pass
-    saved_langs = meta_story.get("output_languages") if isinstance(meta_story, dict) else None
+    if not isinstance(meta_story, dict):    # a story.json that is a list or text is ignored (xing R1)
+        meta_story = {}
+    saved_langs = meta_story.get("output_languages")
     out_langs = a.out_lang or (wp.lang_list(saved_langs) if isinstance(saved_langs, list) and saved_langs else None) or [wp.DEFAULT_OUT_LANG]
     try:
         writer, via, model, effort = resolve_route(a.writer, a.via, a.model, a.effort)
