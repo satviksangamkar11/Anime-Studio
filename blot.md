@@ -92,3 +92,9 @@ Pictures of a story live only in `flow_outputs/anime_<slug>` (`server.flow_root`
 
 ## RULE 22: A STORY OTHER THAN KALIYA MUST WORK END TO END (owner, 2026-11-08)
 Folders come from the story, never from the Kaliya defaults: `_project_update` sets `images_dir` to `flow_root(story)` and resets pack/results on a story switch; `facts()` reads `<flow folder>/adhyay_01`; every queue/review/neighbour/bridge/watermark command takes `story`; packet ids may be `SHOT-001` (expands to 001A/B); the Prepare button converts the pack to `<pack>/h3_story.json`. A new gap found by an audit is fixed with a test, not noted. Open gaps live in the NOW block of PROJECT_LOG.md.
+
+## RULE 23: ONE CLAUDE CALL = THE WHOLE ANSWER (2026-11-08)
+write_pack.call_claude always uses --output-format stream-json and join_stream. A long answer (thinking + bible beyond the output cap) is continued by the CLI in a second turn, and the plain json result keeps only the last turn (Kalika stage 2 lost its first part, 2.62 USD). After any Claude stage, check num_turns and that the answer parses before the next stage.
+
+## RULE 24: LOG AFTER EVERY STEP, NO EXCEPTION (owner, 2026-11-08, repeated)
+After EVERY step, including a check, a failed run, a tool call that only reads, the PROJECT_LOG.md line and (when a rule changed) the blot.md update are written in the same step. A missed line is backfilled at once with a BACKFILL line. Shell tip: no backticks inside echo text (the shell breaks and nothing runs).

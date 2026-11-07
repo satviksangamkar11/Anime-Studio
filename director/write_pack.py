@@ -333,13 +333,15 @@ def call_claude(prompt, model, effort, web=False, rule=True):
         mcp.write_text('{"mcpServers": {}}', encoding="utf-8")
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY" and not k.startswith("OPENROUTER")}
         env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = "64000"
-        fmt = ["--output-format", "stream-json", "--verbose"] if web else ["--output-format", "json"]
+        # 11-08 02:35: ALWAYS stream-json. A long answer (thinking + bible over the output cap) is continued by the CLI in a second turn and
+        # its `result` keeps only that last turn (stage 2 lost its first 90%, 2.62 USD); join_stream rebuilds the whole answer
+        fmt = ["--output-format", "stream-json", "--verbose"]
         r = subprocess.run([shutil.which("claude") or "claude", "-p", "--model", model, "--effort", effort, *fmt,
                             *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
                            input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=empty, env=env, timeout=TIMEOUT_S)
     if r.returncode != 0:
         raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-800:]}")
-    return join_stream(r.stdout) if web else r.stdout
+    return join_stream(r.stdout)
 
 
 def join_stream(stdout):
