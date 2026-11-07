@@ -738,3 +738,11 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 13:02 | dots | REVIEW-DONE | batch r6_router | 4614 chars
 11-07 13:02 | me | PUSH | origin v4-architecture-2026-11-07 (f7a0fd8) and universal-v1.1 (80252ec) | owner approved push of both branches; secret scan clean, no file over 1 MB
 11-07 13:02 | dots | REVIEW-DONE | batch r6_router | triaged: R6-1 confirmed (fixed), 2 FALSE/unverified; review loop stopped
+11-07 13:06 | me | CHECK | uploads/467af09a-DEVA-NEON_Universal_Pipeline_v1.0.zip | all 10 files byte-identical to _inputs/deva_zip (already implemented); no fonts, no Kaliya story, no Q1-Q8 answers in it
+11-07 13:06 | me | EDIT | ui/server.py,ui/pipeline.py,ui/test_bf_fixes.py | BACKFILL (done ~12:58): ledger row before job start (500 + nothing started on write failure, recorded flag), export compares episode as text (Q-R4-14), author_status sends derived/missing/cache (Q-R4-9), summary seconds total includes episode-less shots (Q-R4-10); ledger test updated
+11-07 13:06 | me | TEST | ui/test_r6_fixes.py | BACKFILL (~12:58): 7 new tests (string episode export, seconds total, negative seconds, author fields, ledger-before-start order, start-fail retry records once); ui 253 pass
+11-07 13:06 | me | CHECK | secret scan | BACKFILL (~13:03): 81 V4 files and 67 universal files scanned for key patterns; none found; no file over 1 MB
+11-07 13:06 | me | EDIT | universal h3/render_controller.py,h3/tests/test_render_controller.py | BACKFILL (~13:00): prepare reads loudness.json via load_loudness_plan before compile_episode; docstring says when ffmpeg runs; 1 new test
+11-07 13:06 | me | EDIT | h3/router.py,h3/tests/test_r6_fixes.py | BACKFILL (~13:07): route_shot isinstance guard for non-object fl2va_keyframes (R6-1); +4 parametrized tests; h3 594 pass
+11-07 13:06 | me | COMMIT | v4-architecture-2026-11-07 | BACKFILL: c2e8397 router guard, f7a0fd8 docs, d5804ba round 6 docs; pushed d5804ba
+11-07 13:06 | me | DECISION | PROJECT_LOG.md | owner 2026-11-07: the project log and blot rules must never stop; log every step as it happens, backfill any gap at once
