@@ -260,8 +260,10 @@ def test_lint_cli_exit_zero_on_warn():
 # ---- story and open questions ----
 def test_story_json_loads_its_pack():
     story = json.loads((ROOT / "stories" / "kaliya_mardan" / "story.json").read_text(encoding="utf-8"))
-    assert story == {"slug": "kaliya_mardan", "style_pack": "braj_earth", "platform": "shorts_9x16",
-                     "language": "hi", "episode_target_s": [65, 75]}
+    # story.json also carries the UI's story metadata (title, source, created_at ...): check the pipeline keys only
+    want = {"slug": "kaliya_mardan", "style_pack": "braj_earth", "platform": "shorts_9x16",
+            "language": "hi", "episode_target_s": [65, 75]}
+    assert {k: story[k] for k in want} == want
     assert load_pack(story["style_pack"])["pack_id"] == "braj_earth"
 
 
