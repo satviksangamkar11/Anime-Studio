@@ -213,6 +213,32 @@ def _clean_cues(cues, entries):
     return valid
 
 
+def _cards(cues, max_words):
+    """Splits cues of more than max_words words (and without aligned words) into balanced cards, times shared by word count."""
+    if not (isinstance(max_words, int) and not isinstance(max_words, bool) and max_words > 0):
+        return cues
+    out = []
+    for c in cues:
+        words = c["text"].split()
+        if c["words"] or len(words) <= max_words:
+            out.append(c)
+            continue
+        n = math.ceil(len(words) / max_words)
+        size = math.ceil(len(words) / n)
+        done = 0
+        for k, i in enumerate(range(0, len(words), size)):
+            chunk = words[i:i + size]
+            s = c["t0"] + (c["t1"] - c["t0"]) * done / len(words)
+            done += len(chunk)
+            e = c["t0"] + (c["t1"] - c["t0"]) * done / len(words)
+            out.append(dict(c, t0=s, t1=e, text=" ".join(chunk), latin=c["latin"] if k == 0 else None))
+    return out
+
+
+def _overlaps(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
 def _find_font(font_dir, family):
     """Font file in font_dir whose normalised name starts with the family name (the way rule P10 matches); the shortest
     file name wins, which is the regular or variable file. None when there is no font_dir, no family or no match."""
@@ -258,6 +284,8 @@ def _karaoke_body(cue, font_file, size, text_w, entries):
     """ASS karaoke text for a cue that carries aligned words, or None when the timing falls back to phrase mode (9.7)."""
     from core import caption_export as cx   # lazy: caption_export imports this module
     ass, mode, kents = cx.karaoke_text(cue["words"], line_t0=cue["t0"], line_t1=cue["end"])
+    if mode == "synthetic" and all(isinstance(w, str) for w in cue["words"]):
+        kents = [e for e in kents if "synthetic equal split" not in e["message"]]   # asked for with karaoke=True
     entries.extend(kents)
     if mode == "phrase":
         return None
@@ -276,7 +304,8 @@ def _karaoke_body(cue, font_file, size, text_w, entries):
     return ass
 
 
-def _build(cues, pack, core, width, height, language, entries, font_dir=None, template=None):
+def _build(cues, pack, core, width, height, language, entries, font_dir=None, template=None, face_boxes=(),
+           karaoke=False, require_fonts=False):
     if not isinstance(cues, list):
         raise _Junk("cues must be a list")
     width, height = _dims(width, height)
@@ -305,9 +334,10 @@ def _build(cues, pack, core, width, height, language, entries, font_dir=None, te
     gap = _opt(lockup, "gap_px_1080", DEFAULT_GAP_1080, 0, 10000, entries) * W / REF_WIDTH
     latin_size = round(frac * lead_size)
     min_latin = math.ceil(min_px * W / REF_WIDTH)
+    latin_raised = None
     if latin_size < min_latin:
         latin_size = min_latin
-        entries.append(_entry("WARN", f"latin line raised to the minimum size ({min_latin} px)"))
+        latin_raised = f"latin line raised to the minimum size ({min_latin} px)"
     alpha = math.floor((1 - opacity) * 255 + 0.5)
 
     margin = round(right * W)
@@ -332,6 +362,10 @@ def _build(cues, pack, core, width, height, language, entries, font_dir=None, te
         return ""
 
     cues = _clean_cues(cues, entries)
+    cap_cfg = core.get("captions") if isinstance(core.get("captions"), dict) else {}
+    cues = _cards(cues, cap_cfg.get("max_words"))
+    sz_top = core["safe_zone_frac"].get("top")
+    top_forbidden = sz_top * H if _is_num(sz_top) else None
     doc_deva = lang in DEVA_LANGS or any(_has_deva(c["text"]) for c in cues)
     lead_family = pick(doc_deva)
     sub_family = pick(False)
@@ -353,29 +387,25 @@ def _build(cues, pack, core, width, height, language, entries, font_dir=None, te
     outline_lead = math.ceil(round(lead_size * OUTLINE_FRAC, 9))
     outline_sub = math.ceil(round(latin_size * OUTLINE_FRAC, 9))
     dialogues = []
+    missing_fonts = set()
+    face_step = max(1, round(H * 40 / 2560))
     for cue in cues:
         want_deva = _has_deva(cue["text"]) or lang in DEVA_LANGS
         family = pick(want_deva)
         has_latin = cue["latin"] is not None
-        lead_y = mid
-        latin_y = None
-        if has_latin:
-            latin_y = lead_y + lead_size / 2 + gap + latin_size / 2
-            bottom = latin_y + latin_size / 2
-        else:
-            bottom = lead_y + lead_size / 2
-        shift = bottom - band_bot
-        if shift > 0:
-            lead_y -= shift
-            if latin_y is not None:
-                latin_y -= shift
-            entries.append(_entry("WARN", "caption pair shifted up to stay inside the caption band"))
-        if lead_y - lead_size / 2 < band_top:
-            entries.append(_entry("WARN", "caption is taller than the caption band"))
+        if has_latin and latin_raised:   # only a caption that has a latin line cares about the latin size
+            entries.append(_entry("WARN", latin_raised))
+            latin_raised = None
         lead_file = _find_font(font_dir, family)
+        if require_fonts and not lead_file and family not in missing_fonts:
+            missing_fonts.add(family)
+            entries.append({"rule": "CAP-FONT", "level": "FAIL", "shot": None, "episode": None,
+                            "message": f"font file for family {family!r} not found in {font_dir}; this code never downloads fonts"})
+        words = cue["words"] if cue["words"] else (cue["text"].split() if karaoke else None)
+        kcue = dict(cue, words=words) if words else cue
         size_tag, k_tags, body = "", "", None
-        if cue["words"]:
-            body = _karaoke_body(cue, lead_file, lead_size, text_w, entries)
+        if words:
+            body = _karaoke_body(kcue, lead_file, lead_size, text_w, entries)
             if body is not None:
                 k_tags = "\\1c" + _ass_colour(EMPHASIS_HEX) + "&\\2c" + _ass_colour(FILL_HEX) + "&"
         if body is None:
@@ -397,6 +427,41 @@ def _build(cues, pack, core, width, height, language, entries, font_dir=None, te
                                                   f"{lead_size} px; ASS wraps it"))
             body = "\\N".join(_emphasis_tags(_line_markup(_mark_emphasis(ln, cue["emphasis"]), dev_family, lat_family))
                               for ln in lines)
+        nlines = body.count("\\N") + 1
+        block_h = nlines * lead_size                      # one line: exactly the old single-line numbers
+        lead_y = mid
+        latin_y = None
+        bottom = lead_y + block_h / 2
+        if has_latin:
+            latin_y = bottom + gap + latin_size / 2
+            bottom = latin_y + latin_size / 2
+        shift = bottom - band_bot
+        if shift > 0:
+            lead_y -= shift
+            if latin_y is not None:
+                latin_y -= shift
+            entries.append(_entry("WARN", "caption pair shifted up to stay inside the caption band"))
+        top = lead_y - block_h / 2
+        bottom = (latin_y + latin_size / 2) if latin_y is not None else lead_y + block_h / 2
+        if face_boxes and any(_overlaps((margin, top, W - margin, bottom), f) for f in face_boxes):
+            lo = top_forbidden if top_forbidden is not None else band_top
+            ny, nl = lead_y, latin_y
+            while any(_overlaps((margin, ny - block_h / 2, W - margin,
+                                 (nl + latin_size / 2) if nl is not None else ny + block_h / 2), f) for f in face_boxes):
+                ny -= face_step
+                nl = nl - face_step if nl is not None else None
+                if ny - block_h / 2 < lo:
+                    entries.append(_entry("WARN", f"caption at {cue['t0']:.2f}s covers a face and has no clear spot; kept in place"))
+                    break
+            else:
+                lead_y, latin_y = ny, nl
+                top = lead_y - block_h / 2
+        if top_forbidden is not None and top < top_forbidden - 1e-6:
+            entries.append({"rule": "CAP-GEOMETRY", "level": "FAIL", "shot": None, "episode": None,
+                            "message": f"cue {cue['index']}: caption top y={top:.0f} is inside the forbidden top zone "
+                                       f"(y < {top_forbidden:.0f})"})
+        elif top < band_top:
+            entries.append(_entry("WARN", "caption is taller than the caption band"))
         if has_latin and wrap_estimate(cue["latin"], latin_size) > text_w:
             entries.append(_entry("WARN", f"cue {cue['index']}: latin line too long for one line; "
                                           "ASS wraps it"))
@@ -434,16 +499,23 @@ def _dedupe(entries):
     return out
 
 
-def build_ass(cues, pack, core, width, height, language="hi", font_dir=None, template=None):
+def build_ass(cues, pack, core, width, height, language="hi", font_dir=None, template=None, face_boxes=(),
+              karaoke=False, require_fonts=False):
     """Return (ass_text, entries). Never raises; junk input gives a FAIL entry and a minimal ASS.
     font_dir: folder with the font files; when given, text is wrapped by measuring the real font (at most 2 lines, explicit
     line breaks, shrink down to the minimum size) and every glyph is checked. template: key of core.safe_zone_templates
     (reels, shorts, youtube) replacing the caption band and the right margin.
     A cue may carry `emphasis` (list of words drawn larger in the emphasis colour) and `words` (aligned words for karaoke;
-    low confidence or bad timing falls back to the plain line)."""
+    low confidence or bad timing falls back to the plain line).
+    Cues longer than core.captions.max_words words are split into balanced cards (times shared by word count).
+    face_boxes: (x0, y0, x1, y1) in render pixels; a caption that would cover one is raised until it clears it (down to
+    the forbidden top zone) or kept with a WARN. karaoke=True: cues without aligned words get an equal split per word
+    (the Gate D look). require_fonts=True: a family whose font file is not in font_dir is a FAIL (Gate D); a caption box
+    that reaches into the forbidden top zone (core.safe_zone_frac.top) is a FAIL entry, CAP-GEOMETRY."""
     entries = []
     try:
-        text = _build(cues, pack, core, width, height, language, entries, font_dir, template)
+        text = _build(cues, pack, core, width, height, language, entries, font_dir, template, face_boxes, karaoke,
+                      require_fonts)
         return text, _dedupe(entries)
     except _Junk as exc:
         return _minimal(width, height), [_entry("FAIL", f"captions not built: {exc}")]

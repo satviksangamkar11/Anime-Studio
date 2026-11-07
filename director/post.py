@@ -3,7 +3,7 @@
 CLI:
   python director/post.py EPISODE_BUILD_DIR --story stories/<slug>/story.json [--episode-json PATH]
       [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd "CMD {in} {out}"] [--out FILE]
-      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--language en|hi|mr] [--dry-run]
+      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--language en|hi|mr] [--voice elevenlabs|h3] [--vo-dir DIR] [--dry-run]
 
 EPISODE_BUILD_DIR layout:
   episode.json          h3 episode {"episode_id", "shots": [h3 shots]}; --episode-json overrides the path
@@ -22,6 +22,14 @@ wins, else the narration and dialogue text of the language, on the shot's time_r
 post fall back to the hook caption and metadata.captions, with a WARN. A caption in the wrong script is a FAIL:
 Devanagari in an English reel, or no Devanagari in a Hindi or Marathi reel. --language overrides story.json language and
 names the output <episode>_final_<lang>.mp4.
+Voice (owner brief 2026-11-07): --voice elevenlabs (default; story.json voice_engine[lang] is used when --voice is not given)
+or h3. H3 speech is English only (VE-01): --voice h3 for hi or mr is a FAIL. With elevenlabs, every shot that has narration or
+dialogue in the language needs <vo-dir>/<lang>/<shot_id>.wav (default <build>/audio/vo); a missing file is a FAIL naming it,
+never a fallback to the H3 audio. The voice is the only speech of the reel: the H3 clips' own audio stays as the SFX bed,
+ducked under the voice, and the mix goes through the same loudnorm chain as Gate D (build_voice_branch). The audio is built
+in the same graph as the picture, before the captions are burned. With --voice h3 (English only) the H3 audio is kept.
+Grading: an act with neither a LUT file nor grade numbers exports ungraded; this is a prominent POST-UNGRADED warning and
+colour_report.json carries graded: false (and graded_by_act).
 Captions: --platform picks core.safe_zone_templates (default: core.safe_zone_frac); the fonts dir is used to measure and
 wrap the text (at most 2 lines) and to check every glyph; a real run first checks that ffmpeg has libass and HarfBuzz and,
 after the final file is written, writes <final>.<lang>.srt and .vtt next to it (--no-sidecars turns that off).
@@ -48,6 +56,7 @@ for _p in (_REPO, _HERE):
 from PIL import Image  # noqa: E402
 
 from clip_tools import gates, last_frame, probe  # noqa: E402
+from core.caption_cues import KIND_HOOK, KIND_SPOKEN, build_cue_list, hook_of, script_problems, spoken_cues  # noqa: E402
 from core.caption_export import ffmpeg_preflight, write_sidecars  # noqa: E402
 from core.captions import build_ass  # noqa: E402
 from core.flash_check import REPORT_HEADER, check_flash  # noqa: E402
@@ -56,6 +65,7 @@ from core.lut import (act_reference_lab, apply_cube, combine, grade_fn, identity
                       parse_cube, shot_match_fn, shot_match_offset, write_cube)
 from core.style_pack import delta_e_2000, load_core, load_pack, validate_pack  # noqa: E402
 from h3.assemble_reel import _audio_chain, colour_seams, load_loudness_plan  # noqa: E402
+from h3.gate_d_audio import build_vo_stem_filter, build_voice_branch, shot_has_speech, vo_fit_check  # noqa: E402
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 HEX = re.compile(r"^#?[0-9A-Fa-f]{6}$")
@@ -219,60 +229,49 @@ def _with_post_shot(entries):
     return [dict({"shot": None, "episode": None}, **e) for e in entries]
 
 
-def _spoken_cues(facts, fps, language):
-    """Cues of the spoken script of `language`, or None when no shot carries audio_and_dialogue_track.
-    Same rules as Gate D: captions_by_lang wins, else the narration and dialogue text of the language."""
-    shots = [f["raw"] for f in facts]
-    if not any(isinstance(s.get("audio_and_dialogue_track"), dict) for s in shots):
-        return None
-    from h3.gate_d_audio import caption_cues   # lazy: keeps post.py importable without the audio module
-    offsets = [f["start"] / fps for f in facts]
-    return [{"t0": c["start"], "t1": c["end"], "text": c["text"]} for c in caption_cues(shots, offsets, language)]
-
-
-_DEVA = re.compile("[\u0900-\u097F]")
-_LATIN = re.compile("[A-Za-z]")
-
-
-def _script_problems(cues, language):
-    """Messages for caption lead texts in the wrong script for the output language (first three only)."""
-    out = []
-    for c in cues:
-        text = c.get("text")
-        if not isinstance(text, str) or not text.strip():
-            continue
-        if language == "en" and _DEVA.search(text):
-            out.append(f"English reel: caption {text[:30]!r} contains Devanagari")
-        elif language in ("hi", "mr") and _LATIN.search(text) and not _DEVA.search(text):
-            out.append(f"{language} reel: caption {text[:30]!r} has no Devanagari")
-    return out[:3]
-
-
-def _caption_cues(facts, fps):
-    """Hook caption at episode t0 (first shot, up to its end), then metadata.captions shifted to episode time."""
+def _extra_captions(facts, fps, entries):
+    """metadata.captions of every shot (shot-editorial seconds) on the episode clock: the explicit caption list used when the
+    shots carry no spoken script. Malformed rows are skipped with a WARN."""
     cues = []
-    first = facts[0]
-    if first["hook_caption"] and first["hook_caption"].strip():
-        cues.append({"t0": 0.0, "t1": round(first["ed"] / fps, 3), "text": first["hook_caption"],
-                     "emphasis": first["hook_emphasis"]})
     for f in facts:
         offset = f["start"] / fps
-        for c in f["captions"]:
-            if isinstance(c, dict) and _num(c.get("t0")) and _num(c.get("t1")):
-                words = c.get("words") if isinstance(c.get("words"), list) else None
-                if words:   # aligned words are in shot-editorial seconds like the cue: shift them to episode time
-                    words = [dict(w, t0=w["t0"] + offset, t1=w["t1"] + offset)
-                             if isinstance(w, dict) and _num(w.get("t0")) and _num(w.get("t1")) else w for w in words]
-                cues.append({"t0": c["t0"] + offset, "t1": c["t1"] + offset, "text": c.get("text"),
-                             "latin": c.get("latin"), "emphasis": c.get("emphasis"), "words": words})
-            else:
-                cues.append({"t0": None, "t1": None, "text": None, "latin": None})  # build_ass reports it
+        for n, c in enumerate(f["captions"]):
+            if not (isinstance(c, dict) and _num(c.get("t0")) and _num(c.get("t1")) and isinstance(c.get("text"), str)):
+                entries.append(_entry("POST", "WARN", f"shot {f['sid']}: metadata.captions[{n}] is not {{t0, t1, text}}; skipped"))
+                continue
+            words = c.get("words") if isinstance(c.get("words"), list) else None
+            if words:   # aligned words are in shot-editorial seconds like the cue: shift them to episode time
+                words = [dict(w, t0=w["t0"] + offset, t1=w["t1"] + offset)
+                         if isinstance(w, dict) and _num(w.get("t0")) and _num(w.get("t1")) else w for w in words]
+            cues.append({"t0": c["t0"] + offset, "t1": c["t1"] + offset, "text": c["text"], "kind": KIND_SPOKEN,
+                         "latin": c.get("latin"), "emphasis": c.get("emphasis"), "words": words})
     return cues
+
+
+def _caption_cue_list(facts, fps, language, entries):
+    """The cue list that is burned and written to SRT and WebVTT, built by the shared caption engine
+    (core/caption_cues.py): the spoken script of the language, plus the hook caption on frame 1 under the hook policy.
+    Returns (cues, spoken_from_track)."""
+    shots = [f["raw"] for f in facts]
+    offsets = [f["start"] / fps for f in facts]
+    first = facts[0]
+    from_track = any(isinstance(s.get("audio_and_dialogue_track"), dict) for s in shots)
+    spoken = spoken_cues(shots, offsets, language) if from_track else []
+    if not spoken:
+        spoken = _extra_captions(facts, fps, entries)
+    hook_text, hook_dur = hook_of(first["raw"], language)
+    cues, hook_entries = build_cue_list(spoken, hook_text, hook_end=round(first["ed"] / fps, 3), hook_duration=hook_dur)
+    entries.extend(_with_post_shot(hook_entries))
+    for c in cues:
+        if c["kind"] == KIND_HOOK:
+            c["emphasis"] = first["hook_emphasis"]
+    return cues, bool(from_track and any(c["kind"] == KIND_SPOKEN for c in cues))
 
 
 def _write_colour_report(build, report):
     doc = {"episode": report["episode"], "fail": report["fail"], "written": report["written"],
            "output": report["output"], "steps": report["steps"], "entries": report["entries"],
+           "graded": report.get("graded"), "graded_by_act": report.get("graded_by_act"), "voice": report.get("voice"),
            "flash_note": REPORT_HEADER, "ffmpeg": report["ffmpeg"]}
     try:
         build.mkdir(parents=True, exist_ok=True)
@@ -284,14 +283,15 @@ def _write_colour_report(build, report):
 
 
 def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts_dir=None, upscale_cmd=None,
-             out=None, captions=True, dry_run=False, platform=None, sidecars=True, language=None):
+             out=None, captions=True, dry_run=False, platform=None, sidecars=True, language=None, voice=None,
+             vo_dir=None):
     """Grade, insert impacts, caption, encode and gate one episode. Returns the report dict."""
     report = {"episode": None, "fail": False, "written": False, "output": None, "steps": [], "entries": [],
               "flash_note": REPORT_HEADER, "ffmpeg": None, "graph": "", "commands": [], "dry_run": bool(dry_run)}
     build = Path(build_dir)
     try:
         _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
-             platform, sidecars, language)
+             platform, sidecars, language, voice, vo_dir)
     except Exception as exc:  # the CLI never prints a traceback
         report["entries"].append(_entry("POST", "FAIL", f"unexpected error: {type(exc).__name__}: {exc}"))
     report["fail"] = report["fail"] or any(e["level"] == "FAIL" for e in report["entries"])
@@ -301,7 +301,7 @@ def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts
 
 
 def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
-         platform=None, sidecars=True, language_override=None):
+         platform=None, sidecars=True, language_override=None, voice_arg=None, vo_dir=None):
     entries, steps = report["entries"], report["steps"]
 
     def fail(msg, shot=None):
@@ -456,6 +456,7 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
 
     # 3. shot match and per-shot combined LUT
     clamp = core["gates"]["shot_match_clamp_de"]
+    graded = {}
     for f in facts:
         sid = f["sid"]
         ref = act_reference_lab(pack, f["act"])
@@ -468,6 +469,7 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
                 return
             offset = shot_match_offset(mean, ref, clamp)
         act_fn, note = _act_fn(pack, f["act"], styles)
+        graded[f["act"]] = note is None
         if note:
             warn(note, sid)
         f["lut"] = f"luts/{sid}.cube"
@@ -475,6 +477,52 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
             write_cube(post / f["lut"], combine(shot_match_fn(offset), act_fn), size=LUT_SIZE,
                        title="shot match + act (generated)")
     steps.append("shot match and act LUTs" + (" planned" if dry_run else " written"))
+    report["graded_by_act"] = dict(graded)
+    report["graded"] = all(graded.values())
+    if not report["graded"]:
+        ungraded = sorted(a for a, ok in graded.items() if not ok)
+        entries.append(_entry("POST-UNGRADED", "WARN", "UNGRADED EXPORT: no LUT file and no grade numbers for act(s) "
+                              + ", ".join(ungraded) + "; this reel is NOT graded (colour_report.json: graded false)"))
+
+    # 3b. the voice of this language (before the graph, so the audio is final before the captions are burned)
+    voice = voice_arg or (story.get("voice_engine") or {}).get(language) if isinstance(story.get("voice_engine"), dict) \
+        else voice_arg
+    voice = voice or "elevenlabs"
+    report["voice"] = {"engine": voice, "language": language, "vo_files": []}
+    vo_refs, vo_inputs = None, []
+    if voice not in ("elevenlabs", "h3"):
+        fail(f"--voice must be elevenlabs or h3, got {voice!r}")
+        return
+    if voice == "h3" and language != "en":
+        fail(f"VE-01 H3 speech is English only: a {language} reel must use the elevenlabs voice")
+        return
+    if voice == "elevenlabs":
+        vdir = Path(vo_dir) if vo_dir else build / "audio" / "vo"
+        speech = [shot_has_speech(f["raw"], language) for f in facts]
+        if not any(speech):
+            warn(f"no {language} narration or dialogue on any shot: the H3 audio is kept (no voice mix)")
+        else:
+            vo_refs, existing, missing = [], [], []
+            for f, sp in zip(facts, speech):
+                ed = f["ed"] / fps
+                if not sp:
+                    vo_refs.append((None, ed))
+                    continue
+                path = vdir / language / f"{f['sid']}.wav"
+                if not path.is_file():
+                    missing.append(str(path))
+                    continue
+                vo_inputs.append(path)
+                vo_refs.append((len(facts) + len(vo_inputs) - 1, ed))
+                existing.append({"shot_id": f["sid"], "wav_path": str(path), "editorial_duration_sec": ed})
+            for m in missing:
+                fail(f"VO_MISSING: no {language} voice file at {m}; the export is refused, never a fallback to the H3 audio")
+            if missing:
+                return
+            for e in vo_fit_check(existing)["errors"]:
+                fail(f"{e['code']}: {e['message']}", e["where"])
+            report["voice"]["vo_files"] = [str(x) for x in vo_inputs]
+            steps.append(f"voice: {language} {voice}, {len(vo_inputs)} file(s), mixed before the captions")
 
     # 4. video and audio graph (16-bit until the one conversion)
     parts, inputs = [], []
@@ -489,10 +537,18 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
         parts.append(f"{v}[v{i}]")
         parts.append(_audio_chain(i, f["t"], loud.get(f["sid"])))
     n = len(facts)
-    parts.append("".join(f"[v{i}][a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=1[vcat][aout]")
+    audio_label = "asfx" if vo_refs else "aout"
+    parts.append("".join(f"[v{i}][a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=1[vcat][{audio_label}]")
+    if vo_refs:
+        total = sum(ed for _, ed in vo_refs)
+        a_cfg = delivery["audio"]
+        parts.append(build_vo_stem_filter(vo_refs))
+        parts.extend(build_voice_branch("asfx", "vo_full", None, total, "aout", a_cfg["lufs"], a_cfg["true_peak_db"], 11))
     try:
         for f in facts:
             inputs += ["-i", _rel(work[f["sid"]], post)]
+        for wav in vo_inputs:
+            inputs += ["-i", _rel(wav, post) if not os.path.isabs(str(wav)) else str(wav)]
     except ValueError as exc:
         fail(f"clip path cannot be made relative to post/: {exc}")
         return
@@ -520,18 +576,15 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
     cues = []
     if captions:
         try:
-            spoken = _spoken_cues(facts, fps, language)
+            cues, from_track = _caption_cue_list(facts, fps, language, entries)
         except (ValueError, TypeError, KeyError) as exc:
-            fail(f"spoken script of {language} could not be read: {exc}")
-            spoken = None
-        if spoken:
-            cues = spoken
+            fail(f"captions of {language} could not be built: {exc}")
+            cues, from_track = [], False
+        if from_track:
             steps.append(f"captions: spoken {language} script, {len(cues)} cue(s)")
-        else:
-            cues = _caption_cues(facts, fps)
-            if cues:
-                warn(f"no spoken {language} script on the shots: captions are the hook caption and metadata.captions")
-        for msg in _script_problems(cues, language):
+        elif cues:
+            warn(f"no spoken {language} script on the shots: captions are the hook caption and metadata.captions")
+        for msg in script_problems(cues, language):   # the one script validator (core/caption_cues.py)
             fail(msg)
     burn = bool(captions and cues)
     parts.append(f"[{cur}]scale=out_color_matrix={cs}:out_range={rng}:flags=accurate_rnd+full_chroma_int"
@@ -643,12 +696,15 @@ def main(argv=None):
     p.add_argument("--no-sidecars", action="store_true")
     p.add_argument("--platform", choices=("reels", "shorts", "youtube"))
     p.add_argument("--language", choices=("en", "hi", "mr"))
+    p.add_argument("--voice", choices=("elevenlabs", "h3"))
+    p.add_argument("--vo-dir")
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args(argv)
     report = run_post(args.build_dir, args.story, episode_json=args.episode_json, styles_dir=args.styles_dir,
                       fonts_dir=args.fonts_dir, upscale_cmd=args.upscale_cmd, out=args.out,
                       captions=not args.no_captions, dry_run=args.dry_run, platform=args.platform,
-                      sidecars=not args.no_sidecars, language=args.language)
+                      sidecars=not args.no_sidecars, language=args.language, voice=args.voice,
+                      vo_dir=args.vo_dir)
     print(json.dumps(report, indent=1, ensure_ascii=False))
     return 1 if report["fail"] else 0
 

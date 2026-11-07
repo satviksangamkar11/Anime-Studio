@@ -32,7 +32,7 @@ Stories live in `stories/<name>/`. Keys are never stored in the repository.
 Run from the repository root unless noted.
 
 - `cd director && python check_pack.py PACK_DIR [--story PATH] [--strict]`
-- `cd director && python post.py EPISODE_BUILD_DIR --story PATH [--episode-json PATH] [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd CMD] [--out PATH] [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--dry-run]`
+- `cd director && python post.py EPISODE_BUILD_DIR --story PATH [--episode-json PATH] [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd CMD] [--out PATH] [--no-captions] [--no-sidecars] [--language en|hi|mr] [--voice elevenlabs|h3] [--vo-dir DIR] [--platform reels|shorts|youtube] [--dry-run]`
 - `python core/retention_report.py BUILD_DIR ANALYTICS_JSON`
 - `python tools/lint_pack.py PACK_ID [--styles-dir DIR]`
 - `python tools/make_lut.py PACK ACT [--styles-dir DIR] [--size N] [--force]`

@@ -10,6 +10,7 @@ from core.style_pack import load_core
 FONTS = Path(__file__).resolve().parents[2] / "styles" / "fonts"
 needs_fonts = pytest.mark.skipif(not (FONTS / "NotoSansDevanagari-Variable.ttf").is_file(), reason="repo fonts missing")
 CORE = load_core()
+NO_CARDS = dict(CORE, captions={})   # these tests are about wrapping one long cue into two lines
 PACK = {"typography": {"subtitle_latin": "Inter", "subtitle_devanagari": "Noto Sans Devanagari", "min_px_at_1080w": 22,
                        "lockup": {"leader": "devanagari", "latin_size_frac": 0.4, "latin_opacity": 0.7, "gap_px_1080": 16}}}
 LONG = "यमुनेच्या काठावर बाळकृष्ण गाई चारत होता आणि सर्वजण त्याला पाहत होते आणि हसत होते"
@@ -30,7 +31,7 @@ def pos_y(line):
 
 @needs_fonts
 def test_measured_wrap_gives_at_most_two_lines_with_explicit_breaks():
-    text, entries = build_ass([{"t0": 0, "t1": 3, "text": LONG}], PACK, CORE, 1080, 1920, "mr", font_dir=FONTS)
+    text, entries = build_ass([{"t0": 0, "t1": 3, "text": LONG}], PACK, NO_CARDS, 1080, 1920, "mr", font_dir=FONTS)
     body = body_of(lead(text)[0])
     assert body.count(BREAK) == 1
     assert not [e for e in entries if e["level"] == "FAIL"]
@@ -39,7 +40,7 @@ def test_measured_wrap_gives_at_most_two_lines_with_explicit_breaks():
 @needs_fonts
 def test_text_that_cannot_fit_in_two_lines_is_a_fail_entry():
     huge = " ".join(["बाळकृष्णाच्या"] * 30)
-    _, entries = build_ass([{"t0": 0, "t1": 3, "text": huge}], PACK, CORE, 1080, 1920, "mr", font_dir=FONTS)
+    _, entries = build_ass([{"t0": 0, "t1": 3, "text": huge}], PACK, NO_CARDS, 1080, 1920, "mr", font_dir=FONTS)
     assert any(e["rule"] == "CAP-WRAP" and e["level"] == "FAIL" for e in entries)
 
 

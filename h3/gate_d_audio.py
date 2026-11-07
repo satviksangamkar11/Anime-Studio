@@ -17,11 +17,15 @@ import statistics
 import wave
 from pathlib import Path
 
+from core.caption_cues import (build_cue_list, hook_of, lang_track as _lang_track, parse_time_range, script_problems,
+                               spoken_cues)
+from core.captions import build_ass as _engine_build_ass
+from core.style_pack import load_core
 from h3.voice_engine import H3_SPEECH_LANGS, VOICE_ENGINES, engine_for
 from h3.shot_table_spec import (CAPTION, FPS, HOOK_NARRATION, LOUDNESS, STRONG_HOOKS, TAIL_SILENCE_MAX_SEC,
                                 VO_FIT_MARGIN_SEC)
 
-FONTS_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+FONTS_DIR = Path(__file__).resolve().parent.parent / "styles" / "fonts"   # the one font folder of the style packs (owner fonts, SIL OFL)
 MASTER_LABEL = "master"
 MIX_FORMAT = "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo"
 MIX_RATE = 48000
@@ -34,21 +38,9 @@ OPENING_HOOK_SEC = 2.0
 # "non-silent" needs a number, so adjust it here if the owner gives one.
 BGM_PRESENCE = {"median_under_voice_db": (15.0, 21.5), "p95_floor_db": -50.0, "speech_gate_db": -40.0}
 BGM_REQUIRED = ("track_id", "path", "license_type", "bpm", "lufs")
-CAPTION_FONT_FAMILY = "Noto Sans Devanagari"     # family name of NotoSansDevanagari-Bold.ttf
-LATIN_FONT_FILE = "NotoSans-Bold.ttf"            # OFL, for English (lang "en") captions
-LATIN_FONT_FAMILY = "Noto Sans"
-# Per-language caption font. hi and mr are Devanagari (CAPTION["font"]); en is Latin. Limits and margins are shared.
-CAPTION_FONTS = {
-    "hi": {"file": CAPTION["font"], "family": CAPTION_FONT_FAMILY},
-    "mr": {"file": CAPTION["font"], "family": CAPTION_FONT_FAMILY},
-    "en": {"file": LATIN_FONT_FILE, "family": LATIN_FONT_FAMILY},
-}
-CAPTION_FONT_SIZE = 84
-CAPTION_LINE_PX = 110                             # line height for the placement estimate
-CAPTION_CHAR_PX = 46                              # average glyph advance for the placement estimate
-CAPTION_MOVE_STEP_PX = 40                         # how far a card is raised when it covers a face
+CAPTION_FONT_FAMILY = "Noto Sans Devanagari"     # default Devanagari family when no style pack is given (same as the packs)
+LATIN_FONT_FAMILY = "Inter"                      # default Latin family when no style pack is given (same as the packs)
 
-_RANGE_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*s?\s*$")
 _EBUR_I = re.compile(r"\bI:\s*(-?\d+(?:\.\d+)?)\s*LUFS")
 _EBUR_TP = re.compile(r"True peak:\s*Peak:\s*(-?\d+(?:\.\d+)?)\s*dB")
 _LN_I = re.compile(r"Input Integrated:\s*(-?\d+(?:\.\d+)?)\s*LUFS")
@@ -71,20 +63,6 @@ def _is_num(x):
 
 def _overlap(s, e, lo, hi):
     return max(0.0, min(e, hi) - max(s, lo))
-
-
-def parse_time_range(value):
-    """[s, e] list, or a "1.2-1.6s" / "1.2–1.6s" string -> (s, e). ValueError when malformed or not e > s."""
-    if isinstance(value, (list, tuple)) and len(value) == 2 and all(_is_num(v) for v in value):
-        s, e = float(value[0]), float(value[1])
-    elif isinstance(value, str) and _RANGE_RE.match(value):
-        m = _RANGE_RE.match(value)
-        s, e = float(m.group(1)), float(m.group(2))
-    else:
-        raise ValueError(f"bad time_range {value!r}")
-    if e <= s:
-        raise ValueError(f"time_range must have end > start: {value!r}")
-    return s, e
 
 
 def _speech_items(trk, t0=0.0):
@@ -304,6 +282,28 @@ def check_music_presence(voice_db, bgm_db, *, speech_gate_db=BGM_PRESENCE["speec
 
 # ---------------------------------------------------------------- ffmpeg filtergraph, mux and loudness
 
+def build_voice_branch(sfx_label, vo_input, bgm_input, total, out_label, lufs, tp, lra):
+    """Filter chains of the ElevenLabs path: the voice stem padded to the reel, the SFX stem ducked under it, the optional
+    BGM ducked under it, the stems summed and loudness-normalised into [out_label]. Shared by Gate D's mix and post.py, so
+    every language reel is mixed and normalised by the same chain. vo_input and bgm_input are ffmpeg input indexes or labels."""
+    chains = [f"{_src(vo_input)}{MIX_FORMAT},apad=whole_dur={total:.3f}[elevenlabs_vo]"]
+    with_bgm = bgm_input is not None                  # owner default: no BGM; with it, ONE continuous track
+    chains.append("[elevenlabs_vo]asplit=3[vo_out][sc_sfx][sc_bgm]" if with_bgm else "[elevenlabs_vo]asplit=2[vo_out][sc_sfx]")
+    chains.append(f"[{sfx_label}][sc_sfx]sidechaincompress={SFX_DUCK}[sfx_ducked]")
+    if with_bgm:
+        chains.append(f"{_src(bgm_input)}{MIX_FORMAT}[bgm]")
+        chains.append(f"[bgm][sc_bgm]sidechaincompress={BGM_DUCK}[bgm_ducked]")
+    stems = "[sfx_ducked][vo_out][bgm_ducked]" if with_bgm else "[sfx_ducked][vo_out]"
+    chains.append(f"{stems}amix=inputs={3 if with_bgm else 2}:duration=longest:normalize=0,atrim=0:{total:.3f},"
+                  f"loudnorm=I={lufs:g}:TP={tp:g}:LRA={lra:g}[{out_label}]")
+    return chains
+
+
+def shot_has_speech(shot, lang):
+    """True when the shot has narration or dialogue with a time range in this language (it needs a voice file)."""
+    return bool(_speech_items(_lang_view_track(shot, lang)))
+
+
 def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
     """Exact 3-stem filtergraph text ending in [master]. Input numbers are ffmpeg input indexes.
 
@@ -338,17 +338,9 @@ def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
             chains.append(f"[bgm][sc_bgm]sidechaincompress={BGM_DUCK}[bgm_ducked]")
             chains.append(f"[sfx_out][bgm_ducked]amix=inputs=2:duration=longest:normalize=0,atrim=0:{total:.3f},{loud}")
         return ";".join(chains)
-    chains.append(f"{_src(vo_input)}{MIX_FORMAT},apad=whole_dur={total:.3f}[elevenlabs_vo]")
-    with_bgm = bgm_input is not None                  # owner default: no BGM; with it, ONE continuous track
-    chains.append("[elevenlabs_vo]asplit=3[vo_out][sc_sfx][sc_bgm]" if with_bgm else "[elevenlabs_vo]asplit=2[vo_out][sc_sfx]")
-    chains.append(f"[h3_sfx_full][sc_sfx]sidechaincompress={SFX_DUCK}[sfx_ducked]")
-    if with_bgm:
-        chains.append(f"{_src(bgm_input)}{MIX_FORMAT}[bgm]")
-        chains.append(f"[bgm][sc_bgm]sidechaincompress={BGM_DUCK}[bgm_ducked]")
     lt = LOUDNESS
-    stems = "[sfx_ducked][vo_out][bgm_ducked]" if with_bgm else "[sfx_ducked][vo_out]"
-    chains.append(f"{stems}amix=inputs={3 if with_bgm else 2}:duration=longest:normalize=0,atrim=0:{total:.3f},"
-                  f"loudnorm=I={lt['target_lufs']:g}:TP={lt['loudnorm_tp']:g}:LRA={lt['lra']:g}[{MASTER_LABEL}]")
+    chains += build_voice_branch("h3_sfx_full", vo_input, bgm_input, total, MASTER_LABEL, lt["target_lufs"],
+                                 lt["loudnorm_tp"], lt["lra"])
     return ";".join(chains)
 
 
@@ -416,145 +408,32 @@ def check_post_aac_loudness(ffmpeg_text):
 
 # ---------------------------------------------------------------- .ass captions
 
-def _font_spec(lang):
-    if lang not in CAPTION_FONTS:
-        raise ValueError(f"unknown caption language {lang!r}; expected one of {tuple(CAPTION_FONTS)}")
-    return CAPTION_FONTS[lang]
+def fallback_pack():
+    """Typography used when the story supplies no style pack: the Gate D default fonts (family names only)."""
+    return {"typography": {"subtitle_latin": LATIN_FONT_FAMILY, "subtitle_devanagari": CAPTION_FONT_FAMILY,
+                           "min_px_at_1080w": 22}}
 
 
-def ensure_font(fonts_dir=None, lang="hi"):
-    """Path of the bundled caption font for lang (hi/mr: Devanagari, en: Latin). Fails clearly when missing;
-    never downloads."""
-    spec = _font_spec(lang)
-    p = Path(fonts_dir or FONTS_DIR) / spec["file"]
-    if not p.is_file():
-        raise FileNotFoundError(f"caption font missing for lang {lang!r}: {p}. Place {spec['file']} (SIL OFL 1.1) in "
-                                f"assets/fonts/; see assets/fonts/README.md. This code never downloads it.")
-    return p
-
-
-def split_cards(text, max_words=CAPTION["max_words"]):
-    """Balanced split into cards of at most max_words words: 13 words -> 5, 5, 3; 7 words -> 4, 3."""
-    words = text.split()
-    if not words:
-        return []
-    n = math.ceil(len(words) / max_words)
-    size = math.ceil(len(words) / n)
-    return [words[i:i + size] for i in range(0, len(words), size)]
-
-
-def build_cards(cues):
-    """cues: [{"text", "start", "end"}] -> cards [{"start", "end", "words": [(word, centiseconds)]}].
-    Card time is shared by word count; each word gets an equal slice of its card (karaoke \\k)."""
-    cards = []
-    for cue in cues:
-        s, e = float(cue["start"]), float(cue["end"])
-        if e <= s:
-            raise ValueError(f"cue end must be after start: {cue!r}")
-        chunks = split_cards(cue["text"])
-        total = sum(len(c) for c in chunks)
-        done = 0
-        for chunk in chunks:
-            c_start = s + (e - s) * done / total
-            done += len(chunk)
-            c_end = s + (e - s) * done / total
-            per_word = (c_end - c_start) / len(chunk)
-            cards.append({"start": c_start, "end": c_end,
-                          "words": [(w, max(1, round(per_word * 100))) for w in chunk]})
-    return cards
-
-
-def _estimate_lines(words):
-    usable = CAPTION["play_res"][0] - CAPTION["margin_l"] - CAPTION["margin_r"]
-    width = sum(len(w) + 1 for w in words) * CAPTION_CHAR_PX
-    return max(1, math.ceil(width / usable))
-
-
-def _caption_top(lines, margin_v):
-    return (CAPTION["play_res"][1] - margin_v) - lines * CAPTION_LINE_PX
-
-
-def _overlaps(a, b):
-    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
-
-
-def place_card(words, face_boxes=()):
-    """(margin_v, flagged). Raises the caption in CAPTION_MOVE_STEP_PX steps until it clears every face box and
-    stays at or below top_blocked_y. flagged=True when no clear spot exists (default position kept)."""
-    width, height = CAPTION["play_res"]
-    lines = _estimate_lines(words)
-    mv = CAPTION["margin_v"]
-    while True:
-        box = (CAPTION["margin_l"], _caption_top(lines, mv), width - CAPTION["margin_r"], height - mv)
-        if not any(_overlaps(box, f) for f in face_boxes):
-            return mv, False
-        mv += CAPTION_MOVE_STEP_PX
-        if _caption_top(lines, mv) < CAPTION["top_blocked_y"]:
-            return CAPTION["margin_v"], True
-
-
-def _ts(sec):
-    cs = int(round(sec * 100))
-    h, rem = divmod(cs, 360000)
-    m, rem = divmod(rem, 6000)
-    s, c = divmod(rem, 100)
-    return f"{h}:{m:02d}:{s:02d}.{c:02d}"
-
-
-def _ass_word(word):
-    return re.sub(r"[{}\\]", "", word)
-
-
-def _ass_header(lang="hi"):
+def build_captions(cues, *, face_boxes=(), lang="hi", pack=None, fonts_dir=None):
+    """The one call Gate D makes for captions: the builder is core/captions.py (the shared caption engine). Returns
+    (ass_text, entries); entries are engine entries (rule, level, message). Fonts are required: a family whose file is not
+    in fonts_dir (default assets/fonts) is a FAIL. Never downloads anything."""
+    if lang not in LANGUAGES:
+        raise ValueError(f"unknown caption language {lang!r}; expected one of {LANGUAGES}")
     w, h = CAPTION["play_res"]
-    spec = _font_spec(lang)
-    return (
-        "[Script Info]\n"
-        f"; font file: assets/fonts/{spec['file']} (burn with fontsdir=assets/fonts)\n"
-        "ScriptType: v4.00+\n"
-        f"PlayResX: {w}\n"
-        f"PlayResY: {h}\n"
-        "ScaledBorderAndShadow: yes\n"
-        "WrapStyle: 0\n\n"
-        "[V4+ Styles]\n"
-        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
-        "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
-        "MarginR, MarginV, Encoding\n"
-        # Primary = yellow (the sung word), Secondary = white (not yet sung), black outline for contrast.
-        f"Style: Caption,{spec['family']},{CAPTION_FONT_SIZE},&H0000FFFF,&H00FFFFFF,&H00000000,&H80000000,"
-        f"-1,0,0,0,100,100,0,0,1,6,0,{CAPTION['alignment']},{CAPTION['margin_l']},{CAPTION['margin_r']},"
-        f"{CAPTION['margin_v']},1\n\n"
-        "[Events]\n"
-        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-    )
+    return _engine_build_ass(cues, pack or fallback_pack(), load_core(), w, h, lang, font_dir=Path(fonts_dir or FONTS_DIR),
+                            face_boxes=face_boxes, karaoke=True, require_fonts=True)
 
 
-def build_ass(cues, face_boxes=(), lang="hi"):
-    """(ass_text, warnings). cues: [{"text", "start", "end"}]; face_boxes: (x0, y0, x1, y1) in PlayRes pixels.
-    lang picks the font family only (hi/mr/en). Pure text: the font file is not read here (write_captions checks
-    it). Raises ValueError if any caption would sit above top_blocked_y."""
-    header = _ass_header(lang)
-    events, warnings = [], []
-    for card in build_cards(cues):
-        words = [w for w, _ in card["words"]]
-        mv, flagged = place_card(words, face_boxes)
-        if flagged:
-            warnings.append(f"caption at {card['start']:.2f}s covers a face and has no clear spot; kept MarginV={mv}")
-        top = _caption_top(_estimate_lines(words), mv)
-        if top < CAPTION["top_blocked_y"]:
-            raise ValueError(f"caption top y={top:.0f} is above y={CAPTION['top_blocked_y']}")
-        text = " ".join(f"{{\\k{cs}}}{_ass_word(w)}" for w, cs in card["words"])
-        events.append(f"Dialogue: 0,{_ts(card['start'])},{_ts(card['end'])},Caption,,"
-                      f"{CAPTION['margin_l']},{CAPTION['margin_r']},{mv},,{text}")
-    return header + "\n".join(events) + ("\n" if events else ""), warnings
-
-
-def write_captions(out_path, cues, face_boxes=(), fonts_dir=None, lang="hi"):
-    """ensure_font(lang), then build_ass(lang), then write the .ass file. Returns the warnings list."""
-    ensure_font(fonts_dir, lang)
-    text, warnings = build_ass(cues, face_boxes, lang)
+def write_captions(out_path, cues, face_boxes=(), fonts_dir=None, lang="hi", pack=None):
+    """build_captions, then write the .ass file. Raises ValueError (nothing written) when the engine reports a FAIL.
+    Returns the WARN messages."""
+    text, entries = build_captions(cues, face_boxes=face_boxes, lang=lang, pack=pack, fonts_dir=fonts_dir)
+    fails = [e["message"] for e in entries if e["level"] == "FAIL"]
+    if fails:
+        raise ValueError("; ".join(fails))
     Path(out_path).write_text(text, encoding="utf-8", newline="\n")
-    return warnings
+    return [e["message"] for e in entries if e["level"] == "WARN"]
 
 
 _FF_SPECIAL = re.compile(r"[,;\[\]']")
@@ -622,51 +501,12 @@ def _pick_languages(languages):
     return langs
 
 
-def _lang_track(trk, lang):
-    """(narration, dialogue) of one shot for one language. Shots with *_by_lang maps use them. Single-language shots
-    keep the old fields and serve only their narration language (dialogue is taken as that language)."""
-    if trk.get("narration_by_lang") is not None or trk.get("dialogue_by_lang") is not None:
-        nbl, dbl = trk.get("narration_by_lang"), trk.get("dialogue_by_lang")
-        nbl = nbl if isinstance(nbl, dict) else {}   # a non-object *_by_lang is reported as TIME-01 by same_timing_problems
-        dbl = dbl if isinstance(dbl, dict) else {}
-        return nbl.get(lang), dbl.get(lang) or []
-    narr = trk.get("narration")
-    if narr and narr.get("language") == lang:
-        return narr, trk.get("dialogue") or []
-    return None, []
-
-
 def _lang_view_track(shot, lang):
     trk = shot.get("audio_and_dialogue_track") or {}
     narr, dia = _lang_track(trk, lang)
     return {"narration": narr, "dialogue": dia, "sfx_cues": trk.get("sfx_cues") or [],
             "performance_notes": trk.get("performance_notes") or {}}
 
-
-def _caption_cues(shots, offsets, lang):
-    """Caption cues on the reel clock. captions_by_lang[lang] wins when given ({"text", "time_range"}, or plain text
-    on the narration time). Otherwise the narration and dialogue text of that language is captioned."""
-    cues = []
-    for shot, t0 in zip(shots, offsets):
-        trk = shot.get("audio_and_dialogue_track") or {}
-        narr, dia = _lang_track(trk, lang)
-        cap = (trk.get("captions_by_lang") or {}).get(lang)
-        items = []
-        if isinstance(cap, dict):
-            items.append((cap.get("text"), cap.get("time_range") or (narr or {}).get("time_range")))
-        elif isinstance(cap, str) and narr:
-            items.append((cap, narr.get("time_range")))
-        else:
-            items.append(((narr or {}).get("text"), (narr or {}).get("time_range")))
-            items += [(d.get("text"), d.get("time_range")) for d in dia]
-        for text, rng in items:
-            if str(text or "").strip() and rng:
-                s, e = parse_time_range(rng)
-                cues.append({"text": text, "start": s + t0, "end": e + t0})
-    return cues
-
-
-caption_cues = _caption_cues   # public name: director/post.py burns the spoken script of the output language
 
 def _bgm_track(bgm_manifest):
     """(errors, path of the one continuous BGM track). Accepts the parsed manifest or a path to the json file."""
@@ -691,7 +531,7 @@ def _bgm_track(bgm_manifest):
 
 def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors, *, video_path, captions_dir,
                        export_dir, face_boxes, fonts_dir, story_gate_checks, payoff_end_sec, narration_driven,
-                       measured_text, sfx_stem_path, burn_captions, voice_engine="elevenlabs"):
+                       measured_text, sfx_stem_path, burn_captions, voice_engine="elevenlabs", pack=None):
     views = [dict(s, audio_and_dialogue_track=_lang_view_track(s, lang)) for s in shots]
     errors, warnings, stats = list(bgm_errors), [], {}
     h3_voice = voice_engine == "h3"                   # English H3 speech: no VO files, the clip's own audio is the voice
@@ -722,18 +562,26 @@ def _plan_one_language(reel, lang, shots, offsets, vo_dir, bgm_path, bgm_errors,
         errors.append(_err("NO_VO_FILES", lang, f"no {lang} VO file for any shot under {Path(vo_dir) / lang}"))
     take("vo_fit", vo_fit_check(existing))
 
-    cues = _caption_cues(shots, offsets, lang)
+    spoken = spoken_cues(shots, offsets, lang)
+    hook_text, hook_dur = hook_of(shots[0], lang)
+    cues, hook_entries = build_cue_list(spoken, hook_text, hook_end=_editorial_len(shots[0]), hook_duration=hook_dur)
+    warnings.extend(e["message"] for e in hook_entries)
     if not cues:
         errors.append(_err("NO_CAPTIONS", lang, f"no {lang} caption text in any shot"))
-    try:
-        ensure_font(fonts_dir, lang)
-    except FileNotFoundError as exc:
-        errors.append(_err("FONT_MISSING", lang, str(exc)))
+    for msg in script_problems(cues, lang):          # the one script validator (core/caption_cues.py)
+        errors.append(_err("CAPTION_SCRIPT", lang, msg))
     if cues:
         try:
-            warnings.extend(build_ass(cues, face_boxes, lang)[1])
+            _ass, entries = build_captions(cues, face_boxes=face_boxes, lang=lang, pack=pack, fonts_dir=fonts_dir)
         except ValueError as exc:
             errors.append(_err("ASS_GEOMETRY", lang, str(exc)))
+        else:
+            code = {"CAP-FONT": "FONT_MISSING", "CAP-GEOMETRY": "ASS_GEOMETRY", "CAP-GLYPH": "GLYPH_MISSING"}
+            for e in entries:
+                if e["level"] == "FAIL":
+                    errors.append(_err(code.get(e["rule"], "CAPTION_" + e["rule"]), lang, e["message"]))
+                else:
+                    warnings.append(e["message"])
 
     take("narration", check_narration_density(views, narration_driven=narration_driven))
     op = next((v for s, v in zip(shots, views) if s.get("is_opening_0_2s_hook")), None)
@@ -806,7 +654,7 @@ def _editorial_len(shot):
 def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video_path, video_has_audio=None,
                           sfx_stem_path=None, burn_captions=True, captions_dir="captions", export_dir="export",
                           face_boxes=(), fonts_dir=None, story_gate_checks=None, payoff_end_sec=None,
-                          narration_driven=True, measured_text=None, voice_engines=None):
+                          narration_driven=True, measured_text=None, voice_engines=None, pack=None):
     """One final reel per selected language (en, hi, mr; any subset, order = priority) from the same video and SFX.
     voice_engines: the story's voice_engine dict. None = every language uses ElevenLabs files (old behaviour).
     Render variants (owner 2026-11-07): one shared pure-Foley video serves hi, mr and every elevenlabs language; an
@@ -849,7 +697,7 @@ def plan_language_outputs(reel, languages, vo_dir, bgm_manifest, *, shots, video
                 captions_dir=captions_dir, export_dir=export_dir, face_boxes=face_boxes, fonts_dir=fonts_dir,
                 story_gate_checks=story_gate_checks, payoff_end_sec=payoff_end_sec,
                 narration_driven=narration_driven, measured_text=measured_text, sfx_stem_path=sfx_stem_path,
-                burn_captions=burn_captions, voice_engine=eng)
+                burn_captions=burn_captions, voice_engine=eng, pack=pack)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:   # one bad language must not stop the others (AttributeError: a non-object track/gate/mouth block)
             reports[lang] = _report([_err("PLAN-01", lang, f"{type(exc).__name__}: {exc}")], [], {})
             plans[lang] = {"mix_filter": None, "mux_argv": None}

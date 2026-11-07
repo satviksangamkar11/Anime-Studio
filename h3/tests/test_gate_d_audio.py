@@ -264,78 +264,6 @@ def _card_words(event):
     return len(re.sub(r"\{\\k\d+\}", "", event.split(",", 9)[9]).split())
 
 
-def test_ass_header_geometry_and_margins():
-    ass, warnings = gd.build_ass([{"text": "one two three", "start": 0.0, "end": 2.0}])
-    assert warnings == []
-    assert "PlayResX: 1440" in ass and "PlayResY: 2560" in ass
-    style = next(l for l in ass.splitlines() if l.startswith("Style: Caption,"))
-    fields = style.split(",")
-    assert fields[1] == "Noto Sans Devanagari" and fields[18] == "2"        # Alignment 2 (bottom centre)
-    assert fields[19] == "160" and fields[20] == "160" and fields[21] == "896"  # symmetric L/R, MarginV
-    ev = _events(ass)[0].split(",", 9)
-    assert ev[5] == "160" and ev[6] == "160" and ev[7] == "896"
-    assert "{\\k" in ev[9]                                                  # karaoke highlight tags
-    assert "&H0000FFFF" in style                                           # yellow active colour
-
-
-def test_ass_cards_at_most_six_words_and_timing_covers_cue():
-    text = "one two three four five six seven eight nine ten eleven twelve thirteen"
-    ass, _ = gd.build_ass([{"text": text, "start": 1.0, "end": 7.0}])
-    events = _events(ass)
-    assert len(events) == 3                                                # 13 words -> 5, 5, 3
-    assert all(_card_words(e) <= CAPTION["max_words"] for e in events)
-    assert sum(_card_words(e) for e in events) == 13
-    assert events[0].split(",")[1] == "0:00:01.00" and events[-1].split(",")[2] == "0:00:07.00"
-
-
-def test_split_cards_is_balanced():
-    assert [len(c) for c in gd.split_cards("a b c d e f g")] == [4, 3]
-    assert gd.split_cards("") == []
-
-
-def test_ass_words_are_escaped_so_override_blocks_cannot_leak():
-    ass, _ = gd.build_ass([{"text": "{bad} word", "start": 0.0, "end": 1.0}])
-    text = _events(ass)[0].split(",", 9)[9]
-    assert "{bad}" not in text and "bad" in text and "word" in text
-    # a six-word card at the default margin sits well below the blocked top line
-    assert gd._caption_top(gd._estimate_lines(["xxxxxxxxxx"] * 6), CAPTION["margin_v"]) >= CAPTION["top_blocked_y"]
-
-
-def test_ass_guard_raises_when_caption_would_sit_above_line(monkeypatch):
-    monkeypatch.setitem(CAPTION, "margin_v", 2300)                          # 260 px from the top: too high
-    with pytest.raises(ValueError):
-        gd.build_ass([{"text": "one two", "start": 0.0, "end": 1.0}])
-
-
-def test_ass_raises_caption_off_a_face_or_flags_it():
-    face = (0, 1400, 1440, 1700)                                           # covers the default caption band
-    ass, warnings = gd.build_ass([{"text": "one two", "start": 0.0, "end": 1.0}], face_boxes=[face])
-    assert warnings == []
-    mv = int(_events(ass)[0].split(",", 9)[7])
-    assert mv > CAPTION["margin_v"]
-    whole = (0, 0, 1440, 2560)                                             # no clear spot anywhere
-    ass2, warnings2 = gd.build_ass([{"text": "one two", "start": 0.0, "end": 1.0}], face_boxes=[whole])
-    assert warnings2 and int(_events(ass2)[0].split(",", 9)[7]) == CAPTION["margin_v"]
-
-
-def test_font_missing_fails_clearly_and_writes_nothing(tmp_path):
-    with pytest.raises(FileNotFoundError, match="NotoSansDevanagari-Bold.ttf"):
-        gd.ensure_font(tmp_path)
-    out = tmp_path / "cap.ass"
-    with pytest.raises(FileNotFoundError):
-        gd.write_captions(out, [{"text": "one", "start": 0.0, "end": 1.0}], fonts_dir=tmp_path)
-    assert not out.exists()
-
-
-def test_font_present_is_returned_and_written(tmp_path):
-    (tmp_path / CAPTION["font"]).write_bytes(b"\x00")                       # placeholder bytes, never parsed
-    assert gd.ensure_font(tmp_path).name == CAPTION["font"]
-    out = tmp_path / "cap.ass"
-    assert gd.write_captions(out, [{"text": "one two", "start": 0.0, "end": 1.0}], fonts_dir=tmp_path) == []
-    assert out.read_text(encoding="utf-8").startswith("[Script Info]")
-    assert "fontsdir=" in gd.build_subtitles_filter(out, tmp_path)
-
-
 def test_no_ffmpeg_or_network_imports_in_module():
     src = open(gd.__file__, encoding="utf-8").read()
     for banned in ("subprocess", "urllib", "requests", "socket", "http"):
@@ -348,11 +276,16 @@ BGM = {"tracks": [{"track_id": "bgm_1", "path": "audio/bgm.wav", "license_type":
 GATE = {"ending_reuses_emotional_anchor": {"pass": True, "evidence": "lamp"}}
 
 
+def _word(lang, i):
+    """One caption word: Latin for English, Devanagari for Hindi and Marathi (the script validator refuses anything else)."""
+    return f"en{i}" if lang == "en" else f"शब्द{i}"
+
+
 def _story(langs=ALL_LANGS):
     """Three 5 s shots. Speech 0-4.9 s in every shot (gaps 0.1 s), so coverage and words pass. s1 opens the reel,
     s3 closes it with a 4.9 s VO (residual 0.1 s) and the mouth closed on 0-4 s."""
     def trk():
-        return {"narration_by_lang": {l: {"text": " ".join(f"{l}{i}" for i in range(19)), "language": l,
+        return {"narration_by_lang": {l: {"text": " ".join(_word(l, i) for i in range(19)), "language": l,
                                           "time_range": [0.0, 4.9]} for l in langs},
                 "dialogue_by_lang": {},
                 "sfx_cues": [{"time_range": "0.0-0.4s", "sfx_key": "bell", "description": "bell"}],
@@ -376,12 +309,15 @@ def _vo_root(root, langs=ALL_LANGS, skip=()):
 
 
 def _fonts(root, names=("hi", "en")):
+    """A fonts folder with the real repo fonts of the named languages (the shared engine reads them): hi = Noto Sans
+    Devanagari, en = Inter."""
+    import shutil
+    repo = Path(__file__).resolve().parents[2] / "styles" / "fonts"
     fonts = root / "fonts"
     fonts.mkdir(exist_ok=True)
-    if "hi" in names:
-        (fonts / CAPTION["font"]).write_bytes(b"\x00")
-    if "en" in names:
-        (fonts / "NotoSans-Bold.ttf").write_bytes(b"\x00")
+    for name, fname in (("hi", "NotoSansDevanagari-Variable.ttf"), ("en", "Inter-Variable.ttf")):
+        if name in names and not (fonts / fname).is_file():
+            shutil.copy(repo / fname, fonts / fname)
     return fonts
 
 
@@ -550,56 +486,6 @@ def test_separate_sfx_stem_file_becomes_its_own_input(tmp_path):
 
 def _style_fields(ass):
     return next(l for l in ass.splitlines() if l.startswith("Style: Caption,")).split(",")
-
-
-@pytest.mark.parametrize("lang,family", [("hi", "Noto Sans Devanagari"), ("mr", "Noto Sans Devanagari"),
-                                         ("en", "Noto Sans")])
-def test_each_language_uses_its_font_family_with_shared_layout(lang, family):
-    text = "one two three four five six seven eight nine ten"
-    ass, warnings = gd.build_ass([{"text": text, "start": 0.0, "end": 4.0}], lang=lang)
-    assert warnings == []
-    fields = _style_fields(ass)
-    assert fields[1] == family
-    assert fields[18] == "2" and fields[19] == "160" and fields[20] == "160" and fields[21] == "896"
-    events = _events(ass)
-    assert len(events) == 2 and all(_card_words(e) <= CAPTION["max_words"] for e in events)
-    for e in events:
-        f = e.split(",", 9)
-        assert f[5] == "160" and f[6] == "160" and f[7] == "896"
-
-
-def test_en_guard_above_top_line_is_shared(monkeypatch):
-    monkeypatch.setitem(CAPTION, "margin_v", 2300)
-    with pytest.raises(ValueError):
-        gd.build_ass([{"text": "one two", "start": 0.0, "end": 1.0}], lang="en")
-
-
-def test_default_language_is_hindi_devanagari():
-    assert _style_fields(gd.build_ass([{"text": "a b", "start": 0.0, "end": 1.0}])[0])[1] == "Noto Sans Devanagari"
-
-
-def test_unknown_language_is_rejected(tmp_path):
-    with pytest.raises(ValueError):
-        gd.build_ass([{"text": "a", "start": 0.0, "end": 1.0}], lang="fr")
-    with pytest.raises(ValueError):
-        gd.ensure_font(tmp_path, "fr")
-
-
-def test_font_check_is_per_language(tmp_path):
-    (tmp_path / CAPTION["font"]).write_bytes(b"\x00")                       # only the Devanagari file present
-    assert gd.ensure_font(tmp_path, "hi").name == CAPTION["font"]
-    assert gd.ensure_font(tmp_path, "mr").name == CAPTION["font"]
-    with pytest.raises(FileNotFoundError, match="NotoSans-Bold.ttf"):
-        gd.ensure_font(tmp_path, "en")
-    out = tmp_path / "en.ass"
-    with pytest.raises(FileNotFoundError):
-        gd.write_captions(out, [{"text": "one", "start": 0.0, "end": 1.0}], fonts_dir=tmp_path, lang="en")
-    assert not out.exists()
-    (tmp_path / "NotoSans-Bold.ttf").write_bytes(b"\x00")
-    assert gd.ensure_font(tmp_path, "en").name == "NotoSans-Bold.ttf"
-    assert gd.write_captions(out, [{"text": "one two", "start": 0.0, "end": 1.0}], fonts_dir=tmp_path,
-                             lang="en") == []
-    assert "Style: Caption,Noto Sans," in out.read_text(encoding="utf-8")
 
 
 def test_mix_without_bgm_is_a_two_stem_graph():

@@ -13,6 +13,7 @@
     "reels": {"top": 0.14, "bottom": 0.35, "right": 0.111, "caption_band": [0.50, 0.65]},
     "shorts": {"top": 0.14, "bottom": 0.32, "right": 0.12, "caption_band": [0.52, 0.68]},
     "youtube": {"top": 0.05, "bottom": 0.10, "right": 0.05, "caption_band": [0.80, 0.92]}},
+  "captions": {"max_words": 6},
   "retention": {"first_motion_s": 0.5, "first_face_change_s": 1.0,
                 "hook_caption_max_words": 6,
                 "no_hold_before_s": 3.0, "static_warn_s": 3.5,

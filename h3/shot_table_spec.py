@@ -42,7 +42,7 @@ HUMAN_CHOICES = ("switch_models", "relax_requirements", "skip_with_placeholder_m
 LOUDNESS = {"target_lufs": -14.0, "tolerance": 0.5, "loudnorm_tp": -1.8, "tp_ceiling_dbtp": -1.5, "lra": 11}
 # owner 2026-11-07: bottom margin 896 px = 35% of 2560 (Meta Reels ad guidance, covers YouTube Shorts UI); top 360 = 14%; sides 160 (11%) kept
 CAPTION = {"play_res": (1440, 2560), "margin_l": 160, "margin_r": 160, "margin_v": 896, "top_blocked_y": 360, "alignment": 2,
-           "max_words": 6, "font": "NotoSansDevanagari-Bold.ttf"}
+           "max_words": 6, "font": "NotoSansDevanagari-Variable.ttf"}   # font: the styles/fonts file of the Devanagari caption family
 VO_FIT_MARGIN_SEC = 0.10
 TAIL_SILENCE_MAX_SEC = 0.45
 HOOK_NARRATION = {"window_sec": 15.0, "min_coverage": 0.90, "min_words": 38, "max_dead_air_sec": 0.45}
