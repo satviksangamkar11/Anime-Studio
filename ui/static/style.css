@@ -791,6 +791,10 @@ input, select, textarea {
 input[type="checkbox"], input[type="radio"] {
   min-height: 0;
   min-width: 0;
+  width: 24px;              /* rule 18: every tick box and choice big enough for a 60-year-old (Assay found 13 px ones) */
+  height: 24px;
+  vertical-align: middle;
+  flex: none;               /* keep the size next to long label text */
   accent-color: var(--button-bg);
 }
 textarea { width: 100%; min-height: 12rem; }

@@ -1878,7 +1878,7 @@ def pipeline_gate(api, body):
 
 def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
     if method == "GET":
-        if path == "/":
+        if path in ("/", "/index.html"):
             return static_file(api.cfg, "index.html")
         m = re.fullmatch(r"/(?:static/)?([A-Za-z0-9_.-]{1,80}\.(?:css|js))", path)   # index.html links style.css and app.js relative to "/"
         if m:

@@ -1,12 +1,12 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
-- State 11-07 23:07: merge worktree HEAD c71cbcb (UI W3/E3 + style chooser + R1 fixes, writer --web, validator fix, blot 16-17); ui 550 pass, director 789 pass; NOT pushed.
-- Site http://localhost:8765/ running fresh from merge ui/server.py (preview anime-ui); desktop 1280 checked en+mr; phone not tested (rule 15).
-- RUNNING: Kalika Opus high writer WITH live web (--web), fresh run into stories/kalika_puran_bhag1/pack_opus_high_20261107_v3_web (log writer_run_opus_high_v3_web.log); old v2_parts12 kept (stage 2 had failed on a validator bug, fixed).
-- New rules: 16 internet for every writer (Claude live; free models get WEB_NOTES.md from a Haiku low agent), 17 log+blot in the same step.
-- BLOCKED: Assay: 'assay-ui' is not on npm; need the owner's exact link/name before install.
-- NEXT: Kalika stage checks + plan validator + Gate A to owner; Assay once named; Xing reviews unusable (retry or drop).
+- State 11-07 23:30: merge HEAD c79cfba (rule 18 nothing hidden: top story chooser, all reachable steps open; step 3 full picture chain incl. watermark removal + pick per picture); ui 563 pass, director 789 pass; NOT pushed.
+- Site http://localhost:8765/ (preview anime-ui, merge ui/server.py); desktop en+mr checked earlier; new step 3 checked on the fake-tools copy; phone not tested (rule 15).
+- RUNNING: Kalika Opus high --web into pack_opus_high_20261107_v3_web: stages 1, 2, 3e1 passed (cost 0.84+1.62+...); ~11 min per episode, 14 episodes -> about 01:45, then stage 5.
+- RUNNING: Assay (D:/tools/assay-venv, assay-ui 0.3.1) via research/_run_assay_ui.py on the fake-tools world -> research/assay_out/assay_report.html.
+- Rules 16 internet for every writer, 17 log+blot same step, 18 nothing hidden (60-year-old user).
+- NEXT: triage Assay findings, fix, re-run once (rule 8); Kalika plan check + Gate A to owner; expert view still holds helper-only tools (review_shot, queue add/accept, clip/visual QA, Colab).
 - Parked for owner: push go, Drive setup, place pictures, deva_neon LUT, Marathi check, later Kalika parts. Ashtavakra paused.
 
 | Time | Who | Model / effort | Provider | Files | What / result |
@@ -1385,3 +1385,15 @@
 11-07 23:26 | me | CMD | assay on fake-tools world (research/_run_assay_ui.py) | started; browsers path D:/tools/ms-playwright
 11-07 23:26 | me | TEST | ui | 563 pass
 11-07 23:26 | me | CHECK | Kalika v3_web | stage 3e1 done 23:23 (~11 min per episode): 14 episodes -> about 01:45
+11-07 23:26 | me | CMD | git commit c79cfba (merge worktree) | story chooser, no hidden steps, picture chain + watermark removal, Assay runner; ui 563 pass; not pushed
+11-07 23:27 | me | EDIT | PROJECT_LOG.md NOW block | overwritten (c79cfba, Kalika 3e1, Assay running)
+11-07 23:29 | me | FAIL | assay run 1 | report 1 case, 'page has nothing to use': assay opens /index.html, server served only / (404); not a real pass
+11-07 23:29 | me | EDIT | ui/server.py | GET /index.html serves the page like /
+11-07 23:29 | me | CMD | assay run 2 (fake-tools world) | started after /index.html fix; ui 563 pass
+11-07 23:34 | me | FAIL | assay run 2 test server | assay venv lacked Pillow -> /api/images errors in the fake world (setup, not UI); pillow installed in assay venv for run 3
+11-07 23:41 | me | FAIL | assay run 2 | ~160 cases ran, then crashed printing Marathi to the cp1252 console: no report; fix PYTHONIOENCODING=utf-8, single report pass
+11-07 23:41 | me | CMD | assay run 3 (fake-tools world, pillow + utf-8) | started
+11-07 23:54 | me | TEST | assay run 3 (fake-tools world) | 176 cases, 176 ok, 0 tracebacks; report research/assay_out/assay_report.html (194 MB screenshots, not committed)
+11-07 23:54 | me | EDIT | ui/static/style.css | all checkboxes/radios 24x24 (Assay surface showed 4 at 13x13: overwrite, H3, bgm, link overwrite)
+11-07 23:54 | me | EDIT | ui/static/style.css | flex:none on checkbox/radio; live site: all 14 visible boxes 24 px
+11-07 23:54 | me | EDIT | ui/server.py, .gitignore | /index.html served; assay_out + logs ignored (heavy)

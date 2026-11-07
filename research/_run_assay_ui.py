@@ -79,8 +79,7 @@ def ours(_folder):
 
 
 assay.browser.serve = ours
-code = cli.main([str(S / "ui/static"), "--report", str(out / "assay_report.html")])
-code_line = cli.main([str(S / "ui/static"), "--one-line"])
+code = cli.main([str(S / "ui/static"), "--report", str(out / "assay_report.html")])   # run with PYTHONIOENCODING=utf-8 (Marathi text)
 srv.shutdown()
 shutil.rmtree(root, ignore_errors=True)
-sys.exit(code or code_line)
+sys.exit(code)
