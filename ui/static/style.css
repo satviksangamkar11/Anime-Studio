@@ -716,18 +716,23 @@ pre.log, .box, .argv {
   border-radius: var(--r-lg);
   background: var(--surface);
 }
-#advanced-tools summary {
+#advanced-tools .expert-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  min-height: 56px;
+  gap: var(--s3);
   padding: var(--s3) var(--s4);
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 1.15rem;
   background: var(--table-head-bg);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-bottom: 1px solid var(--border);
 }
-#advanced-tools[open] summary { border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 1px solid var(--border); }
+.adv-title { margin: 0; font-weight: 800; font-size: 1.15rem; }
+.expert-back, #expert-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+}
 .advanced-body { padding: var(--s4); }
 .adv-intro { font-weight: 600; }
 .expert-host { margin: var(--s2) 0; }

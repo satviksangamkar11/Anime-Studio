@@ -1,10 +1,10 @@
-"""Final UI+backend review. usage (cwd = merge worktree): python research/_run_uifinal_reviews.py dots|supervl [round-tag]. Free OpenRouter models, sequential batches, never prints the key."""
+"""Final UI+backend review. usage (cwd = merge worktree): python research/_run_uifinal_reviews.py xing|supervl [round-tag] (dots kept only as legacy). Free OpenRouter models, sequential batches, never prints the key."""
 import json, sys, time
 from pathlib import Path
 sys.path.insert(0, "flow/scripts")
 import dots_review as d
 which = sys.argv[1]; tag = sys.argv[2] if len(sys.argv) > 2 else "R1"
-d.MODEL = {"dots": d.MODEL, "supervl": "nvidia/nemotron-3.5-super-vl:free"}[which]
+d.MODEL = {"dots": d.MODEL, "supervl": "nvidia/nemotron-3.5-super-vl:free", "xing": "xingchen-agi/xing4.0-29b-a4b:free"}[which]  # owner 2026-11-07: Xing replaces Dots as reviewer
 prompt = Path("research/_review_prompt_uifinal.txt").read_text(encoding="utf-8")
 out = Path(f"research/UIFINAL_{tag}_{which.upper()}_2026-11-07.md"); out.write_text("", encoding="utf-8")
 LOG = "D:/aai work/anime_studio/PROJECT_LOG.md"

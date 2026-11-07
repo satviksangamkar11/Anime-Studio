@@ -93,11 +93,10 @@ def test_gate_D_needs_step9_and_language_plan(world):
     assert probs and "Step 9 QC is not run" in probs[0]
 
 
-def test_legacy_pack_validator_report_shape_and_get_404_before_run(world):
+def test_legacy_pack_validator_report_shape_and_get_none_before_run(world):
     cfg, api = world
-    with pytest.raises(ApiError) as e:
-        api.pack_validate_get(PACK_PATH)
-    assert e.value.code == 404
+    # no report yet: 200 {"status": "none"} (coder E, 2026-11-07; the page no longer sees a 404 here)
+    assert api.pack_validate_get(PACK_PATH) == {"status": "none"}
     rep = api.pack_validate_run(PACK_PATH, {})
     assert {"ok", "errors", "warnings", "mode", "exit", "time"} <= set(rep)
     assert rep["mode"] == "legacy" and rep["exit"] in (0, 1)

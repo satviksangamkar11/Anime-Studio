@@ -97,6 +97,8 @@
     registryDetail: null,
     writers: null,                 // GET /api/writers
     writersError: '',
+    styles: null,                  // GET /api/styles, loaded once at init (not in the refresh bursts)
+    stylesError: '',
     writerChoice: '',              // the picked writer card id (never claude-opus from storage)
     claudeAck: false,              // the Claude warning box is ticked (per page load only)
     openStep: '',                  // '' = the server's current step
@@ -105,8 +107,20 @@
     imageJobs: null,               // image jobs listed for this plan (null = not counted)
     detailBusy: null,
     detailAgain: false,
+    refreshBusy: null,             // the wizard refresh in flight (W10: one at a time)
+    refreshAgain: false,
+    pickSlug: '',                  // the story the picker shows, until "Open this story" is pressed
     confirmPending: false
   };
+
+  // one request per source at a time (W10): a call made while the same one is still in flight shares its answer
+  var inflight = {};
+  function once(key, fn) {
+    if (inflight[key]) return inflight[key];
+    var p = fn().then(function (v) { delete inflight[key]; return v; }, function (e) { delete inflight[key]; throw e; });
+    inflight[key] = p;
+    return p;
+  }
 
   // ---------- DOM helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -227,18 +241,31 @@
     return el('div', { class: 'tablewrap', children: [el('table', { children: [el('thead', { children: [head] }), tbody] })] });
   }
 
-  // a closed box for raw text and codes (plan 4.2 "Details for the helper")
+  // a closed box for raw text, codes and ids. It is drawn only when it holds something (W3: one name, "More")
   function foldDetails(id, summaryText, kids) {
     var key = 'details-' + id;
+    var probe = document.createElement('div');
+    appendKids(probe, kids);
+    if (!(probe.textContent || '').trim()) return document.createDocumentFragment();
     var d = el('details', { class: 'expert', id: key, open: !!State.openDetails[key] });
     d.appendChild(el('summary', { textContent: summaryText }));
-    appendKids(d, kids);
+    appendKids(d, Array.prototype.slice.call(probe.childNodes));
     d.addEventListener('toggle', function () { State.openDetails[key] = d.open; });
     return d;
   }
 
   function helperDetails(id, kids) {
-    return foldDetails(id, t('common.details_helper'), kids);
+    return foldDetails(id, t('warn.more'), kids);
+  }
+
+  // a plan or story id in plain words: CHAR-KRISHNA -> Krishna, ENV-KALIYA-DAH-POISONED -> Kaliya dah poisoned (D9)
+  function niceName(raw) {
+    var s = String(raw === null || raw === undefined ? '' : raw);
+    var words;
+    if (/^[A-Z][A-Z0-9]*(-[A-Z0-9]+)+$/.test(s)) words = s.split('-').slice(1).join(' ').toLowerCase();
+    else if (/^[a-z0-9_]+$/.test(s)) words = s.replace(/_/g, ' ');
+    else return s;
+    return words.replace(/\s+/g, ' ').trim().replace(/^./, function (c) { return c.toUpperCase(); });
   }
 
   // ---------- HTTP (promises; every error becomes an Error with a plain message) ----------
@@ -293,6 +320,39 @@
     });
   }
 
+  // the key of a story_state warning ("empty_pack:name" -> "empty_pack")
+  function warnKey(w) {
+    var key = w && typeof w === 'object' ? String(w.key || '') : String(w || '');
+    return key.split(':')[0];
+  }
+
+  // the data a step needs before it may say Finished (W1)
+  function stageHasData(id) {
+    if (id === 'story') return savedLangs().length > 0;
+    if (id === 'analysis') return !!State.packInfo;
+    return true;
+  }
+
+  // ONE source for the step badges, the top line and the stepper (W1): a failure on record shows as failed,
+  // and "Finished" needs the data too. The open step is the one the owner looks at (the server's step by default).
+  function stepView(stages, current) {
+    var ns = State.storyState;
+    var nx = (ns && ns.next_step) || {};
+    var failed = nx.key === 'fix_failed_stage' || ((ns && ns.warnings) || []).some(function (w) {
+      var key = warnKey(w);
+      return key === 'stage_failed' || key === 'tiny_stage_file';
+    });
+    var failStage = failed ? 'analysis' : '';   // the plan writer writes the step files that fail
+    var rows = {};
+    stages.forEach(function (s) {
+      var st = s.status;
+      if (s.id === failStage) st = 'failed';
+      else if ((st === 'done' || st === 'approved') && !stageHasData(s.id)) st = 'ready';
+      rows[s.id] = { status: st, word: statusWord(st) };
+    });
+    return { open: State.openStep || current || 'story', rows: rows };
+  }
+
   // ---------- Words: literal maps, so every key stays visible to the tests ----------
   // The server sends stage details in English (pipeline.py); show them in the chosen language. Unknown text is shown as it is.
   function stageDetail(raw) {
@@ -342,6 +402,28 @@
       case 'not_run': return t('status.not_run');
       default: return t('status.unknown');
     }
+  }
+
+  // literal id-to-key maps (never a key built from the id); an id without a key shows the id
+  function styleName(id) {
+    switch (id) {
+      case 'deva_neon': return t('style.deva_neon_name');
+      case 'braj_earth': return t('style.braj_earth_name');
+      default: return String(id || '');
+    }
+  }
+
+  function styleHint(id) {
+    switch (id) {
+      case 'deva_neon': return t('style.deva_neon_hint');
+      case 'braj_earth': return t('style.braj_earth_hint');
+      default: return '';
+    }
+  }
+
+  // the look this story uses: the saved one, else the server default
+  function savedStyle() {
+    return (State.storyState && State.storyState.style_pack) || (State.styles && State.styles.default) || '';
   }
 
   function stepName(id) {
@@ -530,6 +612,8 @@
       case 'finish_length': return t('warn.finish_length');
       case 'tiny_stage_file': return t('warn.tiny_stage_file');
       case 'link_missing': return t('warn.link_missing');
+      case 'no_run_report': return t('warn.no_run_report');
+      case 'open_run': return t('warn.open_run');
       default: return t('warn.other');
     }
   }
@@ -618,6 +702,8 @@
 
   function loadStory() {
     if (!State.storySlug) return Promise.resolve();
+    // the text is read once per story; the polls keep what is loaded (W10)
+    if (State.storySlug === State.lastStorySlug) return Promise.resolve();
     return get('/api/story/' + enc(State.storySlug))
       .catch(function (err) { if (err.status === 404) return null; throw err; })
       .then(function (data) {
@@ -676,7 +762,8 @@
         if (e.status !== 404) showApiError(e);
       }));
       jobs.push(get('/api/pack/validate?pack=' + enc(pp)).then(function (d) {
-        State.validator = d;
+        // status "none" = nothing to check yet (the server answers 200 for it): the same as no report (E4)
+        State.validator = d && d.status === 'none' ? null : d;
         State.validatorError = '';
       }, function (e) {
         State.validator = null;
@@ -712,70 +799,97 @@
     return Promise.all(jobs).then(function () { render(true); });
   }
 
+  // every loader below shares its answer with a call that comes while it is still in flight (W10)
   function loadSummary() {
-    return get('/api/pipeline/summary')
-      .then(function (data) {
-        State.summary = data;
-        render();
-      })
-      .catch(function (err) { showApiError(err); });
+    return once('summary', function () {
+      return get('/api/pipeline/summary')
+        .then(function (data) {
+          State.summary = data;
+          render();
+        })
+        .catch(function (err) { showApiError(err); });
+    });
   }
 
   function loadStoryList() {
-    return get('/api/story')
-      .then(function (data) {
-        State.storyList = data.slugs || [];
-        render();
-      })
-      .catch(function (err) { showApiError(err); });
+    return once('storylist', function () {
+      return get('/api/story')
+        .then(function (data) {
+          State.storyList = data.slugs || [];
+          render();
+        })
+        .catch(function (err) { showApiError(err); });
+    });
   }
 
   function loadStatus() {
-    return get('/api/status')
-      .then(function (data) {
-        State.job = data.job || null;
-        render();
-      })
-      .catch(function () {
-        State.job = null;
-      });
+    return once('status', function () {
+      return get('/api/status')
+        .then(function (data) {
+          State.job = data.job || null;
+          render();
+        })
+        .catch(function () {
+          State.job = null;
+        });
+    });
   }
 
   // withSessions = true only from the "Check Colab sessions" button (B9: never on the poll)
   function loadOps(withSessions) {
     var url = withSessions ? '/api/ops?colab=1' : '/api/ops';
-    return Promise.all([
-      get(url).then(function (d) { State.ops = d; State.opsError = ''; }, function (e) { State.ops = null; State.opsError = errText(e); }),
-      get('/api/version').then(function (d) { State.version = d; }, function () { State.version = null; })
-    ]).then(function () { render(true); });
+    return once('ops:' + url, function () {
+      return Promise.all([
+        get(url).then(function (d) { State.ops = d; State.opsError = ''; }, function (e) { State.ops = null; State.opsError = errText(e); }),
+        get('/api/version').then(function (d) { State.version = d; }, function () { State.version = null; })
+      ]).then(function () { render(); });
+    });
   }
 
   // step 2 choices: GET /api/writers (read only, no key text)
   function loadWriters() {
-    return get('/api/writers').then(function (d) {
-      State.writers = d;
-      State.writersError = '';
-      settleWriter();
-      render(true);
-    }, function (e) {
-      State.writersError = errText(e);
-      render(true);
+    return once('writers', function () {
+      return get('/api/writers').then(function (d) {
+        State.writers = d;
+        State.writersError = '';
+        settleWriter();
+        render();
+      }, function (e) {
+        State.writersError = errText(e);
+        render();
+      });
+    });
+  }
+
+  // the looks (styles): read once at start, the list does not change while the page is open
+  function loadStyles() {
+    return once('styles', function () {
+      return get('/api/styles').then(function (d) {
+        State.styles = d;
+        State.stylesError = '';
+        render();
+      }, function (e) {
+        State.stylesError = errText(e);
+        render();
+      });
     });
   }
 
   // Runs & documents: read-only view of GET /api/registry and /api/registry/<slug>
   function loadRegistry() {
-    return get('/api/registry')
-      .then(function (data) {
-        State.registry = data.stories || [];
-        State.registryError = '';
-        render();
-      })
-      .catch(function (err) {
-        State.registry = null;
-        State.registryError = errText(err);
-        render();
-      });
+    return once('registry', function () {
+      return get('/api/registry')
+        .then(function (data) {
+          State.registry = data.stories || [];
+          State.registryError = '';
+          render();
+        })
+        .catch(function (err) {
+          State.registry = null;
+          State.registryError = errText(err);
+          render();
+        });
+    });
   }
 
   function loadRegistryDetail(slug) {
@@ -783,22 +897,37 @@
       State.registryDetail = null;
       return Promise.resolve();
     }
-    return get('/api/registry/' + enc(slug))
-      .then(function (data) {
-        State.registryDetail = data;
-        render();
-      })
-      .catch(function (err) {
-        State.registryDetail = { slug: slug, error: errText(err) };
-        render();
-      });
+    return once('regdetail:' + slug, function () {
+      return get('/api/registry/' + enc(slug))
+        .then(function (data) {
+          State.registryDetail = data;
+          render();
+        })
+        .catch(function (err) {
+          State.registryDetail = { slug: slug, error: errText(err) };
+          render();
+        });
+    });
   }
 
-  // one wizard refresh: the pointer first, the side panels when the project changed or on the slow tick
+  // one wizard refresh at a time (W10): a refresh that arrives mid-way joins it and, when it asks for the
+  // side panels, one more pass runs after it. No refresh starts another refresh.
   function refreshWizard(withDetail) {
-    return loadPipeline().then(function (changed) {
+    if (State.refreshBusy) {
+      if (withDetail) State.refreshAgain = true;
+      return State.refreshBusy;
+    }
+    State.refreshBusy = loadPipeline().then(function (changed) {
       if (changed || withDetail) return loadDetail();
-    });
+    }).then(done, done);
+    function done() {
+      State.refreshBusy = null;
+      if (State.refreshAgain) {
+        State.refreshAgain = false;
+        return refreshWizard(true);
+      }
+    }
+    return State.refreshBusy;
   }
 
   // ---------- Writer choice (step 2) ----------
@@ -859,7 +988,7 @@
       State.validator, State.validatorError, State.render, State.renderError, State.author, State.authorError, State.authorPreview,
       State.voices, State.voicesError, State.exportData, State.ops, State.opsError, State.version, State.job, State.link,
       State.langPick, State.registry, State.registryError, State.registrySlug, State.registryDetail, State.storySlug,
-      State.writers, State.writersError, State.writerChoice, State.claudeAck, State.openStep, State.showAllShots, State.imageJobs]);
+      State.writers, State.writersError, State.styles, State.stylesError, State.writerChoice, State.claudeAck, State.openStep, State.showAllShots, State.imageJobs]);
     if (!force && json === State.lastJSON) return;
     State.lastJSON = json;
 
@@ -885,7 +1014,8 @@
       clang.textContent = t('scope.languages', { langs: picked.length ? picked.map(function (c) { return c.toUpperCase(); }).join(', ') : t('scope.none_ticked') });
     }
 
-    updateStepper(stages, current);
+    var view = stepView(stages, current);
+    updateStepper(stages, view);
 
     var working = $('working-on');
     if (working) {
@@ -894,9 +1024,9 @@
       working.appendChild(jobBar());
     }
 
-    wizard.appendChild(progressLine(stages, current));
+    wizard.appendChild(progressLine(stages, view));
     stages.forEach(function (stage) {
-      wizard.appendChild(mkStageCard(stage, current, project));
+      wizard.appendChild(mkStageCard(stage, current, project, view));
     });
 
     var ops = $('expert-ops');
@@ -944,6 +1074,7 @@
     if (!tg || !tg.id) return;
     if (tg.id === 'wiz-story-slug' || tg.id.indexOf('lang-') === 0) return;   // these follow the server or State
     if (tg.id.indexOf('writer-') === 0) return;                             // writer choice lives in State
+    if (tg.id.indexOf('style-r-') === 0) return;                            // the look pick is State.drafts['style-pick']
     if (tg.type === 'checkbox') State.drafts[tg.id] = { checked: tg.checked };
     else State.drafts[tg.id] = { value: tg.value };
   }
@@ -955,35 +1086,37 @@
     wizard.appendChild(notice(msg));
   }
 
-  function updateStepper(stages, current) {
+  function updateStepper(stages, view) {
     var stepper = $('stepper');
     if (!stepper) return;
     stages.forEach(function (stage) {
       var item = $('step-' + stage.id);
       if (!item) return;
-      item.className = 'status-' + stage.status + (stage.id === current ? ' current' : '');
-      if (stage.id === current) item.setAttribute('aria-current', 'step');
+      var row = view.rows[stage.id];
+      var isOpen = stage.id === view.open;
+      item.className = 'status-' + row.status + (isOpen ? ' current' : '');
+      if (isOpen) item.setAttribute('aria-current', 'step');
       else item.removeAttribute('aria-current');
       var line = item.querySelector('.step-status');
-      if (line) line.textContent = statusWord(stage.status);
+      if (line) line.textContent = row.word;
     });
   }
 
-  // the one sentence above the cards: "Step 2 of 6: Plan the story - needs your OK"
-  function progressLine(stages, current) {
+  // the one sentence above the cards: "Step 2 of 6: Plan the story - needs your OK" (W1: the open step)
+  function progressLine(stages, view) {
     var idx = -1;
     var cur = null;
-    stages.forEach(function (s, i) { if (s.id === current) { idx = i; cur = s; } });
+    stages.forEach(function (s, i) { if (s.id === view.open) { idx = i; cur = s; } });
     if (!cur) return el('p', { class: 'progress-line', id: 'progress-line', textContent: '' });
     return el('p', { class: 'progress-line', id: 'progress-line',
-      textContent: t('step.progress', { n: idx + 1, name: stepName(cur.id), status: statusWord(cur.status) }) });
+      textContent: t('step.progress', { n: idx + 1, name: stepName(cur.id), status: view.rows[cur.id].word }) });
   }
 
-  // working-on line: every panel below belongs to this story and plan
+  // working-on line: every panel below belongs to this story and plan. Hidden (W2): the header chips say the same.
   function scopeBar(project) {
     var langs = State.langPick.length ? State.langPick.map(langName).join(', ') : t('scope.none_ticked');
     var opt = selectedOpt();
-    return el('div', { class: 'card scope-bar', id: 'wizard-scope', role: 'status', children: [
+    return el('div', { class: 'card scope-bar', id: 'wizard-scope', role: 'status', hidden: true, children: [
       el('span', { class: 'chip', textContent: t('scope.working_on', { story: project.story_slug || t('scope.none') }) }),
       el('span', { class: 'chip', textContent: t('scope.plan', { pack: project.pack || t('scope.none') }) }),
       el('span', { class: 'chip', textContent: t('scope.languages', { langs: langs }) }),
@@ -993,9 +1126,11 @@
 
   function jobBar() {
     var job = State.job;
-    var text = job ? t('scope.job_running', { job: dash(job.command || job.kind || 'job'), state: dash(job.state || 'running') })
-      : t('scope.job_idle');
-    return el('div', { class: 'card jobbar ' + (job ? 'running' : ''), id: 'wizard-jobbar', role: 'status', textContent: text });
+    var text = job ? t('scope.job_running', { job: t('wiz.job_generic') }) : t('scope.job_idle');
+    var box = el('div', { class: 'card jobbar ' + (job ? 'running' : ''), id: 'wizard-jobbar', role: 'status', textContent: text });
+    // the command name and the state stay in More (W3)
+    if (job) box.appendChild(helperDetails('job', [el('p', { class: 'muted', textContent: dash(job.command || job.kind) + ' / ' + dash(job.state) })]));
+    return box;
   }
 
   // the one banner: out-of-date server, low disk. It sits under the header and has "Check again".
@@ -1030,19 +1165,34 @@
     render(true);
   }
 
-  function mkStageCard(stage, current, project) {
-    var open = stageIsOpen(stage.id, current);
+  // a locked step names the step it waits for (W8): "Finish step 2 first: Plan the story"
+  function lockedWhy(stage) {
+    var list = (State.pipeline && State.pipeline.stages) || [];
+    var idx = -1;
+    list.forEach(function (s, i) { if (s.id === stage.id) idx = i; });
+    if (idx <= 0) return '';
+    var prev = list[idx - 1];
+    return t('wiz.locked_why', { n: STAGE_IDS.indexOf(prev.id) + 1, name: stepName(prev.id) });
+  }
+
+  function mkStageCard(stage, current, project, view) {
+    var open = view.open === stage.id;
+    var row = view.rows[stage.id] || { status: stage.status, word: statusWord(stage.status) };
     var card = el('div', { class: 'card step stage-' + stage.id + (stage.id === current ? ' is-current' : '') + (open ? ' is-open' : '') });
 
     var num = STAGE_IDS.indexOf(stage.id) + 1;
     card.appendChild(el('div', { class: 'card-header', children: [
       el('span', { class: 'step-circle', textContent: String(num) }),
       el('h3', { textContent: stepName(stage.id) }),
-      el('span', { class: 'chip status-' + stage.status, children: [icon(statusIcon(stage.status)), statusWord(stage.status)] })
+      el('span', { class: 'chip status-' + row.status, children: [icon(statusIcon(row.status)), row.word] })
     ]}));
     card.appendChild(el('p', { class: 'detail', textContent: stepIntro(stage.id) }));
+    if (stage.id === 'analysis' && savedStyle()) {
+      card.appendChild(el('p', { class: 'detail', id: 'style-look', textContent: t('style.look_line', { name: styleName(savedStyle()) }) }));
+    }
 
     if (!open) {
+      if (stage.status === 'locked') card.appendChild(el('p', { class: 'muted', textContent: lockedWhy(stage) }));
       card.appendChild(el('button', { type: 'button', class: 'btn-quiet', id: 'open-step-' + stage.id, textContent: t('step.open_btn'),
         onclick: function () { openStep(stage.id); } }));
       return card;
@@ -1059,7 +1209,8 @@
     if (actionEls) appendKids(actions, actionEls);
     card.appendChild(actions);
     if (stage.status === 'locked') {
-      // a locked stage cannot act: disable its buttons instead of letting them answer with an error
+      // a locked stage cannot act: say why, and disable its buttons instead of letting them answer with an error
+      card.appendChild(el('p', { class: 'muted', textContent: lockedWhy(stage) }));
       card.appendChild(el('p', { class: 'muted', textContent: t('step.locked_note') }));
       Array.prototype.forEach.call(actions.querySelectorAll('button'), function (b) { b.disabled = true; });
     }
@@ -1133,38 +1284,36 @@
     }
     frag.appendChild(nextBox);
 
-    // story picker: the server is the only source of the selection
+    // story picker (W9): choosing only sets the pick; "Open this story" changes the story for the whole page
     frag.appendChild(el('label', { textContent: t('story.picker_label'), 'for': 'wiz-story-slug' }));
     var slugSelect = el('select', { id: 'wiz-story-slug', 'aria-label': t('story.picker_label') });
-    slugSelect.appendChild(el('option', { value: '', textContent: t('story.new_option') }));
+    // State.pickSlug: '' = nothing picked yet, 'new' = the new-story option, else the slug picked
+    var pick = State.pickSlug;
+    var shownSlug = pick === 'new' ? '' : (pick || project.story_slug);
+    slugSelect.appendChild(el('option', { value: '', textContent: t('story.new_option'), selected: pick === 'new' }));
     (State.storyList || []).forEach(function (s) {
       var opt = el('option', {
         value: s.slug,
-        textContent: s.slug + (s.packs && s.packs.length ? ' (' + s.packs.join(', ') + ')' : '')
+        textContent: niceName(s.slug) + ': ' + (s.latest_pack ? t('wiz.pick_has_plan') : t('wiz.pick_no_plan'))
       });
-      if (s.slug === project.story_slug) opt.selected = true;
+      if (s.slug === shownSlug) opt.selected = true;
       slugSelect.appendChild(opt);
     });
-    slugSelect.addEventListener('change', function () {
+    slugSelect.addEventListener('change', function () { State.pickSlug = slugSelect.value || 'new'; });
+    frag.appendChild(slugSelect);
+    frag.appendChild(el('button', { type: 'button', id: 'wiz-story-open', class: 'btn-quiet', textContent: t('wiz.picker_open_btn'), onclick: function () {
       var slug = slugSelect.value;
-      if (!slug) {
-        showError(t('story.err_new_hint'));
-        render(true);
-        return;
-      }
-      if (State.storyDirty) {
-        showError(t('story.err_unsaved_switch'));
-        render(true);
-        return;
-      }
+      if (!slug) { showError(t('story.err_new_hint')); return; }
+      if (State.storyDirty) { showError(t('story.err_unsaved_switch')); render(true); return; }
+      if (slug === project.story_slug) { State.pickSlug = ''; return; }
       var row = (State.storyList || []).filter(function (s) { return s.slug === slug; })[0];
       State.busy = true;
       post('/api/pipeline/project', { story_slug: slug, pack: row && row.latest_pack ? row.latest_pack : '' })
-        .then(function () { return refreshWizard(true); })
+        .then(function () { State.pickSlug = ''; return refreshWizard(true); })
         .catch(function (err) { showApiError(err); render(true); })
         .finally(function () { State.busy = false; });
-    });
-    frag.appendChild(slugSelect);
+    }}));
+    frag.appendChild(el('p', { class: 'hint', textContent: t('wiz.picker_open_hint') }));
 
     frag.appendChild(el('label', { textContent: t('story.new_slug_label'), 'for': 'wiz-story-new-slug' }));
     var newSlugInput = el('input', { type: 'text', id: 'wiz-story-new-slug', placeholder: t('story.new_slug_ph'), maxlength: 40, 'aria-label': t('story.new_slug_label'), value: State.newSlug || '' });
@@ -1217,6 +1366,7 @@
     if (!project.story_slug) frag.appendChild(el('p', { class: 'hint', textContent: t('story.saved_hint') }));
 
     frag.appendChild(languagesBox(project, main));
+    frag.appendChild(styleBox(project));
     if (project.story_slug) {
       frag.appendChild(foldDetails('story-more', t('story.more_choices'), [voiceEngineBox(project), bgmBox(project), voiceMapBox(project)]));
       frag.appendChild(foldDetails('story-youtube', t('story.youtube_title'), [linkBox(project)]));
@@ -1281,6 +1431,49 @@
     }});
     box.appendChild(saveLang);
     if (!project.story_slug) box.appendChild(el('p', { class: 'hint', textContent: t('story.lang_hint_pick') }));
+    return box;
+  }
+
+  // F1: the look of the video, one radio per style; the pick is kept in State.drafts['style-pick'] until saved
+  function styleBox(project) {
+    var box = el('fieldset', { class: 'langs', id: 'style-box' });
+    box.appendChild(el('legend', { textContent: t('style.title') }));
+    box.appendChild(el('p', { class: 'hint', textContent: t('style.intro') }));
+    var list = (State.styles && State.styles.styles) || [];
+    if (!list.length) {
+      box.appendChild(el('p', { class: 'muted', textContent: State.stylesError || t('style.loading') }));
+      return box;
+    }
+    var saved = savedStyle();
+    var picked = draftOr('style-pick', saved);
+    var group = el('div', { role: 'radiogroup', id: 'style-group', 'aria-label': t('style.group_label') });
+    var pickedInfo = null;
+    list.forEach(function (st) {
+      if (st.id === picked) pickedInfo = st;
+      var rb = el('input', { type: 'radio', name: 'style-pick', id: 'style-r-' + st.id, value: st.id, checked: st.id === picked });
+      rb.addEventListener('change', function () { State.drafts['style-pick'] = { value: st.id }; render(true); });
+      group.appendChild(el('label', { class: 'pill', 'for': 'style-r-' + st.id, children: [
+        rb,
+        ' ' + styleName(st.id) + (st.default ? ' (' + t('style.recommended') + ')' : ''),
+        el('span', { class: 'hint', textContent: styleHint(st.id) })
+      ]}));
+    });
+    box.appendChild(group);
+    if (pickedInfo && pickedInfo.has_grade_numbers === false) box.appendChild(el('p', { class: 'hint', textContent: t('style.draft_grade') }));
+    box.appendChild(el('button', { type: 'button', id: 'style-save', class: 'btn-quiet', textContent: t('style.save_btn'), disabled: !project.story_slug, onclick: function () {
+      var id = draftOr('style-pick', saved);
+      State.busy = true;
+      post('/api/story/' + enc(project.story_slug) + '/style', { style_pack: id })
+        .then(function (d) {
+          delete State.drafts['style-pick'];
+          if (d && d.warning_code === 'old_plans') showError(t('style.warn_old_plans'));
+          else showSuccess(t('style.saved', { name: styleName((d && d.style_pack) || id) }));
+          return refreshWizard(true);
+        })
+        .catch(function (err) { showApiError(err); })
+        .finally(function () { State.busy = false; });
+    }}));
+    if (!project.story_slug) box.appendChild(el('p', { class: 'hint', textContent: t('style.need_story') }));
     return box;
   }
 
@@ -1497,14 +1690,26 @@
       return box;
     }
     var picked = State.writerChoice || State.writers.default;
+    var options = State.writers.options || [];
+    // one default choice is shown (W6); the other writers sit in a fold, opened when one of them is picked
+    var dflt = options.filter(function (o) { return o.id === State.writers.default; })[0];
+    if (dflt) {
+      var head = el('fieldset', { class: 'writer-group' });
+      head.appendChild(el('legend', { textContent: writerGroup(dflt.group) }));
+      head.appendChild(writerCard(dflt, picked));
+      box.appendChild(head);
+    }
+    var others = [];
     ['nvidia', 'openrouter', 'claude'].forEach(function (g) {
+      var inGroup = options.filter(function (o) { return o.group === g && o.id !== State.writers.default; });
+      if (!inGroup.length) return;
       var group = el('fieldset', { class: 'writer-group' });
       group.appendChild(el('legend', { textContent: writerGroup(g) }));
-      (State.writers.options || []).forEach(function (opt) {
-        if (opt.group === g) group.appendChild(writerCard(opt, picked));
-      });
-      box.appendChild(group);
+      inGroup.forEach(function (opt) { group.appendChild(writerCard(opt, picked)); });
+      others.push(group);
     });
+    if (picked !== State.writers.default) State.openDetails['details-writers-other'] = true;
+    box.appendChild(foldDetails('writers-other', t('wiz.other_writers'), others));
     var sel = selectedOpt();
     if (sel && sel.id === 'claude-opus') box.appendChild(claudeWarnBox());
     return box;
@@ -1546,13 +1751,15 @@
 
     frag.appendChild(writerChooser(project));
 
-    frag.appendChild(el('label', { textContent: t('plan.name_label'), 'for': 'analysis-pack' }));
+    // a story that has a plan gets a NEW plan name by default (W4: the old plan is not overwritten by accident)
+    var newPlan = !!project.pack;
+    frag.appendChild(el('label', { textContent: newPlan ? t('wiz.plan_new_label') : t('plan.name_label'), 'for': 'analysis-pack' }));
     var packInput = el('input', {
       type: 'text',
       id: 'analysis-pack',
-      value: draftOr('analysis-pack', project.pack || suggestedPack(project.story_slug)),
+      value: draftOr('analysis-pack', newPlan ? suggestedPack(project.story_slug) : (project.pack || suggestedPack(project.story_slug))),
       maxlength: 40,
-      'aria-label': t('plan.name_label')
+      'aria-label': newPlan ? t('wiz.plan_new_label') : t('plan.name_label')
     });
     frag.appendChild(packInput);
 
@@ -1560,7 +1767,7 @@
       type: 'button',
       id: 'analysis-run',
       class: readyToRun ? 'btn-main' : 'btn-quiet',
-      textContent: t('plan.run_btn', { name: opt ? writerShort(opt.id) : '' }),
+      textContent: newPlan ? t('wiz.run_new_btn', { name: opt ? writerShort(opt.id) : '' }) : t('plan.run_btn', { name: opt ? writerShort(opt.id) : '' }),
       disabled: !canRun,
       onclick: function () { runAnalysis(project, packInput.value.trim(), opt); }
     });
@@ -1632,12 +1839,12 @@
     }
     if (shots.length) {
       var shown = State.showAllShots ? shots : shots.slice(0, 5);
-      var headsScene = [t('plan.h_scene'), t('plan.h_part'), t('plan.h_route'), t('plan.h_seconds'), t('plan.h_what')];
+      // the method of each scene is a technical code: it is in More below, not in this table (W4)
+      var headsScene = [t('plan.h_scene'), t('plan.h_part'), t('plan.h_seconds'), t('plan.h_what')];
       box.appendChild(dataTable(headsScene, shown.map(function (s) {
         return [
           s.id || '',
           String(s.episode || ''),
-          s.route || s.mode || '',
           String(s.editorial_duration_sec || s.seconds || ''),
           (s.purpose || '').slice(0, 200)
         ];
@@ -1653,23 +1860,24 @@
     nameLine(names, t('plan.people'), pack.character_names);
     nameLine(names, t('plan.places'), pack.place_names);
     nameLine(names, t('plan.things'), pack.prop_names);
-    if (pack.modes) {
-      names.appendChild(el('strong', { textContent: t('plan.modes') + ': ' }));
-      names.appendChild(document.createTextNode(Object.keys(pack.modes).map(function (k) { return k + ':' + pack.modes[k]; }).join(', ')));
-    }
     box.appendChild(names);
 
+    // codes, methods, the raw check and the route stay in More (W3, W4)
     var kids = [];
+    if (pack.modes) kids.push(el('p', { class: 'muted', textContent: t('plan.modes') + ': ' + Object.keys(pack.modes).map(function (k) { return k + ':' + pack.modes[k]; }).join(', ') }));
+    var headsRoute = [t('plan.h_scene'), t('plan.h_route')];
+    if (shots.length) kids.push(dataTable(headsRoute, shots.map(function (s) { return [s.id || '', String(s.route || s.mode || '')]; })));
     if (pack.check) kids.push(el('pre', { class: 'box', textContent: JSON.stringify(pack.check, null, 2) }));
     if (pack.route) kids.push(el('p', { class: 'muted', textContent: String(pack.route) }));
-    if (kids.length) box.appendChild(helperDetails('plan-check-json', kids));
+    box.appendChild(helperDetails('plan-check-json', kids));
     return box;
   }
 
+  // a name list in plain words (D9): the display name, or the id without its prefix
   function nameLine(node, label, list) {
     if (!list || !list.length) return;
     node.appendChild(el('strong', { textContent: label + ': ' }));
-    node.appendChild(document.createTextNode(list.join(', ')));
+    node.appendChild(document.createTextNode(list.map(niceName).join(', ')));
     node.appendChild(el('br'));
   }
 
@@ -1695,8 +1903,9 @@
       var nShots = 0, nSec = 0;
       eps.forEach(function (e) { nShots += e.shots || 0; nSec += e.seconds || 0; });
       box.appendChild(el('p', { textContent: t('plan.check_summary', { reels: eps.length, shots: nShots, secs: Math.round(nSec),
-        mode: v.mode === 'legacy' ? t('plan.mode_legacy') : dash(v.mode), warnings: warnings.length }) }));
+        warnings: warnings.length }) }));
       var raw = [];
+      raw.push(el('p', { class: 'muted', textContent: t('plan.modes') + ': ' + (v.mode === 'legacy' ? t('plan.mode_legacy') : dash(v.mode)) }));
       warnings.forEach(function (w) { raw.push(el('p', { class: 'muted', textContent: (w.code ? w.code + ': ' : '') + (w.message || String(w)) })); });
       errors.forEach(function (e) { raw.push(el('p', { class: 'muted', textContent: [e.code || '', e.where || '', e.message || ''].join(' | ') })); });
       if (raw.length) box.appendChild(helperDetails('validator', raw));
@@ -1770,10 +1979,11 @@
       }
     });
     frag.appendChild(packetBtn);
+    frag.appendChild(el('p', { class: 'hint', textContent: t('wiz.packet_hint') }));
 
-    frag.appendChild(el('p', { class: 'note', textContent: t('pics.rule_haiku') }));
-    frag.appendChild(helperDetails('pics-rule', [el('p', { class: 'muted', textContent: t('pics.rule_raw') })]));
     frag.appendChild(el('p', { class: 'hint', textContent: t('pics.rule_full') }));
+    // the agent's model and effort are the owner's rule for the helper: they sit in More (W3, W4)
+    frag.appendChild(helperDetails('pics-rule', [el('p', { class: 'muted', textContent: t('pics.rule_haiku') }), el('p', { class: 'muted', textContent: t('pics.rule_raw') })]));
 
     if (State.summary && State.summary.images) {
       var imgs = State.summary.images;
@@ -1918,16 +2128,17 @@
     }
     var summary = State.summary;
     var tiles = el('div', { class: 'stat-tiles' });
-    var clipsPlanned = (summary.video && summary.video.shots && summary.video.takes) ? (summary.video.shots * summary.video.takes) : '-';
+    // a missing number shows as 0 (W7, D17). Clips planned and minutes to make are plan estimates, not counts:
+    // they are not tiles; they sit in More below (D10)
+    var num = function (v) { return v === null || v === undefined || v === '' ? 0 : v; };
+    var clipsPlanned = (summary.video && summary.video.shots && summary.video.takes) ? (summary.video.shots * summary.video.takes) : 0;
     [
-      { label: t('sum.tile_parts'), value: dash(summary.reels) },
-      { label: t('sum.tile_scenes'), value: dash(summary.shots) },
-      { label: t('sum.tile_seconds'), value: dash(summary.seconds) },
+      { label: t('sum.tile_parts'), value: String(num(summary.reels)) },
+      { label: t('sum.tile_scenes'), value: String(num(summary.shots)) },
+      { label: t('sum.tile_seconds'), value: String(num(summary.seconds)) },
       { label: t('sum.tile_people'), value: String((summary.characters || []).length) },
       { label: t('sum.tile_places'), value: String((summary.places || []).length) },
-      { label: t('sum.tile_pics'), value: summary.images ? (String(summary.images.final) + '/' + String(summary.images.expected)) : '-' },
-      { label: t('sum.tile_clips'), value: String(clipsPlanned) },
-      { label: t('sum.tile_minutes'), value: summary.estimate ? String(summary.estimate.minutes) : '-' }
+      { label: t('sum.tile_pics'), value: String(num(summary.images && summary.images.final)) + '/' + String(num(summary.images && summary.images.expected)) }
     ].forEach(function (tile) {
       tiles.appendChild(el('div', { class: 'tile', children: [
         el('div', { class: 'tile-value', textContent: tile.value }),
@@ -1965,6 +2176,10 @@
         el('strong', { textContent: t('sum.pics_checked') + ': ' }), document.createTextNode(String(summary.images.reviewed))
       ]}));
     }
+    more.push(el('div', { children: [
+      el('strong', { textContent: t('sum.tile_clips') + ': ' }), document.createTextNode(String(clipsPlanned)), el('br'),
+      el('strong', { textContent: t('sum.tile_minutes') + ': ' }), document.createTextNode(summary.estimate ? String(summary.estimate.minutes) : '0')
+    ]}));
     if (summary.estimate) more.push(helperDetails('sum-gpu', [el('p', { class: 'muted', textContent: t('sum.gpu', { units: String(summary.estimate.g4_units) }) })]));
     frag.appendChild(foldDetails('sum-more', t('sum.more_title'), more));
 
@@ -2029,6 +2244,10 @@
     if (State.renderError) { frag.appendChild(notice(t('video.status_unavailable', { error: State.renderError }))); return [frag]; }
     if (!rs) { frag.appendChild(el('p', { class: 'muted', textContent: t('video.loading') })); return [frag]; }
 
+    // one verdict for the final check (W1, D2): a failed check is a blocker too, so "Nothing blocks" is not shown then
+    var s9 = rs.step9 || null;
+    var s9Failed = !!(s9 && s9.status && s9.status !== 'pass');
+
     // images and asset manifest
     var assets = rs.asset_manifest || {};
     var blocking = assets.blocking_problems || [];
@@ -2040,7 +2259,7 @@
     if (blocking.length) {
       assetBox.appendChild(el('p', { class: 'warning', textContent: t('video.blocking', { n: blocking.length }) }));
       assetBox.appendChild(el('ul', { children: blocking.map(function (b) { return el('li', { textContent: String(b) }); }) }));
-    } else {
+    } else if (!s9Failed) {
       assetBox.appendChild(el('p', { class: 'muted', textContent: t('video.no_blocking') }));
     }
     frag.appendChild(assetBox);
@@ -2070,17 +2289,17 @@
       frag.appendChild(dataTable(headsShot, rows));
     }
 
-    // Step 9 QC
-    var s9 = rs.step9 || null;
+    // Step 9 QC (shown as "Final check"; the step number is not a user word)
     var s9Box = el('div', { class: 'gate-card', id: 'step9-panel' });
     s9Box.appendChild(el('h4', { textContent: t('video.final_title') }));
     if (!s9 || !s9.status) {
       s9Box.appendChild(el('p', { class: 'muted', textContent: t('video.final_none') }));
     } else {
       s9Box.appendChild(el('p', { children: [chip(s9.status === 'pass' ? t('video.final_pass') : t('video.final_fail'), s9.status === 'pass' ? 'status-approved' : 'status-failed')] }));
+      if (s9Failed) s9Box.appendChild(notice(t('wiz.final_failed')));
       var s9raw = [];
       (s9.checks || []).forEach(function (c) {
-        s9raw.push(el('p', { class: 'muted', textContent: (c.ok ? 'OK: ' : 'FAIL: ') + dash(c.name) + (c.detail ? ' - ' + c.detail : '') }));
+        s9raw.push(el('p', { class: 'muted', textContent: (c.ok ? t('sum.check_ok') : t('sum.check_fail')) + ': ' + dash(c.name) + (c.detail ? ' - ' + c.detail : '') }));
       });
       if (s9raw.length) s9Box.appendChild(helperDetails('step9', s9raw));
     }
@@ -2227,24 +2446,19 @@
     noteInput.value = draftOr('gate-note-' + gate.id, '');
     card.appendChild(noteInput);
 
-    var startInput = null;
-    if (gate.id === 'C') {
-      card.appendChild(el('label', { textContent: t('gate.start_label'), 'for': 'gate-confirm-C' }));
-      startInput = el('input', { type: 'text', id: 'gate-confirm-C', autocomplete: 'off', 'aria-label': t('gate.start_label'), value: draftOr('gate-confirm-C', '') });
-      card.appendChild(startInput);
-    }
-
+    // the typed START of Gate C lives only in its dialog (W4): the button opens it
     var blockReason = gateBlockReason(gate);
     var stale = !!(State.version && State.version.stale);
-    var needsStart = gate.id === 'C';
-    var approveOff = !!blockReason || (needsStart && !(startInput && startInput.value === 'START'));
-    var approveBtn = el('button', { type: 'button', id: 'gate-approve-' + gate.id, class: approveOff ? 'btn-quiet' : 'btn-main', textContent: gateApprove(gate.id), disabled: approveOff });
+    // Gate A shows Approve only after a passing plan check (W5); a stale program shows no Approve either
+    var planBlocked = gate.id === 'A' && (validatorBlocks() || stale);
+    var approveBtn = el('button', { type: 'button', id: 'gate-approve-' + gate.id, class: blockReason ? 'btn-quiet' : 'btn-main', textContent: gateApprove(gate.id), disabled: !!blockReason });
     approveBtn.addEventListener('click', function () {
       var note = stripNewlines(noteInput.value.trim());
       if (gate.id === 'C') {
-        var typed = startInput ? startInput.value : '';
-        if (typed !== 'START') { showError(t('gate.err_start')); return; }
-        onGateDecision(gate.id, project, 'approve', note, typed);
+        confirmDialog(gateConfirm(gate.id, project), '', function (typed) {
+          if (typed !== 'START') { showError(t('gate.err_start')); return; }
+          onGateDecision(gate.id, project, 'approve', note, typed);
+        }, null, { yes: gateApprove(gate.id), typed: 'START', typedId: 'gate-confirm-C', typedLabel: t('gate.start_label') });
         return;
       }
       confirmDialog(gateConfirm(gate.id, project), '', function () {
@@ -2252,19 +2466,20 @@
       }, null, { yes: t('dialog.yes_approve') });
     });
 
-    if (startInput) {
-      startInput.addEventListener('input', function () {
-        approveBtn.disabled = !!blockReason || startInput.value !== 'START';
-      });
-    }
-
-    var btns = el('div', { class: 'gate-btns', children: [approveBtn, el('button', { type: 'button', id: 'gate-reject-' + gate.id, class: 'btn-quiet', textContent: t('gate.send_back'), disabled: stale, onclick: function () {
+    var rejectBtn = el('button', { type: 'button', id: 'gate-reject-' + gate.id, class: 'btn-quiet', textContent: t('gate.send_back'), disabled: stale, onclick: function () {
       var note = stripNewlines(noteInput.value.trim());
       if (note.length < NOTE_MIN || note.length > NOTE_MAX) { showError(t('gate.err_note')); return; }
       onGateDecision(gate.id, project, 'reject', note, '');
-    }})]});
+    }});
+    var btns = el('div', { class: 'gate-btns', children: planBlocked ? [rejectBtn] : [approveBtn, rejectBtn] });
     card.appendChild(btns);
-    if (blockReason) card.appendChild(el('p', { class: 'btn-reason', textContent: blockReason }));
+    card.appendChild(el('p', { class: 'hint', textContent: t('wiz.send_back_hint') }));
+    if (planBlocked) {
+      var problems = State.validator ? (State.validator.errors || []).length : 0;
+      card.appendChild(problems && !stale ? notice(t('wiz.plan_problems', { n: problems })) : el('p', { class: 'btn-reason', textContent: blockReason }));
+    } else if (blockReason) {
+      card.appendChild(el('p', { class: 'btn-reason', textContent: blockReason }));
+    }
 
     card.appendChild(el('p', { class: 'hint', textContent: gateNext(gate.id) }));
     return card;
@@ -2295,7 +2510,8 @@
       row.appendChild(el('p', { textContent: r.final_mp4 ? t('gate.d_video_yes') : t('gate.d_video_no') }));
       var raw = [];
       checks.forEach(function (c) {
-        row.appendChild(el('p', { textContent: c.ok ? t('gate.d_check_ok', { name: dash(c.name) }) : t('gate.d_check_fail', { name: dash(c.name) }) }));
+        // the check names are ids: they are listed in More with their detail, not in the row (W3)
+        raw.push(el('p', { class: 'muted', textContent: c.ok ? t('gate.d_check_ok', { name: dash(c.name) }) : t('gate.d_check_fail', { name: dash(c.name) }) }));
         raw.push(el('p', { class: 'muted', textContent: dash(c.name) + (c.detail ? ' - ' + c.detail : '') }));
       });
       if (raw.length) row.appendChild(helperDetails('gate-d-' + safeId(String(r.lang || 'x')), raw));
@@ -2417,8 +2633,10 @@
     body.appendChild(el('p', { textContent: message }));
     var typedInput = null;
     if (o.typed) {
-      body.appendChild(el('label', { 'for': 'confirm-typed', textContent: t('dialog.type_word', { word: o.typed }) }));
-      typedInput = el('input', { type: 'text', id: 'confirm-typed', autocomplete: 'off', maxlength: 20, 'aria-label': t('dialog.type_word', { word: o.typed }) });
+      var typedId = o.typedId || 'confirm-typed';
+      var typedLabel = o.typedLabel || t('dialog.type_word', { word: o.typed });
+      body.appendChild(el('label', { 'for': typedId, textContent: typedLabel }));
+      typedInput = el('input', { type: 'text', id: typedId, autocomplete: 'off', maxlength: 20, 'aria-label': typedLabel });
       body.appendChild(typedInput);
     }
     if (argvText) body.appendChild(helperDetails('confirm', [el('pre', { class: 'box', textContent: argvText })]));
@@ -2690,6 +2908,7 @@
     loadStatus();
     loadOps(false);
     loadWriters();
+    loadStyles();
     startPolling();
     document.addEventListener('visibilitychange', handleVisibility);
   }

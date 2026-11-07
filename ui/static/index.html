@@ -39,7 +39,7 @@
         <option value="reading" data-i18n="theme.reading">Reading (green)</option>
       </select>
     </div>
-    <span id="spend-badge" class="badge b-grey" data-i18n="app.spend_off">Paid work: OFF (safe)</span>
+    <span id="spend-badge" class="badge b-grey" data-i18n="app.spend_off">Paid work is off. Ask your helper.</span>
   </div>
   <div class="topbar-row topbar-chips">
     <span id="chip-story" class="chip-item"><span data-i18n="app.working_on">Working on:</span> <span id="project-name" data-i18n="app.no_story">(no story chosen)</span></span>
@@ -59,9 +59,11 @@
   <button type="button" id="error-close" class="linkish" data-i18n="common.close">Close</button>
 </div>
 
+<div id="msg-bar" class="bar bar-ok" role="status" hidden></div>
+
 <div id="working-on" class="workline" aria-live="polite"></div>
 
-<div class="wizard-layout">
+<div class="wizard-layout" id="wizard-page">
   <nav id="stepper" class="stepper" data-i18n-attr="aria-label:app.steps_aria" aria-label="The six steps">
     <ol>
       <li id="step-story" class="status-locked">
@@ -128,25 +130,27 @@
   </div>
 </div>
 
-<details id="advanced-tools" class="advanced">
-  <summary data-i18n="adv.title">For the helper: expert tools</summary>
+<section id="advanced-tools" class="advanced" aria-labelledby="adv-title" hidden>
+  <div class="expert-top">
+    <a href="#wizard" id="expert-back" class="expert-back" data-i18n="exp.back">Back to the steps</a>
+    <h2 id="adv-title" class="adv-title" data-i18n="adv.title">For the helper: expert tools</h2>
+  </div>
 
   <div class="advanced-body">
     <p class="adv-intro" data-i18n="adv.intro">These tools are for your helper. Some of them change files. Paid tools stay off unless the helper switched them on.</p>
+    <p class="muted" data-i18n="exp.risk_legend">Letters on the buttons: R = only reads. W = writes files on this computer. N = asks a free AI model. $ = spends Colab units or GPU time. OPS = stops a process. X = not available yet.</p>
     <p class="expert-host"><span class="host" data-i18n="app.host">This computer only (127.0.0.1)</span></p>
 
     <div id="expert-ops" class="expert-ops"></div>
 
-    <div id="msg-bar" class="bar bar-ok" role="status" hidden></div>
-
     <div class="layout">
       <nav class="sidebar" data-i18n-attr="aria-label:adv.nav.aria" aria-label="Expert sections">
-        <ul class="navlist">
-          <li><button type="button" class="navbtn" id="nav-story" data-section="story" data-i18n="adv.nav.story">Story text</button></li>
-          <li><button type="button" class="navbtn" id="nav-images" data-section="images" data-i18n="adv.nav.images">Pictures</button></li>
-          <li><button type="button" class="navbtn" id="nav-bridge" data-section="bridge" data-i18n="adv.nav.bridge">Key frames</button></li>
-          <li><button type="button" class="navbtn" id="nav-video" data-section="video" data-i18n="adv.nav.video">Video clips</button></li>
-          <li><button type="button" class="navbtn" id="nav-export" data-section="export" data-i18n="adv.nav.export">Final files</button></li>
+        <ul class="navlist" role="tablist">
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" class="navbtn" id="nav-story" data-section="story" data-i18n="adv.nav.story">Story text</button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" class="navbtn" id="nav-images" data-section="images" data-i18n="adv.nav.images">Pictures</button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" class="navbtn" id="nav-bridge" data-section="bridge" data-i18n="adv.nav.bridge">Key frames</button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" class="navbtn" id="nav-video" data-section="video" data-i18n="adv.nav.video">Video clips</button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" class="navbtn" id="nav-export" data-section="export" data-i18n="adv.nav.export">Final files</button></li>
         </ul>
       </nav>
 
@@ -157,6 +161,7 @@
           <h2 data-i18n="adv.story.title">Story text</h2>
           <div class="formrow">
             <label class="field"><span data-i18n="adv.story.slug_label">Story</span> <select id="story-slug"></select></label>
+            <button type="button" id="story-open" data-i18n="exp.story_open">Open this story</button>
             <label class="field"><span data-i18n="adv.story.pack_label">Plan</span> <select id="story-pack"></select></label>
             <div class="field">
               <span class="field-label" data-i18n="adv.story.writer_label">Writer</span>
@@ -164,6 +169,7 @@
             </div>
             <label class="field"><span data-i18n="adv.story.model_label">AI writer (free choices)</span> <select id="story-model"></select></label>
           </div>
+          <p class="muted" data-i18n="exp.story_open_note">Open this story changes the story for the whole page. Choosing a story in this list only shows its files here.</p>
           <p id="story-status" class="muted" aria-live="polite"></p>
 
           <label class="field"><span data-i18n="adv.story.text_label">Story text (max 200 KB)</span> <span id="story-bytes" class="muted"></span>
@@ -215,12 +221,13 @@
         <section id="sec-images" class="screen" data-section="images" hidden>
           <h2 data-i18n="adv.images.title">Pictures</h2>
           <div class="formrow">
-            <label class="field"><span data-i18n="adv.images.chapter_label">Chapter</span>
+            <label class="field"><span data-i18n="adv.images.chapter_label">Part</span>
               <select id="img-adhyay"><option value="1">1</option></select>
             </label>
             <button type="button" id="img-refresh" data-i18n="adv.images.refresh_btn">Reload the list</button> <span class="risk risk-R" title="R = read-only" data-i18n-attr="title:risk.r">R</span>
           </div>
 
+          <p id="img-part-note" class="muted" hidden></p>
           <div class="tabs" role="tablist">
             <button type="button" role="tab" class="tabbtn" id="tab-series" data-tab="series" data-i18n="adv.images.tab_series">Characters and places</button>
             <button type="button" role="tab" class="tabbtn" id="tab-jobs" data-tab="jobs" data-i18n="adv.images.tab_jobs">Work list</button>
@@ -395,7 +402,7 @@
       <pre id="log-tail" class="log" data-i18n="adv.log.idle">No job running.</pre>
     </footer>
   </div>
-</details>
+</section>
 
 <!-- Dialog: command preview, spend gate and packet text -->
 <div id="modal" class="overlay" hidden>
@@ -414,6 +421,7 @@
 </div>
 
 <footer class="pagefoot">
+  <p><a href="#expert" id="expert-link" data-i18n="exp.link">Expert tools (for your helper)</a></p>
   <p data-show-lang="mr" hidden data-i18n="app.mr_draft">Marathi text is a draft: a native speaker still has to check it.</p>
 </footer>
 

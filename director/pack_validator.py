@@ -788,7 +788,7 @@ def _validate_bible(data):
                         _e(errs, "BIBLE-06", w, "CHAR sheet must be 16:9")
                     if not re.search(r"label", p, re.I):
                         _e(errs, "BIBLE-06", w, "CHAR sheet must be labeled")
-                    if not re.search(r"plain\s+neutral\s+(?:backdrop|background)", p, re.I):
+                    if not re.search(r"plain\s+neutral\s+(?:[a-z]+\s+)?(?:backdrop|background)", p, re.I):
                         _e(errs, "BIBLE-06", w, "CHAR sheet must sit on a plain neutral backdrop")
     if "voice_map" in data:  # ElevenLabs voice ids per character and language (shape here; per-language presence in shots)
         for code, msg in voice_map_problems(data["voice_map"], data.get("characters"), None):

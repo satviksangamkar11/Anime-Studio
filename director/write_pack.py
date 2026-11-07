@@ -183,14 +183,55 @@ def envelope_check(raw):
     return retry_policy.answer_kind(data.get("result"), data.get("finish_reason"))
 
 
-def call_claude(prompt, model, effort):
+# --web (owner 2026-11-07): web context for every writer. Claude searches live; free models (NVIDIA, OpenRouter) get WEB_NOTES.md,
+# written once per story by a Haiku low agent with web search (owner: "for the free models, use a Haiku low agent")
+WEB_TOOLS = "WebSearch,WebFetch"
+WEB = False
+WEB_NOTES = ""   # story folder WEB_NOTES.md, given to the free models when --web
+WEB_RULE = """WEB CHECK (on). You may use WebSearch and WebFetch to check facts against the Puranas and other trusted sources: names,
+family relations, the order of events, places, and the traditional look of each deity or person (skin colour, number of arms,
+weapons, mount, clothing, ornaments). The story source in this brief stays the authority: keep its events, their order and its
+meaning; use the web only to correct a clear factual or look mistake or to fill a missing detail, and never add new episodes or
+scenes. Looks follow the traditional scripture description first, then the style rules of this brief. Your final answer is
+still only what this brief asks for, with no links, citations or notes about the search.
+
+"""
+
+
+NOTES_PROMPT = """You prepare research notes for a script writer who turns the story below into an animated video. Use WebSearch
+and WebFetch on trusted sources (the Puranas, scholarly and temple sources) to check: names and their spellings, family relations,
+the order of events, places, and the traditional look of every deity, person, animal and place named (skin colour, number of
+arms, weapons, mount, clothing, ornaments, setting). The story is the authority: only note where trusted sources confirm, add a
+missing detail, or clearly disagree. Answer with plain Markdown notes only, at most 1500 words, grouped by name, each point
+with its source link. No story retelling.
+
+STORY:
+"""
+
+
+def make_web_notes(story_path):
+    """WEB_NOTES.md next to the story, by Haiku low with web search; an existing file is reused (delete it to redo)."""
+    notes = Path(story_path).parent / "WEB_NOTES.md"
+    if not notes.exists():
+        raw = call_claude(NOTES_PROMPT + Path(story_path).read_text(encoding="utf-8"), "haiku", "low", web=True, rule=False)
+        text = (json.loads(raw).get("result") or "").strip()
+        if not text:
+            raise RuntimeError("the Haiku notes agent returned no notes")
+        notes.write_text(text + "\n", encoding="utf-8")
+    return notes.read_text(encoding="utf-8").strip()
+
+
+def call_claude(prompt, model, effort, web=None, rule=True):
+    web = WEB if web is None else web
+    tools = ["--tools", WEB_TOOLS, "--allowedTools", WEB_TOOLS] if web else ["--tools", ""]
+    prompt = WEB_RULE + prompt if web and rule else prompt
     with tempfile.TemporaryDirectory() as empty:
         mcp = Path(empty).parent / "empty_mcp_anime.json"
         mcp.write_text('{"mcpServers": {}}', encoding="utf-8")
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY" and not k.startswith("OPENROUTER")}
         env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = "64000"
         r = subprocess.run([shutil.which("claude") or "claude", "-p", "--model", model, "--effort", effort, "--output-format", "json",
-                            "--tools", "", "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
+                            *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
                            input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=empty, env=env, timeout=TIMEOUT_S)
     if r.returncode != 0:
         raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-800:]}")
@@ -307,6 +348,8 @@ def call_path(prompt, via, model, effort, allow_paid, policy=None, sleep=None):
     """One model call. Claude runs once. NVIDIA and OpenRouter go through the shared retry policy (director/retry_policy.py):
     rate limits, server errors, timeouts and empty answers are retried with growing waits (15-180 s, max 5 calls, 600 s cap);
     a refusal that retrying cannot fix (budget, bad request) stops at once. The error reaches the caller as ModelGaveUp."""
+    if WEB and WEB_NOTES and via != "claude":
+        prompt = "WEB RESEARCH NOTES (checked facts and traditional looks; the story source stays the authority):\n" + WEB_NOTES + "\n\n" + prompt
     if via == "claude":
         return call_claude(prompt, model, effort)
     one = (lambda: call_nvidia(prompt, model)) if via == "nvidia" else (lambda: call_openrouter(prompt, model, allow_paid))
@@ -1084,6 +1127,7 @@ def main(argv=None):
     ap.add_argument("--via", default=None, choices=VIAS)
     ap.add_argument("--model"); ap.add_argument("--effort", default=None, choices=("low", "medium", "high"))
     ap.add_argument("--allow-paid", action="store_true")
+    ap.add_argument("--web", action="store_true", help="web context: Claude searches live; free models get WEB_NOTES.md made by a Haiku low agent with web search")
     ap.add_argument("--staged", action="store_true", help="one call per gate: 1, 2, 3e<N> per episode, 5")
     ap.add_argument("--stage-via", default="", help="staged only: per-stage path, e.g. 2=nvidia,3=claude")
     ap.add_argument("--stage-model", default="", help="staged only: per-stage model, e.g. 3=opus")
@@ -1111,6 +1155,12 @@ def main(argv=None):
         stage_model = parse_stage_map(a.stage_model, str) if a.staged else {}
     except ValueError as exc:
         ap.error(str(exc))
+    global WEB, WEB_NOTES
+    WEB = a.web
+    if WEB:
+        free = via != "claude" or any(v != "claude" for v in stage_via.values())
+        WEB_NOTES = make_web_notes(a.story) if free else ""
+        print(f"web check: on (Claude searches live; free models get WEB_NOTES.md: {'yes' if WEB_NOTES else 'not needed'})")
     prompt_version = a.prompt_version or DEFAULT_PROMPT_VERSION   # Q5 (2026-11-07): the staged default is v2.3
     style = ""
     if a.staged and prompt_version == "v2.3":

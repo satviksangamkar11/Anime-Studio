@@ -180,6 +180,7 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/story` | none | `{slugs: [{slug, packs: [name], has_source, latest_pack, latest_model}]}` (latest_model = the model of the newest pack; from the run registry) |
 | GET | `/api/story/{slug}` | none | `{text, bytes}` |
 | POST | `/api/story/{slug}` | `{text, overwrite: false}` | `{saved, bytes}`; 409 if the file exists |
+| POST | `/api/story/{slug}/style` | `{style_pack}` | `{style_pack, warning_code}`; writes story.json `style_pack` and a registry line; `warning_code` = `old_plans` when the story already has plan folders and the look changes; 400 for an unknown style id, 404 for no such story |
 | GET | `/api/registry` | none | `{stories: [run-log summary per story: slug, title, source, latest_pack, packs, pack_models, run_count, status, last_run_at, last_run_id, next_pack]}`; read only; 503 if the registry module is missing |
 | GET | `/api/registry/{slug}` | none | `{slug, story, summary, runs, steps, report}`; `report` is the RUN_REPORT text; 400 for a bad slug, 404 for no such story; read only |
 | GET | `/api/pack?pack=stories/<slug>/<name>` | none | `{stages: {"1": bool, "2": bool, "3e1": bool, ..., "5": bool}, gate1, episodes: [{n, shots, seconds}], characters, places, shots, check}` |
@@ -197,6 +198,7 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/colab` | none | `{sessions: [{name, gpu, status}], balance, rate}` (two read-only commands, 60 s timeout) |
 | GET | `/api/export?reel=N` | none | `{clips_in_order, assembly: "not built" or plan, reel_files}` |
 | GET | `/api/file?path=...` | none | bytes; allowed roots and extensions only; max 60 MB |
+| GET | `/api/styles` | none | `{default, styles: [{id, status, acts, has_grade_numbers, default}]}`; the style packs on disk and the fixed default (Deva Neon); read only |
 | GET | `/api/writers` | none | `{default, claude_allowed, confirm_word, checks: {nvidia_key_files, openrouter_key_file, claude_cli}, options: [{id, group, command, args, cost, speed, quality, tested, available, reason}]}`; read only; never key text or paths |
 | GET | `/i18n/{lang}.json` | none | the UI string table for en or mr (JSON); 404 for any other name |
 | GET | `/fonts/NotoSansDevanagari-Variable.ttf` | none | the bundled Devanagari font (font/ttf) |

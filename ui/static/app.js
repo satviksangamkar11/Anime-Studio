@@ -83,6 +83,8 @@
     trackers: [],
     ticking: false,
     section: '',
+    expert: false,
+    partsN: 0,
     slugs: [],
     story: { slug: '' },
     images: null,
@@ -458,17 +460,24 @@
   }
 
   // ---------- Modal: command preview, spend gate, packet text ----------
+  var modalOpener = null;   // the element that had focus before the modal opened; focus goes back to it on close
+
   function openModal(title) {
     clearInterval(modalTimer);
+    modalOpener = document.activeElement;
     $('modal-title').textContent = title;
     clear($('modal-body'));
     $('modal').hidden = false;
+    $('modal').setAttribute('tabindex', '-1');
+    $('modal').focus();
   }
 
   function closeModal() {
     clearInterval(modalTimer);
     $('modal').hidden = true;
     clear($('modal-body'));
+    if (modalOpener && typeof modalOpener.focus === 'function' && document.contains(modalOpener)) modalOpener.focus();
+    modalOpener = null;
   }
 
   // Two steps for every command: Preview (POST /api/preview) shows the exact argv, then Start (POST /api/run).
@@ -626,15 +635,39 @@
     SECTIONS.forEach(function (s) {
       $('sec-' + s).hidden = s !== name;
       var b = $('nav-' + s);
+      b.setAttribute('aria-selected', s === name ? 'true' : 'false');
       if (s === name) b.setAttribute('aria-current', 'page');
       else b.removeAttribute('aria-current');
     });
+    if (!S.expert) return;   // the expert view is closed: only remember the section, load nothing, leave the hash alone
     if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
     if (name === 'story') loadStory();
     if (name === 'images') loadImages();
     if (name === 'video') loadVideo();
     if (name === 'export') loadExport();
     applyGates();
+  }
+
+  // ---------- Expert view: its own page, opened from the footer link (#expert) or an old section hash ----------
+  function setView(expert) {
+    S.expert = expert;
+    $('advanced-tools').hidden = !expert;
+    $('wizard-page').hidden = expert;
+  }
+
+  function route() {
+    var h = (location.hash || '').slice(1);
+    if (h !== 'expert' && SECTIONS.indexOf(h) < 0) {
+      setView(false);
+      return;
+    }
+    var wasOpen = S.expert;
+    setView(true);
+    showSection(h === 'expert' ? (S.section || 'story') : h);
+    if (!wasOpen) {
+      loadWriterChoices();
+      tick();
+    }
   }
 
   // ---------- Story ----------
@@ -750,7 +783,17 @@
       return [String(or(s.id, '?')), String(or(s.episode, '-')), String(or(s.mode, '-')), String(or(s.seconds, '-')),
         String(or(s.cut_in, '-')) + ' -> ' + String(or(s.cut_out, '-')), String(n)];
     }));
+    S.partsN = (p.episodes || []).length;
+    updatePartsNote();
     $('story-check-json').textContent = p.check ? JSON.stringify(p.check, null, 2) : t('adv.story.no_check');
+  }
+
+  // The Pictures list offers parts 1 to 12; the plan may have fewer. Say so in one line.
+  function updatePartsNote() {
+    var n = $('img-part-note');
+    if (!n) return;
+    n.hidden = !(S.partsN > 0 && S.partsN < 12);
+    if (!n.hidden) n.textContent = t('exp.images.parts_note', { n: S.partsN });
   }
 
   // Writer choices for the Story section: the free options only. When /api/writers fails, the two writer shortcuts.
@@ -830,6 +873,7 @@
       S.images = await api('GET', url);
       S.imgAt = Date.now();
       setImagesHeading(st);
+      updatePartsNote();
       renderImgTab(S.imgTab);
     } catch (e) {
       if (!quiet) showApiError(e);
@@ -1428,7 +1472,7 @@
   function colabRun() {
     var batch = $('video-batch').value.trim();
     if (!PAT.name.test(batch)) return showError(t('adv.video.batch_bad'));
-    var cap = (S.status && S.status.spend_cap_units) || 15;
+    var cap = (S.status && typeof S.status.spend_cap_units === 'number') ? S.status.spend_cap_units : 15;   // 0 is a real cap
     runCommand({
       title: t('adv.colab.title'),
       command: 'colab_run',
@@ -1500,12 +1544,13 @@
   // ---------- Language change: re-draw what app.js wrote (I18N.apply only moves the static text) ----------
   function onLangChange() {
     renderHeader();
-    loadWriterChoices();
+    if (S.expert) loadWriterChoices();
     if (S.colabData) renderColab(S.colabData);
     S.logDone = null;
     var cb = $('colab-check');
     if (cb && !cb.disabled) cb.textContent = t('adv.video.colab_check_btn');
-    showSection(S.section || 'story');
+    if (S.expert) showSection(S.section || 'story');
+    else if (S.section) showSection(S.section);
   }
 
   // ---------- Init ----------
@@ -1520,10 +1565,11 @@
     for (var i = 1; i <= 12; i += 1) ay.push(el('option', { value: String(i), text: String(i) }));
     fill($('img-adhyay'), ay);
     $('img-adhyay').value = '1';
-    // one story at a time: changing the picker also sets the wizard's story (POST /api/pipeline/project), then the wizard redraws
-    $('story-slug').addEventListener('change', function () {
+    // Choosing a story here only shows its files. The button below sets the wizard's story (POST /api/pipeline/project) for the whole page.
+    $('story-slug').addEventListener('change', function () { selectSlug($('story-slug').value, ''); });
+    $('story-open').addEventListener('click', function () {
       var slug = $('story-slug').value;
-      selectSlug(slug, '');
+      if (!slug) return;
       api('POST', '/api/pipeline/project', { story_slug: slug, pack: '' }).then(function () {
         if (window.StudioWizard) window.StudioWizard.refresh();
       }).catch(function (e) { showApiError(e); });
@@ -1554,16 +1600,14 @@
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape') { closeModal(); $('lightbox').hidden = true; }
     });
-    window.addEventListener('hashchange', function () {
-      var h = location.hash.slice(1);
-      if (h !== S.section) showSection(h);
-    });
+    window.addEventListener('hashchange', route);
     window.addEventListener('studio:lang', onLangChange);
-    showSection((location.hash || '#story').slice(1));
-    loadWriterChoices();
-    tick();
-    // one poller, and it stays quiet while the tab is hidden
-    setInterval(function () { if (!document.hidden) tick(); }, POLL_MS);
+    S.section = 'story';
+    showSection('story');   // sets aria-selected only (the expert view is closed)
+    tick();                 // once, for the header badge; the wizard polls its own status
+    route();
+    // the expert poller runs only while the expert view is open, and stays quiet while the tab is hidden
+    setInterval(function () { if (S.expert && !document.hidden) tick(); }, POLL_MS);
   }
 
   // The strings load first (I18N.ready), then the page starts.

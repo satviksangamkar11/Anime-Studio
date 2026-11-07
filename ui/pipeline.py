@@ -7,6 +7,7 @@ Gates: a decision is recorded with its story and pack; a record without them (le
 import importlib
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -128,6 +129,15 @@ def output_languages(studio: Path, slug: Optional[str]) -> List[str]:
         return []
     langs = read_story_json(studio, slug).get("output_languages")
     return [x for x in langs if x in LANGS] if isinstance(langs, list) else []
+
+
+def style_for_story(studio: Path, slug: Optional[str]) -> str:
+    """The style pack the story uses: its story.json style_pack when that pack exists, else the fixed default (core/style_pack.py)."""
+    root = str(STUDIO)
+    if root not in sys.path:
+        sys.path.append(root)
+    from core import style_pack
+    return style_pack.pack_for_story(read_story_json(studio, slug) if slug else {})
 
 
 # --------------------------------------------------------------------------- #
@@ -508,7 +518,7 @@ def pipeline_state(studio: Path, runs: Path, now: Optional[datetime] = None,
         progress = {"done": f["finals"], "total": f["expected_images"]}
     elif f["finals"] == 0:
         images_status, detail, progress = "ready", "No finals yet", None
-    elif f["finals"] >= f["expected_images"] and f["pending"] == 0:
+    elif f["expected_images"] > 0 and f["finals"] >= f["expected_images"] and f["pending"] == 0:   # no planned shots = nothing to approve (Nemotron review 2026-11-07)
         progress = None
         if cascade["B"]:
             images_status, detail = "approved", "Gate B approved"
@@ -590,7 +600,8 @@ def pipeline_state(studio: Path, runs: Path, now: Optional[datetime] = None,
         if s["status"] not in ("approved", "done"):
             current = s["id"]
             break
-
+    else:
+        current = stages[-1]["id"] if stages else "story"   # every stage approved or done: the last one, not "story" again
     return {
         "scope": {"story": slug, "pack": pack},
         "project": project,
@@ -598,6 +609,7 @@ def pipeline_state(studio: Path, runs: Path, now: Optional[datetime] = None,
         "gates": gates,
         "current": current,
         "output_languages": output_languages(studio, slug),
+        "style_pack": style_for_story(studio, slug),
     }
 
 
@@ -855,7 +867,7 @@ def _per_language(plan: Dict[str, Any], render_dir: Path, chosen: List[str]) -> 
                 captions = False
             if not (ep_dir / "export" / f"{ep['id']}_{lang}.mp4").is_file():
                 final = False
-        reasons = [r for r in ((gd.get("reasons") or []) if gd else []) if f" {lang}: " in r]
+        reasons = [r for r in ((gd.get("reasons") or []) if gd else []) if re.search(rf"(?:^|[\s\[(;,]){re.escape(lang)}:", r)]
         if gd is None:
             reasons = ["Gate D not planned yet"]
         checks = [{"name": "audio plan", "ok": bool(gd and gd["status"] == "ready" and not reasons),

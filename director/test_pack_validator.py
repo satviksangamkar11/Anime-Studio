@@ -200,6 +200,16 @@ def test_style_lock_needs_hand_drawn_cel_wording():
     assert "BIBLE-08" in codes(validate_stage("bible", b))
 
 
+def test_backdrop_allows_one_colour_word():
+    b = bible()
+    for ch in b["characters"].values():
+        ch["sheet_prompt"] = ch["sheet_prompt"].replace("plain neutral backdrop", "plain neutral grey backdrop")
+    assert "BIBLE-06" not in codes(validate_stage("bible", b))
+    for ch in b["characters"].values():
+        ch["sheet_prompt"] = ch["sheet_prompt"].replace("plain neutral grey backdrop", "busy temple backdrop")
+    assert "BIBLE-06" in codes(validate_stage("bible", b))
+
+
 # ---------- structure (stage 3 columns) ----------
 
 @pytest.mark.parametrize("mutate, code", [

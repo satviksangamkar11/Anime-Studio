@@ -71,3 +71,9 @@ All rendered files, images, videos and other heavy outputs are stored on Google 
 
 ## RULE 15: PACE, PHONE CHECKS, AGENT STALLS (owner, 2026-11-07)
 Owner: skip the phone-size UI checks (desktop width only is enough; mark phone as not tested). Finish steps as fast as possible. An agent that writes no log line for 20 minutes is treated as stalled: replace it at once (Haiku xhigh coders stalled twice on the 2700-line pipeline.js; use Sonnet high for big UI files) and log a FAIL line. Every agent brief demands a log line at least every 5 minutes.
+
+## RULE 16: INTERNET FOR EVERY WRITER MODEL (owner, 2026-11-07)
+Web context matters most for getting the story context right. `write_pack.py --web` turns it on for every model. Claude writers (Opus etc.) use WebSearch/WebFetch live. Free models (NVIDIA, OpenRouter free) get `WEB_NOTES.md` next to SOURCE.md, written once per story by a Haiku agent at low effort with web search (reused; delete the file to redo). The paid OpenRouter web plugin is not used. The story SOURCE stays the authority: the web only corrects clear fact or look mistakes and fills gaps, never adds scenes. Looks follow the traditional scripture description first, then the style pack. Final answers carry no links.
+
+## RULE 17: LOG AND BLOT IN THE SAME STEP (owner, 2026-11-07, repeated)
+Every change, even a one-line one, gets its PROJECT_LOG line in the same step, and blot.md is updated in the same step whenever a rule changes (both copies: anime_studio and anime_studio_merge).

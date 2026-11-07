@@ -452,3 +452,49 @@ def test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_vali
     fake_claude["state"]["answers"] = answers
     with pytest.raises(write_pack.StageFailed, match="LANG-03"):
         run(story, tmp_path / "pack_v1", "--out-lang", "en,hi")
+
+
+def test_web_flag_turns_on_search_tools_only_when_asked(monkeypatch):
+    import write_pack as w
+    seen = {}
+
+    class R:
+        returncode, stdout, stderr = 0, "{}", ""
+
+    def fake_run(cmd, input=None, **kw):
+        seen["cmd"], seen["prompt"] = cmd, input
+        return R()
+    monkeypatch.setattr(w.subprocess, "run", fake_run)
+    monkeypatch.setattr(w, "WEB", False)
+    w.call_claude("brief", "opus", "high")
+    assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "" and seen["prompt"] == "brief"
+    monkeypatch.setattr(w, "WEB", True)
+    w.call_claude("brief", "opus", "high")
+    assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "WebSearch,WebFetch"
+    assert "--allowedTools" in seen["cmd"] and seen["prompt"].startswith("WEB CHECK") and seen["prompt"].endswith("brief")
+
+
+def test_web_notes_go_to_free_models_only(monkeypatch):
+    import write_pack as w
+    monkeypatch.setattr(w, "WEB", True)
+    monkeypatch.setattr(w, "WEB_NOTES", "Kali has four arms")
+    seen = {}
+    monkeypatch.setattr(w, "call_nvidia", lambda prompt, model: seen.setdefault("nv", prompt) or "{}")
+    monkeypatch.setattr(w, "call_claude", lambda prompt, model, effort: seen.setdefault("cl", prompt) or "{}")
+    w.call_path("brief", "nvidia", "m", "high", False)
+    w.call_path("brief", "claude", "opus", "high", False)
+    assert "Kali has four arms" in seen["nv"] and seen["nv"].endswith("brief") and seen["cl"] == "brief"
+
+
+def test_make_web_notes_uses_haiku_low_with_web_and_reuses_the_file(monkeypatch, tmp_path):
+    import json as _j
+    import write_pack as w
+    story = tmp_path / "SOURCE.md"
+    story.write_text("Sati story", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(w, "call_claude", lambda prompt, model, effort, web=None, rule=True:
+                        calls.append((model, effort, web, rule)) or _j.dumps({"result": "- Sati: daughter of Daksha"}))
+    assert "Daksha" in w.make_web_notes(story)
+    assert calls == [("haiku", "low", True, False)]
+    w.make_web_notes(story)
+    assert len(calls) == 1 and (tmp_path / "WEB_NOTES.md").exists()

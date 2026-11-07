@@ -1408,7 +1408,34 @@ class Api:
         out["output_languages"] = _pipeline().output_languages(self.cfg.studio, slug)
         out["voice_engine"] = sj.get("voice_engine") if isinstance(sj.get("voice_engine"), dict) else {}
         out["bgm"] = sj.get("bgm") if isinstance(sj.get("bgm"), dict) else {}
+        sp = _style_pack()
+        out["style_pack"] = sp.pack_for_story(sj)
+        out["style_is_default"] = out["style_pack"] == sp.default_pack_id()
         return out
+
+    def styles_list(self) -> dict:
+        """GET /api/styles: the style packs on disk and the fixed default (read only)."""
+        sp = _style_pack()
+        return {"default": sp.default_pack_id(), "styles": sp.list_packs()}
+
+    def set_style(self, slug, body) -> dict:
+        """POST /api/story/{slug}/style {style_pack}: story.json names the look. warning_code old_plans = plans made before keep the old look."""
+        d = self._story_dir(slug)
+        sp, pl = _style_pack(), _pipeline()
+        ids = [p["id"] for p in sp.list_packs()]
+        pick = body.get("style_pack")
+        if not isinstance(pick, str) or pick not in ids:
+            raise bad("style_pack: one of " + ", ".join(ids))
+        before = sp.pack_for_story(pl.read_story_json(self.cfg.studio, d.name))
+        has_plans = any(p.is_dir() and re.fullmatch(r"[a-z0-9_-]{1,40}", p.name) and ((p / "shots.json").is_file() or (p / "PACK.md").is_file())
+                        for p in d.iterdir())
+        code = "old_plans" if (has_plans and before != pick) else None
+        with self.lock:
+            pl.update_story_json(self.cfg.studio, d.name, {"style_pack": pick})
+        rr = _registry()
+        if rr is not None:
+            self._hook("append_event", d, rr.run_id("style"), "story_saved", None, "ok", note="style_pack=" + pick)
+        return {"style_pack": pick, "warning_code": code}
 
     def _story_state_safe(self, slug) -> dict:
         try:
@@ -1505,7 +1532,8 @@ class Api:
         rel, d, slug, name = self._pack_dir(pack_path)
         doc = _pipeline().load_validation(self.cfg.runs, slug, name)
         if doc is None:
-            raise ApiError(404, "no validator report for this pack yet: run the validator")
+            # no report yet is a normal answer (the page shows "not checked yet"), not a 404
+            return {"status": "none"}
         return doc
 
     def pack_validate_run(self, pack_path, body) -> dict:
@@ -1678,6 +1706,15 @@ def _h3_author_module():
     return h3_author
 
 
+def _style_pack():
+    """core/style_pack.py (the style list and the fixed default look); the repo root goes on sys.path like the other shared modules."""
+    root = str(STUDIO)
+    if root not in sys.path:
+        sys.path.append(root)
+    from core import style_pack
+    return style_pack
+
+
 def _story_links_module():
     d = str(STUDIO / "director")
     if d not in sys.path:
@@ -1804,6 +1841,8 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
             return api.ops(q)
         if path == "/api/writers":
             return api.writers()
+        if path == "/api/styles":
+            return api.styles_list()
         m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})/state", path)
         if m:
             return api.story_state(m.group(1))
@@ -1852,6 +1891,9 @@ def dispatch(api: Api, method: str, path: str, q: dict, body: dict):
         m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})", path)
         if m:
             return api.story_save(m.group(1), body)
+        m = re.fullmatch(r"/api/story/([a-z0-9_]{1,40})/style", path)
+        if m:
+            return api.set_style(m.group(1), body)
         if path == "/api/preview":
             return api.preview(body)
         if path == "/api/run":

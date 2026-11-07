@@ -121,7 +121,8 @@ def rules_block(langs=DEFAULT_OUT_LANG):
    ({long_['seconds']:.2f} s). Editorial duration is at most {spec.MAX_SHOT_SEC:.1f} s and never longer than pixel_frames / {spec.FPS}.
 4. Style lock. 2D hand-drawn cel-shaded anime with organic hand-drawn line weight, a frame-by-frame cel redraw feel and Indian
    classical Puranic facial proportions. Never 3D CG, never the Pixar, Cinema 4D or Octane look, no uniform vector lines,
-   no smooth plastic skin.
+   no smooth plastic skin. Name these banned looks only in forbidden_looks, never inside style_lock or any other style
+   field, not even as "no X" or "never X".
 5. No speech in H3. H3 prompts carry no speaker ids such as (S1), no [Language] tags, no <d> tags and no <Audio N> tags. Narration
    and dialogue are text for the ElevenLabs voice, made outside H3. narrator_mouth_closed is true on every shot and every
    second of mouth_state is "closed" or "open_non_verbal_breath". Non-diegetic music is N/A on every shot.

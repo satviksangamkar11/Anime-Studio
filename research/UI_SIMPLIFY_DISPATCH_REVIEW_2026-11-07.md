@@ -1,0 +1,23 @@
+# UI simplify dispatch review (SD, haiku medium, read-only) 2026-11-07
+
+F1 HIGH E4/D7 - the route already exists (server.py:1812) and pack_validate_get (server.py:1504-1507) raises 404 on purpose; pipeline.js:678-686 treats 404 as normal. "Add the route" is wrong. Fix: E makes GET return 200 {status:"none"} when no report; W adapts pipeline.js:678-686 to that shape. Split the task across both files.
+F2 HIGH W10 bursts - causes sit in both files: app.js:1566 setInterval tick -> app.js:379 /api/status; app.js:1528 calls StudioWizard.refresh(); pipeline.js:798 refreshWizard; pipeline.js:678 validate per pack. Fix: W adds an in-flight guard in refreshWizard; E removes the duplicate status poll/refresh at app.js:1528 and 379. Give E the app.js half.
+F3 HIGH W3/W4 keys - common.details_helper is used by index.html:56 (E) and pipeline.js:241 (W); group common is E's, so W cannot --replace it. Fix: W adds a key in its own group (e.g. warn.more); E switches index.html:56 to it.
+F4 HIGH W9/D6 - two story switchers post /api/pipeline/project: wizard picker pipeline.js:1138-1162 (W) and expert picker app.js:1523-1527 (E). W9 alone leaves the expert one instant. Fix: E turns app.js:1523-1527 into an explicit button or confirm.
+F5 HIGH W4 "Paid work is off, say once" - header #spend-badge text is set by app.js:343 (key app.spend_off, group app = E); step 6 note is in pipeline.js (W). Fix: E keeps the header badge; W removes the step 6 "Nothing is paid here" copy. Put both on REQUESTS.
+F6 HIGH E6 Past work - the table is built in pipeline.js registryPanel/runsTable (pipeline.js:2495-2512, keys runs.*, W group). E cannot translate it. Fix: move E6 cell/header work to W (runs group); E keeps only static headers in index.html.
+F7 MED E1 - no pipeline.js change needed for the ops panel: pipeline.js:902-905 fills #expert-ops (index.html:138) and pipeline.js:907-910 fills #runs-slot. Fix: keep #runs-slot OUTSIDE #advanced-tools; change the default hash in app.js:1562 ('#story' would open the expert view on a plain load); gate the E5 pollers (app.js:388) on the expert view being open, not only on S.section.
+F8 MED test_static 255-261 pins strings: "Flow agents run on Haiku, effort LOW", "gap G1", "gap G12", "I looked at full size", "not available yet", "--allow-spend" (en.json:69, 70, 762), "EXECUTE " (app.js). Fix: add to dispatch: these values stay in en.json (may sit in More); no coder edits these asserts.
+F9 MED test_static 422-428 - button min-height 48px, "grid-template-columns: 1fr 1fr", #wiz-panels 1fr on phone. Fix: add "do not change these CSS rules" to E2 (shrink chips and gaps only).
+F10 MED test_static 130-135 and 383-389 - E3 role=tab must keep id nav-%s and data-section; W5 error text must go into an existing aria-live region (role=alert count max 2). Fix: add both to the dispatch.
+F11 MED test_static 412 - any new dialog (W6 "Other writers", W9 "Open this story") must carry class dialog and tabindex -1. Fix: lead checks in review.
+F12 MED test_i18n - W's group list has no group for new "more" or "open" keys; footer link text (E) must be a data-i18n element with no child element (check 6). Fix: add a group or use an existing W group; no nested span in the footer link.
+F13 MED coverage - D5 writer-header mismatch unassigned; D16 dropped without a DROP line; D15 only renames "Chapter" (12 vs 6 parts not addressed); cold C rows "Make a NEW plan" label, "Story picker shows ids in brackets", "Past work (records) not for her" unassigned. Fix: assign to W1/W9/E6 or write DROP with reason.
+F14 MED coverage - proposal 9 and D12 phone checks, E3 keyboard tabs, W8 locked-step click, D8 request count cannot be verified by a Haiku coder without a browser. Fix: lead measures in the browser (read_network_requests, 375x812 screenshot); W10 "report count from reasoning" is not a count, drop that wording.
+F15 LOW rule "MOVE or HIDE" - enough for test_parity (anchors searched in index.html and JS, hidden still counts); not enough for test_static 392-403 (ids built by pipeline.js must stay built there). Fix: add that sentence.
+F16 LOW E5 "Chapter" - no literal "Chapter" found in app.js or index.html; key not located. Fix: lead locates the key before E5 is assigned.
+F17 LOW owner rules - no contradiction found: typed START/CLAUDE kept, no paid call, EN+MR only, no Colab. Marathi drafts must keep the draft marker (app.mr_draft). OK.
+
+FINAL count: 17 findings (HIGH 6 = F1-F6; MED 8 = F7-F14; LOW 3 = F15-F17).
+Verdict: NEEDS FIXES (F1-F6 cross-owner and must be re-split before dispatch; F8-F13 add to the dispatch text).
+Not run: pytest and browser checks (reviewer read-only; lead runs them).
