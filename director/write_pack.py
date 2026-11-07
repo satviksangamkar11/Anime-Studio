@@ -1315,7 +1315,13 @@ def main(argv=None):
         ap.error("--out-lang needs --staged (the single-call brief does not use it)")
     if not a.staged and a.voice:
         ap.error("--voice needs --staged (the single-call brief does not use it)")
-    out_langs = a.out_lang or [wp.DEFAULT_OUT_LANG]
+    meta_story = {}
+    try:   # audit A/D 11-08: without flags the story's own settings (set in the UI) stand; they are not overwritten by the defaults
+        meta_story = json.loads((Path(a.story).parent / "story.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    saved_langs = meta_story.get("output_languages") if isinstance(meta_story, dict) else None
+    out_langs = a.out_lang or (wp.lang_list(saved_langs) if isinstance(saved_langs, list) and saved_langs else None) or [wp.DEFAULT_OUT_LANG]
     try:
         writer, via, model, effort = resolve_route(a.writer, a.via, a.model, a.effort)
         stage_via = parse_stage_map(a.stage_via, check_via) if a.staged else {}
@@ -1341,7 +1347,7 @@ def main(argv=None):
                                 pack=out.name, via=via, model=model, effort=effort)
     if a.staged:
         try:
-            voice = voice_mod().parse_overrides(a.voice) if a.voice else None
+            voice = voice_mod().parse_overrides(a.voice) if a.voice else (meta_story.get("voice_engine") if isinstance(meta_story.get("voice_engine"), dict) else None)
         except (ValueError, AttributeError) as exc:
             ap.error(str(exc))
         run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,

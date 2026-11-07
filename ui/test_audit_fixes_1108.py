@@ -21,3 +21,14 @@ def test_facts_read_the_adhyay_01_layout_and_queue_items_with_only_shot_id(tmp_p
     runs = make_runs(tmp_path, slug="s", pack="p", images_dir=str(flow))
     f = facts(studio, runs)
     assert f["finals"] == 2 and f["pending"] == 1   # SHOT-002 is queued and not yet filed
+
+
+def test_write_pack_claude_asks_for_web_and_high_effort(tmp_path):
+    import server
+    studio = tmp_path / "studio"
+    (studio / "stories" / "s1").mkdir(parents=True)
+    (studio / "stories" / "s1" / "SOURCE.md").write_text("x", encoding="utf-8")
+    cfg = server.Config(studio=studio, flow=tmp_path / "flow_outputs" / "anime_kaliya", downloads=tmp_path / "d", python=sys.executable,
+                        colab=["c"], disk_paths=(str(tmp_path), str(tmp_path)), allow_claude=True)
+    argv = server.b_write_pack_claude(cfg, {"slug": "s1", "pack": "p1", "out_lang": "en"})
+    assert "--web" in argv and argv[argv.index("--effort") + 1] == "high" and argv[argv.index("--writer") + 1] == "opus"

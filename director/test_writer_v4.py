@@ -443,6 +443,18 @@ def test_a_subset_run_keeps_the_order_of_the_selection(tmp_path, story, fake_cla
     assert meta["output_languages"] == ["mr", "en"] and meta["output_language"] == "mr"
 
 
+def test_without_flags_the_story_json_languages_and_voice_stand(tmp_path, story, fake_claude, monkeypatch, simple_language):
+    fake_validator(monkeypatch, lambda *a: [])
+    path = story.parent / "story.json"
+    meta = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"slug": "t", "schema_version": 1}
+    meta.update({"output_languages": ["mr", "en"], "output_language": "mr", "voice_engine": {"mr": "elevenlabs", "en": "h3"}})
+    path.write_text(json.dumps(meta), encoding="utf-8")
+    fake_claude["state"]["answers"] = canned(["mr", "en"])
+    run(story, tmp_path / "pack_v1")                                   # no --out-lang, no --voice
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert after["output_languages"] == ["mr", "en"] and after["voice_engine"] == {"mr": "elevenlabs", "en": "h3"}
+
+
 def test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_validator(tmp_path, story, fake_claude, monkeypatch):
     monkeypatch.setitem(sys.modules, "pack_validator", None)           # the writer's own language checks are the fallback
     answers = canned(["en", "hi"])

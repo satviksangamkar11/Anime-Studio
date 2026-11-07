@@ -540,7 +540,7 @@ def scope_ids(shots_file, scope, ids=None, reel=None):
 def write_pack_route(a, writer=None) -> str:
     """The path and model a write_pack preview will run, as text for the owner."""
     if writer == "opus":
-        return "writer opus: claude opus, effort medium (Claude subscription; may cost money)"
+        return "writer opus: claude opus, effort high, web context on (Claude subscription; may cost money)"
     if a.get("model"):
         return f"legacy NVIDIA path: nvidia {a['model']}"
     name = a.get("writer") or DEFAULT_WRITER
@@ -564,6 +564,10 @@ def b_write_pack(cfg, a, writer=None):
     if not a.get("out_lang"):
         raise bad("choose at least one output language (en, hi, mr): the writer has no default")
     lang = ["--out-lang", a["out_lang"]]
+    if writer == "opus" or cfg.allow_claude:   # owner rule 16 (audit A/D 11-08): web context for every writer; the notes call needs the Claude CLI
+        lang += ["--web"]
+    if writer == "opus":
+        lang += ["--effort", "high"]
     if a.get("model"):
         return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--via", "nvidia", "--model", a["model"]] + lang
     return _py(cfg, "director", "write_pack.py") + [str(src), str(dest), "--staged", "--writer", name] + lang
