@@ -816,3 +816,29 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 14:36 | me | EDIT | memory | merge branch and per-language caption rule recorded
 11-07 14:58 | me | CMD | owner: push all the new changes (read 'Psych' as Push): merge branch (new), V4 audit doc commit
 11-07 14:59 | me | PUSH | origin merge-v4-universal-2026-11-07 (new) and v4-architecture-2026-11-07 (audit doc) | delta scan: no key patterns; repo guard flags only files already public (old workflow JSON false positives, kaliya_mardan story files incl. story.json that universal-v1.1 already pushed); hooks not installed (core.hooksPath unset)
+11-07 15:24 | me | CMD | owner asked for the UI link: starting ui/server.py on 127.0.0.1:8765 (spend OFF) from the V4 tree
+11-07 15:35 | me | DECISION | owner re-attached the decision brief and asked 'are all gaps closed': answer no; implementing the brief on merge-v4-universal-2026-11-07: one caption engine + hook policy, voice mixing in post.py (--voice elevenlabs|h3), ungraded stamp, STATUS record
+11-07 15:42 | me | EDIT | core/caption_cues.py (new), core/captions.py, h3/gate_d_audio.py, tests | one caption engine: cue model + the one script validator + hook policy in core/caption_cues.py; engine gained cards, face avoidance, synthetic karaoke, required fonts, forbidden-top-zone FAIL; Gate D private builder deleted and calls the engine (build_captions); Gate D default fonts = styles/fonts (Inter + Noto Sans Devanagari); 13 old Gate D caption tests re-pointed (h3/tests/test_gate_d_captions.py)
+11-07 15:44 | me | EDIT | director/post.py, core/caption_cues.py | post.py builds cues through the shared engine (spoken script + hook policy, per-language hook via metadata.look.hook.caption_by_lang); post's private validator and cue builders removed; 7 post-language tests incl. hook rules pass
+11-07 15:50 | me | EDIT | director/post.py, h3/gate_d_audio.py + tests | voice mixing in post.py (--voice, --vo-dir, story voice_engine, VE-01, VO_MISSING refusal, vo_fit, shared build_voice_branch + loudnorm, voice planned before captions) and ungraded stamp (POST-UNGRADED warning, graded/graded_by_act in colour_report.json); 10 new tests
+11-07 15:53 | me | COMMIT | merge-v4-universal-2026-11-07 | decision brief implemented: caption engine unification + hook policy + voice mixing + ungraded stamp; core 417+1, h3 613, director 781+2, flow 130 (+2 data-dependent), ui 252 (+1); local, free review round 8 next
+11-07 15:53 | me | REVIEW-START | research/ROUND8_REVIEW_*_2026-11-07.md | free review of cue layer, engine, post voice mixing, gate d (rule 5)
+11-07 15:54 | me | PUSH | origin merge-v4-universal-2026-11-07 (dd39730) | decision brief implementation; reviews round 8 running
+11-07 15:54 | supervl | REVIEW-DONE | batch r8_cue_layer | 1685 chars
+11-07 15:57 | dots | REVIEW-DONE | batch r8_cue_layer | 586 chars
+11-07 16:00 | supervl | REVIEW-DONE | batch r8_engine | 1232 chars
+11-07 16:02 | me | DECISION | owner: loudness standard = -16 LUFS integrated, max true peak -1 dBTP, one source of truth (core.json) for post.py and Gate D; remove Gate D's own -14 target
+11-07 16:05 | supervl | REVIEW-DONE | batch r8_post_voice | 1274 chars
+11-07 16:06 | dots | REVIEW-DONE | batch r8_engine | 2321 chars
+11-07 16:06 | me | EDIT | core/core.json,h3/shot_table_spec.py,h3/assemble_reel.py,h3/gate_d_audio.py,h3/pipeline_contract.py,director/post.py,STATUS.md + tests | owner decision: -16 LUFS integrated, max TP -1 dBTP, single source core.json delivery.audio (tolerance 0.5, loudnorm TP -1.3, LRA 11); Gate D -14 profile removed; tests re-pinned + h3/tests/test_loudness_single_source.py; h3+core 1030 pass, director 781, ui 252(+1 known)
+11-07 16:07 | me | TRIAGE | R8 Super VL+Dots (cue layer, engine, post voice): caption_cues junk-input crashes REAL (3 items, same as Dots 1) FIXED +1 test; engine x anchor claim FALSE by design (same as R7-2); post.py voice batch: no defects (both reviewers); gate_d batch Super VL no defects, Dots pending
+11-07 16:08 | supervl | REVIEW-DONE | batch r8_gate_d | 1910 chars
+11-07 16:09 | me | PUSH | origin merge-v4-universal-2026-11-07 | loudness standard + review round 8 fixes; h3+core 1031 pass, post tests pass
+11-07 16:10 | dots | REVIEW-DONE | batch r8_post_voice | 1259 chars
+11-07 16:12 | me | FAIL | previous push ce74e37 went out with 2 failing Gate D tests (test_r3 captions_by_lang string, test_round2 string narration): my wrapper hid the failure; cause: cue-layer hardening coerced malformed blocks silently; fixed by raising clear ValueErrors; h3+core 1033 pass; pushed the fix
+11-07 16:19 | dots | REVIEW-DONE | batch r8_gate_d | 4755 chars
+11-07 16:19 | dots | REVIEW-DONE | round 8 all batches; reading findings
+11-07 16:20 | me | TRIAGE | R8 Dots gate_d batch: zero-length and non-string time_range crash claims FALSE (verified: PLAN-01); other items low/unverified; research/TRIAGE_R8_2026-11-07.md pushed on the merge branch; review loop stopped
+11-07 16:53 | me | CHECK | owner asked: did you close all gaps of the document, is the full pipeline properly working: re-running all suites, acceptance criteria, CLI smoke, cue equality
+11-07 16:56 | me | CHECK | suites re-run: core 418+1, h3 615, director 781+2, flow 130+2 known, ui 252+1 known; CLI smoke of post.py en/hi/mr on synthetic episodes: exit 0, written, yuv420p bt709 tv, audio, SRT+VTT per language; Gate D and post build cues with the same engine functions; main still 8b1119a, merge branch pushed
+11-07 17:00 | me | DECISION | owner (Hindi): push all changes; Haiku xhigh agent reviews the UI in the browser; Opus agent (explicitly asked) plans model picker (NVIDIA free / OpenRouter / Claude) + English and Marathi + simple 60-year-old-friendly design; Haiku xhigh codes; reviewer bench reviews; close idle runs

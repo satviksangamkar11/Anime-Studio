@@ -1,0 +1,18 @@
+{
+ "r8_cue_layer": [
+  "D:/aai work/anime_studio_merge/core/caption_cues.py",
+  "D:/aai work/anime_studio_merge/core/tests/test_caption_cues.py"
+ ],
+ "r8_engine": [
+  "D:/aai work/anime_studio_merge/core/captions.py",
+  "D:/aai work/anime_studio_merge/core/tests/test_captions_engine.py"
+ ],
+ "r8_post_voice": [
+  "D:/aai work/anime_studio_merge/director/post.py",
+  "D:/aai work/anime_studio_merge/director/test_post_voice.py"
+ ],
+ "r8_gate_d": [
+  "D:/aai work/anime_studio_merge/h3/gate_d_audio.py",
+  "D:/aai work/anime_studio_merge/h3/tests/test_gate_d_captions.py"
+ ]
+}
