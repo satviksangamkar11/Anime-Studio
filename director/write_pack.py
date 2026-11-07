@@ -291,6 +291,8 @@ weapons, mount, clothing, ornaments). The story source in this brief stays the a
 meaning; use the web only to correct a clear factual or look mistake or to fill a missing detail, and never add new episodes or
 scenes. Looks follow the traditional scripture description first, then the style rules of this brief. Your final answer is
 still only what this brief asks for, with no links, citations or notes about the search.
+ORDER: do ALL your searching first. Then write the complete answer in ONE final message, from its first line to its last, and
+never call a tool once you have started writing the answer.
 
 """
 
@@ -327,12 +329,39 @@ def call_claude(prompt, model, effort, web=None, rule=True):
         mcp.write_text('{"mcpServers": {}}', encoding="utf-8")
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY" and not k.startswith("OPENROUTER")}
         env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = "64000"
-        r = subprocess.run([shutil.which("claude") or "claude", "-p", "--model", model, "--effort", effort, "--output-format", "json",
+        fmt = ["--output-format", "stream-json", "--verbose"] if web else ["--output-format", "json"]
+        r = subprocess.run([shutil.which("claude") or "claude", "-p", "--model", model, "--effort", effort, *fmt,
                             *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
                            input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=empty, env=env, timeout=TIMEOUT_S)
     if r.returncode != 0:
         raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-800:]}")
-    return r.stdout
+    return join_stream(r.stdout) if web else r.stdout
+
+
+def join_stream(stdout):
+    """stream-json -> the same JSON envelope as --output-format json, but with the WHOLE answer (2026-11-08: with web tools the
+    CLI's `result` holds only the text after the last tool call, so a bible written around a search lost its start). The answer
+    = every assistant text block from the first one that opens a ``` fence, joined in order; without a fence, the CLI result."""
+    final, texts = None, []
+    for line in stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(ev, dict):
+            continue
+        if ev.get("type") == "result":
+            final = ev
+        elif ev.get("type") == "assistant":
+            for block in (ev.get("message") or {}).get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "text" and block.get("text"):
+                    texts.append(block["text"])
+    if final is None:
+        raise RuntimeError("claude stream had no result event")
+    start = next((i for i, t in enumerate(texts) if "```" in t), None)
+    if start is not None:
+        final = dict(final, result="".join(texts[start:]))
+    return json.dumps(final, ensure_ascii=False)
 
 
 def stream_chat(url, key, body, extra_headers=None):

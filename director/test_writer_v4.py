@@ -459,7 +459,7 @@ def test_web_flag_turns_on_search_tools_only_when_asked(monkeypatch):
     seen = {}
 
     class R:
-        returncode, stdout, stderr = 0, "{}", ""
+        returncode, stdout, stderr = 0, '{"type": "result", "result": ""}', ""
 
     def fake_run(cmd, input=None, **kw):
         seen["cmd"], seen["prompt"] = cmd, input
@@ -527,3 +527,30 @@ def test_style_pack_errors_catch_an_off_style_bible_and_pass_a_good_one():
                            "CHAR-SATI": {"sheet_prompt": "swatches #C9925E"}}}
     assert w.style_pack_errors(good, pack) == []
     assert w.style_pack_errors(bad, {"palettes": {}}) == []
+
+
+def test_join_stream_keeps_an_answer_split_by_a_search():
+    import json as _j
+    import write_pack as w
+    ev = lambda t, **k: _j.dumps(dict(type=t, **k))   # noqa: E731
+    say = lambda s: ev("assistant", message={"content": [{"type": "text", "text": s}]})   # noqa: E731
+    lines = [ev("system"), say("Let me check a name."), ev("assistant", message={"content": [{"type": "tool_use", "name": "WebSearch"}]}),
+             say("Here is the bible.\n```json\n{\"a\": "), ev("user"), say("1}\n```\n"),
+             ev("result", result="1}\n```\n", total_cost_usd=2.0)]
+    out = _j.loads(w.join_stream("\n".join(lines)))
+    assert out["result"] == "Here is the bible.\n```json\n{\"a\": 1}\n```\n" and out["total_cost_usd"] == 2.0
+    assert _j.loads(w.join_stream("\n".join([say("no fence"), ev("result", result="plain")])))["result"] == "plain"
+
+
+def test_web_call_reads_the_stream(monkeypatch):
+    import json as _j
+    import write_pack as w
+    seen = {}
+
+    class R:
+        returncode, stderr = 0, ""
+        stdout = _j.dumps({"type": "result", "result": "x"})
+
+    monkeypatch.setattr(w.subprocess, "run", lambda cmd, **kw: seen.setdefault("cmd", cmd) and R())
+    w.call_claude("brief", "opus", "high", web=True)
+    assert "stream-json" in seen["cmd"] and "--verbose" in seen["cmd"]
