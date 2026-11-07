@@ -22,7 +22,7 @@ PLAN_FILE = HERE.parent / "docs" / "UI_REDESIGN_PLAN_2026-11-07.md"
 EN_JSON = STATIC / "i18n" / "en.json"
 
 # Tasks whose work is in the tree. A NEW row, command or route is checked only once its task is in this set.
-BUILT = {"T0", "T1", "T2"} | {x.strip() for x in os.environ.get("PARITY_BUILT", "").split(",") if x.strip()}  # lead/coder runs: PARITY_BUILT=T2,T3
+BUILT = {"T0", "T1", "T2", "T3", "T4"} | {x.strip() for x in os.environ.get("PARITY_BUILT", "").split(",") if x.strip()}  # lead/coder runs: PARITY_BUILT=T2,T3
 
 # ---------------------------------------------------------------- section 9.1: (row id, anchor) for every row that exists today
 INVENTORY = [

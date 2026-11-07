@@ -5,7 +5,7 @@ Offline: reads static files and calls server.dispatch for the two data routes. N
   2 every literal t('key') and every data-i18n key used in the page exists in en.json;
   3 no orphan keys (every key is used by the page or by i18n.js);
   4 every Marathi value has Devanagari, except MR_LATIN_OK (names that stay in Latin letters);
-  5 app.js and pipeline.js have no hard-coded English (xfail until T3/T4 convert them);
+  5 app.js and pipeline.js have no hard-coded English;
   6 index.html: every visible text sits under a data-i18n key; a data-i18n element has no child elements;
   7 the font and the string routes are served (the font check is skipped when the file is missing).
 """
@@ -177,7 +177,6 @@ def _english_literals(text):
     return [f for f in found if not any(ex in f for ex in EXEMPT)]
 
 
-@pytest.mark.xfail(strict=False, reason="converted in T3/T4")
 def test_5_no_hard_coded_english_in_app_or_pipeline():
     for name, text in [("app.js", APP), ("pipeline.js", PIPE)]:
         found = _english_literals(text)

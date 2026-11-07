@@ -118,7 +118,7 @@ def test_app_api_has_timeout_and_h3run_guard():
     assert "AbortController" in js and "120000" in js
     start = js.index("function h3Run()")
     body = js[start:start + 400]
-    assert "Pick a shot file." in body
+    assert "'adv.video.err_pick_shot_file'" in body[:400]
 
 
 def test_pipeline_js_keeps_busy_while_confirm_open():

@@ -183,6 +183,7 @@ Shared rules: every POST needs header `X-UI: 1` and a JSON body. `Host` must be 
 | GET | `/api/registry` | none | `{stories: [run-log summary per story: slug, title, source, latest_pack, packs, pack_models, run_count, status, last_run_at, last_run_id, next_pack]}`; read only; 503 if the registry module is missing |
 | GET | `/api/registry/{slug}` | none | `{slug, story, summary, runs, steps, report}`; `report` is the RUN_REPORT text; 400 for a bad slug, 404 for no such story; read only |
 | GET | `/api/pack?pack=stories/<slug>/<name>` | none | `{stages: {"1": bool, "2": bool, "3e1": bool, ..., "5": bool}, gate1, episodes: [{n, shots, seconds}], characters, places, shots, check}` |
+| POST | `/api/pipeline/project` | `{story_slug, pack}` | `{ok, project}`; sets the story and pack both pickers follow (UI redesign B3) |
 | POST | `/api/preview` | `{command, args}` | `{argv, risk, estimate, token, expires_s: 60, needs_confirm}` |
 | POST | `/api/run` | `{token, confirm}` (`confirm` for `$` commands, e.g. "EXECUTE 7.5", and for `write_pack_claude` the typed word "CLAUDE") | `{job_id}`; 403 if spend is off or claude is off; 409 if a job runs |
 | GET | `/api/jobs` | none | `[{id, command, state, rc, started, ended}]` |

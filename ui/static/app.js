@@ -1,5 +1,5 @@
 /*
- * Anime Studio control UI (frontend). Plain JS, ES2018, no framework, no network except same-origin /api/*.
+ * Anime Studio control UI (frontend). Plain JS, ES2018, no framework, no network except same-origin /api*.
  * Server text only goes in through textContent and createElement; no HTML string is ever parsed.
  *
  * Backend contract: the shapes this page reads, as served by ui/server.py. A missing key shows as "-"; it never throws.
@@ -9,14 +9,15 @@
  *   GET  /api/jobs/{id}/log?tail=N           text, redacted
  *   GET  /api/jobs/{id}/result bridge_*: {records, counts}; queue_collect: {lines}; review_shot: {verdict, exit}; other: {lines}
  *   POST /api/jobs/{id}/stop   {} -> {state, warning}
- *   GET  /api/story            {slugs: [{slug, packs: [name], has_source}]}
+ *   GET  /api/story            {slugs: [{slug, packs: [name], has_source, output_languages}]}
  *   GET  /api/story/{slug}     {text, bytes}; 404 = no SOURCE.md yet
  *   POST /api/story/{slug}     {text, overwrite} -> {saved, bytes}; 409 = SOURCE.md exists
+ *   GET  /api/writers          {default, options: [{id, command, args, available, reason, ...}]}
  *   GET  /api/pack?pack=stories/<slug>/<name>[&check=1]
  *                              {stages: {"1": bool, ...}, gate1, episodes: [{n, shots, seconds, check}],
  *                               characters: [{id, name}], places: [{id, name}],
  *                               shots: [{id, episode, mode, seconds, cut_in, cut_out, issues: count}], check}
- *   GET  /api/images?adhyay=N  {series: {characters, places, props: [{id, name, chip, sheet, accepted}]},
+ *   GET  /api/images?adhyay=N[&story=slug]  {series: {characters, places, props: [{id, name, chip, sheet, accepted}]},
  *                               sheets: [{id, sheet, accepted}], jobs: [{file, shot_id, scene, chips, attempts, attempt_cap, status}],
  *                               shots: [{id, candidates: [{name, path}], reviews}], progress: {lines: [...], total, legacy},
  *                               queue: {pending: [...], counts: {pending, filed, accepted}}, filed: [...], accepted: [...],
@@ -35,7 +36,7 @@
  *                               confirm_text, spend_allowed}
  *   POST /api/run              {token, confirm?} -> {job_id}
  * Command ids and args (server COMMANDS table; unknown args are refused):
- *   write_pack {slug, pack, writer}          bridge_dry / bridge_write {size, adhyay}
+ *   write_pack {slug, pack, out_lang, writer | model}      bridge_dry / bridge_write {size, adhyay}
  *   neighbour_sheet / review_shot {jobs, shot, candidates: [paths], adhyay}
  *   queue_add {shot, version, edit, jobs, note, adhyay}     queue_accept {shot, version, note, adhyay}
  *   queue_collect {adhyay}                   tidy_plan {adhyay}
@@ -48,9 +49,13 @@
 (function () {
   'use strict';
 
+  // The string lookup (ui/static/i18n.js). Every visible text goes through the translation helper with a literal key (test_i18n 2b).
+  var t = function (k, v) { return window.I18N.t(k, v); };
+
   var POLL_MS = 2500;
   var PACK_STAGES = ['1', '2', '3e1', '3e2', '3e3', '3e4', '3e5', '5'];
   var WRITER_NAMES = ['super-vl', 'ultra'];   // write_pack --writer shortcuts: both are free OpenRouter models; super-vl is the default
+  var DEFAULT_WRITER = 'or-super-vl';         // the chooser default (GET /api/writers says the same)
   var VISION_MODELS = ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', 'nvidia/nemotron-3.5-super-vl-120b-a12b'];
   var GPUS = ['G4', 'A100'];
   var SECTIONS = ['story', 'images', 'bridge', 'video', 'export'];
@@ -58,8 +63,6 @@
   var MAX_STORY_BYTES = 200 * 1024;
   var JOBS_DIR = 'flow/';
   var FINISHED_TEXT = 'the job had already finished';
-  var GUARD_403 = 'Refused by a server guard (403). Spend commands need the server started with --allow-spend. ' +
-    'Every request needs header X-UI and Host ' + location.host + '.';
   var PAT = {
     slug: /^[a-z0-9_]{1,40}$/,
     name: /^[a-z0-9_-]{1,40}$/,
@@ -71,15 +74,6 @@
     count: /^\d{1,3}$/,
     json: /^[^\r\n\u0000-\u001f"]{1,260}\.json$/i
   };
-  var RISK_TEXT = {
-    R: 'R = read-only',
-    W: 'W = writes local files (never deletes)',
-    N: 'N = free model call (network, rate-limited)',
-    '$': '$ = spends Colab units or GPU time (spend gate)',
-    OPS: 'OPS = stops a local process (cuts spend, no confirm)',
-    X: 'X = not available yet'
-  };
-  var KIND_TEXT = { ok: 'OK', notrun: 'NOT RUN', review: 'NEEDS REVIEW', failed: 'FAILED', running: 'RUNNING' };
 
   var S = {
     status: null,
@@ -97,8 +91,10 @@
     reviewGen: 0,
     colabOk: false,
     colabBalance: null,
+    colabData: null,
     h3Ok: false,
-    h3Msg: ''
+    h3Msg: '',
+    writerOpts: []
   };
   var modalTimer = null;
   var msgTimer = null;
@@ -156,11 +152,11 @@
   }
 
   function fillTable(id, headers, rows) {
-    var t = clear($(id));
-    t.appendChild(el('thead', null, el('tr', null, headers.map(function (h) { return el('th', { text: h }); }))));
+    var tbl = clear($(id));
+    tbl.appendChild(el('thead', null, el('tr', null, headers.map(function (h) { return el('th', { text: h }); }))));
     var tb = el('tbody');
     if (!rows.length) {
-      tb.appendChild(el('tr', null, el('td', { colspan: headers.length, className: 'muted', text: '(none)' })));
+      tb.appendChild(el('tr', null, el('td', { colspan: headers.length, className: 'muted', text: t('adv.table.none') })));
     }
     rows.forEach(function (r) {
       var cells = Array.isArray(r) ? r : r.cells;
@@ -168,19 +164,29 @@
       cells.forEach(function (c) { tr.appendChild(el('td', null, c)); });
       tb.appendChild(tr);
     });
-    t.appendChild(tb);
-    return t;
+    tbl.appendChild(tb);
+    return tbl;
   }
 
   function or(v, d) { return (v === undefined || v === null || v === '') ? d : v; }
   function enc(s) { return encodeURIComponent(String(s)); }
   function errText(e) { return (e && e.message) ? e.message : String(e); }
-  function yn(v) { return v ? 'OK' : 'missing'; }
+  function yn(v) { return v ? t('adv.head.ok') : t('adv.head.missing'); }
   function baseName(p) { return String(or(p, '-')).split(/[\\/]/).pop() || '-'; }
+
+  function riskText(c) {
+    if (c === 'R') return t('risk.r');
+    if (c === 'W') return t('risk.w');
+    if (c === 'N') return t('risk.n');
+    if (c === '$') return t('risk.usd');
+    if (c === 'OPS') return t('risk.ops');
+    if (c === 'X') return t('risk.x');
+    return c;
+  }
 
   function risk(codes) {
     return String(codes).split(' ').filter(Boolean).map(function (c) {
-      return el('span', { className: 'risk risk-' + (c === '$' ? 'usd' : c), text: c, title: RISK_TEXT[c] || c });
+      return el('span', { className: 'risk risk-' + (c === '$' ? 'usd' : c), text: c, title: riskText(c) });
     });
   }
 
@@ -195,18 +201,34 @@
     return 'notrun';
   }
 
-  function badge(kind, text) {
-    return el('span', { className: 'badge b-' + kind, text: text || KIND_TEXT[kind] });
+  // Badge words for the five kinds (a literal switch, so every key stays visible to the tests).
+  function kindText(kind) {
+    if (kind === 'ok') return t('adv.kind.ok');
+    if (kind === 'review') return t('adv.kind.review');
+    if (kind === 'failed') return t('adv.kind.failed');
+    if (kind === 'running') return t('adv.kind.running');
+    return t('adv.kind.notrun');
   }
 
+  function badge(kind, text) {
+    return el('span', { className: 'badge b-' + kind, text: text || kindText(kind) });
+  }
+
+  // A value from the server shown as its upper-case word; an empty value shows the NOT RUN badge.
   function badgeFor(v) {
+    if (v === undefined || v === null || v === '') return badge('notrun');
     return badge(kindOf(v), String(v).toUpperCase());
   }
 
-  function yesNo(v) { return v ? badge('ok', 'yes') : badge('notrun', 'no'); }
+  function yesNo(v) { return v ? badge('ok', t('adv.kind.yes')) : badge('notrun', t('adv.kind.no')); }
 
+  // Errors stay until closed. msg: a plain string, or {text, raw} (raw = the server's English words, for the helper).
   function showError(msg) {
-    $('error-text').textContent = String(msg);
+    var m = (msg !== null && typeof msg === 'object') ? msg : { text: String(msg), raw: '' };
+    $('error-text').textContent = String(m.text);
+    var raw = $('error-raw');
+    raw.textContent = String(m.raw || '');
+    raw.hidden = !m.raw;
     $('error-bar').hidden = false;
   }
 
@@ -223,6 +245,17 @@
     node.hidden = false;
   }
 
+  // The plain sentence for an error. The server's English words are matched by I18N.serverError (the raw part stays English).
+  function apiText(e) {
+    if (e && e.status === 0) return e.timeout ? t('err.net.timeout') : t('err.net.down');
+    return window.I18N.serverError(errText(e)).text;
+  }
+
+  function showApiError(e) {
+    if (e && e.status === 0) return showError({ text: apiText(e), raw: errText(e) });
+    return showError(window.I18N.serverError(errText(e)));
+  }
+
   function fmtBytes(n) {
     if (typeof n !== 'number') return '-';
     if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
@@ -232,14 +265,20 @@
 
   function names(list) {
     return (list || []).map(function (x) {
-      var t = typeof x === 'string' ? x : ((x && (x.name || x.id)) || '?');
-      return el('li', { text: t });
+      var s = typeof x === 'string' ? x : ((x && (x.name || x.id)) || '?');
+      return el('li', { text: s });
     });
   }
 
   function adhyayNow() {
     var n = Number($('img-adhyay').value);
     return (n >= 1 && n <= 12) ? n : 1;
+  }
+
+  // The story the wizard (step 1 to 6, top of the page) works on. '' when none is chosen yet.
+  function projectStory() {
+    var pj = (window.StudioWizard && window.StudioWizard.project && window.StudioWizard.project()) || {};
+    return pj.story_slug || '';
   }
 
   // ---------- API (the only fetch) ----------
@@ -251,24 +290,28 @@
 
   async function api(method, path, body) {
     var opts = { method: method, headers: {}, cache: 'no-store' };
-    opts.headers['X-UI'] = '1';   // every request, as the GUARD_403 text promises (server checks POST only today)
+    opts.headers['X-UI'] = '1';   // every request, as the guard hint promises (server checks POST only today)
     if (method !== 'GET') {
       opts.headers['Content-Type'] = 'application/json';
       opts.body = JSON.stringify(body || {});
     }
     var res;
-    // a hung server must not hang the modals and the poller forever: give up after 2 minutes (same as pipeline.js)
+    var text;
+    // a hung server must not hang the modals and the poller forever: give up after 2 minutes (same as pipeline.js).
+    // The timer covers the body read too, so a stalled body cannot leave tick() waiting forever.
     var ctl = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, 120000) : null;
     if (ctl) opts.signal = ctl.signal;
     try {
       res = await fetch(path, opts);
+      text = await res.text();
     } catch (e) {
-      throw fail(0, 'Cannot reach the studio server at ' + location.host + '. Is server.py running?');
+      var nf = fail(0, method + ' ' + path + ' (no answer from the server)');
+      nf.timeout = !!(e && e.name === 'AbortError');
+      throw nf;
     } finally {
       if (timer) clearTimeout(timer);
     }
-    var text = await res.text();
     var isJson = /json/.test(res.headers.get('Content-Type') || '');
     var data = text;
     if (isJson) {
@@ -276,8 +319,8 @@
     }
     if (!res.ok) {
       var msg = (isJson && data && data.error) ? String(data.error) : (text.slice(0, 300) || res.statusText);
-      // only host, origin and X-UI refusals get the guard text; other 403s (expired preview, etc.) show the server's words
-      if (res.status === 403 && /Host|Origin|X-UI/.test(msg)) msg = GUARD_403 + ' Server said: ' + msg;
+      // only host, origin and X-UI refusals get the hint; other 403s (expired preview, etc.) show the server's words
+      if (res.status === 403 && /Host|Origin|X-UI/.test(msg)) msg = msg + ' ' + t('adv.guard.hint', { host: location.host });
       throw fail(res.status, msg);
     }
     return data;
@@ -297,16 +340,17 @@
   function renderHeader() {
     var st = S.status || {};
     var sb = $('spend-badge');
-    sb.textContent = st.spend_allowed ? 'SPEND ON' : 'SPEND OFF';
+    sb.textContent = st.spend_allowed ? t('adv.head.spend_on') : t('app.spend_off');
     sb.className = 'badge ' + (st.spend_allowed ? 'b-review' : 'b-grey');
     var job = st.job || null;
     S.jobBusy = isRunning(job);
     if (job && job.id) S.lastJobId = job.id;
-    var text = (job && job.id) ? 'job: ' + (job.command || 'job') + ' ' + job.id : 'job: none';
+    var text = (job && job.id) ? t('adv.head.job_running', { command: job.command || 'job', id: job.id }) : t('app.job_none');
     fill($('job-badge'), [text, ' ', S.jobBusy ? badge('running') : null]);
     if (S.status) {
-      $('story-status').textContent = 'Studio ' + yn(st.studio_ok) + ', flow ' + yn(st.flow_ok) +
-        ', Colab CLI ' + yn(st.colab_cli) + ', NVIDIA key files: ' + or(st.nvidia_key_files, '?') + ' (count only).';
+      $('story-status').textContent = t('adv.head.conn', {
+        studio: yn(st.studio_ok), flow: yn(st.flow_ok), colab: yn(st.colab_cli), keys: or(st.nvidia_key_files, '?')
+      });
     }
   }
 
@@ -315,13 +359,13 @@
     var st = S.status || {};
     Array.prototype.forEach.call(document.querySelectorAll('[data-gate],[data-off]'), function (n) {
       var g = (n.getAttribute('data-gate') || '').split(' ');
-      var why = n.hasAttribute('data-off') ? (n.getAttribute('data-off-why') || 'Not available here') : '';
-      if (!why && g.indexOf('never') >= 0) why = n.getAttribute('data-why') || 'Not available yet';
-      if (!why && g.indexOf('spend') >= 0 && !st.spend_allowed) why = 'Spend is OFF. The server was not started with --allow-spend.';
-      if (!why && g.indexOf('colab') >= 0 && !S.colabOk) why = 'Check Colab first. The balance is unknown.';
-      if (!why && g.indexOf('h3') >= 0 && !S.h3Ok) why = S.h3Msg || 'h3 engine not built yet';
-      if (!why && g.indexOf('job') >= 0 && S.jobBusy) why = 'A job is already running. One at a time.';
-      if (!why && g.indexOf('busy') >= 0 && !S.jobBusy) why = 'No job is running.';
+      var why = n.hasAttribute('data-off') ? (n.getAttribute('data-off-why') || t('adv.gate.not_here')) : '';
+      if (!why && g.indexOf('never') >= 0) why = n.getAttribute('data-why') || t('adv.gate.not_yet');
+      if (!why && g.indexOf('spend') >= 0 && !st.spend_allowed) why = t('adv.gate.spend_off');
+      if (!why && g.indexOf('colab') >= 0 && !S.colabOk) why = t('adv.gate.colab_first');
+      if (!why && g.indexOf('h3') >= 0 && !S.h3Ok) why = S.h3Msg || t('err.srv.h3_missing');
+      if (!why && g.indexOf('job') >= 0 && S.jobBusy) why = t('adv.gate.job_running');
+      if (!why && g.indexOf('busy') >= 0 && !S.jobBusy) why = t('adv.gate.no_job');
       n.disabled = !!why;
       n.title = why || n.getAttribute('data-title') || '';
     });
@@ -336,7 +380,7 @@
         setServerState('');
       } catch (e) {
         S.status = null;
-        setServerState('server not reachable');
+        setServerState(t('adv.head.server_down'));
       }
       renderHeader();
       try { await pollJobs(); } catch (e) { /* retried on the next tick */ }
@@ -355,15 +399,17 @@
     var jobs = await api('GET', '/api/jobs');
     if (!Array.isArray(jobs)) jobs = [];
     var still = [];
-    S.trackers.forEach(function (t) {
-      var j = jobs.filter(function (x) { return x.id === t.id; })[0];
-      if (!j || isRunning(j)) { still.push(t); return; }
+    S.trackers.forEach(function (tr) {
+      var j = jobs.filter(function (x) { return x.id === tr.id; })[0];
+      if (!j || isRunning(j)) { still.push(tr); return; }
       if (!jobOk(j)) {
-        showError(t.command + ' ended with rc ' + ((j.rc === null || j.rc === undefined) ? '?' : j.rc) +
-          '. Read the log tail at the bottom.');
+        showError(t('adv.job.ended_rc', {
+          command: tr.command,
+          rc: (j.rc === null || j.rc === undefined) ? '?' : j.rc
+        }));
       }
-      Promise.resolve().then(function () { return t.onEnd ? t.onEnd(j) : null; })
-        .catch(function (e) { showError(errText(e)); });
+      Promise.resolve().then(function () { return tr.onEnd ? tr.onEnd(j) : null; })
+        .catch(function (e) { showApiError(e); });
     });
     S.trackers = still;
   }
@@ -374,21 +420,21 @@
     if (!S.jobBusy && S.logDone === id) return;
     var txt = await api('GET', '/api/jobs/' + enc(id) + '/log?tail=12');
     var lines = String(txt || '').split('\n');
-    $('log-tail').textContent = lines.slice(-12).join('\n') || '(no output yet)';
-    $('log-job').textContent = '(job ' + id + (S.jobBusy ? ', running' : ', finished') + '; last 12 lines, redacted)';
+    $('log-tail').textContent = lines.slice(-12).join('\n') || t('adv.log.no_output');
+    $('log-job').textContent = t('adv.log.job_line', { id: id, state: S.jobBusy ? t('adv.log.running') : t('adv.log.finished') });
     if (!S.jobBusy) S.logDone = id;
     if (S.section === 'video') {
       var live = await api('GET', '/api/jobs/' + enc(id) + '/log?tail=200');
-      $('video-live').textContent = String(live || '') || '(no output yet)';
+      $('video-live').textContent = String(live || '') || t('adv.log.no_output');
     }
   }
 
   function onStarted(cfg, id) {
-    if (!id) return showMsg('Started: ' + cfg.command + '.');
+    if (!id) return showMsg(t('adv.msg.started', { command: cfg.command }));
     S.lastJobId = id;
     S.logDone = null;
     S.jobBusy = true;
-    showMsg('Job ' + id + ' started (' + cfg.command + ').');
+    showMsg(t('adv.msg.job_started', { id: id, command: cfg.command }));
     S.trackers.push({ id: id, command: cfg.command, onEnd: cfg.onEnd });
     applyGates();
     tick();
@@ -396,19 +442,19 @@
 
   async function stopJob() {
     var id = (S.status && S.status.job && S.status.job.id) || S.lastJobId;
-    if (!id) return showMsg('No job to stop.');
+    if (!id) return showMsg(t('adv.msg.no_job'));
     try {
       var r = await api('POST', '/api/jobs/' + enc(id) + '/stop', {});
       var warn = r && r.warning ? String(r.warning) : '';
       if (warn === FINISHED_TEXT) {
-        showMsg('Job ' + id + ' had already finished. Nothing was stopped.');
+        showMsg(t('adv.msg.already_done', { id: id }));
       } else if (warn) {
-        showError('The session may still run. ' + warn);
+        showError(t('adv.msg.may_run', { warn: warn }));
         loadColab(true);
       } else {
-        showMsg('Stop sent to job ' + id + ' (local process only).');
+        showMsg(t('adv.msg.stop_sent', { id: id }));
       }
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
   }
 
   // ---------- Modal: command preview, spend gate, packet text ----------
@@ -458,8 +504,8 @@
     body.appendChild(errBox);
     var stage = el('div', { id: 'modal-stage' });
     body.appendChild(stage);
-    var previewBtn = btn('Preview (nothing runs yet)', { id: 'modal-preview', className: 'primary' });
-    body.appendChild(el('div', { className: 'btnrow' }, previewBtn, btn('Cancel', { id: 'modal-cancel', onclick: closeModal })));
+    var previewBtn = btn(t('adv.modal.preview_btn'), { id: 'modal-preview', className: 'primary' });
+    body.appendChild(el('div', { className: 'btnrow' }, previewBtn, btn(t('adv.modal.cancel_btn'), { id: 'modal-cancel', onclick: closeModal })));
 
     function doPreview() {
       errBox.hidden = true;
@@ -469,10 +515,12 @@
         var f = fieldNodes[k].spec;
         var v = String(fieldNodes[k].input.value || '').trim();
         values[k] = v;
-        if (f.required && !v) problem = problem || (f.label + ' is required.');
-        else if (v && f.pattern && !f.pattern.test(v)) problem = problem || (f.label + ': ' + (f.hint || 'wrong format') + '.');
+        if (f.required && !v) problem = problem || t('adv.form.required', { label: f.label });
+        else if (v && f.pattern && !f.pattern.test(v)) {
+          problem = problem || t('adv.form.wrong_format', { label: f.label, hint: f.hint || t('adv.form.wrong') });
+        }
       });
-      if (!problem && check && !check.checked) problem = 'Tick "' + cfg.check + '" first.';
+      if (!problem && check && !check.checked) problem = t('adv.form.tick_first', { check: cfg.check });
       if (problem) return showInline(errBox, problem);
       var args = typeof cfg.args === 'function' ? cfg.args(values) : (cfg.args || {});
       previewBtn.disabled = true;
@@ -480,7 +528,7 @@
         previewBtn.hidden = true;
         showStage(pv, values);
       }).catch(function (e) {
-        showInline(errBox, errText(e));
+        showInline(errBox, apiText(e));
         previewBtn.disabled = false;
       });
     }
@@ -488,7 +536,7 @@
     function showStage(pv, values) {
       clear(stage);
       var argv = Array.isArray(pv.argv) ? pv.argv : [String(or(pv.argv, ''))];
-      stage.appendChild(el('h3', { text: 'Exact command (argv, one item per line)' }));
+      stage.appendChild(el('h3', { text: t('adv.modal.argv_h') }));
       stage.appendChild(el('pre', { id: 'modal-argv', className: 'argv', text: argv.join('\n') }));
       if (cfg.summary) {
         cfg.summary(values, pv).forEach(function (line) {
@@ -496,10 +544,10 @@
         });
       }
       if (pv.estimate !== undefined && pv.estimate !== null) {
-        stage.appendChild(el('p', { text: 'Estimate: about ' + pv.estimate + ' units (from the server).' }));
+        stage.appendChild(el('p', { text: t('adv.modal.estimate', { n: pv.estimate }) }));
       }
       if (pv.balance !== undefined && pv.balance !== null) {
-        stage.appendChild(el('p', { text: 'Balance: ' + String(pv.balance) }));
+        stage.appendChild(el('p', { text: t('adv.modal.balance', { n: String(pv.balance) }) }));
       }
       var expiry = el('p', { id: 'modal-expiry', className: 'muted' });
       stage.appendChild(expiry);
@@ -508,17 +556,17 @@
       var typed = null;
       if (needsTyped) {
         typed = el('input', { id: 'modal-confirm-input', type: 'text', autocomplete: 'off', placeholder: want });
-        stage.appendChild(el('label', { className: 'field' }, el('span', { text: 'Type ' + want + ' to start:' }), typed));
+        stage.appendChild(el('label', { className: 'field' }, el('span', { text: t('adv.modal.type_to_start', { word: want }) }), typed));
       }
-      var startBtn = btn('Start', { id: 'modal-start', className: needsTyped ? 'danger' : 'primary' });
+      var startBtn = btn(t('adv.modal.start_btn'), { id: 'modal-start', className: needsTyped ? 'danger' : 'primary' });
       stage.appendChild(el('div', { className: 'btnrow' }, startBtn));
 
       var left = Number(pv.expires_s) || 60;
       function showLeft() {
         if (left > 0) {
-          expiry.textContent = 'Preview expires in ' + left + ' s.';
+          expiry.textContent = t('adv.modal.expires', { s: left });
         } else {
-          expiry.textContent = 'Preview expired. Close and preview again.';
+          expiry.textContent = t('adv.modal.expired');
           startBtn.disabled = true;
         }
       }
@@ -534,16 +582,16 @@
         errBox.hidden = true;
         var body2 = { token: pv.token };
         if (typed) {
-          var t = typed.value.trim();
-          if (t !== want) return showInline(errBox, 'Type exactly: ' + want);
-          body2.confirm = t;
+          var typedVal = typed.value.trim();
+          if (typedVal !== want) return showInline(errBox, t('err.srv.type_exactly', { word: want }));
+          body2.confirm = typedVal;
         }
         startBtn.disabled = true;
         api('POST', '/api/run', body2).then(function (r) {
           closeModal();
           onStarted(cfg, r && r.job_id);
         }).catch(function (e) {
-          showInline(errBox, errText(e));
+          showInline(errBox, apiText(e));
           startBtn.disabled = left <= 0;
         });
       });
@@ -554,7 +602,7 @@
   }
 
   function copyText(text, b) {
-    function done(ok) { b.textContent = ok ? 'Copied' : 'Copy failed: select the text and copy it'; }
+    function done(ok) { b.textContent = ok ? t('adv.copy.done') : t('adv.copy.failed'); }
     function fallback() {
       var ta = el('textarea', { text: text });
       document.body.appendChild(ta);
@@ -590,20 +638,31 @@
   }
 
   // ---------- Story ----------
+  // The story picker and the wizard show one story: the wizard's story wins when it is in the list.
   async function loadStory(pack) {
     try {
       var d = await api('GET', '/api/story');
       S.slugs = Array.isArray(d && d.slugs) ? d.slugs : [];
       if (!S.slugs.length) {
-        fill($('story-slug'), [el('option', { value: '', text: '(no stories)' })]);
+        fill($('story-slug'), [el('option', { value: '', text: t('adv.story.no_stories') })]);
         renderPack(null);
         return;
       }
-      var keep = S.slugs.some(function (s) { return s.slug === S.story.slug; }) ? S.story.slug : S.slugs[0].slug;
+      var proj = projectStory();
+      var keep = inSlugs(proj) ? proj : (inSlugs(S.story.slug) ? S.story.slug : S.slugs[0].slug);
       fill($('story-slug'), S.slugs.map(function (s) { return el('option', { value: s.slug, text: s.slug }); }));
       $('story-slug').value = keep;
       selectSlug(keep, pack);
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
+  }
+
+  function inSlugs(slug) {
+    return !!slug && S.slugs.some(function (s) { return s.slug === slug; });
+  }
+
+  function setStoryHeading(slug) {
+    var h = $('sec-story') ? $('sec-story').querySelector('h2') : null;
+    if (h) h.textContent = slug ? t('adv.story.following', { slug: slug }) : t('adv.story.title');
   }
 
   function selectSlug(slug, pack) {
@@ -613,8 +672,9 @@
     var packs = entry.packs || [];
     fill($('story-pack'), packs.length
       ? packs.map(function (p) { return el('option', { value: p, text: p }); })
-      : [el('option', { value: '', text: '(no packs yet)' })]);
+      : [el('option', { value: '', text: t('adv.story.no_packs') })]);
     if (pack && packs.indexOf(pack) >= 0) $('story-pack').value = pack;
+    setStoryHeading(slug);
     if (changed) loadStoryText();
     loadPack(false);
   }
@@ -624,30 +684,27 @@
     try {
       var d = await api('GET', '/api/story/' + enc(S.story.slug));
       $('story-text').value = d.text || '';
-      $('story-bytes').textContent = '(' + (d.bytes || 0) + ' bytes on disk)';
+      $('story-bytes').textContent = t('adv.story.bytes', { n: d.bytes || 0 });
     } catch (e) {
       if (e.status === 404) {
         $('story-text').value = '';
-        $('story-bytes').textContent = '(no SOURCE.md yet)';
+        $('story-bytes').textContent = t('adv.story.no_source');
       } else {
-        showError(errText(e));
+        showApiError(e);
       }
     }
   }
 
   async function saveStory() {
-    if (!S.story.slug) return showError('Pick a story slug first.');
+    if (!S.story.slug) return showError(t('adv.story.err_pick_slug'));
     var text = $('story-text').value;
     var bytes = new TextEncoder().encode(text).length;
-    if (bytes > MAX_STORY_BYTES) return showError('Story is ' + bytes + ' bytes. The limit is 200 KB.');
+    if (bytes > MAX_STORY_BYTES) return showError(t('adv.story.too_big', { n: bytes }));
     try {
       var d = await api('POST', '/api/story/' + enc(S.story.slug), { text: text, overwrite: $('story-overwrite').checked });
-      $('story-bytes').textContent = '(' + or(d.bytes, bytes) + ' bytes on disk)';
-      showMsg('Saved SOURCE.md (' + or(d.bytes, bytes) + ' bytes).');
-    } catch (e) {
-      if (e.status === 409) showError('SOURCE.md already exists. Tick "overwrite if SOURCE.md exists" to replace it.');
-      else showError(errText(e));
-    }
+      $('story-bytes').textContent = t('adv.story.bytes', { n: or(d.bytes, bytes) });
+      showMsg(t('adv.story.saved', { n: or(d.bytes, bytes) }));
+    } catch (e) { showApiError(e); }
   }
 
   // check = true asks the server to run check_pack (GET /api/pack?check=1). Returns true when the pack loaded.
@@ -660,7 +717,7 @@
       return true;
     } catch (e) {
       renderPack(null);
-      showError(errText(e));
+      showApiError(e);
       return false;
     }
   }
@@ -669,7 +726,7 @@
     var b = $('story-check');
     b.disabled = true;
     try {
-      if (await loadPack(true)) showMsg('Pack checked. The result is in check_pack JSON.');
+      if (await loadPack(true)) showMsg(t('adv.msg.pack_checked'));
     } finally {
       b.disabled = false;
     }
@@ -680,59 +737,112 @@
     var st = p.stages || {};
     fill($('story-stages'), PACK_STAGES.map(function (k) {
       var ok = st[k] === true;
-      return el('span', { className: 'stagebadge' }, 'Stage ' + k, badge(ok ? 'ok' : 'notrun', ok ? 'OK' : 'NOT RUN'));
+      return el('span', { className: 'stagebadge' }, t('adv.story.stage', { n: k }), badge(ok ? 'ok' : 'notrun'));
     }));
-    $('story-gate1').textContent = p.gate1 || '(no Gate 1 text for this pack yet)';
-    fillTable('story-episodes', ['#', 'Shots', 'Seconds', 'Check'], (p.episodes || []).map(function (e) {
+    $('story-gate1').textContent = p.gate1 || t('adv.story.no_gate1');
+    fillTable('story-episodes', [t('adv.th.no'), t('adv.th.scenes'), t('adv.th.seconds'), t('adv.th.check')], (p.episodes || []).map(function (e) {
       return [String(or(e.n, '-')), String(or(e.shots, '-')), String(or(e.seconds, '-')), e.check ? badgeFor(e.check) : '-'];
     }));
     fill($('story-characters'), names(p.characters));
     fill($('story-places'), names(p.places));
-    fillTable('story-shots', ['Shot', 'Ep', 'Mode', 'Sec', 'Cut in -> cut out', 'Issues'], (p.shots || []).map(function (s) {
+    fillTable('story-shots', [t('adv.th.shot'), t('adv.th.part'), t('adv.th.mode'), t('adv.th.sec'), t('adv.th.cut'), t('adv.th.issues')], (p.shots || []).map(function (s) {
       var n = Array.isArray(s.issues) ? s.issues.length : or(s.issues, 0);
       return [String(or(s.id, '?')), String(or(s.episode, '-')), String(or(s.mode, '-')), String(or(s.seconds, '-')),
         String(or(s.cut_in, '-')) + ' -> ' + String(or(s.cut_out, '-')), String(n)];
     }));
-    $('story-check-json').textContent = p.check ? JSON.stringify(p.check, null, 2) : '(no check yet)';
+    $('story-check-json').textContent = p.check ? JSON.stringify(p.check, null, 2) : t('adv.story.no_check');
   }
 
+  // Writer choices for the Story section: the free options only. When /api/writers fails, the two writer shortcuts.
+  function modelLabel(id) {
+    if (id === 'nv-ultra') return t('adv.story.model.nv_ultra');
+    if (id === 'nv-super-vl') return t('adv.story.model.nv_super_vl');
+    if (id === 'or-ultra') return t('adv.story.model.or_ultra');
+    return t('adv.story.model.or_super_vl');
+  }
+
+  async function loadWriterChoices() {
+    var sel = $('story-model');
+    var dflt = DEFAULT_WRITER;
+    var opts = [];
+    try {
+      var w = await api('GET', '/api/writers');
+      if (w && w.default) dflt = String(w.default);
+      opts = (Array.isArray(w && w.options) ? w.options : [])
+        .filter(function (o) { return o.command === 'write_pack'; })
+        .map(function (o) { return { id: String(o.id), args: o.args || {}, available: o.available !== false }; });
+    } catch (e) {
+      opts = [];
+    }
+    if (!opts.length) {
+      opts = WRITER_NAMES.map(function (n) { return { id: 'or-' + n, args: { writer: n }, available: true }; });
+    }
+    S.writerOpts = opts;
+    var keep = sel.value;
+    fill(sel, opts.map(function (o) {
+      return el('option', { value: o.id, text: modelLabel(o.id), disabled: !o.available });
+    }));
+    var usable = function (id) { return opts.some(function (o) { return o.id === id && o.available; }); };
+    sel.value = usable(keep) ? keep : (usable(dflt) ? dflt : opts[0].id);
+  }
+
+  function writerChoice() {
+    var id = $('story-model') ? $('story-model').value : '';
+    var hit = S.writerOpts.filter(function (o) { return o.id === id; })[0];
+    return hit || { id: DEFAULT_WRITER, args: { writer: WRITER_NAMES[0] } };
+  }
+
+  function storyLangs(slug) {
+    var entry = S.slugs.filter(function (s) { return s.slug === slug; })[0] || {};
+    return Array.isArray(entry.output_languages) ? entry.output_languages.filter(Boolean) : [];
+  }
+
+  // write_pack needs the story's saved output languages (out_lang); without them the page stops here and calls nothing.
   function writerRun(kind) {
     var slug = S.story.slug;
-    if (!slug) return showError('Pick a story slug first.');
+    if (!slug) return showError(t('adv.story.err_pick_slug'));
     var pack = kind === 'new' ? $('story-newpack').value.trim() : $('story-pack').value;
-    if (kind === 'new' && !PAT.name.test(pack)) {
-      return showError('New pack name: lowercase letters, digits, _ or -, 1 to 40 characters.');
-    }
-    if (kind !== 'new' && !pack) return showError('Pick a pack to resume.');
+    if (kind === 'new' && !PAT.name.test(pack)) return showError(t('adv.story.new_pack_bad'));
+    if (kind !== 'new' && !pack) return showError(t('adv.story.pick_resume'));
+    var langs = storyLangs(slug);
+    if (!langs.length) return showError(t('adv.story.no_langs'));
+    var choice = writerChoice();
     runCommand({
-      title: kind === 'new' ? 'Run writer: new pack' : 'Resume pack',
+      title: kind === 'new' ? t('adv.story.run_new_btn') : t('adv.story.resume_btn'),
       command: 'write_pack',
       risk: 'N W',
-      note: 'Calls the writer on a free OpenRouter model (streamed). Writes stage files into the pack folder. ' +
-        'Saved stages are not sent again.',
-      args: { slug: slug, pack: pack, writer: ($('story-model') && $('story-model').value) || WRITER_NAMES[0] },
+      note: t('adv.story.write_note'),
+      args: Object.assign({ slug: slug, pack: pack, out_lang: langs.join(',') }, choice.args),
       onEnd: function () { return loadStory(pack); }
     });
   }
 
   // ---------- Images ----------
+  function setImagesHeading(st) {
+    var h = $('sec-images') ? $('sec-images').querySelector('h2') : null;
+    if (h) h.textContent = st ? t('adv.images.for_story', { slug: st }) : t('adv.images.title');
+  }
+
   async function loadImages(quiet) {
     try {
-      S.images = await api('GET', '/api/images?adhyay=' + enc(adhyayNow()));
+      var st = projectStory();
+      var url = '/api/images?adhyay=' + enc(adhyayNow()) + (st ? '&story=' + enc(st) : '');
+      S.images = await api('GET', url);
       S.imgAt = Date.now();
+      setImagesHeading(st);
       renderImgTab(S.imgTab);
     } catch (e) {
-      if (!quiet) showError(errText(e));
+      if (!quiet) showApiError(e);
     }
   }
 
   function renderImgTab(tab) {
     S.imgTab = tab;
-    IMG_TABS.forEach(function (t) {
-      $('img-' + t).hidden = t !== tab;
-      var b = $('tab-' + t);
-      b.classList.toggle('active', t === tab);
-      b.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+    IMG_TABS.forEach(function (x) {
+      $('img-' + x).hidden = x !== tab;
+      var b = $('tab-' + x);
+      b.classList.toggle('active', x === tab);
+      b.setAttribute('aria-selected', x === tab ? 'true' : 'false');
     });
     var d = S.images || {};
     if (tab === 'series') renderSeries(d);
@@ -744,54 +854,62 @@
     applyGates();
   }
 
+  function grpText(g) {
+    if (g === 'characters') return t('adv.images.grp_characters');
+    if (g === 'places') return t('adv.images.grp_places');
+    if (g === 'props') return t('adv.images.grp_props');
+    if (g === 'sheet') return t('adv.images.grp_sheet');
+    return g;
+  }
+
   function renderSeries(d) {
     var rows = [];
     var series = d.series || {};
     ['characters', 'places', 'props'].forEach(function (grp) {
       (Array.isArray(series[grp]) ? series[grp] : []).forEach(function (x) {
-        rows.push([grp, String(or(x.id, '?')), String(or(x.name, '-')), String(or(x.chip, '-')), baseName(x.sheet), yesNo(x.accepted)]);
+        rows.push([grpText(grp), String(or(x.id, '?')), String(or(x.name, '-')), String(or(x.chip, '-')), baseName(x.sheet), yesNo(x.accepted)]);
       });
     });
     (d.sheets || []).forEach(function (x) {
-      rows.push(['sheet', String(or(x.id, '?')), '-', '-', baseName(x.sheet), yesNo(x.accepted)]);
+      rows.push([t('adv.images.grp_sheet'), String(or(x.id, '?')), '-', '-', baseName(x.sheet), yesNo(x.accepted)]);
     });
-    fillTable('series-table', ['Group', 'Id', 'Name', 'Chip', 'Sheet file', 'Accepted'], rows);
+    fillTable('series-table', [t('adv.th.group'), t('adv.th.id'), t('adv.th.name'), t('adv.th.chip'), t('adv.th.sheet_file'), t('adv.th.accepted')], rows);
   }
 
   function renderJobs(d) {
-    fillTable('jobs-table', ['Shot', 'Scene', 'Chips', 'Attempts / cap', 'Status', 'Actions'], (d.jobs || []).map(function (j) {
+    fillTable('jobs-table', [t('adv.th.shot'), t('adv.th.scene'), t('adv.th.chips'), t('adv.th.attempts'), t('adv.th.status'), t('adv.th.actions')], (d.jobs || []).map(function (j) {
       var chips = Array.isArray(j.chips) ? j.chips.join(', ') : String(or(j.chips, '-'));
-      var packet = btn('Packet', Object.assign({ className: 'act act-packet', onclick: function () { openPacket(j); } },
-        offProps(!j.file, 'The server sent no jobs file name for this row.')));
-      var build = btn('Build*', {
+      var packet = btn(t('adv.images.packet_btn'), Object.assign({ className: 'act act-packet', onclick: function () { openPacket(j); } },
+        offProps(!j.file, t('adv.images.no_jobs_file'))));
+      var build = btn(t('adv.images.build_off'), {
         className: 'act act-build',
         'data-gate': 'never',
-        'data-why': 'Not available yet: the job builder is not in the studio (gap G1; Q5 = no).',
-        'data-title': 'Not available yet (gap G1)'
+        'data-why': t('adv.images.build_why'),
+        'data-title': t('adv.images.build_title')
       });
       return [String(or(j.shot_id, '?')), String(or(j.scene, '-')), chips,
-        String(or(j.attempts, 0)) + ' / ' + String(or(j.attempt_cap, '?')), badgeFor(or(j.status, 'not run')), [packet, build]];
+        String(or(j.attempts, 0)) + ' / ' + String(or(j.attempt_cap, '?')), badgeFor(j.status), [packet, build]];
     }));
   }
 
   async function openPacket(j) {
-    if (!j.file) return showError('The server sent no jobs file name for this row.');
+    if (!j.file) return showError(t('adv.images.no_jobs_file'));
     try {
       var r = await api('POST', '/api/packet', { jobs: JOBS_DIR + j.file, shots: [j.shot_id] });
       showPacket(String(or(j.shot_id, '?')), r || {});
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
   }
 
   function showPacket(shot, r) {
-    openModal('Agent packet: ' + shot);
+    openModal(t('adv.packet.title', { shot: shot }));
     var body = $('modal-body');
-    var pre = el('pre', { id: 'packet-md', className: 'box', text: String(or(r.markdown, '(no markdown returned)')) });
-    body.appendChild(el('div', { className: 'banner-info', text: 'Flow agents run on Haiku, effort LOW' }));
-    body.appendChild(el('p', { className: 'muted', text: 'One scene per agent, own tab id. Model chip: Nano Banana 2.1 x2. Phase 1: no downloads.' }));
-    body.appendChild(el('p', { className: 'muted', text: 'Saved at: ' + String(or(r.path, '(path not returned)')) }));
-    body.appendChild(btn('Copy', { id: 'packet-copy', className: 'primary', onclick: function (ev) { copyText(pre.textContent, ev.currentTarget); } }));
+    var pre = el('pre', { id: 'packet-md', className: 'box', text: String(or(r.markdown, t('adv.packet.no_md'))) });
+    body.appendChild(el('div', { className: 'banner-info', text: t('adv.packet.rule_haiku') }));
+    body.appendChild(el('p', { className: 'muted', text: t('adv.packet.rule_scene') }));
+    body.appendChild(el('p', { className: 'muted', text: t('adv.packet.saved_at', { path: String(or(r.path, t('adv.packet.no_path'))) }) }));
+    body.appendChild(btn(t('adv.packet.copy_btn'), { id: 'packet-copy', className: 'primary', onclick: function (ev) { copyText(pre.textContent, ev.currentTarget); } }));
     body.appendChild(pre);
-    body.appendChild(el('div', { className: 'btnrow' }, btn('Close', { onclick: closeModal })));
+    body.appendChild(el('div', { className: 'btnrow' }, btn(t('common.close'), { onclick: closeModal })));
   }
 
   // Candidates of a shot as {name, path}. name goes to /api/review; path goes to the commands.
@@ -813,24 +931,26 @@
     var gen = ++S.reviewGen;
     var pairs = [];
     $('review-detail').hidden = true;
-    tbl.appendChild(el('thead', null, el('tr', null,
-      ['Shot', 'Candidate', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Verdict', 'Actions'].map(function (h) { return el('th', { text: h }); }))));
+    var heads = [t('adv.th.shot'), t('adv.th.candidate')];
+    for (var q = 1; q <= 6; q += 1) heads.push(t('adv.th.q', { n: q }));
+    heads.push(t('adv.th.verdict'), t('adv.th.actions'));
+    tbl.appendChild(el('thead', null, el('tr', null, heads.map(function (h) { return el('th', { text: h }); }))));
     (d.shots || []).forEach(function (s) {
       var shotId = String(or(s.id, ''));
       var cands = candList(s);
       var jobs = jobsFor(shotId);
-      var why = cands.length ? 'No job entry for this shot in the jobs files.' : 'No candidate pictures for this shot yet.';
+      var why = cands.length ? t('adv.shots.no_job') : t('adv.shots.no_cands');
       var off = !cands.length || !jobs;
       var tb = el('tbody', { className: 'shotgroup' });
       tb.appendChild(el('tr', { className: 'shotrow' },
-        el('th', { text: shotId + ' (' + cands.length + ')', scope: 'rowgroup' }),
+        el('th', { text: t('adv.shots.group', { shot: shotId, n: cands.length }), scope: 'rowgroup' }),
         el('td', { colspan: 9 },
-          btn('Neighbour sheet', Object.assign({ className: 'act act-neighbours', 'data-gate': 'job',
+          btn(t('adv.shots.neighbours'), Object.assign({ className: 'act act-neighbours', 'data-gate': 'job',
             onclick: function () { neighbourSheet(shotId, cands, jobs); } }, offProps(off, why))),
-          btn('Run reviewer', Object.assign({ className: 'act act-reviewer', 'data-gate': 'job',
+          btn(t('adv.shots.reviewer'), Object.assign({ className: 'act act-reviewer', 'data-gate': 'job',
             onclick: function () { reviewShot(shotId, cands, jobs); } }, offProps(off, why))))));
       if (!cands.length) {
-        tb.appendChild(el('tr', null, el('td', { colspan: 10, className: 'muted', text: 'No candidate files yet.' })));
+        tb.appendChild(el('tr', null, el('td', { colspan: 10, className: 'muted', text: t('adv.shots.no_cand_files') })));
       }
       cands.forEach(function (c) {
         var qCells = [1, 2, 3, 4, 5, 6].map(function () { return el('td', { className: 'q', text: '...' }); });
@@ -842,9 +962,9 @@
           qCells,
           verdict,
           el('td', null,
-            btn('Queue kept', Object.assign({ className: 'act act-queue-kept', 'data-gate': 'job',
+            btn(t('adv.shots.queue_kept'), Object.assign({ className: 'act act-queue-kept', 'data-gate': 'job',
               onclick: function () { queueKept(shotId, c, jobs); } }, offProps(off, why))),
-            btn('Accept (owner)', Object.assign({ className: 'act act-accept', 'data-gate': 'job',
+            btn(t('adv.shots.accept'), Object.assign({ className: 'act act-accept', 'data-gate': 'job',
               onclick: function () { acceptCand(shotId, c); } }, offProps(off, why))))));
       });
       tbl.appendChild(tb);
@@ -873,27 +993,53 @@
     return Promise.all(pool);
   }
 
+  // One review answer as a word: PASS, BLOCK, ADVISORY and UNSURE have words; any other value is shown as the server sent it.
+  function qText(res) {
+    if (res === undefined || res === null || res === '') return '-';
+    var s = String(res);
+    if (s === 'PASS') return t('adv.review.q_pass');
+    if (s === 'BLOCK') return t('adv.review.q_block');
+    if (s === 'ADVISORY') return t('adv.review.q_advisory');
+    if (s === 'UNSURE') return t('adv.review.q_unsure');
+    return s;
+  }
+
   function fillReview(p, r, errMsg) {
     var a = (r && r.answers) || {};
     for (var i = 0; i < 6; i += 1) {
-      fill(p.q[i], [errMsg ? '-' : String(or(a['Q' + (i + 1)], '-'))]);
+      var v = a['Q' + (i + 1)];
+      var isObj = v !== null && typeof v === 'object';
+      fill(p.q[i], [errMsg ? '-' : qText(isObj ? v.result : v)]);
+      p.q[i].title = isObj ? String(or(v.reason, '')) : '';
     }
-    if (errMsg) fill(p.verdict, [badge('failed', 'ERROR')]);
-    else if (!r) fill(p.verdict, [badge('notrun', 'NOT RUN')]);
+    if (errMsg) fill(p.verdict, [badge('failed', t('adv.kind.error'))]);
+    else if (!r) fill(p.verdict, [badge('notrun')]);
     else {
-      fill(p.verdict, [badgeFor(or(r.verdict, 'unknown')), ' ',
-        btn('details', { className: 'linkish', onclick: function () { showReview(p.shot, p.cand, r); } })]);
+      fill(p.verdict, [badgeFor(or(r.verdict, t('common.unknown'))), ' ',
+        btn(t('adv.shots.details'), { className: 'linkish', onclick: function () { showReview(p.shot, p.cand, r); } })]);
     }
   }
 
   function showReview(shot, cand, r) {
     var box = $('review-detail');
+    var answers = r.answers || {};
+    var lines = [];
+    for (var i = 1; i <= 6; i += 1) {
+      var v = answers['Q' + i];
+      var isObj = v !== null && typeof v === 'object';
+      lines.push(el('li', { text: t('adv.review.q_line', {
+        n: i,
+        res: qText(isObj ? v.result : v),
+        reason: isObj ? String(or(v.reason, '-')) : '-'
+      }) }));
+    }
     fill(box, [
-      el('strong', { text: 'Review: ' + shot + ' / ' + cand }),
-      el('p', { text: 'Verdict: ' + String(or(r.verdict, '-')) }),
-      el('p', { text: 'Fix: ' + String(or(r.fix, '-')) }),
-      el('p', { text: 'Regen sentence: ' + String(or(r.regen_sentence, '-')) }),
-      el('p', { text: 'Edit instruction: ' + String(or(r.edit_instruction, '-')) })
+      el('strong', { text: t('adv.review.title', { shot: shot, cand: cand }) }),
+      el('p', { text: t('adv.review.verdict', { v: String(or(r.verdict, '-')) }) }),
+      el('p', { text: t('adv.review.fix', { v: String(or(r.fix, '-')) }) }),
+      el('p', { text: t('adv.review.regen', { v: String(or(r.regen_sentence, '-')) }) }),
+      el('p', { text: t('adv.review.edit', { v: String(or(r.edit_instruction, '-')) }) }),
+      el('ol', { className: 'box-list' }, lines)
     ]);
     box.hidden = false;
     if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
@@ -901,20 +1047,20 @@
 
   function neighbourSheet(shot, cands, jobs) {
     runCommand({
-      title: 'Neighbour sheet: ' + shot,
+      title: t('adv.shots.neighbours_title', { shot: shot }),
       command: 'neighbour_sheet',
       risk: 'W',
-      note: 'Writes a contact sheet for this shot next to its candidates. Nothing is sent to a model.',
+      note: t('adv.shots.neighbours_note'),
       args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow() }
     });
   }
 
   function reviewShot(shot, cands, jobs) {
     runCommand({
-      title: 'Run reviewer: ' + shot,
+      title: t('adv.shots.reviewer_title', { shot: shot }),
       command: 'review_shot',
       risk: 'N W',
-      note: 'Calls the reviewer (NVIDIA, free tier) for Q1 to Q6. Exit 0 PASS, 1 BLOCK, 3 UNSURE.',
+      note: t('adv.shots.reviewer_note'),
       args: { jobs: jobs, shot: shot, candidates: cands.map(function (c) { return c.path; }), adhyay: adhyayNow() },
       onEnd: function () { return loadImages(true); }
     });
@@ -923,15 +1069,15 @@
   function queueKept(shot, cand, jobs) {
     var m = cand.name.match(/v\d{2}b?/);
     runCommand({
-      title: 'Queue kept: ' + shot,
+      title: t('adv.shots.queue_title', { shot: shot }),
       command: 'queue_add',
       risk: 'W',
-      note: 'Adds this kept tile to the download queue (model: Nano Banana 2.1 x2). Downloads nothing. Candidate: ' + cand.name,
+      note: t('adv.shots.queue_note', { cand: cand.name }),
       fields: [
-        { name: 'version', label: 'Version', value: m ? m[0] : '', pattern: PAT.version, required: true, hint: 'vNN, for example v02' },
-        { name: 'edit', label: 'Edit id', pattern: PAT.edit, required: true, placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
-          hint: 'lowercase hex and dashes, 36 characters' },
-        { name: 'note', label: 'Note', pattern: PAT.note, required: true, hint: 'one line, up to 200 characters' }
+        { name: 'version', label: t('adv.queue.version'), value: m ? m[0] : '', pattern: PAT.version, required: true, hint: t('adv.queue.version_hint') },
+        { name: 'edit', label: t('adv.queue.edit'), pattern: PAT.edit, required: true, placeholder: '00000000-0000-0000-0000-000000000000',
+          hint: t('adv.queue.edit_hint') },
+        { name: 'note', label: t('adv.queue.note'), pattern: PAT.note, required: true, hint: t('adv.queue.note_hint') }
       ],
       args: function (v) { return { shot: shot, version: v.version, edit: v.edit, jobs: jobs, note: v.note, adhyay: adhyayNow() }; },
       onEnd: function () { return loadImages(true); }
@@ -941,14 +1087,14 @@
   function acceptCand(shot, cand) {
     var m = cand.name.match(/v\d{2}b?/);
     runCommand({
-      title: 'Accept (owner): ' + shot,
+      title: t('adv.accept.title', { shot: shot }),
       command: 'queue_accept',
       risk: 'W',
-      note: 'Owner decision, recorded for this shot. Tick only after you looked at the full-size image.',
-      check: 'I looked at full size',
+      note: t('adv.accept.note'),
+      check: t('adv.accept.check'),
       fields: [
-        { name: 'version', label: 'Version', value: m ? m[0] : '', pattern: PAT.version, required: true, hint: 'vNN' },
-        { name: 'note', label: 'Owner note', pattern: PAT.note, required: true, hint: 'one line, up to 200 characters' }
+        { name: 'version', label: t('adv.queue.version'), value: m ? m[0] : '', pattern: PAT.version, required: true, hint: t('adv.queue.version_hint') },
+        { name: 'note', label: t('adv.accept.owner_note'), pattern: PAT.note, required: true, hint: t('adv.queue.note_hint') }
       ],
       args: function (v) { return { shot: shot, version: v.version, note: v.note, adhyay: adhyayNow() }; },
       onEnd: function () { return loadImages(true); }
@@ -959,12 +1105,12 @@
     var p = d.progress;
     var lines = Array.isArray(p) ? p : ((p && Array.isArray(p.lines)) ? p.lines : []);
     lines = lines.filter(function (r) { return r && typeof r === 'object'; });
-    fillTable('progress-table', ['Shot', 'Status', 'Attempts', 'Decided by', 'Note'], lines.map(function (r) {
+    fillTable('progress-table', [t('adv.th.shot'), t('adv.th.status'), t('adv.th.attempts'), t('adv.th.decided_by'), t('adv.th.note')], lines.map(function (r) {
       var legacy = !('decided_by' in r);
       return {
         className: legacy ? 'legacy' : null,
-        cells: [String(or(r.shot_id, or(r.shot, '?'))), badgeFor(or(r.status, 'not run')), String(or(r.attempts, '-')),
-          legacy ? 'legacy (no decided_by)' : String(or(r.decided_by, '-')), String(or(r.note, ''))]
+        cells: [String(or(r.shot_id, or(r.shot, '?'))), badgeFor(r.status), String(or(r.attempts, '-')),
+          legacy ? t('adv.images.legacy') : String(or(r.decided_by, '-')), String(or(r.note, ''))]
       };
     }));
   }
@@ -985,15 +1131,19 @@
     var pending = typeof c.pending === 'number' ? c.pending : count(q.pending);
     var filed = typeof c.filed === 'number' ? c.filed : count(d.filed);
     var accepted = typeof c.accepted === 'number' ? c.accepted : count(d.accepted);
-    fill($('queue-counts'), [stat('pending', pending), stat('filed', filed), stat('accepted', accepted)]);
+    fill($('queue-counts'), [
+      stat(t('adv.images.stat_pending'), pending),
+      stat(t('adv.images.stat_filed'), filed),
+      stat(t('adv.images.stat_accepted'), accepted)
+    ]);
   }
 
   function collect() {
     runCommand({
-      title: 'Collect from Downloads',
+      title: t('adv.images.collect_btn'),
       command: 'queue_collect',
       risk: 'W',
-      note: 'Copies matching files from Downloads into final\\. Refuses existing outputs. Deletes nothing.',
+      note: t('adv.images.collect_note'),
       args: { adhyay: adhyayNow() },
       onEnd: function () { return loadImages(true); }
     });
@@ -1001,10 +1151,10 @@
 
   function tidy() {
     runCommand({
-      title: 'Tidy plan (dry run)',
+      title: t('adv.images.tidy_btn'),
       command: 'tidy_plan',
       risk: 'R',
-      note: 'Dry run only: lists what tidy would move. Moves nothing.',
+      note: t('adv.images.tidy_note'),
       args: { adhyay: adhyayNow() },
       onEnd: function (j) { return showTidy(j); }
     });
@@ -1014,24 +1164,24 @@
     try {
       var txt = await api('GET', '/api/jobs/' + enc(j.id) + '/log?tail=200');
       var pre = $('tidy-out');
-      pre.textContent = String(txt || '(no output)');
+      pre.textContent = String(txt || t('adv.images.no_output'));
       pre.hidden = false;
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
   }
 
   function renderFinals(d) {
     var list = d.finals || [];
-    $('finals-count').textContent = list.length + ' final(s). Click a tile for full size.';
+    $('finals-count').textContent = t('adv.finals.count', { n: list.length });
     var grid = clear($('finals-grid'));
     if (!list.length) {
-      grid.appendChild(el('p', { className: 'muted', text: 'No finals yet.' }));
+      grid.appendChild(el('p', { className: 'muted', text: t('adv.finals.none') }));
       return;
     }
     list.forEach(function (f) {
       var path = typeof f === 'string' ? f : String(or(f.path, ''));
       var name = baseName(path);
       var img = el('img', { src: '/api/file?path=' + enc(path), alt: name, loading: 'lazy' });
-      grid.appendChild(el('button', { type: 'button', className: 'tile', title: 'Full size: ' + name,
+      grid.appendChild(el('button', { type: 'button', className: 'tile', title: t('adv.finals.tile', { name: name }),
         onclick: function () { openLightbox(path, name); } }, img, el('span', { text: name })));
     });
   }
@@ -1048,11 +1198,10 @@
     var size = $('bridge-size').value;
     var dry = cmd === 'bridge_dry';
     runCommand({
-      title: dry ? 'Bridge dry run' : 'Bridge: write keyframes',
+      title: dry ? t('adv.bridge.dry_btn') : t('adv.bridge.write_btn'),
       command: cmd,
       risk: dry ? 'R' : 'W',
-      note: dry ? 'Shows what would be written at ' + size + '. Writes nothing.'
-        : 'Writes keyframes_h3 at ' + size + '. Existing files are not overwritten.',
+      note: dry ? t('adv.bridge.dry_note', { size: size }) : t('adv.bridge.write_note', { size: size }),
       args: { size: size, adhyay: adhyayNow() },
       onEnd: function (j) { return showBridge(j); }
     });
@@ -1064,15 +1213,16 @@
       var rows = Array.isArray(r) ? r : ((r && Array.isArray(r.records)) ? r.records : []);
       var counts = (r && !Array.isArray(r) && r.counts) || {};
       var summary = Object.keys(counts).map(function (k) { return k + ': ' + counts[k]; }).join(', ');
-      showMsg(summary ? 'Bridge finished. ' + summary + '.' : 'Bridge job finished with no parsed rows. Read the log tail at the bottom.');
-      fillTable('bridge-table', ['File', 'Status', 'Detail', 'Removed px'], rows.map(function (x) {
-        return [String(or(x.file, or(x.label, '-'))), badgeFor(or(x.status, 'skip')), String(or(x.detail, or(x.crop, '-'))),
+      showMsg(summary ? t('adv.bridge.finished', { summary: summary }) : t('adv.bridge.no_rows'));
+      fillTable('bridge-table', [t('adv.th.file'), t('adv.th.status'), t('adv.th.detail'), t('adv.th.removed')], rows.map(function (x) {
+        return [String(or(x.file, or(x.label, '-'))), badgeFor(x.status), String(or(x.detail, or(x.crop, '-'))),
           String(or(x.removed_px, '-'))];
       }));
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
   }
 
   // ---------- Video ----------
+  // Opening this section does not call Colab (the balance is read only by the "Check the Colab account" button).
   async function loadVideo() {
     try {
       var v = await api('GET', '/api/video');
@@ -1084,28 +1234,27 @@
       renderBatches(v.batches || []);
       renderClips(v.clips || []);
     } catch (e) {
-      showError('Video: ' + errText(e));
+      showApiError(e);
     }
     loadH3();
-    loadColab(true);
     applyGates();
   }
 
   function renderBatches(list) {
-    fillTable('video-batches', ['Batch', 'run.py bytes', 'Shots', 'Embed MB'], list.map(function (b) {
+    fillTable('video-batches', [t('adv.th.batch'), t('adv.th.run_py'), t('adv.th.shots'), t('adv.th.embed')], list.map(function (b) {
       return [String(or(b.name, '?')), String(or(b.run_py_bytes, '-')), String(or(b.settings, '-')), String(or(b.embed_mb, '-'))];
     }));
   }
 
   function renderClips(list) {
     $('clips-home').textContent = String(list.length);
-    fillTable('clips-table', ['Shot / take', 'File', 'Seconds', 'Size', 'QA', 'Actions'], list.map(function (c) {
+    fillTable('clips-table', [t('adv.th.shot_take'), t('adv.th.file'), t('adv.th.seconds'), t('adv.th.size'), t('adv.th.qa'), t('adv.th.actions')], list.map(function (c) {
       var path = String(or(c.file, ''));
       var file = el('a', { href: '/api/file?path=' + enc(path), target: '_blank', rel: 'noopener', text: baseName(path) });
       return [String(or(c.shot, '?')) + ' / ' + String(or(c.take, '-')), file, String(or(c.seconds, '-')),
         fmtBytes(c.bytes), yesNo(c.qa),
-        [btn('Sheet', { className: 'act act-sheet', 'data-gate': 'job', onclick: function () { clipCmd('clip_qa', 'Clip QA sheet', path); } }),
-          btn('Visual QA', { className: 'act act-vqa', 'data-gate': 'job', onclick: function () { clipCmd('visual_qa', 'Visual QA', path); } })]];
+        [btn(t('adv.clips.sheet'), { className: 'act act-sheet', 'data-gate': 'job', onclick: function () { clipCmd('clip_qa', t('adv.clips.sheet'), path); } }),
+          btn(t('adv.clips.vqa'), { className: 'act act-vqa', 'data-gate': 'job', onclick: function () { clipCmd('visual_qa', t('adv.clips.vqa'), path); } })]];
     }));
   }
 
@@ -1125,7 +1274,7 @@
         title: title,
         command: 'clip_qa',
         risk: 'W',
-        note: 'Writes frames and a QA sheet for this clip into ' + out + '.',
+        note: t('adv.clips.qa_note', { dir: out }),
         args: { clip: path, out_dir: out },
         onEnd: function () { return loadVideo(); }
       });
@@ -1134,11 +1283,10 @@
       title: title,
       command: 'visual_qa',
       risk: 'N W',
-      note: 'Calls the visual QA model (NVIDIA, free tier, rate-limited) and writes the scores into ' + out + '.',
+      note: t('adv.clips.vqa_note', { dir: out }),
       fields: [
-        { name: 'direction', label: 'Direction JSON', pattern: PAT.json, required: true,
-          hint: 'path under the studio folder, ending .json' },
-        { name: 'model', label: 'Vision model', options: VISION_MODELS, value: VISION_MODELS[0] }
+        { name: 'direction', label: t('adv.vqa.direction'), pattern: PAT.json, required: true, hint: t('adv.vqa.direction_hint') },
+        { name: 'model', label: t('adv.vqa.model'), options: VISION_MODELS, value: VISION_MODELS[0] }
       ],
       args: function (v) { return { clip: path, direction: v.direction, out_dir: out, model: v.model }; },
       onEnd: function () { return loadVideo(); }
@@ -1151,19 +1299,19 @@
     return 'shots';
   }
 
-  // Returns {scope, ids | reel} or a string with the reason it is not valid.
+  // Returns {scope, ids | reel} or a string with the reason it is not valid (already in the page language).
   function scopeArgs() {
     var scope = scopeOf();
     if (scope === 'shots') {
       var ids = $('video-ids').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
-      if (!ids.length) return 'Type at least one shot id, for example SHOT-01.';
+      if (!ids.length) return t('adv.video.shot_empty');
       var bad = ids.filter(function (x) { return !PAT.shot.test(x); });
-      if (bad.length) return 'Bad shot id: ' + bad[0];
+      if (bad.length) return t('adv.video.shot_bad', { id: bad[0] });
       return { scope: 'shots', ids: ids };
     }
     if (scope === 'reel') {
       var n = $('video-reel').value.trim();
-      if (!PAT.count.test(n) || Number(n) < 1) return 'Reel must be a number, 1 or more.';
+      if (!PAT.count.test(n) || Number(n) < 1) return t('adv.export.reel_bad');
       return { scope: 'reel', reel: Number(n) };
     }
     return { scope: 'all' };
@@ -1172,19 +1320,19 @@
   function videoPrepare() {
     var batch = $('video-batch').value.trim();
     var sc = scopeArgs();
-    if (!PAT.name.test(batch)) return showError('Batch name: lowercase letters, digits, _ or -, up to 40 characters.');
+    if (!PAT.name.test(batch)) return showError(t('adv.video.batch_bad'));
     if (typeof sc === 'string') return showError(sc);
     var shots = $('video-shotfile').value;
-    if (!shots) return showError('Pick a shot file.');
+    if (!shots) return showError(t('adv.video.err_pick_shot_file'));
     var args = { shots: shots, batch: batch };
     var root = $('video-keyframes').value.trim();
     if (root) args.keyframes = root; // empty = the server default (flow/adhyay_01/keyframes_h3)
     Object.keys(sc).forEach(function (k) { args[k] = sc[k]; });
     runCommand({
-      title: '1 Prepare batch (no GPU)',
+      title: t('adv.video.prepare_btn'),
       command: 'run_kaggle_prepare',
       risk: 'W',
-      note: 'Writes colab_batches\\' + batch + '\\ only. No GPU, no Colab, no paid call.',
+      note: t('adv.video.prepare_note', { batch: batch }),
       args: args,
       onEnd: function () { return loadVideo(); }
     });
@@ -1194,14 +1342,14 @@
     var sc = scopeArgs();
     if (typeof sc === 'string') return showError(sc);
     var shots = $('video-shotfile').value;
-    if (!shots) return showError('Pick a shot file.');
+    if (!shots) return showError(t('adv.video.err_pick_shot_file'));
     var args = { story: shots };
     Object.keys(sc).forEach(function (k) { args[k] = sc[k]; });
     runCommand({
-      title: 'h3 prepare (no GPU)',
+      title: t('adv.video.h3_btn'),
       command: 'h3_prepare',
       risk: 'W',
-      note: 'h3 prepare-only. Writes the h3 plan files. Execute is not exposed in v1.',
+      note: t('adv.video.h3_note'),
       args: args,
       onEnd: function () { return loadVideo(); }
     });
@@ -1213,15 +1361,18 @@
     try {
       var h = await api('GET', '/api/h3');
       S.h3Ok = h.built === true;
-      S.h3Msg = String(or(h.message, 'h3 engine not built yet'));
-      fill(box, [badge(S.h3Ok ? 'ok' : 'notrun', S.h3Ok ? 'AVAILABLE' : 'NOT BUILT'), ' ',
-        S.h3Ok ? 'Prepare-only mode. Execute is not exposed in v1.' : S.h3Msg]);
-      cmd.textContent = String(or(h.command_preview, 'command id ' + or(h.command, 'h3_prepare') + ', module ' + or(h.module, '-')));
+      S.h3Msg = S.h3Ok ? '' : (h.message ? window.I18N.serverError(String(h.message)).text : t('err.srv.h3_missing'));
+      fill(box, [badge(S.h3Ok ? 'ok' : 'notrun', S.h3Ok ? t('adv.video.h3_available') : t('adv.video.h3_not_built')), ' ',
+        S.h3Ok ? t('adv.video.h3_mode') : S.h3Msg]);
+      cmd.textContent = String(or(h.command_preview, t('adv.video.h3_cmd', {
+        cmd: or(h.command, 'h3_prepare'),
+        module: or(h.module, '-')
+      })));
       cmd.hidden = !S.h3Ok;
     } catch (e) {
       S.h3Ok = false;
-      S.h3Msg = 'h3 status unavailable';
-      fill(box, [badge('failed', 'ERROR'), ' ', errText(e)]);
+      S.h3Msg = t('adv.video.h3_unavail');
+      fill(box, [badge('failed', t('adv.kind.error')), ' ', apiText(e)]);
       cmd.hidden = true;
     }
     applyGates();
@@ -1230,34 +1381,35 @@
   async function loadColab(quiet) {
     var checkBtn = $('colab-check');
     checkBtn.disabled = true;
-    checkBtn.textContent = 'Checking (up to 60 s)...';
+    checkBtn.textContent = t('adv.video.checking');
     try {
       var c = await api('GET', '/api/colab');
       renderColab(c);
       return c;
     } catch (e) {
       S.colabOk = false;
-      $('colab-balance').textContent = 'unknown (check failed)';
-      if (!quiet) showError('Colab check failed: ' + errText(e));
+      $('colab-balance').textContent = t('adv.video.bal_failed');
+      if (!quiet) showError(t('adv.video.colab_failed', { err: apiText(e) }));
       return null;
     } finally {
       checkBtn.disabled = false;
-      checkBtn.textContent = 'Check Colab';
+      checkBtn.textContent = t('adv.video.colab_check_btn');
       applyGates();
     }
   }
 
   function renderColab(c) {
     var cc = c || {};
+    S.colabData = c || null;
     var sessions = Array.isArray(cc.sessions) ? cc.sessions : null;
+    var headers = [t('adv.th.session'), t('adv.th.gpu'), t('adv.th.status'), t('adv.th.action')];
     if (sessions === null) {
-      fillTable('colab-sessions', ['Session', 'GPU', 'Status', 'Action'],
-        [['(could not read the session list from the Colab CLI)', '-', '-', '-']]);
+      fillTable('colab-sessions', headers, [[t('adv.video.no_sessions'), '-', '-', '-']]);
     } else {
-      fillTable('colab-sessions', ['Session', 'GPU', 'Status', 'Action'], sessions.map(function (s) {
+      fillTable('colab-sessions', headers, sessions.map(function (s) {
         var name = String(or(s.name, '?'));
-        return [name, String(or(s.gpu, '-')), badgeFor(or(s.status, 'unknown')),
-          [btn('Stop session ' + name, { className: 'act act-stop-session', onclick: function () { stopSession(name); } }),
+        return [name, String(or(s.gpu, '-')), badgeFor(s.status),
+          [btn(t('adv.video.stop_session', { name: name }), { className: 'act act-stop-session', onclick: function () { stopSession(name); } }),
             risk('OPS')]];
       }));
     }
@@ -1266,33 +1418,33 @@
     S.colabOk = isFinite(num);
     S.colabBalance = S.colabOk ? num : null;
     $('colab-balance').textContent = S.colabOk ? String(num)
-      : (usageOk ? 'unknown (no readable balance)' : 'unknown (colab usage not readable)');
+      : (usageOk ? t('adv.video.bal_none') : t('adv.video.bal_usage'));
     var rates = cc.rate_units_per_hour || {};
-    var rateText = Object.keys(rates).map(function (k) { return k + ' ' + rates[k] + ' units/h'; }).join(', ');
-    $('colab-rate').textContent = (rateText || 'unknown') + (cc.cap_units ? '; cap ' + cc.cap_units + ' units per run' : '');
+    var rateText = Object.keys(rates).map(function (k) { return t('adv.video.rate_item', { gpu: k, n: rates[k] }); }).join(', ');
+    $('colab-rate').textContent = (rateText || t('common.unknown')) + (cc.cap_units ? t('adv.video.cap', { n: cc.cap_units }) : '');
     applyGates();
   }
 
   function colabRun() {
     var batch = $('video-batch').value.trim();
-    if (!PAT.name.test(batch)) return showError('Batch name: lowercase letters, digits, _ or -, up to 40 characters.');
+    if (!PAT.name.test(batch)) return showError(t('adv.video.batch_bad'));
     var cap = (S.status && S.status.spend_cap_units) || 15;
     runCommand({
-      title: 'CONFIRM SPEND',
+      title: t('adv.colab.title'),
       command: 'colab_run',
       risk: '$',
-      note: 'Starts a Colab GPU session for batch ' + batch + '. Nothing starts until you type the confirm text.',
+      note: t('adv.colab.note', { batch: batch }),
       fields: [
-        { name: 'gpu', label: 'GPU', options: GPUS, value: 'G4', hint: 'G4 is the default. A100 is also proven.' },
-        { name: 'session', label: 'Session name', pattern: PAT.session, required: true, value: 't0-kaliya',
-          hint: 'letters, digits, _ or -, up to 40' }
+        { name: 'gpu', label: t('adv.colab.gpu'), options: GPUS, value: 'G4', hint: t('adv.colab.gpu_hint') },
+        { name: 'session', label: t('adv.colab.session'), pattern: PAT.session, required: true, value: 't0-kaliya',
+          hint: t('adv.colab.session_hint') }
       ],
       args: function (v) { return { batch: batch, gpu: v.gpu, session: v.session }; },
       summary: function (v) {
         return [
-          'GPU ' + v.gpu + ', session ' + v.session + ', batch ' + batch,
-          'Cap ' + cap + ' units per execute. Balance at the last check: ' + (S.colabBalance === null ? 'unknown' : S.colabBalance) + '.',
-          'Stop rule: the runner stops the session only after every clip is home.'
+          t('adv.colab.sum_gpu', { gpu: v.gpu, session: v.session, batch: batch }),
+          t('adv.colab.sum_cap', { cap: cap, balance: S.colabBalance === null ? t('common.unknown') : S.colabBalance }),
+          t('adv.colab.sum_stop')
         ];
       },
       onEnd: function () { return loadVideo(); }
@@ -1305,45 +1457,55 @@
       var pv = await api('POST', '/api/preview', { command: 'colab_stop', args: { session: name } });
       var r = await api('POST', '/api/run', { token: pv.token });
       onStarted({ command: 'colab_stop', onEnd: function () { return afterStop(name); } }, r.job_id);
-    } catch (e) { showError(errText(e)); }
+    } catch (e) { showApiError(e); }
   }
 
   async function afterStop(name) {
     var c = await loadColab(true);
-    if (!c) return showError('Could not re-check Colab after stopping ' + name + '. Check Colab by hand.');
+    if (!c) return showError(t('adv.colab.recheck_fail', { name: name }));
     var still = (Array.isArray(c.sessions) ? c.sessions : []).some(function (s) { return s.name === name; });
     if (still) {
-      showError('STOP FAILED: session ' + name + ' is still listed on Colab. The VM may still be running. ' +
-        'Stop it by hand on Colab.');
+      showError(t('adv.colab.stop_failed', { name: name }));
     } else {
-      showMsg('Session ' + name + ' is no longer listed on Colab.');
+      showMsg(t('adv.colab.stop_gone', { name: name }));
     }
   }
 
   // ---------- Export ----------
   async function loadExport() {
     var reel = $('export-reel').value.trim();
-    if (!PAT.count.test(reel) || Number(reel) < 1) return showError('Reel must be a number, 1 or more.');
+    if (!PAT.count.test(reel) || Number(reel) < 1) return showError(t('adv.export.reel_bad'));
     try {
       // export is per pack: the story and pack come from the project pointer (never the Kaliya default)
       var pj = (window.StudioWizard && window.StudioWizard.project && window.StudioWizard.project()) || {};
-      if (!pj.story_slug || !pj.pack) return showError('Pick a story and run its analysis first; export works per pack.');
+      if (!pj.story_slug || !pj.pack) return showError(t('adv.export.pick_pack'));
       var d = await api('GET', '/api/export?reel=' + enc(reel) + '&story=' + enc(pj.story_slug) + '&pack=' + enc(pj.pack));
       var clips = (d.clips_in_order || []).map(function (c) {
         if (typeof c === 'string') return el('li', { text: c });
-        return el('li', { text: String(or(c.shot, '?')) + (c.take ? ' (take ' + c.take + ')' : ' (no take picked)') });
+        return el('li', { text: String(or(c.shot, '?')) + ' ' + (c.take ? t('adv.export.take', { take: c.take }) : t('adv.export.no_take')) });
       });
-      fill($('export-clips'), clips.length ? clips : [el('li', { text: '(no clips for reel ' + reel + ')' })]);
+      fill($('export-clips'), clips.length ? clips : [el('li', { text: t('adv.export.no_clips', { reel: reel }) })]);
       var a = d.assembly;
       var notBuilt = !a || String(a).toLowerCase() === 'not built';
       fill($('export-assembly'), notBuilt
-        ? [badge('notrun', 'NOT BUILT'), ' ' + String(or(d.assembly_note, 'No assembly script yet (gap G12). Nothing is assembled.'))]
+        ? [badge('notrun', t('adv.export.not_built')), ' ' + String(or(d.assembly_note, t('adv.export.no_assembly')))]
         : [typeof a === 'string' ? a : JSON.stringify(a, null, 2)]);
       var files = d.reel_files || [];
       fill($('export-files'), files.length
         ? files.map(function (f) { return el('div', { text: typeof f === 'string' ? f : String(or(f.name, '?')) }); })
-        : ['none yet']);
-    } catch (e) { showError(errText(e)); }
+        : [t('adv.export.none')]);
+    } catch (e) { showApiError(e); }
+  }
+
+  // ---------- Language change: re-draw what app.js wrote (I18N.apply only moves the static text) ----------
+  function onLangChange() {
+    renderHeader();
+    loadWriterChoices();
+    if (S.colabData) renderColab(S.colabData);
+    S.logDone = null;
+    var cb = $('colab-check');
+    if (cb && !cb.disabled) cb.textContent = t('adv.video.colab_check_btn');
+    showSection(S.section || 'story');
   }
 
   // ---------- Init ----------
@@ -1354,12 +1516,18 @@
     document.querySelectorAll('.tabbtn').forEach(function (b) {
       b.addEventListener('click', function () { renderImgTab(b.getAttribute('data-tab')); });
     });
-    fill($('story-model'), WRITER_NAMES.map(function (m) { return el('option', { value: m, text: m + ' (free, OpenRouter)' }); }));
     var ay = [];
     for (var i = 1; i <= 12; i += 1) ay.push(el('option', { value: String(i), text: String(i) }));
     fill($('img-adhyay'), ay);
     $('img-adhyay').value = '1';
-    $('story-slug').addEventListener('change', function () { selectSlug($('story-slug').value, ''); });
+    // one story at a time: changing the picker also sets the wizard's story (POST /api/pipeline/project), then the wizard redraws
+    $('story-slug').addEventListener('change', function () {
+      var slug = $('story-slug').value;
+      selectSlug(slug, '');
+      api('POST', '/api/pipeline/project', { story_slug: slug, pack: '' }).then(function () {
+        if (window.StudioWizard) window.StudioWizard.refresh();
+      }).catch(function (e) { showApiError(e); });
+    });
     $('story-pack').addEventListener('change', function () { loadPack(false); });
     $('story-load').addEventListener('click', loadStoryText);
     $('story-save').addEventListener('click', saveStory);
@@ -1390,12 +1558,20 @@
       var h = location.hash.slice(1);
       if (h !== S.section) showSection(h);
     });
+    window.addEventListener('studio:lang', onLangChange);
     showSection((location.hash || '#story').slice(1));
+    loadWriterChoices();
     tick();
     // one poller, and it stays quiet while the tab is hidden
     setInterval(function () { if (!document.hidden) tick(); }, POLL_MS);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
+  // The strings load first (I18N.ready), then the page starts.
+  function boot() {
+    var ready = window.I18N ? window.I18N.ready : Promise.resolve();
+    ready.then(init, init);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
