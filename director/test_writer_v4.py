@@ -484,6 +484,58 @@ def test_writer_stages_never_get_tools_only_the_notes_call_does(monkeypatch):
     assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "WebSearch,WebFetch" and "--allowedTools" in seen["cmd"]
 
 
+@pytest.mark.real_style
+def test_the_stage_3_example_row_passes_the_pack_checker(tmp_path):
+    import write_pack as w
+    import writer_prompts as wpm
+    pack = w.load_style_pack("deva_neon")
+    monkeypatch_look = wpm.LOOK_EXAMPLE
+    try:
+        wpm.LOOK_EXAMPLE = wpm.look_example(pack)
+        row = w.legacy_fields(wpm.example_row(1, 1, ["en"]), {})
+    finally:
+        wpm.LOOK_EXAMPLE = monkeypatch_look
+    d = tmp_path / "stories" / "t" / "pack_x"
+    d.mkdir(parents=True)
+    (d.parent / "story.json").write_text(json.dumps({"slug": "t", "style_pack": "deva_neon", "schema_version": 1}), encoding="utf-8")
+    (d / "shots.json").write_text(json.dumps([row]), encoding="utf-8")
+    (d / "bible.json").write_text("{}", encoding="utf-8")
+    report = w.pack_check_report(d)
+    assert report is not None and not report["fail"], report["issues"]
+    assert row["look"]["hook"]["type"] == "H-03" and "palette_id" in row["look"]
+
+
+def test_stage_3_brief_states_the_rehook_rule_the_validator_enforces():
+    import pack_validator as pv
+    import writer_prompts as wpm
+    assert (wpm.REHOOK_REEL_MIN_SEC, wpm.REHOOK_WINDOW) == (pv.REHOOK_REEL_MIN_SEC, pv.REHOOK_WINDOW_SEC)
+    text = wpm.stage3_text(1)
+    assert "STARTS between 25 s and 35 s" in text and "45 s or longer" in text
+
+
+def test_plan_errors_catch_a_broken_stage_1_plan():
+    import write_pack as w
+    good = {"episodes": [{"episode": 1, "seconds": 70}, {"episode": 2, "seconds": 66.5}]}
+    assert w.plan_errors(good) == []
+    assert w.plan_errors({"episodes": []})[0].startswith("PLAN-01")
+    assert w.plan_errors({"episodes": [{"episode": 1, "seconds": 5}]})[0].startswith("PLAN-02")
+    assert w.plan_errors({"episodes": [{"episode": 1, "seconds": 70}, {"episode": 3, "seconds": 70}]})[0].startswith("PLAN-03")
+    assert w.plan_errors({"episodes": [{"episode": 1, "seconds": 70}, {"episode": 1, "seconds": 70}]})[0].startswith("PLAN-03")
+
+
+def test_every_claude_call_uses_stream_json(monkeypatch):
+    import write_pack as w
+    seen = {}
+
+    class R:
+        returncode, stderr = 0, ""
+        stdout = '{"type": "result", "result": "x"}'
+
+    monkeypatch.setattr(w.subprocess, "run", lambda cmd, **kw: seen.setdefault("cmd", cmd) and R())
+    w.call_claude("brief", "opus", "high")                                  # a writer stage, no web
+    assert seen["cmd"][seen["cmd"].index("--output-format") + 1] == "stream-json"
+
+
 def test_web_notes_reach_every_writer(monkeypatch):
     import write_pack as w
     monkeypatch.setattr(w, "WEB", True)

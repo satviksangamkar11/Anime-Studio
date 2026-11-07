@@ -124,7 +124,8 @@ def rule_r1(ep, ret, story, is_final):
 
 
 def rule_r2(ep, ret, story, is_final):
-    """Beats covering 0 .. first_motion_s must be hold: true, unless the first shot's post declares push/zoom at 0."""
+    """Motion starts by first_motion_s: a beat covering 0 .. first_motion_s must NOT be hold: true, unless the first shot's post declares push/zoom at 0.
+    (11-08: the check was inverted against COLOUR_AUDIT.md R2 / brief B4c, which failed every motion-first row.)"""
     shot = ep["shots"][0]
     sid, key = shot.get("id"), ep["key"]
     limit = ret["first_motion_s"]
@@ -136,10 +137,10 @@ def rule_r2(ep, ret, story, is_final):
         return [_entry("R2", "WARN", sid, key, "no beat covers the first_motion_s window")]
     if _push_zoom_at_zero(shot):
         return []
-    bad = [b for b in covering if b.get("hold") is not True]
+    bad = [b for b in covering if b.get("hold") is True]
     if bad:
         return [_entry("R2", "FAIL", sid, key,
-                       f"motion starts at {bad[0]['start_s']:.2f} s before first_motion_s {limit} s (beat not hold)")]
+                       f"a hold beat covers {bad[0]['start_s']:.2f} s: motion must start within first_motion_s {limit} s")]
     return []
 
 
@@ -178,15 +179,16 @@ def rule_r4(ep, ret, story, is_final):
 
 
 def rule_r5(ep, ret, story, is_final):
-    """A hold: true beat must start before no_hold_before_s."""
+    """No hold: true beat may start before no_hold_before_s (COLOUR_AUDIT.md R5: stillness pays off only after the viewer decided to stay)."""
     beats = _all_beats(ep)
     sid, key = ep["shots"][0].get("id"), ep["key"]
     if not beats:
         return [_entry("R5", "WARN", sid, key, "no beats in episode")]
     limit = ret["no_hold_before_s"]
-    if any(b.get("hold") is True and b["start_s"] < limit for b in beats):
+    early = [b for b in beats if b.get("hold") is True and b["start_s"] < limit]
+    if not early:
         return []
-    return [_entry("R5", "FAIL", sid, key, f"no hold beat starts before {limit} s")]
+    return [_entry("R5", "FAIL", sid, key, f"a hold beat starts at {early[0]['start_s']:.2f} s, before {limit} s")]
 
 
 def _change_events(ep):

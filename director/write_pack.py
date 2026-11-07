@@ -829,6 +829,31 @@ def episode_seconds(plan):
     return out
 
 
+def plan_errors(plan):
+    """Audit A 11-08: the stage 1 episode plan is checked before any episode is written: episodes 1..N once each, each with a plausible length."""
+    if not isinstance(plan, dict) or "episodes" not in plan:
+        return []                      # an older stage 1 (lines 'Episode N', no ```json story block): nothing to check here
+    eps = plan["episodes"]
+    if not isinstance(eps, list) or not eps:
+        return ["PLAN-01 at episodes: the story block must list the episodes"]
+    errs, seen = [], []
+    for i, e in enumerate(eps):
+        n = e.get("episode") if isinstance(e, dict) else None
+        if not isinstance(n, int) or isinstance(n, bool):
+            errs.append(f"PLAN-01 at episodes[{i}].episode: a whole episode number is required")
+            continue
+        seen.append(n)
+        sec = e.get("seconds")
+        if not isinstance(sec, (int, float)) or isinstance(sec, bool) or not PLAN_SECONDS[0] <= sec <= PLAN_SECONDS[1]:
+            errs.append(f"PLAN-02 at episodes[{i}].seconds: episode {n} needs a length between {PLAN_SECONDS[0]} and {PLAN_SECONDS[1]} s, got {sec!r}")
+    if seen and sorted(seen) != list(range(1, len(seen) + 1)):
+        errs.append(f"PLAN-03 at episodes: the numbers must be 1..{len(seen)} once each, got {sorted(seen)}")
+    return errs
+
+
+PLAN_SECONDS = (20, 180)        # a reel episode is a short clip run: outside this window the plan is a slip, not a story
+
+
 def is_card_group(value):
     return isinstance(value, dict)
 
@@ -1206,7 +1231,7 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         return text, dict(data, output_languages=list(langs), output_language=langs[0], **extra)   # the selection, for the validator
 
     with rec.step("analysis_done", None, via=via, model=model, effort=effort) as run:
-        text1, plan = stage("1", story_parse, lambda d: gate("1", d, None))
+        text1, plan = stage("1", story_parse, lambda d: with_language(gate("1", d, None), plan_errors(d)))
         done.append(("1", text1))
         text2, bible = stage("2", parse_bible, lambda d: with_language(gate("2", d, None), style_pack_errors(d, STYLE_PACK)))
         done.append(("2", text2))
@@ -1245,8 +1270,26 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
                                              encoding="utf-8")
         run.files = [f"{out.name}/{n}" for n in ("PACK.md", "bible.json", "shots.json", "story_plan.json")]
         run.note = f"{len(episodes)} episodes, {len(shots)} shots, output languages {','.join(langs)}"
+        report = pack_check_report(out)                           # audit A 11-08: Gate A reads this report (look block, retention rules R1-R10)
+        if report is not None:
+            (out / "check_pack_report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
+            run.files.append(f"{out.name}/check_pack_report.json")
+            fails = [i for i in report.get("issues", []) if " FAIL" in i]
+            run.note += f"; check_pack: {len(fails)} FAIL, {len(report.get('issues', [])) - len(fails)} WARN"
+            for line in fails:
+                print(f"CHECK_PACK {line}")
     print(f"{len(episodes)} episodes, {len(shots)} shots, output languages {','.join(langs)} -> {out}")
     return shots
+
+
+def pack_check_report(out):
+    """director/check_pack.py on the finished pack folder: the report dict, or None when the checker itself cannot run (a warning, never a stop)."""
+    try:
+        import check_pack
+        return check_pack.check(str(out))
+    except Exception as exc:
+        print(f"write_pack: check_pack could not run ({type(exc).__name__}: {exc})", file=sys.stderr)
+        return None
 
 
 def run_single(story_text, out, via, model, effort, allow_paid, rec=None):
@@ -1344,6 +1387,7 @@ def main(argv=None):
         style = style_rules(pack_id) if pack_id else ""
         global STYLE_PACK
         STYLE_PACK = load_style_pack(pack_id)
+        wp.LOOK_EXAMPLE = wp.look_example(STYLE_PACK)
     out = Path(a.out_dir)
     rec = run_registry.Recorder(run_registry.story_folder(Path(a.story)), run_registry.writer_tag(writer, via, model),
                                 pack=out.name, via=via, model=model, effort=effort)

@@ -11,9 +11,9 @@ from test_write_pack_staged import fake_claude, no_network, no_validator, story 
 def test_stage_1_with_no_episode_numbers_is_a_stage_failure(tmp_path, story, fake_claude, monkeypatch):
     bad = "```json story\n" + json.dumps({"episodes": [{"title": "Intro"}]}) + "\n```"
     monkeypatch.setitem(base.CANNED, "1", bad)
-    with pytest.raises(write_pack.StageFailed, match="stage 1 answer is unusable"):
+    with pytest.raises(write_pack.StageFailed, match="PLAN-01"):     # audit A 11-08: the plan check stops it before stage 2 is paid for
         base.staged(story, tmp_path / "pack", "--via", "claude")
-    assert [c["name"] for c in fake_claude] == ["1", "2"]     # stage 2 runs before the episode list is read
+    assert "2" not in [c["name"] for c in fake_claude]
 
 
 def test_single_call_with_an_unparsable_saved_answer_is_a_stage_failure(tmp_path):

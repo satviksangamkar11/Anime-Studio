@@ -40,6 +40,7 @@ Episode time of a shot = start_frame / fps + shot-relative seconds. Impact at_fr
 round(at_s * fps); at_s = at_frame / fps.
 """
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -214,6 +215,43 @@ def _caption_changes(look):
     return [0.0] if isinstance(caption, str) and caption.strip() else []
 
 
+def _range_start(value):
+    """Start second of a time range given as [a, b] or as the text '1.2-1.6s'; None when it has none."""
+    if _two_numbers(value):
+        return float(value[0])
+    m = re.match(r"\s*(\d+(?:\.\d+)?)\s*-", value) if isinstance(value, str) else None
+    return float(m.group(1)) if m else None
+
+
+def _v4_parts(shot, length_s):
+    """Beats, cast ids, dialogue (start, text), camera move times and caption change times of a V4 writer row (per_second_directives)."""
+    beats, camera_rel = [], []
+    for d in shot.get("per_second_directives") or []:
+        if not isinstance(d, dict) or not _is_num(d.get("t0")) or not _is_num(d.get("t1")) or d["t0"] >= length_s:
+            continue
+        acting = _str(d.get("action_pose_expression"))
+        beats.append(_beat(float(d["t0"]), min(float(d["t1"]), length_s), hold="hold" in acting.lower(), acting=acting))
+        cam = _str(d.get("camera")).strip().lower()
+        if cam and STATIC_WORD not in cam and "hold" not in cam:
+            camera_rel.append(float(d["t0"]))
+    anchors = shot.get("reference_anchors") if isinstance(shot.get("reference_anchors"), dict) else {}
+    cast = [p["id"] for p in anchors.get("character_positions") or [] if isinstance(p, dict) and isinstance(p.get("id"), str)]
+    track = shot.get("audio_and_dialogue_track") if isinstance(shot.get("audio_and_dialogue_track"), dict) else {}
+    dialogue = []
+    for line in track.get("dialogue") or []:
+        start = _range_start(line.get("time_range")) if isinstance(line, dict) else None
+        if start is not None and 0 <= start < length_s:
+            dialogue.append((start, _str(line.get("text"))))
+    caption_rel = []
+    by_lang = track.get("captions_by_lang")
+    for cards in by_lang.values() if isinstance(by_lang, dict) else []:
+        for card in cards if isinstance(cards, list) else []:
+            start = _range_start(card.get("time_range")) if isinstance(card, dict) else None
+            if start is not None and 0 <= start < length_s:
+                caption_rel.append(start)
+    return {"beats": beats, "cast_ids": cast, "dialogue": dialogue, "camera_rel": camera_rel, "caption_rel": caption_rel}
+
+
 def _parse_rich_or_legacy(shot, fps):
     """v2.2 and legacy shots. Returns shot-relative parts. Raises ValueError for malformed input (P0)."""
     soft = []
@@ -240,8 +278,16 @@ def _parse_rich_or_legacy(shot, fps):
                                primary=b.get("primary") is True, bhava=b.get("bhava") if isinstance(b.get("bhava"), str) else None,
                                acting=_str(b.get("acting")), reveal=b.get("reveal") is True))
 
+    v4 = _v4_parts(shot, length_s) if isinstance(shot.get("per_second_directives"), list) else None
+    if v4:   # the writer's V4 row (11-08 audit A): beats, cast, dialogue starts, camera moves and caption changes come from its columns
+        beats = v4["beats"]
+        beats_raw = [{"acting": b["acting"]} for b in beats]
+
     dialogue = []
     raw_dialogue = shot.get("dialogue")
+    if v4:
+        raw_dialogue = []
+        dialogue = list(v4["dialogue"])
     if raw_dialogue is not None and not isinstance(raw_dialogue, list):
         soft.append("dialogue is not a list; ignored")
         raw_dialogue = []
@@ -259,6 +305,7 @@ def _parse_rich_or_legacy(shot, fps):
     compositing = shot.get("compositing")
     post = _str(compositing.get("post")).lower() if isinstance(compositing, dict) else ""
     moved = (move != "" and STATIC_WORD not in move.lower()) or any(w in post for w in ("push", "zoom"))
+    camera_rel = v4["camera_rel"] if v4 else ([0.0] if moved else [])
 
     prompt_parts = [_text(shot.get(k)) for k in ("style", "world", "action")]
     prompt_parts.append(_text(camera))
@@ -272,12 +319,12 @@ def _parse_rich_or_legacy(shot, fps):
         "look": look,
         "beats": beats,
         "impacts": _impacts(look, soft),
-        "cast_ids": _ids(shot.get("cast"), soft, "cast"),
+        "cast_ids": v4["cast_ids"] if v4 else _ids(shot.get("cast"), soft, "cast"),
         "text": {"prompt": "\n".join(p for p in prompt_parts if p), "light_world": light_world},
         "first_dialogue": dialogue[0][1] if dialogue else None,
         "dialogue_rel": [d[0] for d in dialogue],
-        "camera_rel": [0.0] if moved else [],
-        "caption_rel": _caption_changes(look),
+        "camera_rel": camera_rel,
+        "caption_rel": sorted(set(_caption_changes(look) + (v4["caption_rel"] if v4 else []))),
         "purpose": _str(shot.get("purpose")),
         "sound_text": _str(shot.get("sound")),
         "soft": soft,

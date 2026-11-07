@@ -50,7 +50,7 @@ def _base():
         hook = {"type": "H-03", "caption": "Why is his throat blue?"} if i == 0 else None
         extra = {"end_caption": "Will he survive?"} if i == 7 else {}
         if i == 0:
-            beats = [_beat(0.0, 1.5, hold=True, acting="eyes slowly open"),
+            beats = [_beat(0.0, 1.5, acting="eyes slowly open"),
                      _beat(1.5, 3.0, acting="turns head")]
         elif i == 4:
             beats = [_beat(12.0, 13.0, primary=True, reveal=True, acting="the blade lights"),
@@ -67,7 +67,7 @@ def _base():
     for i in range(4):
         hook = {"type": "H-06", "caption": "Why is the lake burning?"} if i == 0 else None
         if i == 0:
-            beats = [_beat(0.0, 1.5, hold=True, acting="eyes narrow"), _beat(1.5, 3.0, acting="turns")]
+            beats = [_beat(0.0, 1.5, acting="eyes narrow"), _beat(1.5, 3.0, acting="turns")]
         else:
             beats = [_beat(3.0 * i, 3.0 * i + 3.0, acting="moves")]
         ep2.append(_shot(
@@ -132,16 +132,16 @@ def test_r1_warn_fade_in_first_beat():
 
 
 # ---- R2 ----
-def test_r2_fail_first_beat_not_hold():
+def test_r2_fail_first_beat_is_a_hold():
     eps = _base()
-    eps[0]["shots"][0]["beats"][0]["hold"] = False
+    eps[0]["shots"][0]["beats"][0]["hold"] = True
     assert _find(check_retention_rules(eps, CORE), "R2", "FAIL")
 
 
 def test_r2_push_or_zoom_at_zero_exempts_but_offset_push_does_not():
     eps = _base()
     shot = eps[0]["shots"][0]
-    shot["beats"][0]["hold"] = False
+    shot["beats"][0]["hold"] = True
     shot["raw"] = {"compositing": {"post": "slow zoom starts at 0 s"}}
     assert not _find(check_retention_rules(eps, CORE), "R2")
     shot["raw"] = {"compositing": {"post": "push starts at 0.5 s"}}
@@ -170,10 +170,9 @@ def test_r4_fail_caption_over_six_words():
 
 
 # ---- R5 ----
-def test_r5_fail_no_hold_before_three_seconds():
+def test_r5_fail_a_hold_before_three_seconds():
     eps = _base()
-    eps[0]["shots"][0]["beats"] = [_beat(0.0, 3.0, acting="walks")]
-    eps[0]["shots"][1]["beats"] = [_beat(3.0, 6.0, hold=True, acting="stills")]
+    eps[0]["shots"][0]["beats"] = [_beat(0.0, 1.0, acting="walks"), _beat(1.0, 3.0, hold=True, acting="stills")]
     assert _find(check_retention_rules(eps, CORE), "R5", "FAIL")
 
 

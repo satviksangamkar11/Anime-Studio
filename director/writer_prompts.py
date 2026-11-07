@@ -257,17 +257,27 @@ Col 3 reference_anchors, with all four sub-fields:
 Col 4 hook_type: one of {hooks}. The opening shot (is_opening_0_2s_hook true) and the closing shot (is_closing_hook true) use one of
    {strong}. chase, callback and expression-beat never open or close the reel. At least one shot in every three in a row is reveal,
    reversal or callback. An intended flip of eyeline, screen position or lighting carries deliberate_flip_marker (for example
-   "HARD CUT — time skip: 2h"); otherwise deliberate_flip_marker is null.
+   "HARD CUT — time skip: 2h"); otherwise deliberate_flip_marker is null. When the episode runs {REHOOK_REEL_MIN_SEC:.0f} s or longer, a shot that
+   STARTS between {REHOOK_WINDOW[0]:.0f} s and {REHOOK_WINDOW[1]:.0f} s of the episode must use one of {strong} (the re-hook; the checker counts the
+   start time of each shot from the sum of the shot lengths before it).
 Col 5 per_second_directives: contiguous brackets from 0.0 with no gap and no overlap, up to editorial_duration_sec. One-second
    brackets, plus a sub-second bracket such as 2.0 to 2.5 for a fast burst. Every bracket has t0, t1, action_pose_expression, camera,
    spatial_position, audio_cue (the synchronized birth or impact sound) and handoff_to_next_second.
 Col 6 audio_and_dialogue_track: {_col6_text(langs)}performance_notes {{text, narrator_mouth_closed: true, mouth_state: {{"0": "closed", "1": "closed", ...}} with one entry per second}}.
    Output language{'s' if multi(langs) else ''} of this story: {languages_clause(langs)}. sfx_cues [{{time_range "1.2-1.6s", sfx_key, description}}] are in English.
    The speech text is for ElevenLabs. Every H3 field describes picture and sound only: no (S1) ids, no [Language] tags, no <d> tags, no <Audio N>.
+Col 7 look (audit A 11-08: the checker needs it on EVERY shot): an object with palette_id, act, phase (all three from the STYLE PACK RULES section),
+   focal (a character of this shot), focal_value, impact_frames, vfx (colour names of that palette), accent_use and hold_purpose; the FIRST shot of
+   the episode also carries look.hook {{type, caption}}. It is a top-level key of the row, never inside a style text.
 Answer with exactly one ```json shots block: a JSON list of this episode's rows, each row in the shape below (the values are an example):
 ```json shots
 {json.dumps([example_row(episode, first, langs)], ensure_ascii=False, indent=1)}
 ```"""
+
+
+REHOOK_REEL_MIN_SEC = 45.0      # mirrors pack_validator.REHOOK_REEL_MIN_SEC (a test keeps them equal)
+REHOOK_WINDOW = (25.0, 35.0)    # mirrors pack_validator.REHOOK_WINDOW_SEC
+LOOK_EXAMPLE = None   # set by write_pack from the chosen style pack
 
 
 def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG):
@@ -304,7 +314,7 @@ def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG):
         track = {"narration": {"text": LANG_RULE[langs[0]]["example"], "language": langs[0], "time_range": window}, "dialogue": []}
     track["sfx_cues"] = [{"time_range": "1.2-1.6s", "sfx_key": "brass_lamp_flame_pop", "description": "a small pop as the flame bends"}]
     track["performance_notes"] = {"text": "Narrator voice only, steady and warm.", "narrator_mouth_closed": True, "mouth_state": mouth}
-    return {
+    row = {
         "id": f"SHOT-{first:03d}", "episode": episode, "route": "Ref2VA",
         "lattice_n": lat["n"], "pixel_frames": lat["pixel_frames"], "latent_slots": lat["latent_slots"],
         "editorial_duration_sec": float(seconds),
@@ -320,6 +330,24 @@ def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG):
         "per_second_directives": directives,
         "audio_and_dialogue_track": track,
     }
+    if LOOK_EXAMPLE:
+        row["look"] = json.loads(json.dumps(LOOK_EXAMPLE))
+    return row
+
+
+def look_example(pack):
+    """An example look block built from the chosen style pack (real palette id, act, phase and colour name); None without a pack."""
+    try:
+        pid, pal = next(iter(pack["palettes"].items()))
+        colour = next(iter(pal["colors"]))
+        act = next(iter(pack["acts"]))
+        phase = pack["colour_script"]["phases"][0]["id"]
+    except (KeyError, StopIteration, IndexError, TypeError, AttributeError):
+        return None
+    return {"palette_id": pid, "act": act, "phase": phase, "focal": "CHAR-RAJ", "focal_value": "lightest",
+            "hook": {"type": "H-03", "caption": "Why does the lamp bend?"},
+            "impact_frames": [{"at_s": 2.1, "type": "white_out", "frames": 2}],
+            "vfx": [{"color": colour, "role": "lamp glow"}], "accent_use": False, "hold_purpose": None}
 
 
 def stage5_text(langs=DEFAULT_OUT_LANG):
