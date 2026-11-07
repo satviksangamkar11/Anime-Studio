@@ -89,3 +89,6 @@ After any edit made by a script (python heredoc), check the file parses and has 
 
 ## RULE 21: EVERY STORY HAS ITS OWN FLOW FOLDER; THE PACKET IS COMPLETE (owner, 2026-11-08)
 Pictures of a story live only in `flow_outputs/anime_<slug>` (`server.flow_root`; Kaliya keeps `anime_kaliya`). The server reaches only `anime_*` folders, never Granth ones. The Flow agent packet carries everything for making AND downloading (project link, aspect, edit base, neighbours, safety stops, fix loop, reviewer commands, queue, progress, phase-2 2K download); `ui/test_packet_and_roots.py` fails if any item goes missing.
+
+## RULE 22: A STORY OTHER THAN KALIYA MUST WORK END TO END (owner, 2026-11-08)
+Folders come from the story, never from the Kaliya defaults: `_project_update` sets `images_dir` to `flow_root(story)` and resets pack/results on a story switch; `facts()` reads `<flow folder>/adhyay_01`; every queue/review/neighbour/bridge/watermark command takes `story`; packet ids may be `SHOT-001` (expands to 001A/B); the Prepare button converts the pack to `<pack>/h3_story.json`. A new gap found by an audit is fixed with a test, not noted. Open gaps live in the NOW block of PROJECT_LOG.md.
