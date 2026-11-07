@@ -159,6 +159,8 @@ def test_4b_marathi_status_says_draft():
 def _english_literals(text):
     """Quoted text that reads as UI text: [A-Za-z]{2,} in a text, title, label, placeholder or message slot."""
     code = _code_text(text).replace(T_WRAPPER, "")
+    # stageDetail() matches the server's English protocol strings (pipeline.py) and answers with t(); those literals are data, not UI text
+    code = re.sub(r"function stageDetail\(.*?\n  \}\n", "", code, count=1, flags=re.S)
     word = r"'[^'\n]*[A-Za-z]{2,}[^'\n]*'"
     patterns = [
         r"(?:textContent|text|placeholder|title|label|hint|note|legend)\s*:\s*" + word,

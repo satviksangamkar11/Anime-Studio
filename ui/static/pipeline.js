@@ -294,6 +294,39 @@
   }
 
   // ---------- Words: literal maps, so every key stays visible to the tests ----------
+  // The server sends stage details in English (pipeline.py); show them in the chosen language. Unknown text is shown as it is.
+  function stageDetail(raw) {
+    var d = String(raw), m;
+    switch (d) {
+      case 'SOURCE.md saved': return t('step.det_story_saved');
+      case 'Story not saved': return t('step.det_story_not_saved');
+      case 'Waiting for story': return t('step.det_wait_story');
+      case 'Shots ready, awaiting Gate A': return t('step.det_shots_ready_a');
+      case 'Ready for analysis': return t('step.det_ready_analysis');
+      case 'No finals yet': return t('step.det_no_finals');
+      case 'All finals ready, awaiting Gate B': return t('step.det_all_finals_b');
+      case 'Ready for images': return t('step.det_ready_images');
+      case 'Awaiting Gate C (START)': return t('step.det_awaiting_c');
+      case 'No clips yet': return t('step.det_no_clips');
+      case 'All clips home, awaiting Gate D': return t('step.det_all_clips_d');
+      case 'Ready for render': return t('step.det_ready_render');
+      case 'Ready for export': return t('step.det_ready_export');
+      default: break;
+    }
+    m = /^Gate ([A-D]) approved$/.exec(d);
+    if (m) return t('step.det_gate_approved', { g: m[1] });
+    m = /^Gate ([A-D]) rejected, rerun the stage or decide again$/.exec(d);
+    if (m) return t('step.det_gate_rejected', { g: m[1] });
+    m = /^Waiting for Gate ([A-D])$/.exec(d);
+    if (m) return t('step.det_wait_gate', { g: m[1] });
+    m = /^(\d+) stages saved, run again to resume$/.exec(d);
+    if (m) return t('step.det_stages_saved', { n: m[1] });
+    m = /^Finals: (\d+)\/(\d+), pending: (\d+)$/.exec(d);
+    if (m) return t('step.det_finals', { a: m[1], b: m[2], c: m[3] });
+    m = /^Clips: (\d+)\/(\d+)$/.exec(d);
+    if (m) return t('step.det_clips', { a: m[1], b: m[2] });
+    return d;
+  }
   function statusWord(s) {
     switch (s) {
       case 'locked': return t('status.locked');
@@ -1037,7 +1070,7 @@
     });
 
     if (stage.detail) {
-      card.appendChild(helperDetails('stage-' + stage.id, [el('p', { class: 'muted', textContent: String(stage.detail) })]));
+      card.appendChild(helperDetails('stage-' + stage.id, [el('p', { class: 'muted', textContent: stageDetail(stage.detail) })]));
     }
     return card;
   }
