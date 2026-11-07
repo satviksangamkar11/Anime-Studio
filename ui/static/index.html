@@ -3,7 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  /* Colour theme before first paint (no flash). studio.theme: light, dark or reading; anything else = the device setting. */
+  (function () {
+    try {
+      var t = window.localStorage.getItem('studio.theme');
+      if (t === 'light' || t === 'dark' || t === 'reading') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {
+      /* storage blocked: the device setting applies */
+    }
+  })();
+</script>
 <title data-i18n="app.title">Anime Studio</title>
+<link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,6 +29,15 @@
       <svg class="icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
       <button type="button" class="lang-btn" id="ui-lang-en" aria-pressed="true" data-i18n="lang.ui_en">English</button>
       <button type="button" class="lang-btn" id="ui-lang-mr" aria-pressed="false" data-i18n="lang.ui_mr">मराठी</button>
+    </div>
+    <div class="theme-switch">
+      <label for="theme-select" data-i18n="theme.label">Colours</label>
+      <select id="theme-select">
+        <option value="system" data-i18n="theme.system">Same as device</option>
+        <option value="light" data-i18n="theme.light">Light</option>
+        <option value="dark" data-i18n="theme.dark">Dark</option>
+        <option value="reading" data-i18n="theme.reading">Reading (green)</option>
+      </select>
     </div>
     <span id="spend-badge" class="badge b-grey" data-i18n="app.spend_off">Paid work: OFF (safe)</span>
   </div>
@@ -397,6 +418,7 @@
 </footer>
 
 <script src="i18n.js"></script>
+<script src="theme.js"></script>
 <script src="app.js"></script>
 <script src="pipeline.js"></script>
 </body>

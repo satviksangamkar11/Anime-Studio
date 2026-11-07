@@ -17,6 +17,8 @@ STATIC = HERE / "static"
 PLAN = HERE / "PLAN.md"
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 CSS = (STATIC / "style.css").read_text(encoding="utf-8")
+TOKENS = (STATIC / "tokens.css").read_text(encoding="utf-8")     # all colour values (2026-11-07 colour system)
+THEME_JS = (STATIC / "theme.js").read_text(encoding="utf-8")     # colour theme switch
 JS = (STATIC / "app.js").read_text(encoding="utf-8")
 PLAN_TEXT = PLAN.read_text(encoding="utf-8")
 # English string table (T2, docs/UI_REDESIGN_PLAN_2026-11-07.md section 3). Empty dict when the file is missing.
@@ -108,16 +110,20 @@ def _app_endpoint_literals():
 
 
 def test_no_external_urls_in_any_asset():
-    for name, text in [("index.html", INDEX), ("style.css", CSS), ("app.js", JS)]:
+    for name, text in [("index.html", INDEX), ("style.css", CSS), ("app.js", JS), ("tokens.css", TOKENS),
+                       ("theme.js", THEME_JS)]:
         assert not re.search(r"https?://", text), name + " contains an http(s) URL"
     assert not re.search(r"@import|url\(\s*['\"]?https?:", CSS)
 
 
 def test_index_references_assets_relatively():
-    for f in ["index.html", "style.css", "app.js"]:
+    for f in ["index.html", "style.css", "app.js", "tokens.css", "theme.js"]:
         assert (STATIC / f).is_file(), f + " is missing"
     assert re.search(r'<link\s+rel="stylesheet"\s+href="style\.css"\s*>', INDEX)
+    assert re.search(r'<link\s+rel="stylesheet"\s+href="tokens\.css"\s*>', INDEX), "tokens.css link missing"
+    assert INDEX.index('href="tokens.css"') < INDEX.index('href="style.css"'), "tokens.css must load first"
     assert re.search(r'<script\s+src="app\.js"\s*>\s*</script>', INDEX)
+    assert re.search(r'<script\s+src="theme\.js"\s*>\s*</script>', INDEX), "theme.js script missing"
     assert not re.search(r'(src|href)="/', INDEX), "asset paths must be relative"
 
 
@@ -425,7 +431,7 @@ def test_css_44px_touch_targets_and_pills():
 
 
 def test_css_focus_ring_is_three_pixels_on_every_control():
-    assert re.search(r":focus-visible\s*\{[^}]*outline:\s*3px solid var\(--focus\)", CSS), "3 px focus ring missing"
+    assert re.search(r":focus-visible\s*\{[^}]*outline:\s*3px solid var\(--focus-ring\)", CSS), "3 px focus ring missing"
     assert re.search(r"input:focus-visible[^{]*\{[^}]*outline:\s*3px solid", CSS), "inputs need the focus ring"
     assert not re.search(r"\.overlay:focus-within \.dialog\s*\{\s*outline:\s*none", CSS), "dialog outline removed (L7)"
 
@@ -444,15 +450,34 @@ def test_css_tables_stack_on_phone_with_data_labels():
     assert CSS.index("content: attr(data-label)") > phone, "data-label rule must sit in the phone block"
 
 
-def _css_tokens(block_start):
-    """Return the custom properties of the first {...} block after block_start."""
-    i = CSS.index(block_start)
-    j = CSS.index("}", i)
-    return {k: v for k, v in re.findall(r"--([a-z-]+):\s*(#[0-9a-fA-F]{6})\s*;", CSS[i:j])}
+def _block(text, selector):
+    """Hex declarations of the rule whose selector is `selector` (the text before its brace), as {name: hex}."""
+    m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", text)
+    assert m, "token rule not found in tokens.css: " + selector
+    return dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})\s*;", m.group(1)))
 
 
-LIGHT_TOKENS = _css_tokens(":root {")
-DARK_TOKENS = [_css_tokens(':root:not([data-theme="light"])'), _css_tokens(':root[data-theme="dark"]')]
+DARK_SEL = ':root:not([data-theme="light"]):not([data-theme="reading"])'   # system dark (no override)
+DARK_EXPLICIT_SEL = ':root[data-theme="dark"]'
+READING_SEL = ':root[data-theme="reading"]'
+CONTRAST_TXT = TOKENS[TOKENS.index("@media (prefers-contrast: more) {"):]
+
+LIGHT_TOKENS = _block(TOKENS, ":root")
+# Effective values per theme. Reading overrides only a few tokens, so it is light plus its own block.
+THEME_TOKENS = {
+    "light": LIGHT_TOKENS,
+    "dark": _block(TOKENS, DARK_EXPLICIT_SEL),
+    "dark-system": _block(TOKENS, DARK_SEL),
+    "reading": {**LIGHT_TOKENS, **_block(TOKENS, READING_SEL)},
+}
+# The same themes with the prefers-contrast: more overrides on top.
+CONTRAST_TOKENS = {
+    "light (more contrast)": {**THEME_TOKENS["light"], **_block(CONTRAST_TXT, ":root")},
+    "dark (more contrast)": {**THEME_TOKENS["dark"], **_block(CONTRAST_TXT, DARK_EXPLICIT_SEL)},
+    "dark-system (more contrast)": {**THEME_TOKENS["dark-system"], **_block(CONTRAST_TXT, DARK_SEL)},
+    "reading (more contrast)": {**THEME_TOKENS["reading"], **_block(CONTRAST_TXT, READING_SEL)},
+}
+ALL_VARIANTS = {**THEME_TOKENS, **CONTRAST_TOKENS}
 
 
 def _lum(hexcol):
@@ -466,28 +491,37 @@ def _ratio(a, b):
     return (la + 0.05) / (lb + 0.05)
 
 
-TEXT_ON_BG = [("fg", "panel"), ("muted", "panel"), ("muted", "page-bg"), ("ok-fg", "tint-green"),
-              ("err-fg", "tint-error-bar"), ("amber-fg", "amber-bg"), ("red-fg", "red"),
-              ("blue-fg", "blue"), ("accent-fg", "accent"), ("#ffffff", "ok"), ("#ffffff", "grey"),
-              ("#ffffff", "indigo")]
+# Other text (WCAG 1.4.3, 4.5:1). Placeholder and the active state are 4.5 targets, not 7:1 (v2 section 4.1).
+TEXT_ON_BG = [("accent", "app-bg"), ("accent", "surface"), ("button-text", "button-bg"), ("on-solid", "header-bg"),
+              ("accent-fg", "accent"), ("red-fg", "red"), ("blue-fg", "blue"), ("on-solid", "ok"),
+              ("on-solid", "grey"), ("ok-fg", "surface"), ("err-fg", "surface"), ("text-primary", "active-bg"),
+              ("text-primary", "hover-bg"), ("text-primary", "selection-bg"), ("placeholder", "app-bg"),
+              ("placeholder", "surface")]
 
 
 def _resolve(tokens, name):
     return name if name.startswith("#") else tokens[name]
 
 
-def test_contrast_tokens_defined_for_light_and_dark():
-    for name in ["fg", "page-bg", "panel", "muted", "focus", "ok-fg", "err-fg", "amber-fg", "amber-bg",
-                 "red", "red-fg", "blue", "blue-fg", "accent", "accent-fg", "ok", "grey", "indigo"]:
+TOKEN_NAMES_NEEDED = [
+    "app-bg", "surface", "text-primary", "text-secondary", "header-bg", "on-solid", "accent", "accent-fg",
+    "border", "control-border", "button-bg", "button-text", "focus-ring", "hover-bg", "active-bg", "placeholder",
+    "disabled-text", "table-head-bg", "input-bg", "editor-bg", "selection-bg", "ok", "ok-fg", "tint-green", "amber",
+    "amber-bg", "amber-fg", "tint-amber", "red", "red-fg", "tint-red", "err-fg", "tint-error-bar", "blue", "blue-fg",
+    "info-fg", "tint-info", "grey", "tint-grey",
+]
+
+
+def test_contrast_tokens_defined_for_every_theme():
+    for name in TOKEN_NAMES_NEEDED:
         assert name in LIGHT_TOKENS, "light token missing: " + name
-    for tokens in DARK_TOKENS:
-        assert tokens, "dark token block not found"
-        for name in ["fg", "page-bg", "panel", "muted", "focus", "err-fg", "red", "red-fg", "ok", "grey"]:
-            assert name in tokens, "dark token missing: " + name
+    for theme, tokens in THEME_TOKENS.items():
+        for name in TOKEN_NAMES_NEEDED:
+            assert name in tokens, "%s token missing: %s" % (theme, name)
 
 
-def test_text_contrast_meets_wcag_aa_in_light_and_dark():
-    for label, tokens in [("light", LIGHT_TOKENS), ("dark", DARK_TOKENS[1])]:
+def test_text_contrast_meets_wcag_aa_in_every_theme():
+    for label, tokens in ALL_VARIANTS.items():
         for fg, bg in TEXT_ON_BG:
             ratio = _ratio(_resolve(tokens, fg), _resolve(tokens, bg))
             assert ratio >= 4.5, "%s: %s on %s is %.2f:1 (need 4.5)" % (label, fg, bg, ratio)
@@ -496,15 +530,147 @@ def test_text_contrast_meets_wcag_aa_in_light_and_dark():
 # ---------------------------------------------------------------------------
 # T2 checks (2026-11-07): body text contrast at 7:1 and no small type.
 # ---------------------------------------------------------------------------
-BODY_TEXT_PAIRS = [("fg", "panel"), ("fg", "page-bg"), ("muted", "panel"), ("muted", "page-bg"),
-                   ("err-fg", "tint-error-bar"), ("ok-fg", "tint-green"), ("amber-fg", "amber-bg")]
+# Body text and status text: 7:1 in every theme (owner target; v2 sections 4.1 and 4.2).
+BODY_TEXT_PAIRS = [
+    ("text-primary", "app-bg"), ("text-primary", "surface"), ("text-primary", "editor-bg"),
+    ("text-primary", "input-bg"), ("text-primary", "selection-bg"), ("text-primary", "table-head-bg"),
+    ("text-primary", "hover-bg"), ("text-primary", "tint-grey"), ("text-primary", "tint-amber"),
+    ("text-primary", "tint-green"), ("text-primary", "tint-red"),
+    ("text-secondary", "app-bg"), ("text-secondary", "surface"), ("text-secondary", "input-bg"),
+    ("text-secondary", "editor-bg"), ("text-secondary", "tint-grey"),
+    ("err-fg", "tint-error-bar"), ("err-fg", "tint-red"), ("ok-fg", "tint-green"), ("amber-fg", "amber-bg"),
+    ("info-fg", "tint-info"), ("on-solid", "grey"),
+]
+# Status pairs (v2 section 4.2): success, warning, error, info, locked.
+STATUS_PAIRS = [("ok-fg", "tint-green"), ("amber-fg", "amber-bg"), ("err-fg", "tint-error-bar"),
+                ("info-fg", "tint-info"), ("on-solid", "grey")]
+# Non-text (WCAG 1.4.11, 2.4.13): control boundary and focus ring 3:1; the header focus ring is white on the header.
+NON_TEXT_PAIRS = [("control-border", "app-bg"), ("control-border", "surface"), ("focus-ring", "app-bg"),
+                  ("focus-ring", "surface"), ("on-solid", "header-bg")]
+SECONDARY_BGS = ["app-bg", "surface", "input-bg", "editor-bg", "tint-grey"]
 
 
 def test_body_text_contrast_is_at_least_7():
-    for label, tokens in [("light", LIGHT_TOKENS), ("dark", DARK_TOKENS[0]), ("dark (explicit)", DARK_TOKENS[1])]:
+    for label, tokens in ALL_VARIANTS.items():
         for fg, bg in BODY_TEXT_PAIRS:
             ratio = _ratio(_resolve(tokens, fg), _resolve(tokens, bg))
             assert ratio >= 7.0, "%s: %s on %s is %.2f:1 (need 7)" % (label, fg, bg, ratio)
+
+
+def test_secondary_text_contrast_is_at_least_7_in_every_theme():
+    for label, tokens in ALL_VARIANTS.items():
+        for bg in SECONDARY_BGS:
+            ratio = _ratio(tokens["text-secondary"], tokens[bg])
+            assert ratio >= 7.0, "%s: text-secondary on %s is %.2f:1 (need 7)" % (label, bg, ratio)
+
+
+def test_status_colours_meet_7_to_1_in_every_theme():
+    for label, tokens in ALL_VARIANTS.items():
+        for fg, bg in STATUS_PAIRS:
+            ratio = _ratio(tokens[fg], tokens[bg])
+            assert ratio >= 7.0, "%s: status %s on %s is %.2f:1 (need 7)" % (label, fg, bg, ratio)
+
+
+def test_control_border_and_focus_ring_meet_3_to_1_in_every_theme():
+    for label, tokens in ALL_VARIANTS.items():
+        for fg, bg in NON_TEXT_PAIRS:
+            ratio = _ratio(tokens[fg], tokens[bg])
+            assert ratio >= 3.0, "%s: %s on %s is %.2f:1 (need 3)" % (label, fg, bg, ratio)
+
+
+def test_contrast_mode_is_one_step_stronger():
+    # Light text and borders get darker, dark ones get lighter (further from the background).
+    for name, darker in [("light", True), ("dark", False)]:
+        base, more = THEME_TOKENS[name], CONTRAST_TOKENS[name + " (more contrast)"]
+        for tok in ["control-border", "text-secondary"]:
+            moved = _lum(more[tok]) - _lum(base[tok])
+            assert (moved <= 0) if darker else (moved >= 0), "%s: prefers-contrast does not step %s" % (name, tok)
+
+
+# ---------------------------------------------------------------------------
+# Colour system checks (2026-11-07): no colour outside tokens.css, names, theme switch, no flash.
+# ---------------------------------------------------------------------------
+# Allow-list: the only static file that may hold a colour value. Nothing else is allowed one.
+COLOUR_ALLOWED = {"tokens.css"}
+COLOUR_VALUE = re.compile(r"(?<![\w-])#[0-9a-fA-F]{3,8}(?![\w-])|\b(?:rgba?|hsla?)\(|"
+                          r":\s*(?:white|black|gray|grey|silver|navy|teal|maroon|olive)\s*[;}]")
+
+
+def test_no_colour_value_outside_tokens_css():
+    scanned = sorted(p for p in STATIC.iterdir() if p.suffix in (".css", ".js") or p.name == "index.html")
+    assert len(scanned) >= 5, "static files not found"
+    hits = []
+    for p in scanned:
+        if p.name in COLOUR_ALLOWED:
+            continue
+        for m in COLOUR_VALUE.finditer(p.read_text(encoding="utf-8")):
+            hits.append(p.name + ": " + m.group(0))
+    assert not hits, "colour values outside tokens.css: " + "; ".join(hits[:10])
+
+
+def test_no_old_token_names_are_left():
+    for old in ["fg", "muted", "panel", "page-bg", "line", "field-line", "th-bg", "indigo", "primary",
+                "primary-fg", "focus", "hover"]:
+        assert "var(--%s)" % old not in CSS, "old token name still used in style.css: --" + old
+        assert not re.search(r"--%s:" % re.escape(old), TOKENS), "old token name defined in tokens.css: --" + old
+
+
+def test_every_var_used_in_style_css_is_defined():
+    used = set(re.findall(r"var\(--([a-z0-9-]+)\)", CSS))
+    defined = set(re.findall(r"--([a-z0-9-]+):", TOKENS + CSS))
+    assert not used - defined, "undefined custom properties: " + ", ".join(sorted(used - defined))
+
+
+def test_color_scheme_and_contrast_blocks_are_declared():
+    assert re.search(r":root\s*\{\s*color-scheme:\s*light;", TOKENS), "light color-scheme missing"
+    assert TOKENS.count("color-scheme: dark;") >= 2, "dark color-scheme missing (system and explicit blocks)"
+    assert "@media (prefers-contrast: more)" in TOKENS and "@media (prefers-color-scheme: dark)" in TOKENS
+
+
+def test_sticky_header_does_not_hide_focus_on_desktop():
+    # WCAG 2.4.11 (AA): a scrolled-to target lands below the sticky header (desktop only; the header is static on phone).
+    assert re.search(r"@media \(min-width: 760px\)\s*\{\s*html\s*\{\s*scroll-padding-top:\s*[0-9.]+rem", CSS)
+    assert re.search(r"\.topbar\s*\{[^}]*position:\s*sticky", CSS)
+
+
+def test_theme_selector_has_four_options_with_keys():
+    header = INDEX[INDEX.index("<header"):INDEX.index("</header>")]
+    assert '<select id="theme-select"' in header, "theme selector must sit in the header"
+    assert re.search(r'<label for="theme-select" data-i18n="theme\.label">', header), "theme label missing"
+    options = re.findall(r'<option value="([a-z]+)" data-i18n="theme\.([a-z]+)">', header)
+    assert [v for v, _ in options] == ["system", "light", "dark", "reading"], "four theme options, system first"
+    assert all(v == k for v, k in options), "option text key must match the value"
+    assert "selected" not in header.split('id="theme-select"', 1)[1].split("</select>", 1)[0], \
+        "no option is pre-selected: system is the default"
+
+
+def test_theme_storage_is_wrapped_in_try_catch():
+    head = INDEX[:INDEX.index("</head>")]
+    inline = re.search(r"<script>(.*?)</script>", head, re.S)
+    assert inline, "no inline head script for the theme (no flash)"
+    assert "studio.theme" in inline.group(1) and "data-theme" in inline.group(1)
+    for label, text in [("index.html head script", inline.group(1)), ("theme.js", THEME_JS)]:
+        accesses = len(re.findall(r"localStorage\.(?:getItem|setItem)\(", text))
+        assert accesses >= 1, label + " does not use localStorage"
+        assert len(re.findall(r"\btry\s*\{", text)) >= accesses, label + ": storage access outside try"
+        assert len(re.findall(r"\}\s*catch\s*\(", text)) >= accesses, label + ": storage access without catch"
+
+
+def test_no_flash_script_runs_before_the_stylesheets():
+    head = INDEX[:INDEX.index("</head>")]
+    inline = re.search(r"<script>(.*?)</script>", head, re.S)
+    assert inline, "no inline head script"
+    assert head.index("<script>") < head.index('href="tokens.css"') < head.index('href="style.css"')
+
+
+def test_theme_js_has_no_outside_links_and_parses_with_node():
+    assert not re.search(r"https?://", THEME_JS), "theme.js contains an http(s) URL"
+    assert "matchMedia" in THEME_JS and "prefers-color-scheme" in THEME_JS, "theme.js must follow the device when system"
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed; syntax check skipped")
+    proc = subprocess.run([node, "--check", str(STATIC / "theme.js")], capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_no_font_size_below_17px():

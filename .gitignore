@@ -49,3 +49,4 @@ stories/*/links.json
 
 # personal Claude Code settings (auto-log hook)
 .claude/settings.local.json
+!ui/static/tokens.css

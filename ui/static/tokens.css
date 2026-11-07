@@ -1,0 +1,185 @@
+/* Anime Studio control UI: colour tokens only (the one file in ui/static with colour values).
+   Source: docs/UI_COLOUR_SYSTEM_GUIDE_2026-11-07_v2.md sections 4.0 to 4.5 and 6.
+   Theme choice (localStorage studio.theme, set by theme.js): system (no data-theme attribute, the default),
+   light (data-theme="light"), dark (data-theme="dark") and reading (data-theme="reading", optional).
+   Contrast targets: body text and status text 7:1; secondary text 7:1; other text 4.5:1; control borders and focus ring 3:1.
+   Text and layout live in style.css. Colour is never the only signal: every status also has an icon or a word. */
+
+/* ---------- Light (default) ---------- */
+:root {
+  color-scheme: light;
+  --app-bg: #F3F1E8;
+  --surface: #F8F7F0;
+  --text-primary: #343834;
+  --text-secondary: #464F4A;
+  --header-bg: #1D1B3A;
+  --on-solid: #FFFFFF;
+  --header-hover: rgba(255,255,255,0.18);
+  --header-chip: rgba(255,255,255,0.14);
+  --accent: #28665F;
+  --accent-fg: #FFFFFF;
+  --border: #D9DED6;
+  --control-border: #66706A;
+  --button-bg: #28665F;
+  --button-text: #FFFFFF;
+  --selection-bg: #DCEBE6;
+  --editor-bg: #EAECE4;
+  --focus-ring: #28665F;
+  --hover-bg: #E6E9E1;
+  --active-bg: #D3DBD0;
+  --placeholder: #5E6661;
+  --disabled-text: #7A827D;
+  --table-head-bg: #E9E9E6;
+  --input-bg: #FFFFFF;
+  --ok: #165C33;
+  --ok-fg: #14532D;
+  --tint-green: #E7F5EC;
+  --amber: #C27A00;
+  --amber-bg: #FFE2A8;
+  --amber-fg: #3D2C00;
+  --tint-amber: #FFF4D6;
+  --red: #A8231B;
+  --red-fg: #FFFFFF;
+  --tint-red: #FDE8E8;
+  --err-fg: #7A1010;
+  --tint-error-bar: #FDE8E8;
+  --blue: #1F4E8C;
+  --blue-fg: #FFFFFF;
+  --info-fg: #1F4E8C;
+  --tint-info: #E3EDF9;
+  --grey: #55524E;
+  --tint-grey: #EFEEEA;
+  --scrim: rgba(0,0,0,0.6);
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* ---------- Dark when the device asks for it and no override is set (system choice) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="reading"]) {
+    color-scheme: dark;
+    --app-bg: #181B1A;
+    --surface: #232826;
+    --text-primary: #DED7C5;
+    --text-secondary: #B9C2BA;
+    --header-bg: #2D2B5C;
+    --on-solid: #FFFFFF;
+    --header-hover: rgba(255,255,255,0.18);
+    --header-chip: rgba(255,255,255,0.14);
+    --accent: #9CC9BE;
+    --accent-fg: #181B1A;
+    --border: #3A4540;
+    --control-border: #808C86;
+    --button-bg: #9CC9BE;
+    --button-text: #181B1A;
+    --selection-bg: #2B4540;
+    --editor-bg: #1D2421;
+    --focus-ring: #9CC9BE;
+    --hover-bg: #2E3431;
+    --active-bg: #3A4540;
+    --placeholder: #9AA39C;
+    --disabled-text: #6E776F;
+    --table-head-bg: #26262E;
+    --input-bg: #15151B;
+    --ok: #165C33;
+    --ok-fg: #BDF0CF;
+    --tint-green: #163626;
+    --amber: #F0B429;
+    --amber-bg: #3D3210;
+    --amber-fg: #FFD27A;
+    --tint-amber: #3D3210;
+    --red: #FF9B91;
+    --red-fg: #1A0606;
+    --tint-red: #3F1D1D;
+    --err-fg: #FFD9D6;
+    --tint-error-bar: #3E1715;
+    --blue: #9EC1FF;
+    --blue-fg: #0D1B2E;
+    --info-fg: #9EC1FF;
+    --tint-info: #1B2A40;
+    --grey: #55524E;
+    --tint-grey: #26262E;
+    --scrim: rgba(0,0,0,0.7);
+    --shadow: 0 2px 8px rgba(0,0,0,0.5);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  }
+}
+
+/* ---------- Dark chosen by the user (same values as the system dark block) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-bg: #181B1A;
+  --surface: #232826;
+  --text-primary: #DED7C5;
+  --text-secondary: #B9C2BA;
+  --header-bg: #2D2B5C;
+  --on-solid: #FFFFFF;
+  --header-hover: rgba(255,255,255,0.18);
+  --header-chip: rgba(255,255,255,0.14);
+  --accent: #9CC9BE;
+  --accent-fg: #181B1A;
+  --border: #3A4540;
+  --control-border: #808C86;
+  --button-bg: #9CC9BE;
+  --button-text: #181B1A;
+  --selection-bg: #2B4540;
+  --editor-bg: #1D2421;
+  --focus-ring: #9CC9BE;
+  --hover-bg: #2E3431;
+  --active-bg: #3A4540;
+  --placeholder: #9AA39C;
+  --disabled-text: #6E776F;
+  --table-head-bg: #26262E;
+  --input-bg: #15151B;
+  --ok: #165C33;
+  --ok-fg: #BDF0CF;
+  --tint-green: #163626;
+  --amber: #F0B429;
+  --amber-bg: #3D3210;
+  --amber-fg: #FFD27A;
+  --tint-amber: #3D3210;
+  --red: #FF9B91;
+  --red-fg: #1A0606;
+  --tint-red: #3F1D1D;
+  --err-fg: #FFD9D6;
+  --tint-error-bar: #3E1715;
+  --blue: #9EC1FF;
+  --blue-fg: #0D1B2E;
+  --info-fg: #9EC1FF;
+  --tint-info: #1B2A40;
+  --grey: #55524E;
+  --tint-grey: #26262E;
+  --scrim: rgba(0,0,0,0.7);
+  --shadow: 0 2px 8px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* ---------- Reading (optional, never the default): only the tokens that change; the rest come from :root.
+   Weak evidence for a reading benefit (docs/UI_COLOUR_SYSTEM_GUIDE_2026-11-07_v2.md section 4.5). ---------- */
+:root[data-theme="reading"] {
+  --app-bg: #CFE8CC;
+  --surface: #E0EFDD;
+  --text-secondary: #343834;
+}
+
+/* ---------- Higher contrast when the device asks for it (prefers-contrast: more): one step stronger ---------- */
+@media (prefers-contrast: more) {
+  :root {
+    --control-border: #4E5852;
+    --text-secondary: #3A403C;
+  }
+  :root[data-theme="reading"] {
+    --control-border: #4E5852;
+    --text-secondary: #262A27;
+  }
+  :root[data-theme="dark"] {
+    --control-border: #A7B1AA;
+    --text-secondary: #CBD3CC;
+  }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="reading"]) {
+    --control-border: #A7B1AA;
+    --text-secondary: #CBD3CC;
+  }
+}
