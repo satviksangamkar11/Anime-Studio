@@ -32,7 +32,7 @@ def test_hindi_reel_mixes_the_elevenlabs_voice_under_the_one_graph(tmp_path):
     assert report["written"] is True and report["voice"]["engine"] == "elevenlabs"
     assert [Path(p).name for p in report["voice"]["vo_files"]] == ["SHOT_A.wav"]
     g = _graph(build)
-    assert "[vo_full]" in g and "sidechaincompress" in g and "loudnorm=I=-16:TP=-1.5" in g and "[aout]" in g
+    assert "[vo_full]" in g and "sidechaincompress" in g and "loudnorm=I=-16:TP=-1.3" in g and "[aout]" in g
     argv = report["commands"][-1]
     assert argv.count("-i") == 3                                   # two clips and the one voice file
     assert any(s["codec_type"] == "audio" for s in tp._probe_streams(Path(report["output"])))

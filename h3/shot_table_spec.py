@@ -39,7 +39,16 @@ H3_NATIVE_LANGS = ("ar", "zh", "en", "fr", "de", "it", "ja", "ko", "pt", "ru", "
 FALLBACK_RUNGS = 4
 HUMAN_CHOICES = ("switch_models", "relax_requirements", "skip_with_placeholder_missing_clip", "supply_reference_video")
 
-LOUDNESS = {"target_lufs": -14.0, "tolerance": 0.5, "loudnorm_tp": -1.8, "tp_ceiling_dbtp": -1.5, "lra": 11}
+def _loudness_from_core():
+    """The one loudness standard of the pipeline (owner 2026-11-07): -16 LUFS integrated, max true peak -1 dBTP. It lives in
+    core/core.json delivery.audio; post.py, the voice mix and Gate D's post-render check all read it from there."""
+    from core.style_pack import load_core
+    a = load_core()["delivery"]["audio"]
+    return {"target_lufs": a["lufs"], "tolerance": a["tolerance_lu"], "loudnorm_tp": a["loudnorm_tp_db"],
+            "tp_ceiling_dbtp": a["true_peak_db"], "lra": a["lra"]}
+
+
+LOUDNESS = _loudness_from_core()
 # owner 2026-11-07: bottom margin 896 px = 35% of 2560 (Meta Reels ad guidance, covers YouTube Shorts UI); top 360 = 14%; sides 160 (11%) kept
 CAPTION = {"play_res": (1440, 2560), "margin_l": 160, "margin_r": 160, "margin_v": 896, "top_blocked_y": 360, "alignment": 2,
            "max_words": 6, "font": "NotoSansDevanagari-Variable.ttf"}   # font: the styles/fonts file of the Devanagari caption family

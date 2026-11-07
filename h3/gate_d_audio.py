@@ -390,7 +390,8 @@ def parse_loudness_text(text):
 
 
 def check_post_aac_loudness(ffmpeg_text):
-    """Gate D final audio: integrated -14 +-0.5 LUFS and true peak <= -1.5 dBTP, measured on the AAC mp4."""
+    """Gate D final audio: integrated loudness within LOUDNESS (core.json delivery.audio: -16 LUFS +-0.5) and true peak at
+    most the ceiling (-1 dBTP), measured on the AAC mp4."""
     m = parse_loudness_text(ffmpeg_text)
     errors = []
     if m["integrated_lufs"] is None or m["true_peak_dbtp"] is None:

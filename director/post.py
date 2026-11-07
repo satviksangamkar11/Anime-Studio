@@ -543,7 +543,7 @@ def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale
         total = sum(ed for _, ed in vo_refs)
         a_cfg = delivery["audio"]
         parts.append(build_vo_stem_filter(vo_refs))
-        parts.extend(build_voice_branch("asfx", "vo_full", None, total, "aout", a_cfg["lufs"], a_cfg["true_peak_db"], 11))
+        parts.extend(build_voice_branch("asfx", "vo_full", None, total, "aout", a_cfg["lufs"], a_cfg["loudnorm_tp_db"], a_cfg["lra"]))
     try:
         for f in facts:
             inputs += ["-i", _rel(work[f["sid"]], post)]

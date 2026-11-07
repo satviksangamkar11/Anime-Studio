@@ -81,9 +81,9 @@ Dialogue and speech blocks are NOT part of the H3 prompt any more.
   `VO_OVERFLOW_ERROR`), `VO_MISSING` when narration exists but the wav does not. A changed shot text makes its entry stale.
   CLI: `python -m h3.voice_manifest --vo-root <dir> --shots <json> --lang en,hi [--voice-map <json>] [--out <json>]`.
 - Gate D (`plan_language_outputs`): one plan per language: VO stem, 3-stem mix (SFX, VO, optional BGM), `.ass` captions
-  (6 words per card, font per language), mux with burned-in captions, `loudnorm` master at -14 LUFS, TP <= -1.8 dB.
+  (6 words per card, font per language), mux with burned-in captions, `loudnorm` master at the pipeline loudness standard (core/core.json delivery.audio: -16 LUFS, loudnorm TP -1.3 dB, ceiling -1 dBTP).
   Dead-air, hook and closing checks run per language. Nothing runs ffmpeg; the plan is argv and text only.
-- Post-AAC loudness check: `check_post_aac_loudness` on the exported mp4 (-14 +-0.5 LUFS, true peak <= -1.5 dBTP).
+- Post-AAC loudness check: `check_post_aac_loudness` on the exported mp4 (-16 +-0.5 LUFS, true peak <= -1 dBTP; read from core/core.json).
 - Easy language: every spoken line and caption is easy English, Hindi or Marathi (`director/simple_language.py`).
 
 ## 9. Render, QC and fallback

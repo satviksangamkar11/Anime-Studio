@@ -5,6 +5,8 @@ Assembly is allowed only when every PRE_ASSEMBLY step is ready. The loudness che
 so it never blocks assembly.
 """
 
+from h3.shot_table_spec import LOUDNESS
+
 STEP_ORDER = (
     ("lint", "Lint the shot rows (linter, profile, paths)"),
     ("route", "Route each shot to an H3 mode (5-mode router)"),
@@ -15,7 +17,7 @@ STEP_ORDER = (
     ("step9_qc", "Step 9 final QC (SFX, continuity, closing payoff, labels)"),
     ("gate_d", "Gate D audio plan for every selected language"),
     ("assembly", "Assembly (one reel per language)"),
-    ("loudness", "Post-AAC loudness check (-14 LUFS, TP <= -1.5 dBTP)"),
+    ("loudness", f"Post-AAC loudness check ({LOUDNESS['target_lufs']:g} LUFS, TP <= {LOUDNESS['tp_ceiling_dbtp']:g} dBTP)"),
 )
 PRE_ASSEMBLY = ("lint", "route", "prompt", "manifest", "fallback", "render", "step9_qc", "gate_d")
 POST_ASSEMBLY = ("loudness",)

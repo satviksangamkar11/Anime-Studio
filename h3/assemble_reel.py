@@ -10,8 +10,9 @@ from PIL import Image
 from core.frame_metrics import extract_frames, mean_lab
 from core.style_pack import delta_e_2000, load_core
 
-TARGET_LUFS = -16.0
-TRUE_PEAK_DB = -1.5
+_AUDIO = load_core()["delivery"]["audio"]   # one loudness standard: core/core.json delivery.audio (owner 2026-11-07)
+TARGET_LUFS = _AUDIO["lufs"]
+TRUE_PEAK_DB = _AUDIO["true_peak_db"]
 G3_WINDOW = 6  # frames per edge window (spec G3: last 6 vs first 6 editorial frames)
 _CLIP_ERRORS = (RuntimeError, ValueError, OSError, KeyError, TypeError)
 
