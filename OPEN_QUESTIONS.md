@@ -1,15 +1,15 @@
 # OPEN QUESTIONS
 
-## Owner questions
+## Closed 2026-11-07 (owner: "close everything that is open"; decisions taken with the recommended defaults, the owner may reopen any of them)
 
-- Q1 Should Kaliya stay on braj_earth (recommended), with DEVA-NEON for new deity reels only?
-- Q2 The DEVA palettes that fail dL* 55 (Hanuman, Karna, Durga): change their hex values, or lower the law for those packs?
-- Q3 braj_earth min_dL_focal_vs_bg: what value? (Krishna skin vs dawn haze is only about 2, so the scene, not the palette, must separate him.)
-- Q4 Confirm the auto-tagged neon: true colour list (see the next section).
-- Q5 Switch write_pack.py's default to v2.3?
-- Q6 Build the BPM sound-sync layer for owner-supplied music, or leave it off?
-- Q7 Tune thresholds after the LEAP-01..05 render: G1/G2 dE 6, G3 dE 8, static 3.5/4.0 s.
-- Q8 Test a 45-60 s episode cut against 65-75 s once analytics exist?
+- Q1 CLOSED. Kaliya stays on braj_earth; DEVA-NEON is for new deity reels. The pipeline is universal: a story picks its pack in story.json.
+- Q2 CLOSED. The dL* 55 law stays a WARN (never a FAIL) and the owner-supplied hex values are not changed. Hanuman, Karna, Durga and Shiva keep their WARNs in lint_pack as accepted findings; a scene must separate the hero from the background (G1, G2 and the focal_reads criterion measure it).
+- Q3 CLOSED. braj_earth keeps min_dL_focal_vs_bg = null. lint_pack prints LINT-DL-UNSET as a WARN by design: Krishna's cloud-blue skin sits close to the dawn haze, so the scene separates him, not the palette. Set a number only after the first approved plates are measured.
+- Q4 CLOSED. The auto-tagged neon colours (list below) are accepted as they are.
+- Q5 CLOSED, DONE. write_pack.py staged mode now defaults to MASTER_PROMPT v2.3 (v2.2 stays selectable with --prompt-version v2.2).
+- Q6 CLOSED. No BPM sound-sync layer: the audio plan is frozen (H3 audio kept, no music). core.json sound_sync.enabled stays false.
+- Q7 CLOSED as a rule. The thresholds (G1/G2 dE 6, G3 dE 8, static 3.5/4.0 s) stay as starting values in core.json. Tune them after the first approved renders; tools/calibrate_sat_ceiling.py turns gates.sat_avg_ceiling into a measured number and the ANIME_RELEASE=1 test fails while it is null.
+- Q8 CLOSED as a rule. The 65-75 s episode target stays. A 45-60 s cut is compared once analytics exist (core/retention_report.py reads them).
 
 ## Auto-tagged neon colours (confirm, Q4)
 
