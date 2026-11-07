@@ -20,7 +20,8 @@ STAGES = ["story", "analysis", "images", "readout", "render", "export"]
 GATES = {"A": "analysis", "B": "images", "C": "readout", "D": "render"}
 GATE_ORDER = ["A", "B", "C", "D"]
 LANGS = ("en", "hi", "mr")
-PROJECT_DEFAULT = {"story_slug": None, "pack": None, "images_dir": None, "results_dir": None, "takes": 3}
+SHEET_PREFIXES = ("CHAR", "ENV", "PROP", "STYLE")
+PROJECT_DEFAULT ={"story_slug": None, "pack": None, "images_dir": None, "results_dir": None, "takes": 3}
 # expected images per shot by route (V4 rows). Legacy rows (no route) keep the old 2 per shot.
 ROUTE_IMAGES = {"FL2VA": 2, "I2VA": 1, "REF2VA": 1, "T2VA": 0, "L2VA": 0}
 LEGACY_IMAGES_PER_SHOT = 2
@@ -377,7 +378,8 @@ def facts(studio: Path, runs: Path, story: Optional[str] = None, pack: Optional[
         if img_path.is_dir():
             final_dir = img_path / "final"
             if final_dir.is_dir():
-                finals = len(list(final_dir.glob("*__final.png")))
+                # audit B/D 11-08: reference sheets (CHAR-, ENV-, PROP-, STYLE chips) are filed in final/ too; Gate B counts shot pictures only
+                finals = len([f for f in final_dir.glob("*__final.png") if not f.name.startswith(SHEET_PREFIXES)])
             shots_dir = img_path / "shots"
             if shots_dir.is_dir():
                 reviewed = len(list(shots_dir.glob("*__review.json")))

@@ -29,7 +29,7 @@ def sheet_jobs(bible, only=None):
     for group in ORDER:
         items = bible.get(group) if isinstance(bible.get(group), dict) else {}
         for sid, item in items.items():
-            prompt = item.get("sheet_prompt") if isinstance(item, dict) else None
+            prompt = (item.get("sheet_prompt") or item.get("card_prompt")) if isinstance(item, dict) else None   # V4 bible: characters have sheet_prompt, places and props card_prompt
             if not isinstance(prompt, str) or not prompt.strip() or (only and sid not in only):
                 continue
             jobs.append({"adhyay": 1, "shot_id": sid, "scene": "REF", "method": "generate", "file_version": "v01",

@@ -81,7 +81,13 @@ def spoken_cues(shots, offsets, lang):
             raise ValueError("captions_by_lang must be an object")
         cap = cbl.get(lang) if cbl else None
         items = []
-        if isinstance(cap, dict):
+        if isinstance(cap, list) and cap and all(isinstance(c, (dict, str)) for c in cap):   # the writer's stage 5: a list of cards (audit A 11-08)
+            for c in cap:
+                if isinstance(c, dict):
+                    items.append((c.get("text"), c.get("time_range") or (narr or {}).get("time_range")))
+                elif narr:
+                    items.append((c, narr.get("time_range")))
+        elif isinstance(cap, dict):
             items.append((cap.get("text"), cap.get("time_range") or (narr or {}).get("time_range")))
         elif isinstance(cap, str) and narr:
             items.append((cap, narr.get("time_range")))

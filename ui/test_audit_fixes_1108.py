@@ -32,3 +32,16 @@ def test_write_pack_claude_asks_for_web_and_high_effort(tmp_path):
                         colab=["c"], disk_paths=(str(tmp_path), str(tmp_path)), allow_claude=True)
     argv = server.b_write_pack_claude(cfg, {"slug": "s1", "pack": "p1", "out_lang": "en"})
     assert "--web" in argv and argv[argv.index("--effort") + 1] == "high" and argv[argv.index("--writer") + 1] == "opus"
+
+
+def test_reference_sheets_are_not_counted_as_shot_finals(tmp_path):
+    studio = tmp_path / "studio"
+    studio.mkdir()
+    make_story(studio, "s")
+    make_pack(studio, "s", "p", shots=[], bible={})
+    flow = tmp_path / "anime_s"
+    chapter = make_images_dir(flow, "adhyay_01", finals=1)
+    for name in ("CHAR-SATI", "ENV-KAILASA", "PROP-TRISHULA", "STYLE_CHIP_SHEET"):
+        (chapter / "final" / f"{name}__candidate_v01__final.png").write_text("", encoding="utf-8")
+    runs = make_runs(tmp_path, slug="s", pack="p", images_dir=str(flow))
+    assert facts(studio, runs)["finals"] == 1

@@ -23,3 +23,11 @@ def test_cli_writes_once_and_refuses_overwrite(tmp_path):
     out = tmp_path / "g" / "s_flow_jobs_sheets.json"
     assert b.main([str(src), "s", str(out)]) == 0 and len(json.loads(out.read_text(encoding="utf-8"))) == 3
     assert b.main([str(src), "s", str(out)]) == 2
+
+
+def test_places_and_props_with_a_card_prompt_become_sheet_jobs():
+    import bible_to_sheet_jobs as b
+    bible = {"characters": {"CHAR-A": {"sheet_prompt": "a sheet"}}, "environments": {"ENV-B": {"card_prompt": "a place card"}},
+             "props": {"PROP-C": {"card_prompt": "a prop card"}, "PROP-D": {"name": "no prompt"}}}
+    ids = [j["shot_id"] for j in b.sheet_jobs(bible)]
+    assert ids == ["CHAR-A", "ENV-B", "PROP-C"]

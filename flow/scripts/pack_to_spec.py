@@ -139,6 +139,8 @@ def _character_sentence(cid, data, name):
     attrs = [_words(a) for a in data.get("attributes") or []]
     if attrs:
         bits.append("attributes: " + ", ".join(attrs))
+    if not bits and isinstance(data.get("description"), str):   # V4 bible (audit B 11-08): the card text is the description
+        bits.append(_first_sentences(data["description"]))
     bits.append("exactly as in the attached character sheet")
     return f"{name} (attached {cid}): " + "; ".join(bits)
 
@@ -156,8 +158,12 @@ def _place_text(name, data):
     layers = [_layer_phrase(x) for x in data.get("layers") or []]
     if layers:
         text += ": " + "; ".join(layers)
+    elif isinstance(data.get("description"), str):          # V4 bible: description + lighting_baseline.key
+        text += ": " + _first_sentences(data["description"])
     if data.get("light"):
         text += f"; light {_words(data['light'])}"
+    elif isinstance(data.get("lighting_baseline"), dict) and isinstance(data["lighting_baseline"].get("key"), str):
+        text += f"; light {data['lighting_baseline']['key']}"
     return text
 
 
@@ -174,7 +180,20 @@ def _by_id(section):
     return section or {}
 
 
+def _first_sentences(text, limit=220):
+    """The first sentences of a card description, at most `limit` characters, no trailing period."""
+    out = ""
+    for part in re.split(r"(?<=[.!?])\s+", " ".join(str(text).split())):
+        if out and len(out) + len(part) > limit:
+            break
+        out = (out + " " + part).strip()
+    return out.rstrip(".")[:limit * 2]
+
+
 def _style_text(bible):
+    lock = bible.get("style_lock")
+    if isinstance(lock, dict) and isinstance(lock.get("prefix"), str) and lock["prefix"].strip():   # V4 bible: the locked style prefix
+        return lock["prefix"].strip().rstrip(".") + "."
     line = bible.get("line") or {}
     shading = bible.get("shading") or {}
     rim = bible.get("rim_light") or {}

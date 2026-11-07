@@ -540,6 +540,8 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
         "dialogue_and_lip_lock": {"has_dialogue": False, "utterances": [], "mouth_state_rule": mouth_rule,
                                   "narrator_mouth_closed": True, "mouth_state": mouth},
         "sound_plan": {"overall_soundscape": _soundscape(track, sid, problems), "non_diegetic_music": "N/A"},
+        **({"metadata": {"look": copy.deepcopy(row["look"]), "purpose": _text(row.get("purpose")), "captions": []}}
+           if isinstance(row.get("look"), dict) else {}),   # audit C 11-08: post.py and assemble_reel read metadata.look (palette, act, hook, impacts)
     }
 
 

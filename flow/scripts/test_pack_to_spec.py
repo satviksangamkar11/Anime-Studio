@@ -287,3 +287,13 @@ def test_bible_sections_as_lists_are_accepted():
     bible = json.loads((pack / "bible.json").read_text(encoding="utf-8"))
     spec, series = p2s.convert(shots, bible, 1, "mahadev_katha_indresh")
     assert spec["shots"]
+
+
+def test_v4_bible_fields_reach_the_texts():
+    import pack_to_spec as p
+    bible = {"style_lock": {"prefix": "2D hand-drawn cel anime, flat colour."}}
+    assert p._style_text(bible) == "2D hand-drawn cel anime, flat colour."
+    sentence = p._character_sentence("CHAR-SATI", {"description": "Daksha's daughter. Adult, 7 heads tall. A third sentence that is long."}, "Sati")
+    assert "Daksha's daughter" in sentence and "attached CHAR-SATI" in sentence
+    place = p._place_text("Void", {"description": "A vast indigo void with a crescent moon.", "lighting_baseline": {"key": "soft gold at the horizon"}})
+    assert "indigo void" in place and "soft gold at the horizon" in place

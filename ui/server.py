@@ -364,14 +364,26 @@ def _gen_root(cfg) -> Path:
 FLOW_PROJECT_URL = "https://labs.google/fx/tools/flow/project/6a7ab793-d05f-476d-91a2-aaeb00c234a0"
 
 
+FLOW_PROJECT_RE = re.compile(r"https://labs\.google/fx/tools/flow/project/[0-9a-f-]{36}")
+
+
+def _flow_project_url(cfg, slug) -> str:
+    """The Flow project of a story: story.json 'flow_project' when it is a Flow project link (audit B 11-08: a shared project makes
+    chip names such as STYLE_CHIP_SHEET__v01 collide across stories), else the one studio project."""
+    meta = load_json(cfg.studio / "stories" / slug / "story.json", {})
+    url = meta.get("flow_project") if isinstance(meta, dict) else None
+    return url if isinstance(url, str) and FLOW_PROJECT_RE.fullmatch(url) else FLOW_PROJECT_URL
+
+
 def packet_header(cfg, slug, jobs_path) -> list:
     """Everything an agent needs that is the same for every job (owner 2026-11-08: nothing missing for making AND downloading)."""
     root = flow_root(cfg, slug)
     py = cfg.python
     s = cfg.studio / "flow" / "scripts"
+    project = _flow_project_url(cfg, slug)
     return [
         f"# Flow agent packet ({now_iso()}) - story {slug}", "",
-        "## Where", f"- Flow project: {FLOW_PROJECT_URL} (never another project). Open it in YOUR OWN browser tab and pass your tabId on every call.",
+        "## Where", f"- Flow project: {project} (never another project). Open it in YOUR OWN browser tab and pass your tabId on every call.",
         f"- Jobs file: {jobs_path}", f"- This story's picture folder: {root}\\adhyay_01 (candidates in shots\\, finals in final\\). Never file into another story's folder.", "",
         "## Rules (owner)",
         "- Agents that operate Flow run on Haiku, effort LOW. One scene per agent.",

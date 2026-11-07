@@ -75,3 +75,13 @@ def test_packet_expands_a_pack_shot_to_its_frame_jobs(api):
     gen.write_text(json.dumps([{**base, "shot_id": "SHOT-007A"}, {**base, "shot_id": "SHOT-007B"}]), encoding="utf-8")
     md = api.packet({"story": SLUG, "pack": "pack_a", "jobs": f"flow/generated/{SLUG}/jobs.json", "shots": ["SHOT-007"]})["markdown"]
     assert "SHOT-007A" in md and "SHOT-007B" in md
+
+
+def test_packet_uses_the_story_flow_project_when_story_json_names_one(api):
+    own = "https://labs.google/fx/tools/flow/project/11111111-2222-3333-4444-555555555555"
+    (api.cfg.studio / "stories" / SLUG / "story.json").write_text(json.dumps({"flow_project": own}), encoding="utf-8")
+    md = api.packet({"story": SLUG, "pack": "pack_a", "jobs": f"flow/generated/{SLUG}/jobs.json", "shots": ["SHOT-001"]})["markdown"]
+    assert own in md and server.FLOW_PROJECT_URL not in md
+    (api.cfg.studio / "stories" / SLUG / "story.json").write_text(json.dumps({"flow_project": "https://evil.example/x"}), encoding="utf-8")
+    md = api.packet({"story": SLUG, "pack": "pack_a", "jobs": f"flow/generated/{SLUG}/jobs.json", "shots": ["SHOT-001"]})["markdown"]
+    assert server.FLOW_PROJECT_URL in md and "evil.example" not in md
