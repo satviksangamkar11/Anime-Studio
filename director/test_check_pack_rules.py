@@ -163,9 +163,9 @@ def test_deva_template_after_convert_gives_only_the_known_p5_fails(tmp_path):
     assert [e["shot"] for e in p5] == ["SHOT-02", "SHOT-02"]
     assert "Neel Cyan" in p5[1]["message"] and "Trialokya Saffron" in p5[1]["message"]
     assert "role 'edge'" in p5[0]["message"]
-    # Real finding: styles/fonts is not in the repo (owner supplies fonts), so P10 FAILs for any deva_neon pack.
+    # styles/fonts now holds the four open-licence families (2026-11-07), so P10 passes: only the two P5 FAILs remain.
     rest = [e for e in p_fail if e["rule"] != "P5"]
-    assert [(e["rule"], e["shot"]) for e in rest] == [("P10", None)]
+    assert rest == []
 
 
 # ---- Kaliya sample with Krishna: no P1, P2 or P4 FAIL ----
