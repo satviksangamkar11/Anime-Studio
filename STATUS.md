@@ -1,14 +1,39 @@
-# Anime Studio status checklist (updated 2026-11-07)
+# Anime Studio status (merged branch: V4 + universal v1.2, 2026-11-07)
 
-## Current (2026-11-07) - read HANDOFF_2026-11-07.md, PROJECT_LOG.md, CHECKLIST_ARCHITECTURE_2026-11-07.md
-- [x] V4 architecture built and reviewed (Super VL + Dots): validator, writer V4 + voice_map, H3 router/compiler/locks, Gate D audio + captions (safe zone bottom 896), Step 9 QC, fallback ladder, asset manifest, voice engine (option A: one shared render, ElevenLabs en/hi/mr after render; English H3 voice = off-by-default second render), V4->H3 converter, H3 field derive/author step, ops safety, retry policy, run registry.
-- [x] UI updated (languages, voices, BGM toggle, validator, render/Gate D/author/ops panels) and checked in the browser at phone and desktop widths.
-- [x] Suites: director 624, h3 504, ui 223, flow/scripts 116.
+This branch is the merge of `v4-architecture-2026-11-07` (writer, validator, H3, Gate D audio, UI wizard) and `universal-v1.1` (colour, retention, flash, captions, post). Audit of every part: `docs/PIPELINE_AUDIT_2026-11-07.md`.
+
+## V4 layer (writer, validator, H3, Gate D, UI)
+- [x] V4 architecture built and reviewed (Super VL + Dots): validator, writer V4 + voice_map, H3 router/compiler/locks, Gate D audio + captions, Step 9 QC functions, fallback ladder, asset manifest, voice engine, UI wizard.
+- [x] Suites before the merge: director 663, h3 595, ui 253, flow/scripts 116.
 - [ ] Not built: Step 9 runner, Gate D assembly runner, live author run, any real render (no Colab calls, owner rule), ElevenLabs use (needs owner go).
-- [ ] Set aside by owner: stories, caption fonts and items, colour/attention audit (queued).
+- [ ] Gate D has its own caption engine; it must be replaced by `core/captions.py` + `core/caption_export.py` (one caption engine; captions are the spoken script of each output language).
+
+## Universal layer (colour, retention, flash, captions, post)
+## Current state
+- The architecture is complete: WP0-WP9, all amendments, the caption components (checklist 9.1-9.8), the audit items (see `docs/COLOUR_AUDIT_DECISIONS.md`) and the saturation-ceiling calibration (A26) are built and tested. Nothing in it is specific to one story.
+- Suites (2026-11-07): core 386 pass + 1 release-gate skip, director 488, h3 178, flow 130 pass (2 known failures on the real pack), ui 161 pass (1 known failure on the real pack).
+- Open questions Q1-Q8 are closed with the recommended defaults (`OPEN_QUESTIONS.md`); the owner may reopen any.
+- Fonts are in `styles/fonts` (Rajdhani, Yatra One, Inter, Noto Sans Devanagari, SIL OFL licences kept), so rule P10 passes.
+
+## What a story still has to bring (no story work has started)
+1. The story and its shots written with the v2.3 writer (a model call, needs the owner's go).
+2. Caption text and hook words (`look.hook.caption`, `look.hook.emphasis`).
+3. Owner-approved reference frames and plates: run `tools/measure_plate.py` on the plates and `tools/calibrate_sat_ceiling.py FILES --write` on the reference frames; then `ANIME_RELEASE=1 python -m pytest core` must pass (it fails while `gates.sat_avg_ceiling` is null).
+4. Renders and tuning of the gate limits (G1/G2 dE 6, G3 dE 8, static 3.5/4.0 s) after the first approved render. No render has been run.
+5. Paid word alignment (ElevenLabs) only with the owner's go; the parser (`caption_export.words_from_elevenlabs`) and the karaoke path with phrase fallback exist and never call an API.
+
+## Known limits
+- Caption widths are measured with Pillow basic layout (no libraqm here), so Devanagari conjunct widths can be slightly over-estimated; line breaks may differ a little from the real libass render. A Pillow build with raqm removes the approximation.
+- The `shorts` and `youtube` entries of `core.json` `safe_zone_templates` are tune values; the `reels` numbers (top 14%, bottom 35%, caption band 50-65%) are the owner's decision and the default.
+- The ElevenLabs alignment shape was written from the public documentation and is unverified against a live response.
+- F1 counting rounds odd transitions up (8 alternating frames = 4 flashes) and P1 missing story.json = FAIL: both confirmed by the owner 2026-11-07.
+
+## Next
+- Owner: start the actual story (story file, caption text, approved plates and reference frames).
+- Then: the writer run, the first render, and the tuning above.
 
 ---
-Older status (2026-11-06) below.
+Older V4 status (kept from the V4 branch)
 
 ## Current (2026-11-06)
 - [x] **AUDIO PLAN FROZEN 2026-11-06** (`research/AUDIO_PLAN_FROZEN_2026-11-06.md`): music removed, effects-only soundscape with fixed per-location bed, dialogue allowed, per-clip gain match to -16 LUFS then 5 ms fades, no separate audio test render, no paid audio tool.

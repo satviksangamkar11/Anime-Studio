@@ -1,0 +1,633 @@
+{
+  "pack_id": "deva_neon",
+  "version": "1.2",
+  "status": "draft",
+  "source": {
+    "art_bible": "deva-neon",
+    "version": "1.0"
+  },
+  "colour_script": {
+    "phases": [
+      {
+        "id": "PH-HOOK",
+        "role": "play",
+        "key": null,
+        "accent": null,
+        "luma_mean": [
+          0.3,
+          0.55
+        ],
+        "sat_mean": [
+          0.35,
+          0.6
+        ],
+        "lut": "luts/deva_neon/HOOK.cube"
+      },
+      {
+        "id": "PH-BUILD",
+        "role": "play",
+        "key": null,
+        "accent": null,
+        "luma_mean": [
+          0.2,
+          0.45
+        ],
+        "sat_mean": [
+          0.2,
+          0.4
+        ],
+        "lut": "luts/deva_neon/BUILD.cube"
+      },
+      {
+        "id": "PH-DROP",
+        "role": "threat",
+        "key": null,
+        "accent": null,
+        "luma_mean": [
+          0.25,
+          0.55
+        ],
+        "sat_mean": [
+          0.4,
+          0.7
+        ],
+        "lut": "luts/deva_neon/DROP.cube"
+      },
+      {
+        "id": "PH-OUTRO",
+        "role": "release",
+        "key": null,
+        "accent": null,
+        "luma_mean": [
+          0.15,
+          0.4
+        ],
+        "sat_mean": [
+          0.15,
+          0.35
+        ],
+        "lut": "luts/deva_neon/OUTRO.cube"
+      }
+    ]
+  },
+  "acts": {
+    "HOOK": {
+      "role": "hook",
+      "phase": "PH-HOOK",
+      "lut": "luts/deva_neon/HOOK.cube",
+      "luma_mean": [
+        0.3,
+        0.55
+      ],
+      "sat_mean": [
+        0.35,
+        0.6
+      ],
+      "grade": {
+        "exposure": 0.3,
+        "contrast": 18,
+        "saturation": 12,
+        "temp": 6,
+        "shadow_lift": -4,
+        "highlight": 8,
+        "bloom_pct": 6,
+        "vignette_pct": 15
+      }
+    },
+    "BUILD": {
+      "role": "build",
+      "phase": "PH-BUILD",
+      "lut": "luts/deva_neon/BUILD.cube",
+      "luma_mean": [
+        0.2,
+        0.45
+      ],
+      "sat_mean": [
+        0.2,
+        0.4
+      ],
+      "grade": {
+        "exposure": 0.0,
+        "contrast": 6,
+        "saturation": -8,
+        "temp": -4,
+        "shadow_lift": 6,
+        "highlight": 0,
+        "bloom_pct": 0,
+        "vignette_pct": 8
+      }
+    },
+    "DROP": {
+      "role": "peak",
+      "phase": "PH-DROP",
+      "lut": "luts/deva_neon/DROP.cube",
+      "luma_mean": [
+        0.25,
+        0.55
+      ],
+      "sat_mean": [
+        0.4,
+        0.7
+      ],
+      "grade": {
+        "exposure": 0.5,
+        "contrast": 22,
+        "saturation": 18,
+        "temp": 2,
+        "shadow_crush": -8,
+        "highlight": 12,
+        "bloom_pct": 12,
+        "vignette_pct": 25
+      }
+    },
+    "OUTRO": {
+      "role": "outro",
+      "phase": "PH-OUTRO",
+      "lut": "luts/deva_neon/OUTRO.cube",
+      "luma_mean": [
+        0.15,
+        0.4
+      ],
+      "sat_mean": [
+        0.15,
+        0.35
+      ],
+      "grade": {
+        "exposure": -0.3,
+        "contrast": 8,
+        "saturation": -20,
+        "temp": 4,
+        "shadow_lift": 4,
+        "highlight": -6,
+        "bloom_pct": 4,
+        "vignette_pct": 30
+      }
+    }
+  },
+  "palettes": {
+    "shiva_neelkanth": {
+      "characters": [
+        "CHAR-SHIVA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "Mahakal Void": {
+          "hex": "#0B0E1C",
+          "role": "night sky, shadow mass",
+          "usage_pct": 30,
+          "neon": false
+        },
+        "Vibhuti Ash": {
+          "hex": "#8C93A6",
+          "role": "skin shading, ash",
+          "usage_pct": 20,
+          "neon": false
+        },
+        "Himalaya Mist": {
+          "hex": "#2A3350",
+          "role": "depth fog",
+          "usage_pct": 15,
+          "neon": false
+        },
+        "Neel Cyan": {
+          "hex": "#27E0FC",
+          "role": "throat glow, energy VFX",
+          "usage_pct": 10,
+          "neon": true
+        },
+        "Trialokya Saffron": {
+          "hex": "#FF7A1B",
+          "role": "third-eye burn only",
+          "usage_pct": 8,
+          "neon": true
+        },
+        "Ganga Teal": {
+          "hex": "#3FD9C5",
+          "role": "water, transitions",
+          "usage_pct": 7,
+          "neon": false
+        },
+        "Moon Silver": {
+          "hex": "#D9E4F2",
+          "role": "crescent, rim",
+          "usage_pct": 5,
+          "neon": false
+        },
+        "Bone White": {
+          "hex": "#F2EDE4",
+          "role": "flash core, eyes",
+          "usage_pct": 5,
+          "neon": false
+        }
+      },
+      "special_laws": [
+        {
+          "id": "SHIVA-EYE",
+          "color": "Trialokya Saffron",
+          "only_roles": [
+            "third_eye"
+          ]
+        }
+      ],
+      "devanagari": "शिव",
+      "hook_primary": "H-03",
+      "hook_alt": "H-04",
+      "impact": {
+        "primary": "white_out",
+        "tail": "cyan_edge_glow",
+        "special": "inverted on third-eye open"
+      },
+      "grades": {
+        "calm": "BUILD",
+        "combat": "DROP",
+        "eye_open": "DROP+saffron_bloom"
+      },
+      "focal_hints": {
+        "hero": "Vibhuti Ash",
+        "bg": "Mahakal Void"
+      }
+    },
+    "hanuman_vayu": {
+      "characters": [
+        "CHAR-HANUMAN"
+      ],
+      "time_lock": null,
+      "colors": {
+        "Dawn Vermilion": {
+          "hex": "#E8451F",
+          "role": "sindoor body, hero mass",
+          "usage_pct": 25,
+          "neon": false
+        },
+        "Maroon Deep": {
+          "hex": "#7A2A1C",
+          "role": "vermilion shadow",
+          "usage_pct": 15,
+          "neon": false
+        },
+        "Sky Teal": {
+          "hex": "#2BB3C0",
+          "role": "ocean, sky",
+          "usage_pct": 20,
+          "neon": false
+        },
+        "Storm Slate": {
+          "hex": "#3E4A5A",
+          "role": "cloud depth",
+          "usage_pct": 12,
+          "neon": false
+        },
+        "Gada Gold": {
+          "hex": "#F2B233",
+          "role": "mace metal",
+          "usage_pct": 10,
+          "neon": false
+        },
+        "Stone Grey": {
+          "hex": "#6E6A5E",
+          "role": "mountain, temple",
+          "usage_pct": 8,
+          "neon": false
+        },
+        "Cloud White": {
+          "hex": "#F5F1E8",
+          "role": "wind highlights",
+          "usage_pct": 6,
+          "neon": false
+        },
+        "FLASH-WHT": {
+          "hex": "#FFFFFF",
+          "role": "impact",
+          "usage_pct": 4,
+          "neon": false
+        }
+      },
+      "special_laws": [],
+      "devanagari": "हनुमान",
+      "hook_primary": "H-05",
+      "hook_alt": "H-02",
+      "impact": {
+        "primary": "white_out",
+        "tail": "teal_speed_lines"
+      },
+      "grades": {
+        "travel": "BUILD",
+        "combat": "DROP",
+        "dawn_flight": "HOOK"
+      },
+      "focal_hints": {
+        "hero": "Dawn Vermilion",
+        "bg": "Sky Teal"
+      }
+    },
+    "karna_surya": {
+      "characters": [
+        "CHAR-KARNA"
+      ],
+      "time_lock": null,
+      "colors": {
+        "Molten Gold": {
+          "hex": "#FFB627",
+          "role": "kavach, sun key",
+          "usage_pct": 25,
+          "neon": false
+        },
+        "Bronze Oxide": {
+          "hex": "#9C6B30",
+          "role": "armor shadow",
+          "usage_pct": 15,
+          "neon": false
+        },
+        "Charcoal Iron": {
+          "hex": "#1C1C24",
+          "role": "chariot, night",
+          "usage_pct": 18,
+          "neon": false
+        },
+        "Kavach Glow": {
+          "hex": "#FFD966",
+          "role": "divine specular",
+          "usage_pct": 10,
+          "neon": false
+        },
+        "Arrow Energy": {
+          "hex": "#FFE08A",
+          "role": "astra trails",
+          "usage_pct": 8,
+          "neon": true
+        },
+        "Dusk Clay": {
+          "hex": "#8A5A44",
+          "role": "battlefield earth",
+          "usage_pct": 10,
+          "neon": false
+        },
+        "Surya White": {
+          "hex": "#FFF6DF",
+          "role": "sun core",
+          "usage_pct": 6,
+          "neon": false
+        },
+        "Ember Red": {
+          "hex": "#C4442A",
+          "role": "blood, heat edges",
+          "usage_pct": 8,
+          "neon": false
+        }
+      },
+      "special_laws": [
+        {
+          "id": "KARNA-TRAGIC",
+          "tag": "tragic",
+          "only_impact_types": [
+            "black_out"
+          ]
+        }
+      ],
+      "devanagari": "कर्ण",
+      "hook_primary": "H-02",
+      "hook_alt": "H-01",
+      "impact": {
+        "primary": "white_out",
+        "tail": "lens_flare_streak",
+        "tragic": "black_out + kavach point"
+      },
+      "grades": {
+        "oath": "HOOK",
+        "duel": "BUILD",
+        "final_astra": "DROP",
+        "fall": "OUTRO"
+      },
+      "focal_hints": {
+        "hero": "Molten Gold",
+        "bg": "Dusk Clay"
+      }
+    },
+    "durga_kali_shakti": {
+      "characters": [
+        "CHAR-DURGA",
+        "CHAR-KALI"
+      ],
+      "time_lock": null,
+      "colors": {
+        "Rani Pink": {
+          "hex": "#E93A7D",
+          "role": "signature energy",
+          "usage_pct": 22,
+          "neon": true
+        },
+        "Midnight Indigo": {
+          "hex": "#171233",
+          "role": "night, void",
+          "usage_pct": 25,
+          "neon": false
+        },
+        "Blood Crimson": {
+          "hex": "#A61C3C",
+          "role": "war ground, Kali shadow",
+          "usage_pct": 15,
+          "neon": false
+        },
+        "Tiger Amber": {
+          "hex": "#E8A13D",
+          "role": "mount, warm rim",
+          "usage_pct": 12,
+          "neon": false
+        },
+        "Bone White": {
+          "hex": "#F2EDE4",
+          "role": "skull garland, eyes",
+          "usage_pct": 8,
+          "neon": false
+        },
+        "Tongue Red": {
+          "hex": "#FF3B30",
+          "role": "kill-mark VFX",
+          "usage_pct": 5,
+          "neon": true
+        },
+        "Blade Steel": {
+          "hex": "#A9B4C4",
+          "role": "weapon metal",
+          "usage_pct": 8,
+          "neon": false
+        },
+        "FLASH-WHT": {
+          "hex": "#FFFFFF",
+          "role": "impact",
+          "usage_pct": 5,
+          "neon": false
+        }
+      },
+      "special_laws": [
+        {
+          "id": "DURGA-TRAILS",
+          "role": "weapon_trail",
+          "max_vfx": 3
+        }
+      ],
+      "devanagari": "दुर्गा · काली",
+      "hook_primary": "H-04",
+      "hook_alt": "H-03",
+      "impact": {
+        "primary": "chroma_split",
+        "offset_px": 8,
+        "alt": "black_out + tongue_red accent"
+      },
+      "grades": {
+        "invocation": "BUILD",
+        "duel": "DROP",
+        "transformation": "HOOK"
+      },
+      "respect_guardrail": "no gore-shock framing of the goddess; temple-murti framing in still moments",
+      "trail_rule": "max 3 active weapon trails per shot",
+      "focal_hints": {
+        "hero": "Rani Pink",
+        "bg": "Midnight Indigo"
+      }
+    },
+    "narasimha_twilight": {
+      "characters": [
+        "CHAR-NARASIMHA"
+      ],
+      "time_lock": {
+        "keywords": [
+          "sandhya",
+          "twilight",
+          "dusk"
+        ],
+        "note": "sandhya only — never daylight, never true night"
+      },
+      "colors": {
+        "Feral Amber": {
+          "hex": "#FFA51E",
+          "role": "mane, eye glow",
+          "usage_pct": 24,
+          "neon": true
+        },
+        "Shadow Violet": {
+          "hex": "#3A1D5C",
+          "role": "twilight sky",
+          "usage_pct": 22,
+          "neon": false
+        },
+        "Mane Ember": {
+          "hex": "#D14D1F",
+          "role": "mane shading",
+          "usage_pct": 14,
+          "neon": false
+        },
+        "Dusk Purple": {
+          "hex": "#6B2FA0",
+          "role": "VFX, afterimage",
+          "usage_pct": 10,
+          "neon": true
+        },
+        "Pill Stone": {
+          "hex": "#55504B",
+          "role": "pillar granite",
+          "usage_pct": 10,
+          "neon": false
+        },
+        "Blood Red": {
+          "hex": "#8E1B2C",
+          "role": "claws",
+          "usage_pct": 8,
+          "neon": false
+        },
+        "Dusk Cream": {
+          "hex": "#EFE3D3",
+          "role": "skin highlight",
+          "usage_pct": 6,
+          "neon": false
+        },
+        "FLASH-BLK": {
+          "hex": "#0A0A0F",
+          "role": "avatar reveal",
+          "usage_pct": 6,
+          "neon": false
+        }
+      },
+      "special_laws": [
+        {
+          "id": "NARASIMHA-TIME",
+          "reveal_impact": {
+            "type": "black_out",
+            "frames": 3
+          }
+        }
+      ],
+      "devanagari": "नरसिंह",
+      "hook_primary": "H-01",
+      "hook_alt": "H-03",
+      "impact": {
+        "primary": "white_out",
+        "tail": "violet_afterimage_2f",
+        "reveal": "black_out_3f"
+      },
+      "grades": {
+        "devotion": "BUILD",
+        "duel": "DROP",
+        "doorway": "HOOK"
+      },
+      "focal_hints": {
+        "hero": "Feral Amber",
+        "bg": "Shadow Violet"
+      }
+    }
+  },
+  "frame_law": {
+    "min_dL_focal_vs_bg": 55,
+    "max_neon_hues_per_shot": 1,
+    "pure_white_area_cap_frac": 0.08,
+    "area_split": [
+      70,
+      20,
+      10
+    ]
+  },
+  "impact": {
+    "allowed_types": [
+      "white_out",
+      "black_out",
+      "inverted",
+      "alpha_sil",
+      "chroma_split"
+    ],
+    "type_max_frames": {
+      "white_out": 2,
+      "black_out": 3,
+      "inverted": 2,
+      "alpha_sil": 2,
+      "chroma_split": 2
+    }
+  },
+  "typography": {
+    "display": "Rajdhani",
+    "sacred": "Yatra One",
+    "subtitle_latin": "Inter",
+    "subtitle_devanagari": "Noto Sans Devanagari",
+    "min_px_at_1080w": 22,
+    "font_dir": "styles/fonts",
+    "lockup": {
+      "leader": "devanagari",
+      "latin_size_frac": 0.4,
+      "latin_opacity": 0.7,
+      "gap_px_1080": 16
+    }
+  },
+  "prompt_forbidden_words": [],
+  "guardrails": [
+    "no gore-shock framing of the goddess"
+  ],
+  "sound_sync": {
+    "enabled": false,
+    "events": [
+      "PULSE",
+      "STROBE-LOCK",
+      "HUE-DRIFT",
+      "BLOOM-DECAY",
+      "SWEEP-RISER"
+    ]
+  }
+}

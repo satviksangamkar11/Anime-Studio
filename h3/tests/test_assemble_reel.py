@@ -21,7 +21,7 @@ def test_every_shot_has_5ms_afade_in_and_out(story):
 def test_concat_chain_and_trim_values(story):
     plan = build_ffmpeg_assembly_plan(_shots(story), "out.mp4")
     fc = plan["filter_complex"]
-    assert "[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vout][aout]" in fc
+    assert "[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[vcat][aout];[vcat]scale=out_color_matrix=bt709:out_range=tv[vout]" in fc
     assert "[0:v]trim=start_frame=0:end_frame=145,setpts=PTS-STARTPTS[v0]" in fc
     assert "[1:a]atrim=start=0.50:end=6.04" in fc
 

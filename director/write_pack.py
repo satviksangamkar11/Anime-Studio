@@ -26,7 +26,10 @@ Staged mode (--staged): one call per gate, in order: 1 (story spine, six gate ch
   --stage-via 2=nvidia,3=claude and --stage-model 3=opus route per stage ("3" covers 3e1, 3e2 ...; "3e2" overrides it).
 Usage: python write_pack.py story.md out_dir [--writer super-vl|ultra|opus] [--via claude|nvidia|openrouter] [--model M] [--effort low|medium|high] [--allow-paid]
        python write_pack.py story.md out_dir --staged [--writer ...] [--via ...] [--model M] [--stage-via 2=nvidia,3=claude] [--stage-model 3=opus]
-                                                    [--out-lang en|hi|mr|en,hi|all]   (default hi; staged only)"""
+                                                    [--out-lang en|hi|mr|en,hi|all]   (default hi; staged only)
+                                                       [--prompt-version v2.2|v2.3] [--style-pack ID]
+  --prompt-version v2.3 (staged only) uses MASTER_PROMPT_v2.3.md and appends the STYLE PACK RULES of the pack named by --style-pack,
+  else by the story.json next to the story. The staged default is v2.3 (owner decision Q5, 2026-11-07); v2.2 stays available."""
 import argparse
 import importlib
 import json
@@ -50,6 +53,9 @@ HERE = Path(__file__).resolve().parent
 WORK = HERE.parents[1]                                    # D:\aai work
 BRIEF = HERE / "MASTER_PROMPT_v2.1.md"
 BRIEF_V22 = HERE / "MASTER_PROMPT_v2.2.md"                # staged mode reads this when it exists
+BRIEF_V23 = HERE / "MASTER_PROMPT_v2.3.md"                # --prompt-version v2.3
+STYLES_DIR = HERE.parent / "styles"                       # style pack JSON files, read as plain JSON
+PACK_ID = re.compile(r"[A-Za-z0-9_-]+")
 SHOTS_BLOCK = re.compile(r"```json shots\s*\n(.*?)\s*```", re.DOTALL)
 BIBLE_BLOCK = re.compile(r"```json bible\s*\n(.*?)\s*```", re.DOTALL)
 STORY_BLOCK = re.compile(r"```json story\s*\n(.*?)\s*```", re.DOTALL)
@@ -76,8 +82,62 @@ def build_prompt(story_text):
     return BRIEF.read_text(encoding="utf-8") + "\n\n## THE STORY / SOURCE\n\n" + story_text.strip() + "\n"
 
 
-def staged_brief():
-    return BRIEF_V22 if BRIEF_V22.exists() else BRIEF
+DEFAULT_PROMPT_VERSION = "v2.3"
+
+
+def staged_brief(version=DEFAULT_PROMPT_VERSION):
+    """Path of the staged brief. v2.2: today's file (BRIEF_V22, or BRIEF when that is missing). v2.3: MASTER_PROMPT_v2.3.md.
+    Returns a Path for both (read it with .read_text), as before."""
+    if version == "v2.2":
+        return BRIEF_V22 if BRIEF_V22.exists() else BRIEF
+    if version == "v2.3":
+        if not BRIEF_V23.exists():
+            raise ValueError(f"{BRIEF_V23.name} is missing")
+        return BRIEF_V23
+    raise ValueError(f"unknown prompt version {version!r}: use v2.2 or v2.3")
+
+
+def _strings(value):
+    return [x for x in value if isinstance(x, str)] if isinstance(value, list) else []
+
+
+def style_rules(pack_id, styles_dir=None):
+    """The '## STYLE PACK RULES' section for a pack: guardrails, forbidden words, act names and phase ids.
+    "" when the pack id is empty or unsafe, the file is missing, or it is not a readable JSON object. Never raises."""
+    if not isinstance(pack_id, str) or not PACK_ID.fullmatch(pack_id):
+        return ""
+    try:
+        pack = json.loads((Path(styles_dir or STYLES_DIR) / f"{pack_id}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    if not isinstance(pack, dict):
+        return ""
+    lines = ["## STYLE PACK RULES", "", f"Style pack: {pack_id}", ""]
+    guardrails = _strings(pack.get("guardrails"))
+    if guardrails:
+        lines += ["Guardrails (the writer must not produce what these forbid):"] + [f"- {g}" for g in guardrails] + [""]
+    words = _strings(pack.get("prompt_forbidden_words"))
+    if words:
+        lines += [f"Never write these words or phrases in any prompt text: {', '.join(words)}", ""]
+    acts = list(pack["acts"]) if isinstance(pack.get("acts"), dict) else []
+    cs = pack.get("colour_script")
+    phases = [ph["id"] for ph in cs.get("phases") or [] if isinstance(ph, dict) and isinstance(ph.get("id"), str)] \
+        if isinstance(cs, dict) and isinstance(cs.get("phases"), list) else []
+    if acts:
+        lines += [f"Act names for look.act: {', '.join(acts)}", ""]
+    if phases:
+        lines += [f"Phase ids for look.phase: {', '.join(phases)}", ""]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def story_pack_id(story_path):
+    """style_pack from the story.json in the story's folder, or None."""
+    try:
+        data = json.loads((Path(story_path).parent / "story.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    pack = data.get("style_pack") if isinstance(data, dict) else None
+    return pack if isinstance(pack, str) else None
 
 
 def build_stage_prompt(brief, story_text, earlier, instruction, errors=(), langs=wp.DEFAULT_OUT_LANG):
@@ -885,13 +945,16 @@ def apply_captions(shots, items, langs):
 
 
 def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None, out_langs=wp.DEFAULT_OUT_LANG,
-               voice=None):
+               voice=None, prompt_version=DEFAULT_PROMPT_VERSION, style_rules=""):
     """Stages 1, 2, 3e<N> per episode, 5, each checked (see run_stage). Writes PACK.md, bible.json, shots.json and story_plan.json;
     returns the merged shots. rec: the run registry Recorder of this run (default: records nothing). out_langs: the story's output
-    languages (a code or a list, primary first): narration, dialogue and captions are written in each and checked against them."""
+    languages (a code or a list, primary first): narration, dialogue and captions are written in each and checked against them. prompt_version: which staged brief to send; style_rules: text appended
+    to that brief (empty = nothing appended)."""
     langs = wp.lang_list(out_langs)
     rec = rec or run_registry.Recorder(None, "none")
-    brief = staged_brief().read_text(encoding="utf-8")
+    brief = staged_brief(prompt_version).read_text(encoding="utf-8")
+    if style_rules:
+        brief += "\n\n" + style_rules
     out.mkdir(parents=True, exist_ok=True)
     mod = validator()
     hook = simple_hook() if mod is not None else None
@@ -1021,9 +1084,13 @@ def main(argv=None):
     ap.add_argument("--out-lang", default=None, type=out_langs_arg, metavar="LANGS",
                     help=f"staged only: output languages of narration, dialogue and captions: en, hi, mr, a comma list in priority order "
                          f"(en,hi) or all (default {wp.DEFAULT_OUT_LANG})")
+    ap.add_argument("--prompt-version", default=None, choices=("v2.2", "v2.3"),
+                    help="staged only: the brief. v2.3 (default: look and hook rules, plus the style pack rules) or v2.2 (the old brief)")
+    ap.add_argument("--style-pack", default=None,
+                    help="staged + v2.3 only: style pack id (styles/<id>.json). Default: style_pack in the story.json next to the story")
     a = ap.parse_args(argv)
-    if not a.staged and (a.stage_via or a.stage_model):
-        ap.error("--stage-via and --stage-model need --staged")
+    if not a.staged and (a.stage_via or a.stage_model or a.prompt_version or a.style_pack):
+        ap.error("--stage-via, --stage-model, --prompt-version and --style-pack need --staged")
     if not a.staged and a.out_lang is not None:
         ap.error("--out-lang needs --staged (the single-call brief does not use it)")
     if not a.staged and a.voice:
@@ -1035,6 +1102,11 @@ def main(argv=None):
         stage_model = parse_stage_map(a.stage_model, str) if a.staged else {}
     except ValueError as exc:
         ap.error(str(exc))
+    prompt_version = a.prompt_version or DEFAULT_PROMPT_VERSION   # Q5 (2026-11-07): the staged default is v2.3
+    style = ""
+    if a.staged and prompt_version == "v2.3":
+        pack_id = a.style_pack or story_pack_id(Path(a.story))
+        style = style_rules(pack_id) if pack_id else ""
     out = Path(a.out_dir)
     rec = run_registry.Recorder(run_registry.story_folder(Path(a.story)), run_registry.writer_tag(writer, via, model),
                                 pack=out.name, via=via, model=model, effort=effort)
@@ -1044,7 +1116,7 @@ def main(argv=None):
         except (ValueError, AttributeError) as exc:
             ap.error(str(exc))
         run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,
-                   out_langs=out_langs, voice=voice)
+                   out_langs=out_langs, voice=voice, prompt_version=prompt_version, style_rules=style)
         return
     run_single(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, rec)
 

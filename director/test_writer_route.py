@@ -126,7 +126,7 @@ def test_default_staged_run_goes_to_super_vl_on_openrouter(tmp_path, monkeypatch
     seen = {}
 
     def fake_run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None, out_langs=None,
-                        voice=None):
+                        voice=None, prompt_version=None, style_rules=""):
         seen.update(via=via, model=model, stage_via=stage_via, out_langs=out_langs)
         return []
     monkeypatch.setattr(write_pack, "run_staged", fake_run_staged)

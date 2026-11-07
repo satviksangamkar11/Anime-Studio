@@ -1,4 +1,4 @@
-"""Pre-render controller for the h3 sing8 route. Story-agnostic. Pre-render only: no network, no ffmpeg, no GPU.
+"""Pre-render controller for the h3 sing8 route. Story-agnostic. Pre-render only: no network, no GPU. ffmpeg runs only for the G3 colour-seam check, and only when every clip.mp4 already exists.
 
 Run from D:/aai work/anime_studio:
   python -m h3.render_controller --story-file STORY.json --scope shots --ids A,B
@@ -18,7 +18,8 @@ import os
 import sys
 from pathlib import Path
 
-from h3.assemble_reel import build_ffmpeg_assembly_plan, write_assembly_script
+from h3.assemble_reel import (attach_colour_seams, build_ffmpeg_assembly_plan, load_loudness_plan,
+                              write_assembly_script)
 from h3.asset_manifest import H3_MODEL_ID, blocking_problems, hash_bible, hash_frame_file, hash_shot_row, load_manifest
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
 from h3.fallback_policy import attempts_for, load_history
@@ -254,11 +255,16 @@ def _write_shot(reg, ep, shot, prev, ep_dir, second_pass):
 
 
 def _write_assembly(ep, shots_sel, ep_dir):
-    plan = build_ffmpeg_assembly_plan(shots_sel, f"{ep['episode_id']}.mp4")
+    loud = load_loudness_plan(os.path.join(ep_dir, "loudness.json"))
+    plan = build_ffmpeg_assembly_plan(shots_sel, f"{ep['episode_id']}.mp4", loudness=loud)
     clips = [f"{s['shot_id']}/clip.mp4" for s in shots_sel]
+    attach_colour_seams(plan, [os.path.join(ep_dir, c) for c in clips], shots_sel)
     paths = write_assembly_script(plan, clips, ep_dir)
-    return {"filter": paths["filter"], "cmd": paths["cmd"], "total_frames": plan["total_frames"],
-            "total_duration_sec": plan["total_duration_sec"], "seams": len(plan["seam_transitions"])}
+    out = {"filter": paths["filter"], "cmd": paths["cmd"], "total_frames": plan["total_frames"],
+           "total_duration_sec": plan["total_duration_sec"], "seams": len(plan["seam_transitions"])}
+    if "colour_seams_note" not in plan:
+        out["colour_seams"] = len(plan["colour_seams"])
+    return out
 
 
 def _remove_if_exists(paths):
@@ -317,6 +323,7 @@ def prepare(story, groups, out_root, *, second_pass=False, allow_partial=False, 
                 try:
                     for sid in sel:  # assert every shot folder stays inside ep_dir before compile_episode writes into it
                         _safe_join(ep_dir, sid)
+                    load_loudness_plan(os.path.join(str(ep_dir), "loudness.json"))   # a corrupt file raises ValueError before any shot file is written
                     written = compile_episode(story, ep_id, str(ep_dir), shot_ids=sel, second_pass=second_pass)
                     written_ids = set(sel)
                     assembly = _write_assembly(ep, g["shots"], str(ep_dir))
