@@ -70,7 +70,8 @@ def _merged_transitions(grids, core, exempt):
 
 
 def _worst_window(transitions, fps):
-    """(flashes, start_frame) of the 1 s window with the most flashes; flashes = transitions // 2."""
+    """(flashes, start_frame) of the 1 s window with the most flashes; flashes = ceil(transitions / 2).
+    An odd transition still counts as a flash: 8 alternating frames (7 changes) are 4 flashes (DECISION 2026-11-07)."""
     frames = [f for f, _ in transitions]
     best = (0, 0)
     for k, start in enumerate(frames):
@@ -79,8 +80,9 @@ def _worst_window(transitions, fps):
             if f >= start + fps:
                 break
             count += 1
-        if count // 2 > best[0]:
-            best = (count // 2, start)
+        flashes = (count + 1) // 2
+        if flashes > best[0]:
+            best = (flashes, start)
     return best
 
 
