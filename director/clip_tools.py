@@ -40,9 +40,30 @@ def qa(clip, out_dir):
     sheet = out / f"{Path(clip).stem}_first_mid_last.png"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clip), "-vf",
                     f"select='eq(n\\,0)+eq(n\\,{n // 2})+eq(n\\,{n - 1})',scale=480:-1,tile=3x1", "-frames:v", "1", str(sheet)], check=True)
-    report = {**info, **loudness(clip), "sheet": str(sheet)}
+    _add_colour_panels(clip, n, sheet)
+    report = {**info, **loudness(clip), "sheet": str(sheet),
+              "panels": ["first_mid_last", "thumb_270", "deuteranopia_270"]}
     (out / f"{Path(clip).stem}_qa.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     return report
+
+
+def _add_colour_panels(clip, n, sheet):
+    """WP9 / A16: stack the 270 px thumbnail + deuteranopia panel (core.cvd) of the middle frame under the tile sheet."""
+    from PIL import Image
+
+    from core.cvd import panel
+    with tempfile.TemporaryDirectory() as tmp:
+        mid = Path(tmp) / "mid.png"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clip), "-vf", f"select='eq(n\\,{n // 2})'",
+                        "-frames:v", "1", str(mid)], check=True)
+        with Image.open(mid) as im:
+            cvd = panel(im)
+    with Image.open(sheet) as tile:
+        tile = tile.convert("RGB")
+    canvas = Image.new("RGB", (max(tile.width, cvd.width), tile.height + cvd.height))
+    canvas.paste(tile, (0, 0))
+    canvas.paste(cvd, (0, tile.height))
+    canvas.save(sheet)
 
 
 def last_frame(clip, png):
