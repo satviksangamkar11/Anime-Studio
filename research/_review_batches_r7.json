@@ -1,0 +1,19 @@
+{
+ "r7_caption_text": [
+  "D:/aai work/anime_studio_universal/core/caption_text.py",
+  "D:/aai work/anime_studio_universal/core/tests/test_caption_text.py"
+ ],
+ "r7_caption_export": [
+  "D:/aai work/anime_studio_universal/core/caption_export.py",
+  "D:/aai work/anime_studio_universal/core/tests/test_caption_export.py"
+ ],
+ "r7_captions_integration": [
+  "D:/aai work/anime_studio_universal/core/captions.py",
+  "D:/aai work/anime_studio_universal/core/tests/test_captions_integration.py",
+  "D:/aai work/anime_studio_universal/director/post.py"
+ ],
+ "r7_calibrate": [
+  "D:/aai work/anime_studio_universal/tools/calibrate_sat_ceiling.py",
+  "D:/aai work/anime_studio_universal/core/tests/test_calibrate_sat_ceiling.py"
+ ]
+}

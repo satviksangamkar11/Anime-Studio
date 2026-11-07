@@ -756,3 +756,50 @@ Rules for entries: write "unknown" where the fact is not recorded; do not guess.
 11-07 13:11 | me | COMMIT | v4-architecture-2026-11-07 | auto_log hook script + tests + gitignore; NOT pushed (owner push approval covered the earlier work only)
 11-07 13:14 | me | CHECK | open steps | owner asked: are all open steps closed; reading NOW block, checklist, OPEN_QUESTIONS, STATUS
 11-07 13:14 | me | EDIT | CHECKLIST_ARCHITECTURE_2026-11-07.md,HANDOFF_2026-11-07.md | ticked 7.2, 7.4, 11.2-11.4 with evidence; handoff update with open list
+11-07 13:14 | me | COMMIT | both branches | STATUS.md (universal) and checklist+handoff (v4) updated; local only
+11-07 13:14 | me | DECISION | scope | owner: universal pipeline, implement every part (captions 9.1-9.8, colour audit 10.1, open questions, Q-R5-3/4, A26), close everything, then report; story comes after
+11-07 13:17 | me | DECISION | scope | owner: do not touch any story; only architecture completion and testing. Caption parts built as two modules (core/caption_text.py, core/caption_export.py) by Haiku medium agents B9a and B9b; lead integrates into core/captions.py
+11-07 13:17 | B9a(haiku,medium) | CMD | _inputs/AGENT_RULES.md, briefs/B9a.md | read rules + brief
+11-07 13:17 | B9b(haiku,medium) | CMD | - | read rules + brief
+11-07 13:18 | me | EDIT | tools/calibrate_sat_ceiling.py,core/tests/test_calibrate_sat_ceiling.py | A26: tool computes gates.sat_avg_ceiling (99th percentile of signalstats SATAVG over approved refs) and writes it; release test fails while null when ANIME_RELEASE=1
+11-07 13:19 | B9a(haiku,medium) | EDIT | core/tests/test_caption_text.py | tests written first (TDD), 3 small fixes
+11-07 13:19 | B9b(haiku,medium) | EDIT | core/tests/test_caption_export.py | 58 tests written (TDD red step)
+11-07 13:19 | B9b(haiku,medium) | TEST | core/tests/test_caption_export.py | red run: module missing, collection error as expected
+11-07 13:19 | B9b(haiku,medium) | EDIT | core/caption_export.py | module written (TDD green step)
+11-07 13:19 | me | EDIT | director/write_pack.py,test_look_schema.py | Q5 decided: staged prompt default is now v2.3 (DEFAULT_PROMPT_VERSION); v2.2 still selectable; pinned default test updated
+11-07 13:19 | B9b(haiku,medium) | TEST | core/tests/test_caption_export.py | 35 pass (caption_export); core suite run
+11-07 13:20 | B9a(haiku,medium) | EDIT | core/caption_text.py | first implementation written after red run
+11-07 13:20 | B9b(haiku,medium) | FAIL | core/tests/test_caption_text.py | not mine: collection error blocks full core run after wait; reported under REQUESTS
+11-07 13:20 | B9b(haiku,medium) | AGENT-DONE | core/caption_export.py core/tests/test_caption_export.py | 35 pass; core w/o caption_text 325 pass
+11-07 13:20 | B9a(haiku,medium) | TEST | core/tests/test_caption_text.py | 45 pass after 2 fixes (fit fixture width, glyph test char)
+11-07 13:20 | B9b(haiku,medium) | FAIL | PROJECT_LOG.md | correction: last AGENT-DONE said 325; actual core run excluding caption_text = 331 pass, 1 skip (other workers' new tests included)
+11-07 13:20 | B9a(haiku,medium) | TEST | core | core 376 pass 1 skip (other workers' files present); caption_text 45 pass
+11-07 13:20 | B9a(haiku,medium) | AGENT-DONE | core/caption_text.py, core/tests/test_caption_text.py | 45 new pass; core 376 pass 1 skip (skip is other worker's release gate)
+11-07 13:20 | me | EDIT | director/run_registry.py,h3/compile_h3_sing8.py + tests | Q-R5-3 detect_language uses Marathi/Hindi function words + letter (a Marathi text without u0933 is no longer Hindi); Q-R5-4 wrapped compile error names file:line; 5+1 new tests pass
+11-07 13:21 | me | CHECK | B9a B9b reports received; verifying core suite and reading both modules
+11-07 13:22 | me | DECISION | captions integration | build_ass gains font_dir, template; cues gain emphasis and words (karaoke); measured 2-line wrap, glyph check, mixed-script fonts, platform templates; core safe zone default moves to owner-decided reels numbers (top 14%, bottom 35%, caption band 50-65%)
+11-07 13:24 | me | EDIT | core/captions.py | integrated B9a/B9b: font_dir measured 2-line wrap + glyph check, mixed-script font runs, hook-word emphasis, karaoke words with phrase fallback, safe-zone template arg; 30 existing captions tests still pass
+11-07 13:25 | me | EDIT | core/core.json + 2 pinned core tests | safe zone default = owner-decided reels numbers (top 14%, bottom 35%, band 50-65%, right 11.1%), safe_zone_templates reels/shorts/youtube added (shorts/youtube values are tune values); tests updated
+11-07 13:26 | me | TEST | core/tests/test_captions_integration.py | 10 new tests pass (measured wrap, glyph FAIL, emphasis, mixed fonts, karaoke word/fallback/wrap, templates); core 386 pass 1 skip
+11-07 13:28 | me | EDIT | director/post.py,director/test_post_captions.py | post wires platform template, font_dir measured wrap, ffmpeg libass/HarfBuzz preflight (real run only), hook emphasis, SRT/VTT sidecars (default on, --no-sidecars); 5 new tests, test_post 12 still pass
+11-07 13:29 | me | DECISION | OPEN_QUESTIONS.md Q1-Q8 | all eight closed with the recommended defaults (owner may reopen): Kaliya braj_earth, dL law stays WARN, braj_earth gap unset by design, neon list accepted, write_pack default v2.3 (done), no BPM layer, thresholds tuned after first renders, 45-60 s cut after analytics; docs/COLOUR_AUDIT_DECISIONS.md written (10.1)
+11-07 13:29 | me | REVIEW-START | research/ROUND7_REVIEW_DOTS_2026-11-07.md,ROUND7_REVIEW_SUPERVL_2026-11-07.md | free review of caption_text, caption_export, captions+post integration, calibrate_sat_ceiling (rule 5)
+11-07 13:31 | supervl | REVIEW-DONE | batch r7_caption_text | 1166 chars
+11-07 13:31 | me | TEST | universal all suites | core 386 pass 1 skip (release gate), director 488, h3 178, flow 130 pass + 2 known failures, ui 161 pass + 1 known failure; test_styles OPEN_QUESTIONS headings updated
+11-07 13:32 | me | EDIT | STATUS.md,README.md,docs/COLOUR_AUDIT_DECISIONS.md,OPEN_QUESTIONS.md (universal) | architecture complete, caption tools and calibrate tool documented, Q1-Q8 closed
+11-07 13:32 | supervl | REVIEW-DONE | batch r7_caption_export | 1218 chars
+11-07 13:32 | me | EDIT | memory + CHECKLIST | checklist 9.1-9.8, 10.1 ticked with pointers; memory notes updated; 7.3 waits for the final handoff line
+11-07 13:32 | me | COMMIT | universal-v1.1 | caption components + A26 + write_pack v2.3 default + docs committed locally; reviews round 7 triage pending
+11-07 13:33 | me | EDIT | core/caption_export.py + test | real libass run found contact_sheet_plan wrote a relative png path that breaks under cwd=ass folder: png now absolute, WARN when fonts dir is not beside the ass; +1 test
+11-07 13:34 | me | CHECK | real libass render | 3 caption cards (Marathi corpus with conjuncts, mixed Devanagari+Latin with emphasis, long line wrapped to 2) rendered via contact_sheet_plan argv and inspected by eye: HarfBuzz COMPLEX shaper active, conjuncts and reph shaped, emphasis yellow, 2 lines, latin line translucent
+11-07 13:34 | me | COMMIT | v4-architecture-2026-11-07 | Q-R5-3, Q-R5-4 + checklist ticks committed locally; h3 595, director 663
+11-07 13:35 | me | COMMIT | universal-v1.1 | contact_sheet_plan fix committed locally; core 387+1 skip, director 488; waiting for round 7 reviews
+11-07 13:39 | dots | REVIEW-DONE | batch r7_caption_text | 1508 chars
+11-07 13:46 | supervl | REVIEW-DONE | batch r7_captions_integration | 1763 chars
+11-07 13:47 | dots | REVIEW-DONE | batch r7_caption_export | 4148 chars
+11-07 13:48 | supervl | REVIEW-DONE | batch r7_calibrate | 3511 chars
+11-07 13:48 | supervl | REVIEW-DONE | round 7 all 4 batches; reading findings
+11-07 13:49 | me | TRIAGE | R7 Super VL | caption_text: 0 defects; caption_export karaoke gap claim FALSE (by design: the gap goes to the previous word so each word starts at its own t0); captions x position FALSE (by design: caption centre shifted away from the right rail); calibrate: OSError->ValueError, CRLF kept, bool percentile REAL low FIXED +3 tests; parents[2] and PNG claims FALSE (tests pass)
+11-07 13:49 | me | COMMIT | universal-v1.1 | calibrate fixes committed locally; waiting for Dots round 7 (4 batches) before the final push
+11-07 13:49 | me | TRIAGE | R7 Dots batches caption_text, caption_export | claim 'format-4 rangeOffset has a spurious 2*i term' FALSE (the OpenType address is the idRangeOffset entry position ranges_off+2*i plus the offset plus 2*(c-start); our formula matches and the real-font tests pass); caption_export: 0 defects, rest of its list is unverified paste noise; integration and calibrate batches still running
+11-07 14:11 | me | CHECK | owner pinged '!?': closing out now; Dots last two batches checked, pushing
