@@ -77,7 +77,7 @@ def fake_claude(monkeypatch):
     def fake(prompt, model, effort):
         name = stage_of(prompt)
         calls.append({"name": name, "prompt": prompt})
-        return write_pack.envelope(state["answers"][name], "stop", "claude", "opus")
+        return write_pack.envelope(state["answers"].get(name) or state["answers"]["5"], "stop", "claude", "opus")
     monkeypatch.setattr(write_pack, "call_claude", fake)
     return {"calls": calls, "state": state}
 
@@ -154,7 +154,7 @@ def test_a_validator_failure_triggers_exactly_one_repair_call(tmp_path, story, f
     seen = fake_validator(monkeypatch, check)
     run(story, tmp_path / "pack_v1")
     names = [c["name"] for c in fake_claude["calls"]]
-    assert names == ["1", "1", "2", "3e1", "5"]                 # stage 1 twice: the answer, then ONE repair
+    assert names == ["1", "1", "2", "3e1", "5e1"]                 # stage 1 twice: the answer, then ONE repair
     repair = fake_claude["calls"][1]["prompt"]
     assert "VALIDATION ERRORS IN YOUR LAST ANSWER" in repair and "STORY-01 missing story_gate_checks" in repair
     assert "VALIDATION ERRORS" not in fake_claude["calls"][0]["prompt"]
@@ -183,7 +183,7 @@ def test_a_missing_validator_module_is_a_warning_not_a_crash(tmp_path, story, fa
     run(story, tmp_path / "pack_v1")
     assert "pack_validator unavailable" in capsys.readouterr().err
     assert (tmp_path / "pack_v1" / "shots.json").exists()
-    assert [c["name"] for c in fake_claude["calls"]] == ["1", "2", "3e1", "5"]
+    assert [c["name"] for c in fake_claude["calls"]] == ["1", "2", "3e1", "5e1"]
 
 
 def test_each_validation_is_recorded_in_the_run_registry(tmp_path, story, fake_claude, monkeypatch):
@@ -199,7 +199,7 @@ def test_each_validation_is_recorded_in_the_run_registry(tmp_path, story, fake_c
     checks = [e for e in run_registry.read_events(story.parent) if e["kind"] == "pack_check"]
     stage1 = [(e["status"], e.get("stage")) for e in checks if e.get("stage") == "1"]
     assert ("failed", "1") in stage1 and ("ok", "1") in stage1
-    assert {e.get("stage") for e in checks} >= {"1", "2", "3e1", "5"}
+    assert {e.get("stage") for e in checks} >= {"1", "2", "3e1", "5e1"}
 
 
 def test_the_stage_checks_get_the_bible_of_stage_2(tmp_path, story, fake_claude, monkeypatch):
@@ -454,7 +454,7 @@ def test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_vali
         run(story, tmp_path / "pack_v1", "--out-lang", "en,hi")
 
 
-def test_web_flag_turns_on_search_tools_only_when_asked(monkeypatch):
+def test_writer_stages_never_get_tools_only_the_notes_call_does(monkeypatch):
     import write_pack as w
     seen = {}
 
@@ -465,16 +465,14 @@ def test_web_flag_turns_on_search_tools_only_when_asked(monkeypatch):
         seen["cmd"], seen["prompt"] = cmd, input
         return R()
     monkeypatch.setattr(w.subprocess, "run", fake_run)
-    monkeypatch.setattr(w, "WEB", False)
+    monkeypatch.setattr(w, "WEB", True)                     # even with --web, a writer stage runs with no tools
     w.call_claude("brief", "opus", "high")
     assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "" and seen["prompt"] == "brief"
-    monkeypatch.setattr(w, "WEB", True)
-    w.call_claude("brief", "opus", "high")
-    assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "WebSearch,WebFetch"
-    assert "--allowedTools" in seen["cmd"] and seen["prompt"].startswith("WEB CHECK") and seen["prompt"].endswith("brief")
+    w.call_claude("brief", "haiku", "low", web=True, rule=False)    # the research-notes call
+    assert seen["cmd"][seen["cmd"].index("--tools") + 1] == "WebSearch,WebFetch" and "--allowedTools" in seen["cmd"]
 
 
-def test_web_notes_go_to_free_models_only(monkeypatch):
+def test_web_notes_reach_every_writer(monkeypatch):
     import write_pack as w
     monkeypatch.setattr(w, "WEB", True)
     monkeypatch.setattr(w, "WEB_NOTES", "Kali has four arms")
@@ -483,7 +481,8 @@ def test_web_notes_go_to_free_models_only(monkeypatch):
     monkeypatch.setattr(w, "call_claude", lambda prompt, model, effort: seen.setdefault("cl", prompt) or "{}")
     w.call_path("brief", "nvidia", "m", "high", False)
     w.call_path("brief", "claude", "opus", "high", False)
-    assert "Kali has four arms" in seen["nv"] and seen["nv"].endswith("brief") and seen["cl"] == "brief"
+    for p in (seen["nv"], seen["cl"]):
+        assert "Kali has four arms" in p and p.endswith("brief") and "story source stays the authority" in p
 
 
 def test_make_web_notes_uses_haiku_low_with_web_and_reuses_the_file(monkeypatch, tmp_path):
@@ -492,12 +491,19 @@ def test_make_web_notes_uses_haiku_low_with_web_and_reuses_the_file(monkeypatch,
     story = tmp_path / "SOURCE.md"
     story.write_text("Sati story", encoding="utf-8")
     calls = []
+    body = "- Sati: daughter of Daksha (source link). " * 10
     monkeypatch.setattr(w, "call_claude", lambda prompt, model, effort, web=None, rule=True:
-                        calls.append((model, effort, web, rule)) or _j.dumps({"result": "- Sati: daughter of Daksha"}))
-    assert "Daksha" in w.make_web_notes(story)
+                        calls.append((model, effort, web, rule)) or _j.dumps({"result": "Done.\n```markdown\n" + body + "\n```"}))
+    notes = w.make_web_notes(story)
+    assert notes.startswith("- Sati: daughter of Daksha") and "```" not in notes
     assert calls == [("haiku", "low", True, False)]
     w.make_web_notes(story)
     assert len(calls) == 1 and (tmp_path / "WEB_NOTES.md").exists()
+    (tmp_path / "WEB_NOTES.md").unlink()
+    monkeypatch.setattr(w, "call_claude", lambda *a, **k: _j.dumps({"result": "short"}))
+    with pytest.raises(RuntimeError):
+        w.make_web_notes(story)
+    assert not (tmp_path / "WEB_NOTES.md").exists()
 
 
 @pytest.mark.real_style

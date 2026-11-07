@@ -256,7 +256,7 @@ def build_stage_prompt(brief, story_text, earlier, instruction, errors=(), langs
 
 
 def gate_of(name):
-    return "3" if name.startswith("3e") else name
+    return "3" if name.startswith("3e") else "5" if name.startswith("5e") else name
 
 
 def stage_setting(table, name, default):
@@ -303,6 +303,8 @@ the order of events, places, and the traditional look of every deity, person, an
 arms, weapons, mount, clothing, ornaments, setting). The story is the authority: only note where trusted sources confirm, add a
 missing detail, or clearly disagree. Answer with plain Markdown notes only, at most 1500 words, grouped by name, each point
 with its source link. No story retelling.
+ORDER: do ALL your searching first. Then write the complete notes in ONE final message inside one ```markdown fence, and never call
+a tool once you have started writing them.
 
 STORY:
 """
@@ -314,14 +316,16 @@ def make_web_notes(story_path):
     if not notes.exists():
         raw = call_claude(NOTES_PROMPT + Path(story_path).read_text(encoding="utf-8"), "haiku", "low", web=True, rule=False)
         text = (json.loads(raw).get("result") or "").strip()
-        if not text:
-            raise RuntimeError("the Haiku notes agent returned no notes")
+        m = re.search(r"```(?:markdown|md)?\s*\n(.*?)```", text, re.S)
+        text = (m.group(1) if m else text).strip()
+        if len(text) < 200:
+            raise RuntimeError(f"the Haiku notes agent returned no usable notes ({len(text)} chars); nothing saved, rerun to retry")
         notes.write_text(text + "\n", encoding="utf-8")
     return notes.read_text(encoding="utf-8").strip()
 
 
-def call_claude(prompt, model, effort, web=None, rule=True):
-    web = WEB if web is None else web
+def call_claude(prompt, model, effort, web=False, rule=True):
+    """web=True only for the research-notes call (make_web_notes); writer stages always run with no tools."""
     tools = ["--tools", WEB_TOOLS, "--allowedTools", WEB_TOOLS] if web else ["--tools", ""]
     prompt = WEB_RULE + prompt if web and rule else prompt
     with tempfile.TemporaryDirectory() as empty:
@@ -474,8 +478,11 @@ def call_path(prompt, via, model, effort, allow_paid, policy=None, sleep=None):
     """One model call. Claude runs once. NVIDIA and OpenRouter go through the shared retry policy (director/retry_policy.py):
     rate limits, server errors, timeouts and empty answers are retried with growing waits (15-180 s, max 5 calls, 600 s cap);
     a refusal that retrying cannot fix (budget, bad request) stops at once. The error reaches the caller as ModelGaveUp."""
-    if WEB and WEB_NOTES and via != "claude":
-        prompt = "WEB RESEARCH NOTES (checked facts and traditional looks; the story source stays the authority):\n" + WEB_NOTES + "\n\n" + prompt
+    if WEB and WEB_NOTES:   # every writer, Claude included: research is one separate call, stages are written with no tools
+        prompt = ("WEB RESEARCH NOTES (checked on the web before this run). The story source stays the authority: keep its events, "
+                  "order and meaning; use these notes only to fix a clear fact or look mistake or fill a missing detail; looks follow "
+                  "the traditional scripture description first, then the style rules. Never put links or citations in your answer.\n"
+                  + WEB_NOTES + "\n\n" + prompt)
     if via == "claude":
         return call_claude(prompt, model, effort)
     one = (lambda: call_nvidia(prompt, model)) if via == "nvidia" else (lambda: call_openrouter(prompt, model, allow_paid))
@@ -645,7 +652,7 @@ def parse_stage_map(spec_text, check):
     table = {}
     for item in (s.strip() for s in spec_text.split(",") if s.strip()):
         key, sep, value = item.partition("=")
-        if not sep or not value.strip() or not re.fullmatch(r"[1235]|3e\d+", key.strip()):
+        if not sep or not value.strip() or not re.fullmatch(r"[1235]|[35]e\d+", key.strip()):
             raise ValueError(f"bad stage option {item!r}: use STAGE=VALUE, e.g. 2=nvidia or 3e2=opus")
         table[key.strip()] = check(value.strip())
     return table
@@ -1080,6 +1087,26 @@ def _stage5_item(item):
     return out
 
 
+def episode_id_errors(shots, ep):
+    """Audit A #4: every row of episode ep says episode ep. (Ids may restart per episode: merge_episodes renumbers, and the
+    captions are applied per episode before the merge, so a repeated id cannot take another episode's captions.)"""
+    return [f"EP-01 at shots[{i}].episode: this is episode {ep}, the row says {s.get('episode')!r}"
+            for i, s in enumerate(shots) if isinstance(s, dict) and str(s.get("episode")) != str(ep)]
+
+
+def caption_id_errors(items, shots):
+    """Audit A #4: a captions item must name a shot of this episode, and every shot that speaks gets captions."""
+    ids = {s.get("id") for s in shots if isinstance(s, dict)}
+    named = {i.get("shot_id") for i in items if isinstance(i, dict)}
+    errs = [f"CAP-01 at captions: {sid} is not a shot of this episode" for sid in sorted(n for n in named if n not in ids)]
+    for s in shots:
+        track = s.get("audio_and_dialogue_track") if isinstance(s, dict) and isinstance(s.get("audio_and_dialogue_track"), dict) else {}
+        speaks = bool(track.get("narration")) or bool(track.get("dialogue"))
+        if speaks and s.get("id") not in named:
+            errs.append(f"CAP-02 at captions: {s.get('id')} has narration or dialogue but no captions item")
+    return errs
+
+
 def apply_captions(shots, items, langs):
     """Stage 5 onto the shot rows. One language: captions (the cards), narration text and dialogue texts. Several languages: the per
     language captions_by_lang, narration_by_lang and dialogue_by_lang texts, and the flat narration, dialogue and captions mirror the
@@ -1152,10 +1179,12 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
             raw_path.write_text(text, encoding="utf-8")
             st.chars = run_registry.envelope_info(text).get("chars")
 
-    def stage(name, parse_fn, check_fn, first=1, seconds=None):
+    def stage(name, parse_fn, check_fn, first=1, seconds=None, earlier=None):
+        # earlier: the saved stages this call may see (default: all). Episodes and captions see only stages 1, 2 and their
+        # neighbour, so the prompt does not grow with the story (audit A #1, 2026-11-08: ep 13 would have been ~950k chars)
         def prompt_for(errors):
-            return build_stage_prompt(brief, story_text, done, wp.stage_instruction(name, seconds, first, langs, voice=engines),
-                                      errors, langs=langs)
+            return build_stage_prompt(brief, story_text, done if earlier is None else earlier,
+                                      wp.stage_instruction(name, seconds, first, langs, voice=engines), errors, langs=langs)
         return run_stage(name, out, prompt_for=prompt_for, call=lambda prompt, path: call_for(name, prompt, path),
                          parse_fn=parse_fn, check_fn=check_fn, rec=rec)
 
@@ -1183,18 +1212,30 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
             episodes = episodes_from(text1)
         except ValueError as exc:       # stage 1 passed its checks but names no usable episodes: a failed stage, not a traceback
             raise StageFailed(f"stage 1 answer is unusable: {exc}; delete {out.name}/stage_1_raw.json to redo it") from exc
-        per_episode, seconds = [], episode_seconds(plan)
+        per_episode, seconds, ep_texts = [], episode_seconds(plan), {}
+        base = list(done)                                       # stages 1 and 2: every later call sees them
         for ep in episodes:
             first = 1 + sum(len(s) for s in per_episode)
             check = (lambda shots, ep=ep: gate("3", {"episode": ep, "shots": shots}, bible,
-                                               lambda: shot_language_errors(shots, langs)))
-            text, ep_shots = stage(f"3e{ep}", parse, check, first=first, seconds=seconds.get(ep))
+                                               lambda: shot_language_errors(shots, langs) + episode_id_errors(shots, ep)))
+            prev = [(f"3e{p}", ep_texts[p]) for p in [episodes[episodes.index(ep) - 1]] if episodes.index(ep) > 0]
+            text, ep_shots = stage(f"3e{ep}", parse, check, first=first, seconds=seconds.get(ep), earlier=base + prev)
             done.append((f"3e{ep}", text))
+            ep_texts[ep] = text
             per_episode.append(ep_shots)
-        text5, captions = stage("5", parse_captions,
-                                lambda d: gate("5", d, bible, lambda: caption_language_errors(d["captions"], langs), merge=True))
-        done.append(("5", text5))
-        shots = [legacy_fields(s, bible) for s in apply_captions(merge_episodes(per_episode), captions["captions"], langs)]
+        if (out / "stage_5_raw.json").exists():                # a pack started before 2026-11-08: one stage 5 for the whole story
+            text5, captions = stage("5", parse_captions,
+                                    lambda d: gate("5", d, bible, lambda: caption_language_errors(d["captions"], langs), merge=True))
+            done.append(("5", text5))
+            shots = [legacy_fields(s, bible) for s in apply_captions(merge_episodes(per_episode), captions["captions"], langs)]
+        else:                                                   # captions per episode (5e<N>): bounded prompt and answer
+            for ep, ep_shots in zip(episodes, per_episode):
+                check5 = (lambda d, ep_shots=ep_shots: gate("5", d, bible, lambda: caption_language_errors(d["captions"], langs)
+                                                            + caption_id_errors(d["captions"], ep_shots), merge=True))
+                text5, captions = stage(f"5e{ep}", parse_captions, check5, earlier=base + [(f"3e{ep}", ep_texts[ep])])
+                done.append((f"5e{ep}", text5))
+                apply_captions(ep_shots, captions["captions"], langs)
+            shots = [legacy_fields(s, bible) for s in merge_episodes(per_episode)]
         (out / "PACK.md").write_text("\n\n".join(text for _, text in done), encoding="utf-8")
         (out / "bible.json").write_text(json.dumps(canonical_bible(bible), indent=1, ensure_ascii=False), encoding="utf-8")
         (out / "shots.json").write_text(json.dumps(shots, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -1284,9 +1325,10 @@ def main(argv=None):
     global WEB, WEB_NOTES
     WEB = a.web
     if WEB:
-        free = via != "claude" or any(v != "claude" for v in stage_via.values())
-        WEB_NOTES = make_web_notes(a.story) if free else ""
-        print(f"web check: on (Claude searches live; free models get WEB_NOTES.md: {'yes' if WEB_NOTES else 'not needed'})")
+        # 2026-11-08: live search inside a stage split Opus answers across tool calls (stage 2 lost its start, then got a note
+        # after the block); research is now ONE notes call (Haiku low, owner rule) and every stage is written without tools
+        WEB_NOTES = make_web_notes(a.story)
+        print(f"web check: on (WEB_NOTES.md, {len(WEB_NOTES)} chars, given to every stage; stages run without tools)")
     prompt_version = a.prompt_version or DEFAULT_PROMPT_VERSION   # Q5 (2026-11-07): the staged default is v2.3
     style = ""
     if a.staged and prompt_version == "v2.3":

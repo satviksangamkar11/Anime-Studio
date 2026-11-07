@@ -58,7 +58,7 @@ def fake_claude(monkeypatch):
     def fake(prompt, model, effort):
         name = stage_of(prompt)
         calls.append({"name": name, "model": model, "prompt": prompt})
-        return envelope(CANNED[name])
+        return envelope(CANNED.get(name) or CANNED["5"])
     monkeypatch.setattr(write_pack, "call_claude", fake)
     return calls
 
@@ -70,14 +70,14 @@ def staged(story, out, *extra):
 def test_staged_run_writes_pack_bible_and_merged_shots(tmp_path, story, fake_claude):
     out = tmp_path / "pack"
     staged(story, out, "--via", "claude")
-    assert [c["name"] for c in fake_claude] == ["1", "2", "3e1", "3e2", "5"]
+    assert [c["name"] for c in fake_claude] == ["1", "2", "3e1", "3e2", "5e1", "5e2"]
     pack = (out / "PACK.md").read_text(encoding="utf-8")
     positions = [pack.index(CANNED[n].strip()[:20]) for n in ("1", "2", "3e1", "3e2", "5")]
     assert positions == sorted(positions)
     assert json.loads((out / "bible.json").read_text(encoding="utf-8")) == BIBLE
     shots = json.loads((out / "shots.json").read_text(encoding="utf-8"))
     assert [s["id"] for s in shots] == ["SHOT-01", "SHOT-02"]
-    for n in ("1", "2", "3e1", "3e2", "5"):
+    for n in ("1", "2", "3e1", "3e2", "5e1", "5e2"):
         assert (out / f"stage_{n}_raw.json").exists()
 
 
@@ -110,7 +110,7 @@ def test_the_raw_answer_is_saved_before_parsing_and_resume_redoes_only_the_bad_s
     (out / "stage_3e1_raw.json").unlink()                        # the owner deletes the bad answer to redo it
     fake_claude.clear()
     staged(story, out, "--writer", "opus")
-    assert [c["name"] for c in fake_claude] == ["3e1", "3e2", "5"]
+    assert [c["name"] for c in fake_claude] == ["3e1", "3e2", "5e1", "5e2"]
 
 
 def test_stage_routing_per_stage_via_and_model(tmp_path, story, monkeypatch):
@@ -118,16 +118,17 @@ def test_stage_routing_per_stage_via_and_model(tmp_path, story, monkeypatch):
 
     def claude(prompt, model, effort):
         seen.append(("claude", stage_of(prompt), model))
-        return envelope(CANNED[stage_of(prompt)], "claude", model)
+        return envelope(CANNED.get(stage_of(prompt)) or CANNED["5"], "claude", model)
 
     def nvidia(prompt, model):
         seen.append(("nvidia", stage_of(prompt), model))
-        return envelope(CANNED[stage_of(prompt)], "nvidia", model)
+        return envelope(CANNED.get(stage_of(prompt)) or CANNED["5"], "nvidia", model)
     monkeypatch.setattr(write_pack, "call_claude", claude)
     monkeypatch.setattr(write_pack, "call_nvidia", nvidia)
     staged(story, tmp_path / "pack", "--via", "claude", "--model", "sonnet", "--stage-via", "2=nvidia,3=claude", "--stage-model", "3=haiku")
     assert seen == [("claude", "1", "sonnet"), ("nvidia", "2", write_pack.DEFAULT_MODEL["nvidia"]),
-                    ("claude", "3e1", "haiku"), ("claude", "3e2", "haiku"), ("claude", "5", "sonnet")]
+                    ("claude", "3e1", "haiku"), ("claude", "3e2", "haiku"), ("claude", "5e1", "sonnet"),
+                    ("claude", "5e2", "sonnet")]
 
 
 def test_stage_map_exact_name_beats_the_gate_number():

@@ -361,6 +361,10 @@ def stage_instruction(name, seconds=None, first=1, langs=DEFAULT_OUT_LANG, voice
         return stage2_text(langs, voice)
     if name == "5":
         return stage5_text(langs)
+    if name.startswith("5e"):
+        ep = int(name[2:])
+        return (f"Stage {name} only: the captions of EPISODE {ep}, for the shots in the saved stage 3e{ep} output above and no other "
+                "shot.\n" + stage5_text(langs))
     raise ValueError(f"unknown stage {name!r}")
 
 

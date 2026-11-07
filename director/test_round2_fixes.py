@@ -18,7 +18,7 @@ CANNED = {
     "1": "# Gate 1\n\nEpisode 1: the river\n",
     "2": "# Gate 2\n\n```json bible\n" + json.dumps({"palette": {"sky": "#aabbcc"}}) + "\n```",
     "3e1": "# Episode 1 shots\n\n```json shots\n" + json.dumps([SHOT]) + "\n```\n",
-    "5": "# Gate 5\n",
+    "5e1": "# Gate 5\n",
 }
 
 
@@ -69,12 +69,12 @@ def test_caption_checks_still_run_when_the_validator_passes(tmp_path, story, fak
     fake.validate_stage = lambda *a, **k: {"ok": True, "errors": []}
     monkeypatch.setitem(sys.modules, "pack_validator", fake)
     long_card = " ".join(["word"] * 30)
-    CANNED["5"] = "```json captions\n" + json.dumps([{"shot_id": "SHOT-01", "cards": [long_card]}]) + "\n```"
+    CANNED["5e1"] = "```json captions\n" + json.dumps([{"shot_id": "SHOT-01", "cards": [long_card]}]) + "\n```"
     try:
         with pytest.raises(write_pack.StageFailed, match="CAP-01"):
             write_pack.main([str(story), str(tmp_path / "pack"), "--staged", "--writer", "opus", "--out-lang", "en"])
     finally:
-        CANNED["5"] = "# Gate 5\n"
+        CANNED["5e1"] = "# Gate 5\n"
 
 
 # 2. apply_captions: captions keyed by the original per-episode id reach the merged shot

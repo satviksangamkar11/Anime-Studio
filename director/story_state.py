@@ -69,7 +69,9 @@ def _pack_info(folder: Path, name: str, models: dict, src_mtime) -> dict:
     failed |= validation
     ok = present - failed
     episodes = _episodes(stage1) if "1" in ok else None
-    expected = ["single"] if "single" in present else ["1", "2"] + [f"3e{k}" for k in range(1, (episodes or 0) + 1)] + ["5"]
+    eps = range(1, (episodes or 0) + 1)
+    tail = ["5"] if "5" in present else [f"5e{k}" for k in eps]   # captions per episode since 2026-11-08; old packs keep one stage 5
+    expected = ["single"] if "single" in present else ["1", "2"] + [f"3e{k}" for k in eps] + tail
     finished = rr.is_finished(pdir)
     m = PACK_NAME.fullmatch(name)
     summary = (rr.pack_summary(pdir) or {}) if finished else {}

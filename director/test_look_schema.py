@@ -212,7 +212,7 @@ def test_v23_stage_prompts_carry_the_style_rules(tmp_path):
     def fake(prompt, model, effort):
         prompts.append(prompt)
         name = re.search(r"## THIS STAGE\n\nStage (\w+) only", prompt).group(1)
-        return write_pack.envelope(canned[name], "stop", "claude", "opus")
+        return write_pack.envelope(canned.get(name) or canned["5"], "stop", "claude", "opus")
 
     old, old_validator = write_pack.call_claude, write_pack.validator
     write_pack.call_claude = fake
