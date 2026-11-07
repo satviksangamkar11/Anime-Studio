@@ -2,7 +2,7 @@
 at the same time without overwriting each other (UI redesign T3 and T4, owner 2026-11-07: parallel agents).
 
 usage: python ui/i18n_merge.py BATCH.json --prefix group1,group2 [--replace] [--dir DIR]
-BATCH.json = {"en": {"key": "text", ...}, "mr": {"key": "text", ...}}   (either side may be empty or missing)
+BATCH.json = {"en": {"key": "text", ...}, "mr": {"key": "text", ...}}   (both sides must hold the same non-empty key set)
 Rules (each refusal exits 2 and writes nothing):
   - every key must start with one of the --prefix groups followed by a dot (a coder may only add its own groups);
   - a key that already exists with a DIFFERENT text is refused unless --replace is given (nobody silently changes another task's text);

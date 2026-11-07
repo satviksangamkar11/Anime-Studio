@@ -677,6 +677,8 @@ Every Advanced risk tag stays, with a translated `title`. A short line at the to
 
 ## 7. Implementation tasks (run one after another; each ends with all suites green)
 
+> LEAD NOTE 2026-11-07: this section is overridden by `research/UI_PARALLEL_DISPATCH_2026-11-07.md` section 2b: T3 and T4 run in parallel, "suites green" means the task's own subset plus no new failures, the check-5 xfail marker is removed by the lead after both tasks are verified (not by T4), and test_i18n.py/test_parity.py are lead-only.
+
 Common to every task:
 - Run before and after: `C:\Python314\python.exe -m pytest -q -p no:cacheprovider ui` (expect 252 pass + 1 known real-pack failure + new tests), and once at the end of T1 and T5 the h3, director and core suites with the commands the project already uses (record counts in PROJECT_LOG.md).
 - `node --check ui\static\app.js ui\static\pipeline.js ui\static\i18n.js` (pass).
@@ -756,7 +758,7 @@ Done when:
 - [ ] Every visible literal goes through `t()` (runCommand titles, notes, field labels and hints, table headers, badges `KIND_TEXT` via literal key map, messages, modal texts "Show what will happen (nothing starts yet)" `adv.modal.preview_btn`, "Yes, start" `adv.modal.start_btn`, "No, go back" `adv.modal.cancel_btn`, expiry lines).
 - [ ] B2, B3, B4, B8 (section 2.5), B9 (client half: `loadVideo` without `loadColab`), B15 done; `showApiError` used in every catch.
 - [ ] Keep (tests): `var WRITER_NAMES = ['super-vl', 'ultra'];`, `WRITER_MODELS` absent, `AbortController` and `120000`, `'X-UI'` set on non-GET, `spend_allowed`, risk codes in `RISK_TEXT` keys, badge kinds `'ok','notrun','review','failed','running'`, all ids and class tokens of CONTROL_MAP.
-- [ ] `test_r3_fixes.test_app_api_has_timeout_and_h3run_guard`: replace `assert "Pick a shot file." in body` with `assert "Pick a shot file." in body or "'adv.video.err_pick_shot_file'" in body` and ensure en.json `adv.video.err_pick_shot_file` = "Pick a shot file." (the `h3Run` body must keep that key within its first 400 characters).
+- [ ] `test_r3_fixes.test_app_api_has_timeout_and_h3run_guard`: replace `assert "Pick a shot file." in body` with `assert "'adv.video.err_pick_shot_file'" in body[:400]` and ensure en.json `adv.video.err_pick_shot_file` = "Pick a shot file." (the `h3Run` body must keep that key within its first 400 characters).
 - [ ] Remove the `xfail` marker from `test_i18n.py` check 5 (allowed edit of that one marker).
 - [ ] Parity rows owned: D02, ES1-ES14, EI1-EI14, EB1-EB4, EV1-EV13, EX1-EX5, EL1-EL2, ER.
 Tests: none new beyond the retarget; all i18n checks must now pass without xfail.
