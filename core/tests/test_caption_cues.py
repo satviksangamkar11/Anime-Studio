@@ -108,3 +108,14 @@ def test_hook_of_prefers_the_language_caption_and_tolerates_junk():
     assert cc.hook_of(s, "en") == ("fallback", 1.5) and cc.hook_of(s) == ("fallback", 1.5)
     for junk in (None, {}, {"metadata": 1}, {"metadata": {"look": {"hook": "x"}}}, {"metadata": {"look": {"hook": {"caption": 5}}}}):
         assert cc.hook_of(junk, "en") == (None, None)
+
+
+def test_junk_tracks_and_cues_never_raise():            # review round 8: Super VL and Dots
+    junk = [{"audio_and_dialogue_track": {"captions_by_lang": ["x"], "narration_by_lang": {"en": {"text": "ok", "time_range": [0, 1]}}}},
+            {"audio_and_dialogue_track": {"dialogue_by_lang": {"en": "text"}, "narration_by_lang": {"en": "n"}}},
+            {"audio_and_dialogue_track": {"dialogue_by_lang": {"en": ["bad", {"text": "good", "time_range": [1, 2]}]}}},
+            {"audio_and_dialogue_track": {"narration": "string"}}, {"audio_and_dialogue_track": []}, "not a shot", None]
+    got = cc.spoken_cues(junk, [0.0] * len(junk), "en")
+    assert [c["text"] for c in got] == ["ok", "good"]
+    cues, ents = cc.build_cue_list([{"t0": 1, "t1": 2, "text": "fine"}, {"t0": None, "t1": 2, "text": "x"}, "junk", {"text": "no times"}], "Hook")
+    assert [c["text"] for c in cues] == ["Hook", "fine"] and any("malformed" in e["message"] for e in ents)

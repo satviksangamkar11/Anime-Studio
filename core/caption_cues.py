@@ -48,14 +48,18 @@ def parse_time_range(value):
 def lang_track(trk, lang):
     """(narration, dialogue) of one shot for one language. Shots with *_by_lang maps use them. Single-language shots
     keep the old fields and serve only their narration language (dialogue is taken as that language)."""
+    if not isinstance(trk, dict):
+        return None, []
     if trk.get("narration_by_lang") is not None or trk.get("dialogue_by_lang") is not None:
         nbl, dbl = trk.get("narration_by_lang"), trk.get("dialogue_by_lang")
         nbl = nbl if isinstance(nbl, dict) else {}
         dbl = dbl if isinstance(dbl, dict) else {}
-        return nbl.get(lang), dbl.get(lang) or []
+        narr, dia = nbl.get(lang), dbl.get(lang)
+        return (narr if isinstance(narr, dict) else None), (dia if isinstance(dia, list) else [])
     narr = trk.get("narration")
-    if narr and narr.get("language") == lang:
-        return narr, trk.get("dialogue") or []
+    if isinstance(narr, dict) and narr.get("language") == lang:
+        dia = trk.get("dialogue")
+        return narr, (dia if isinstance(dia, list) else [])
     return None, []
 
 
@@ -64,9 +68,11 @@ def spoken_cues(shots, offsets, lang):
     on the narration time). Otherwise the narration and dialogue text of that language is captioned."""
     cues = []
     for shot, t0 in zip(shots, offsets):
-        trk = shot.get("audio_and_dialogue_track") or {}
+        trk = shot.get("audio_and_dialogue_track") if isinstance(shot, dict) else None
+        trk = trk if isinstance(trk, dict) else {}
         narr, dia = lang_track(trk, lang)
-        cap = (trk.get("captions_by_lang") or {}).get(lang)
+        cbl = trk.get("captions_by_lang")
+        cap = cbl.get(lang) if isinstance(cbl, dict) else None
         items = []
         if isinstance(cap, dict):
             items.append((cap.get("text"), cap.get("time_range") or (narr or {}).get("time_range")))
@@ -74,7 +80,7 @@ def spoken_cues(shots, offsets, lang):
             items.append((cap, narr.get("time_range")))
         else:
             items.append(((narr or {}).get("text"), (narr or {}).get("time_range")))
-            items += [(d.get("text"), d.get("time_range")) for d in dia]
+            items += [(d.get("text"), d.get("time_range")) for d in dia if isinstance(d, dict)]
         for text, rng in items:
             if str(text or "").strip() and rng:
                 s, e = parse_time_range(rng)
@@ -111,7 +117,10 @@ def build_cue_list(spoken, hook_text, *, hook_end=None, hook_duration=None):
     spoken cue's text it is not added; the spoken cue is burned once. Rule 4: otherwise the hook is the first cue (kind
     hook), so the SRT and WebVTT carry what is burned. With no spoken script the hook is burned alone."""
     entries = []
-    spoken = sorted((dict(c) for c in spoken), key=lambda c: (c["t0"], c["t1"]))
+    good = [c for c in spoken if isinstance(c, dict) and _is_num(c.get("t0")) and _is_num(c.get("t1")) and isinstance(c.get("text"), str)]
+    if len(good) != len(spoken):
+        entries.append(_entry("WARN", f"{len(spoken) - len(good)} malformed spoken cue(s) skipped (need numeric t0, t1 and a text)"))
+    spoken = sorted((dict(c) for c in good), key=lambda c: (c["t0"], c["t1"]))
     hook_text = hook_text.strip() if isinstance(hook_text, str) else ""
     if not hook_text:
         return spoken, entries
