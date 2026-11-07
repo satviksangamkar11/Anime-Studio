@@ -272,7 +272,16 @@ def default_story(story_dir) -> dict:
     story_dir = Path(story_dir)
     return {"slug": story_dir.name, "title": story_dir.name, "language": None, "source": {}, "created_at": None,
             "owner_request_text": "", "tags": [], "schema_version": SCHEMA_VERSION, "source_sha256": None,
-            "output_language": None, "rating": None}
+            "output_language": None, "rating": None, "style_pack": _default_style_pack()}
+
+
+def _default_style_pack():
+    """core/core.json default_style_pack (Deva Neon, owner 2026-11-07); a new story.json carries it."""
+    try:
+        value = json.loads((Path(__file__).resolve().parent.parent / "core" / "core.json").read_text(encoding="utf-8")).get("default_style_pack")
+    except (OSError, ValueError):
+        value = None
+    return value if isinstance(value, str) and value else "deva_neon"
 
 
 def read_story(story_dir) -> dict | None:

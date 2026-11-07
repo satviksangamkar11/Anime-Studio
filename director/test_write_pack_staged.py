@@ -203,3 +203,23 @@ def test_episodes_that_restart_their_shot_numbers_merge_into_unique_ids(tmp_path
     assert shots[1]["cut_in"] == "match on action from SHOT-001"
     assert shots[3]["cut_in"] == "match on action from SHOT-003"
     assert shots[3]["start"] == "keyframes/SHOT-004-FRAME-A.png"
+
+
+# ---- the fixed default style (owner 2026-11-07): a story without a style pack gets Deva Neon ----
+def test_story_pack_id_defaults_to_deva_neon_and_keeps_an_explicit_pack(tmp_path):
+    import json as _json
+    import write_pack as _wp
+    d = tmp_path / "s"
+    d.mkdir()
+    src = d / "SOURCE.md"
+    src.write_text("x", encoding="utf-8")
+    assert _wp.story_pack_id(src) == "deva_neon"                      # no story.json
+    (d / "story.json").write_text(_json.dumps({"slug": "s"}), encoding="utf-8")
+    assert _wp.story_pack_id(src) == "deva_neon"                      # story.json without a pack
+    (d / "story.json").write_text(_json.dumps({"style_pack": "braj_earth"}), encoding="utf-8")
+    assert _wp.story_pack_id(src) == "braj_earth"                     # the story's own choice wins
+
+
+def test_a_new_story_json_carries_the_default_style_pack(tmp_path):
+    import run_registry as _rr
+    assert _rr.default_story(tmp_path / "newstory")["style_pack"] == "deva_neon"

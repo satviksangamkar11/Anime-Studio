@@ -1,5 +1,6 @@
 {
   "version": "1.2",
+  "default_style_pack": "deva_neon",
   "fps": 24,
   "delivery": {"codec": "libx264", "crf": 16, "pix_fmt": "yuv420p",
                "colorspace": "bt709",

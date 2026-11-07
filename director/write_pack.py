@@ -131,13 +131,22 @@ def style_rules(pack_id, styles_dir=None):
 
 
 def story_pack_id(story_path):
-    """style_pack from the story.json in the story's folder, or None."""
+    """style_pack from the story.json in the story's folder; the default pack (core/core.json default_style_pack, Deva Neon) when
+    the story names none or the file is missing (owner 2026-11-07: one fixed style for every story, a story may still pick another)."""
     try:
         data = json.loads((Path(story_path).parent / "story.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return None
+        data = None
     pack = data.get("style_pack") if isinstance(data, dict) else None
-    return pack if isinstance(pack, str) else None
+    return pack if isinstance(pack, str) and pack else default_style_pack()
+
+
+def default_style_pack():
+    try:
+        value = json.loads((Path(__file__).resolve().parent.parent / "core" / "core.json").read_text(encoding="utf-8")).get("default_style_pack")
+    except (OSError, ValueError):
+        value = None
+    return value if isinstance(value, str) and value else "deva_neon"
 
 
 def build_stage_prompt(brief, story_text, earlier, instruction, errors=(), langs=wp.DEFAULT_OUT_LANG):

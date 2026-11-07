@@ -21,6 +21,40 @@ def load_core():
     return json.loads(_CORE_PATH.read_text(encoding="utf-8"))
 
 
+def default_pack_id():
+    """The style pack a story gets when its story.json names none (owner 2026-11-07: Deva Neon for every story)."""
+    value = load_core().get("default_style_pack")
+    return value if isinstance(value, str) and value else "deva_neon"
+
+
+def pack_for_story(story, styles_dir=None):
+    """The pack id a story uses: its own story['style_pack'] when that pack exists, else the default."""
+    own = story.get("style_pack") if isinstance(story, dict) else None
+    base = Path(styles_dir) if styles_dir is not None else _STYLES_DIR
+    if isinstance(own, str) and own and not re.search(r"[\/]|\.\.", own) and (base / f"{own}.json").is_file():
+        return own
+    return default_pack_id()
+
+
+def list_packs(styles_dir=None):
+    """Every style pack on disk as plain data for the UI: id, status, whether it has grade numbers or LUT files, act names."""
+    base = Path(styles_dir) if styles_dir is not None else _STYLES_DIR
+    out = []
+    for path in sorted(base.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, dict) or data.get("pack_id") != path.stem:
+            continue
+        acts = data.get("acts") if isinstance(data.get("acts"), dict) else {}
+        out.append({
+            "id": path.stem, "status": data.get("status") if isinstance(data.get("status"), str) else "draft",
+            "acts": list(acts), "has_grade_numbers": all(isinstance(a, dict) and isinstance(a.get("grade"), dict) for a in acts.values()) and bool(acts),
+            "default": path.stem == default_pack_id()})
+    return out
+
+
 def load_pack(pack_id, styles_dir=None):
     if not isinstance(pack_id, str) or not pack_id or re.search(r"[\\/]|\.\.", pack_id):
         raise ValueError(f"bad pack id: {pack_id!r}")

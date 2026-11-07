@@ -63,7 +63,7 @@ def test_core_json_has_spec_keys_and_version():
     assert core["version"] == "1.2"
     assert core["fps"] == 24
     assert set(core) == {
-        "version", "fps", "delivery", "safe_zone_frac", "safe_zone_templates", "captions", "retention",
+        "version", "default_style_pack", "fps", "delivery", "safe_zone_frac", "safe_zone_templates", "captions", "retention",
         "impact", "flash", "gates", "sound_sync",
     }
     assert core["gates"]["sat_avg_ceiling"] is None
@@ -180,3 +180,22 @@ def test_load_pack_reads_valid_file(tmp_path):
     pack = minimal_pack()
     (tmp_path / "test_pack.json").write_text(json.dumps(pack), encoding="utf-8")
     assert load_pack("test_pack", styles_dir=tmp_path) == pack
+
+
+# ---- the fixed default style (owner 2026-11-07: Deva Neon for every story from now) ----
+def test_default_style_pack_is_deva_neon_and_a_story_can_pick_another():
+    from core import style_pack as sp
+    assert sp.default_pack_id() == "deva_neon"
+    assert sp.pack_for_story({}) == "deva_neon"
+    assert sp.pack_for_story({"style_pack": "braj_earth"}) == "braj_earth"
+    assert sp.pack_for_story({"style_pack": "no_such_pack"}) == "deva_neon"   # an unknown pack never wins
+    assert sp.pack_for_story({"style_pack": "../core"}) == "deva_neon"
+
+
+def test_list_packs_for_the_ui_names_both_packs_and_marks_the_default():
+    from core import style_pack as sp
+    packs = {p["id"]: p for p in sp.list_packs()}
+    assert set(packs) == {"braj_earth", "deva_neon"}
+    assert [i for i, p in packs.items() if p["default"]] == ["deva_neon"]
+    assert packs["deva_neon"]["has_grade_numbers"] is True and packs["braj_earth"]["has_grade_numbers"] is False
+    assert packs["deva_neon"]["acts"] == ["HOOK", "BUILD", "DROP", "OUTRO"]

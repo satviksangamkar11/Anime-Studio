@@ -59,3 +59,9 @@ The one log is `D:\aai work\anime_studio\PROJECT_LOG.md`; copies in worktrees ar
 
 ## RULE 11: NO RENDER CALLS AND NO OPUS CALLS (owner, 2026-11-07)
 No render of any kind and no Opus call (neither by me nor by any agent or script) until the owner lifts it. Applies with rule 4 (no Colab, no ElevenLabs, no paid calls). Agents use only the models the owner already named for their job (Haiku/Sonnet agents, free OpenRouter models); the UI's Claude/Opus choice stays behind its tick and typed word and is never clicked in tests.
+
+## RULE 12: REVIEWERS = NEMOTRON SUPER VL + XING (owner, 2026-11-07)
+Free reviewers are now Nemotron 3.5 Super VL (`nvidia/nemotron-3.5-super-vl:free`) and Xing (`xingchen-agi/xing4.0-29b-a4b:free`), both OpenRouter free. Dots is no longer used (slow). Runner: `research/_run_uifinal_reviews.py xing|supervl`.
+
+## RULE 13: DEVA NEON IS THE FIXED DEFAULT STYLE (owner, 2026-11-07)
+From now every story uses the `deva_neon` style pack unless its story.json names another one (`kaliya_mardan` stays on `braj_earth`). The default lives in `core/core.json` key `default_style_pack`; the writer, new story.json files and the UI read it from there. The UI and server let the owner choose the style per story (style chooser in step 1; `GET /api/styles`, `POST /api/story/<slug>/style`). Supersedes OPEN_QUESTIONS Q1 for new work. The Assay UI review (owner: "ASCII") runs AFTER the style chooser is built and the simplification is verified.
