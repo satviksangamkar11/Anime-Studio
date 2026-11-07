@@ -42,3 +42,10 @@ def test_lint_story_non_object_shot_row_is_reported_not_raised(tmp_path):
     story["episodes"][0]["shots"].append("junk")
     res = sl.lint_story(story)
     assert any("SH-00" in e for e in res["errors"])
+
+
+# R6 (router review): route_shot does not crash on a non-object fl2va_keyframes
+@pytest.mark.parametrize("bad", ["x", [1], 7, {}])
+def test_route_shot_non_object_keyframes_does_not_raise(bad):
+    from h3.router import route_shot
+    route_shot({"fl2va_keyframes": bad})

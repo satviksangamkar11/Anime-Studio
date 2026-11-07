@@ -30,7 +30,8 @@ def _ref_list(k, key):
 def route_shot(shot):
     """The H3 mode of a shot: any audio reference -> Ref2VA (the only mode with documented <Audio N>, ref-en s2.4);
     reference cards without both boundary frames -> Ref2VA; otherwise by the boundary frames."""
-    k = shot.get("fl2va_keyframes") or {}
+    k = shot.get("fl2va_keyframes")
+    k = k if isinstance(k, dict) else {}   # R6: a non-object value is "no keyframes" here, like ref_inventory; the linter reports it
     start, end = _has(k.get("picture_1_path")), _has(k.get("picture_2_path"))
     if ref_inventory(shot)["audio"]:
         return REF2VA
