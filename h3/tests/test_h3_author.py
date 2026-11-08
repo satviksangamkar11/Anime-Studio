@@ -421,6 +421,20 @@ def test_live_with_flag_uses_the_caller(tmp_path, monkeypatch):
     pack = static_pack(tmp_path)
     monkeypatch.setenv("ANIME_STUDIO_ALLOW_FREE_MODEL", "1")
     model = FakeModel()
-    monkeypatch.setattr(h3_author, "scheduler_caller", lambda: model)
+    monkeypatch.setattr(h3_author, "scheduler_caller", lambda model_id=None: model)
     assert main([pack, "--live"]) == 0
     assert model.calls == 2
+
+
+def test_claude_caller_returns_result_text(monkeypatch):
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "director"))
+    import write_pack as wp
+    seen = {}
+
+    def fake(prompt, model, effort, web=False, rule=True):
+        seen.update(model=model, effort=effort)
+        return json.dumps({"type": "result", "is_error": False, "result": " {\"a\": 1} "})
+    monkeypatch.setattr(wp, "call_claude", fake)
+    assert h3_author.claude_caller()("p") == '{"a": 1}'
+    assert seen == {"model": "opus", "effort": "low"}

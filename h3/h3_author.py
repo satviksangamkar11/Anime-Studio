@@ -279,11 +279,31 @@ def author_pack(pack_dir, caller=None, *, dry_run=False):
     return report
 
 
-def scheduler_caller():
+def scheduler_caller(model=None):
     """The live caller: NVIDIA Nemotron through the existing 14-key scheduler (h3/e2e_sample.py). Imported lazily, so
     dry runs and tests never import it. Needs the owner's free-model go and ANIME_STUDIO_ALLOW_FREE_MODEL=1."""
     from h3 import e2e_sample  # lazy: pulls in render_controller and the scheduler
-    return e2e_sample._ask(e2e_sample.live_scheduler())
+    sch = e2e_sample.live_scheduler()
+    if model:
+        sch.model = model   # e.g. nvidia/nemotron-3.5-super-vl-120b-a12b (owner: use the Super model)
+    return e2e_sample._ask(sch)
+
+
+def claude_caller(model="opus", effort="low"):
+    """Live caller on the owner's Claude subscription (director/write_pack.call_claude: no tools, no MCP, empty folder).
+    Owner 2026-11-08 night: 'use Opus low' for the H3 author step (lifts rule 11 for this step only). Imported lazily."""
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "director")
+    if d not in sys.path:
+        sys.path.insert(0, d)  # write_pack imports its sibling modules by bare name
+    import write_pack as wp
+
+    def ask(prompt):
+        env = json.loads(wp.call_claude(prompt, model, effort))
+        text = (env.get("result") or "").strip()
+        if env.get("is_error") or not text:
+            raise ValueError(f"claude returned no usable answer: {str(env)[:200]}")
+        return text
+    return ask
 
 
 def _summary_line(shot):
@@ -300,15 +320,19 @@ def main(argv=None):
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true", help="print derived fields, missing fields and prompt size; no model call")
     mode.add_argument("--live", action="store_true", help=f"call the free model (needs {LIVE_FLAG_ENV}=1)")
+    ap.add_argument("--model", default=None, help="with --live (free model): scheduler model id, default the e2e model")
+    ap.add_argument("--opus", action="store_true", help="with --live: author with Claude Opus at low effort (owner go) instead of the free model")
     args = ap.parse_args(argv)
-    if args.live and os.environ.get(LIVE_FLAG_ENV) != "1":
+    if args.live and args.opus:
+        pass  # the explicit --opus flag is the owner's go for the Claude call; the free-model env flag is not needed
+    elif args.live and os.environ.get(LIVE_FLAG_ENV) != "1":
         print(f"refused: --live needs {LIVE_FLAG_ENV}=1 (the owner's free-model go); nothing was called", file=sys.stderr)
         return 2
     if not os.path.isfile(os.path.join(args.pack_dir, "shots.json")):
         print(f"no shots.json in {args.pack_dir}", file=sys.stderr)
         return 2
     try:
-        caller = scheduler_caller() if args.live else None
+        caller = (claude_caller() if args.opus else scheduler_caller(args.model)) if args.live else None
         report = author_pack(args.pack_dir, caller, dry_run=args.dry_run)
     except (OSError, ValueError, KeyError, ImportError) as exc:
         print(f"pack could not be read or the scheduler is unavailable: {exc!r}", file=sys.stderr)
