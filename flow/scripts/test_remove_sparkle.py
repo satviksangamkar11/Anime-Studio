@@ -126,3 +126,8 @@ def test_find_input_order(tmp_path):
         (places[name] / "x.png").unlink()
     with pytest.raises(FileNotFoundError):
         rs.find_input(final, "x.png")
+
+
+def test_anchor_fallback_when_detector_finds_nothing():
+    rgb = np.full((900, 1200, 3), 120, np.uint8)
+    assert rs.stamps_or_anchor(rgb, rs.THR) == [(0.0, 24, 161, 161)]

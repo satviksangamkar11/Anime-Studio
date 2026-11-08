@@ -93,6 +93,12 @@ def find_stars(rgb, thr):
     return [(s, a, y, x) for s, a, y, x, _, _ in kept]
 
 
+def stamps_or_anchor(rgb, thr):
+    """find_stars, else the fixed small-star anchor Flow puts on every export (bright cloud/gold backgrounds
+    hide the star from the detector: Kalika 6A 6B 9B 10B). Score 0.0 marks the forced anchor."""
+    return find_stars(rgb, thr) or [(0.0, 24, 161, 161)]
+
+
 def size_of(hh):
     return 2 * hh + 3 + 2 * MARGIN
 
@@ -363,7 +369,7 @@ def run(final, originals=ORIGINALS, intermediates=INTERMEDIATES, overwrite=False
         for name in (src.name, f"{title}__candidate_v01__2K_source.jpg"):
             keep_original(find_input(final, name, originals, intermediates), backup / name)   # no-op when already in backup
         rgb = read_rgb(src)
-        stamps = find_stars(rgb, THR_FOR.get(title, THR))
+        stamps = stamps_or_anchor(rgb, THR_FOR.get(title, THR))
         if not stamps:
             print(f"{title}: NO STAR FOUND, left unchanged")
             continue

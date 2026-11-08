@@ -347,7 +347,7 @@ def settings_for(shot, bible=None, to_path=None, require_bible=False):
     s = {"model_type": model, "settings_version": 2.82, "activated_loras": loras, "loras_multipliers": "1.0",
          "sample_solver": solver, "num_inference_steps": steps, "guidance_phases": 1, "guidance_scale": 1,
          "flow_shift": 12, "custom_sigmas": "", "skip_steps_cache_type": "", "custom_settings": {"audio_refinement": "none"},
-         "prompt": prompt_for(shot, frames, bible), "image_mode": 0, "video_length": frames, "sliding_window_size": FRAMES_MAX,
+         "prompt": shot.get("prompt_override") or prompt_for(shot, frames, bible), "image_mode": 0, "video_length": frames, "sliding_window_size": FRAMES_MAX,
          "resolution": resolution_of(shot), "image_prompt_type": image_prompt_type, "video_prompt_type": video_prompt_type,
          "audio_prompt_type": "", "seed": shot.get("seed", 42)}
     if start_of(shot): s["image_start"] = to(start_of(shot))

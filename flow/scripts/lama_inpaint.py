@@ -44,7 +44,7 @@ def load_model(path=WEIGHTS):
 
 def stamps_of(rgb, thr):
     """(hh, y, x) of each stamp, window coordinates (bottom-right BOX x BOX)."""
-    return [(hh, y, x) for _, hh, y, x in rs.find_stars(rgb, thr)]
+    return [(hh, y, x) for _, hh, y, x in rs.stamps_or_anchor(rgb, thr)]
 
 
 def sparkle_mask(rgb, thr, dilate=DILATE):
