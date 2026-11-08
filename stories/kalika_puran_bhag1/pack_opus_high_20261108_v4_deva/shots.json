@@ -1,0 +1,2870 @@
+[
+ {
+  "mode": "ref2va",
+  "seconds": 6.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep 1.0-2.0s Her left eye opens; the brows soften, the gaze is steady and kind 2.0-3.0s The forehead eye opens with a small Rani Pink glint; the crescent above catches cool light 3.0-4.0s All three eyes stay open and calm; strands of open hair lift like smoke behind her head 4.0-5.0s A faint smile reaches the eyes; the syllable beads of her garland glint as they sway 5.0-6.0s Her gaze lowers toward the viewer with compassion",
+  "camera": "extreme close-up on the eyes, slow push in begins extreme close-up, slow push in continues extreme close-up, slow push in continues push in eases, focus shifts to the drifting hair slow push in, framing the face and the top of the garland push in ends on the face",
+  "sound": "a low bell blooms out of silence as the first eye opens a soft rush of fire as the forehead eye opens",
+  "id": "SHOT-001",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 10,
+  "pixel_frames": 175,
+  "latent_slots": 52,
+  "editorial_duration_sec": 6.0,
+  "purpose": "Cold-open reveal: the three eyes of Adya Kali open in the void before creation, setting the goddess as the source of the whole story.",
+  "continuity_handoff": {
+   "incoming": "Opening shot: the indigo void is already in slow motion, with syllable sparks drifting inward toward the centre.",
+   "outgoing": "All three eyes are open and the gaze lowers toward the viewer, ready to carry down to the boon hand.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "thin pale crescent of light in the upper third",
+    "single soft Rani Pink glow core low in the centre",
+    "far ring of fifty faint syllable sparks"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-KALI",
+     "screen": "center",
+     "depth": "near"
+    }
+   ],
+   "exited_character_status": [],
+   "lighting_baseline": {
+    "key": "Rani Pink glow core from low centre",
+    "fill": "Midnight Indigo ambient haze",
+    "rim": "cool Blade Steel edge from the crescent above",
+    "shot_modifiers": "HOOK: lift the glow core to land 0.30-0.55 brightness; the goddess is silhouetted against the lit haze so she reads darkest"
+   }
+  },
+  "hook_type": "reveal",
+  "is_opening_0_2s_hook": true,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep",
+    "camera": "extreme close-up on the eyes, slow push in begins",
+    "spatial_position": "center, near depth, eyes in the upper-middle third",
+    "audio_cue": "a low bell blooms as the first eye opens",
+    "handoff_to_next_second": "the left eyelid begins to lift"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Her left eye opens; the brows soften, the gaze is steady and kind",
+    "camera": "extreme close-up, slow push in continues",
+    "spatial_position": "center, near depth",
+    "audio_cue": "a second, softer bell tone",
+    "handoff_to_next_second": "the vertical mark on the forehead glints"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "The forehead eye opens with a small Rani Pink glint; the crescent above catches cool light",
+    "camera": "extreme close-up, slow push in continues",
+    "spatial_position": "center, near depth",
+    "audio_cue": "a soft breath-like rush of fire",
+    "handoff_to_next_second": "all three eyes are open"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "All three eyes stay open and calm; strands of open hair lift like smoke behind her head",
+    "camera": "push in eases, focus shifts to the drifting hair",
+    "spatial_position": "center, near depth",
+    "audio_cue": "a deep hum swells",
+    "handoff_to_next_second": "the hair settles one beat late"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "A faint smile reaches the eyes; the syllable beads of her garland glint as they sway",
+    "camera": "slow push in, framing the face and the top of the garland",
+    "spatial_position": "center, near depth",
+    "audio_cue": "carved beads click softly",
+    "handoff_to_next_second": "the beads come to rest"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Her gaze lowers toward the viewer with compassion",
+    "camera": "push in ends on the face",
+    "spatial_position": "center, near depth",
+    "audio_cue": "the hum thins to a single tone",
+    "handoff_to_next_second": "the lowered gaze leads down to the boon hand"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Before the world began, she was already there.",
+    "language": "en",
+    "time_range": [
+     0.5,
+     5.5
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Before the world began, she was already there.",
+     "language": "en",
+     "time_range": [
+      0.5,
+      5.5
+     ]
+    },
+    "hi": {
+     "text": "दुनिया बनने से पहले भी, वो वहाँ थीं।",
+     "language": "hi",
+     "time_range": [
+      0.5,
+      5.5
+     ]
+    },
+    "mr": {
+     "text": "जग बनण्याच्या आधीसुद्धा, ती तिथे होती.",
+     "language": "mr",
+     "time_range": [
+      0.5,
+      5.5
+     ]
+    }
+   },
+   "dialogue": [],
+   "dialogue_by_lang": {
+    "en": [],
+    "hi": [],
+    "mr": []
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Who wakes before time?",
+      "time_range": [
+       1.0,
+       5.5
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "समय से पहले कौन जागी?",
+      "time_range": [
+       1.0,
+       5.5
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "काळाआधी कोण जागी झाली?",
+      "time_range": [
+       1.0,
+       5.5
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "0.0-0.8s",
+     "sfx_key": "void_bell_bloom",
+     "description": "a low bell blooms out of silence as the first eye opens"
+    },
+    {
+     "time_range": "2.0-2.6s",
+     "sfx_key": "fire_eye_breath",
+     "description": "a soft rush of fire as the forehead eye opens"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Narrator voice only, slow, warm and reverent, recorded on ElevenLabs. The goddess does not speak. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "durga_kali_shakti",
+   "act": "HOOK",
+   "phase": "PH-HOOK",
+   "focal": "CHAR-KALI",
+   "focal_value": "darkest",
+   "hook": {
+    "type": "H-03",
+    "caption": "Who wakes before time?"
+   },
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Rani Pink",
+     "role": "forehead eye glint and the glow core behind her"
+    },
+    {
+     "color": "Bone White",
+     "role": "eye whites and syllable beads"
+    }
+   ],
+   "accent_use": true,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Who wakes before time?"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 5.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Kali's boon palm lowers toward the viewer; her eyes follow it, gentle 1.0-2.0s Her other hand raises the khadga upright; the brows firm with resolve 2.0-3.0s The khadga holds still; its edge catches the cool rim from the crescent 3.0-4.0s The crimson lower garment lifts in a slow wind and settles one beat late on the lotus seat 4.0-5.0s Her whole figure stills, eyes calm; the glow core behind her dims",
+  "camera": "medium, slow tilt down from the face to the hand begins medium, slow tilt down continues medium, slow tilt down continues tilt ends on the full seated figure full figure, tilt at rest",
+  "sound": "a clean ring of steel as the sword comes upright a slow wind moving through the void",
+  "id": "SHOT-002",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 9,
+  "pixel_frames": 158,
+  "latent_slots": 47,
+  "editorial_duration_sec": 5.0,
+  "purpose": "Short iconography voice-over: her sword cuts bondage and her open hand gives freedom, then the void dims into the story.",
+  "continuity_handoff": {
+   "incoming": "Match on gaze: Kali's lowered eyes from SHOT-001 lead the camera down to her boon hand.",
+   "outgoing": "The full seated figure stills and the glow core dims, handing a dimming void to the dawn hermitage.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "thin pale crescent of light in the upper third",
+    "single soft Rani Pink glow core low in the centre",
+    "far ring of fifty faint syllable sparks"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-KALI",
+     "screen": "center",
+     "depth": "mid"
+    }
+   ],
+   "exited_character_status": [],
+   "lighting_baseline": {
+    "key": "Rani Pink glow core from low centre",
+    "fill": "Midnight Indigo ambient haze",
+    "rim": "cool Blade Steel edge from the crescent above",
+    "shot_modifiers": "HOOK: glow core steady for the first 4 s, then dims toward the OUTRO level in the last second"
+   }
+  },
+  "hook_type": "expression-beat",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Kali's boon palm lowers toward the viewer; her eyes follow it, gentle",
+    "camera": "medium, slow tilt down from the face to the hand begins",
+    "spatial_position": "center, mid depth",
+    "audio_cue": "a soft cloth rustle",
+    "handoff_to_next_second": "the other arm begins to rise"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Her other hand raises the khadga upright; the brows firm with resolve",
+    "camera": "medium, slow tilt down continues",
+    "spatial_position": "center, mid depth",
+    "audio_cue": "a clean steel ring",
+    "handoff_to_next_second": "the blade comes to a stop, upright"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "The khadga holds still; its edge catches the cool rim from the crescent",
+    "camera": "medium, slow tilt down continues",
+    "spatial_position": "center, mid depth",
+    "audio_cue": "a low steady hum",
+    "handoff_to_next_second": "a slow wind reaches the garment"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "The crimson lower garment lifts in a slow wind and settles one beat late on the lotus seat",
+    "camera": "tilt ends on the full seated figure",
+    "spatial_position": "center, mid depth, lotus seat in the lower third",
+    "audio_cue": "a long breath of wind",
+    "handoff_to_next_second": "the garment settles"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "Her whole figure stills, eyes calm; the glow core behind her dims",
+    "camera": "full figure, tilt at rest",
+    "spatial_position": "center, mid depth",
+    "audio_cue": "the hum fades out",
+    "handoff_to_next_second": "the dim void gives way to dawn"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Her sword cuts our chains. Her open hand sets us free.",
+    "language": "en",
+    "time_range": [
+     0.3,
+     4.7
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Her sword cuts our chains. Her open hand sets us free.",
+     "language": "en",
+     "time_range": [
+      0.3,
+      4.7
+     ]
+    },
+    "hi": {
+     "text": "उनकी तलवार हमारे बंधन काटती है। उनका खुला हाथ हमें आज़ाद करता है।",
+     "language": "hi",
+     "time_range": [
+      0.3,
+      4.7
+     ]
+    },
+    "mr": {
+     "text": "तिची तलवार आपल्या बेड्या तोडते. तिचा उघडा हात आपल्याला मोकळं करतो.",
+     "language": "mr",
+     "time_range": [
+      0.3,
+      4.7
+     ]
+    }
+   },
+   "dialogue": [],
+   "dialogue_by_lang": {
+    "en": [],
+    "hi": [],
+    "mr": []
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Every colour lives in her",
+      "time_range": [
+       0.5,
+       4.5
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "हर रंग उन्हीं में समाया",
+      "time_range": [
+       0.5,
+       4.5
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "प्रत्येक रंग तिच्यातच सामावलेला",
+      "time_range": [
+       0.5,
+       4.5
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "1.2-1.8s",
+     "sfx_key": "khadga_steel_ring",
+     "description": "a clean ring of steel as the sword comes upright"
+    },
+    {
+     "time_range": "3.0-4.0s",
+     "sfx_key": "void_wind_breath",
+     "description": "a slow wind moving through the void"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Narrator voice only, calm and devotional, recorded on ElevenLabs. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "durga_kali_shakti",
+   "act": "HOOK",
+   "phase": "PH-HOOK",
+   "focal": "CHAR-KALI",
+   "focal_value": "darkest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Rani Pink",
+     "role": "glow core behind the goddess, dimming at the end"
+    },
+    {
+     "color": "Blade Steel",
+     "role": "rim glint on the khadga"
+    }
+   ],
+   "accent_use": true,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Every colour lives in her"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 7.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s The munis on the left lean in, eyes lifting toward the sage 1.0-2.0s The lead muni's brows rise in a question; his hands join at the chest 2.0-3.0s The munis nod together, eyes fixed on Markandeya, waiting 3.0-4.0s Markandeya turns one mala bead; his eyes close to recall 4.0-5.0s He raises his teaching palm; the shawl edge lifts in the dawn breeze and settles late 5.0-6.0s His eyes open, calm and bright; the beard sways a beat after his head 6.0-7.0s A curl of smoke rises between sage and munis and drifts toward the sky; everyone stays still, listening",
+  "camera": "wide, slow truck right along the munis toward Markandeya begins wide, slow truck right continues medium-wide, slow truck right continues medium, slow truck right continues medium, slow truck right continues medium on Markandeya, truck slows truck ends, medium on Markandeya",
+  "sound": "dawn birdsong over a clear mountain stream a single wooden mala bead clicks",
+  "id": "SHOT-003",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 12,
+  "pixel_frames": 209,
+  "latent_slots": 62,
+  "editorial_duration_sec": 7.0,
+  "purpose": "Frame story: the Himalayan munis ask how Sati was born and how Shiva married, and Markandeya begins the telling that came from Brahma.",
+  "continuity_handoff": {
+   "incoming": "Hard cut from the dimmed void: the munis are already leaning in toward the sage in the first frame.",
+   "outgoing": "A curl of fire-stone smoke rises past Markandeya into the sky, carrying the eye up toward the clouds.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "thatched hut of deodar poles on the right",
+    "tall deodar on the left",
+    "round stone platform with a low ring of fire stones",
+    "three snow peaks above"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-MARKANDEYA",
+     "screen": "center-right",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-HIMALAYAN-MUNIS",
+     "screen": "left",
+     "depth": "mid"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-KALI",
+     "left_after_shot": "SHOT-002",
+     "off_stage_shots": 1,
+     "released": false
+    }
+   ],
+   "lighting_baseline": {
+    "key": "low dawn sun from screen left",
+    "fill": "Sky Teal sky bounce",
+    "rim": "warm Gada Gold edge from the fire stones",
+    "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"
+   }
+  },
+  "hook_type": "suspense",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": "HARD CUT — new place: indigo void with centre glow to dawn hermitage, sun from screen left",
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "The munis on the left lean in, eyes lifting toward the sage",
+    "camera": "wide, slow truck right along the munis toward Markandeya begins",
+    "spatial_position": "munis left, mid depth; Markandeya center-right, mid depth",
+    "audio_cue": "dawn birdsong and the stream",
+    "handoff_to_next_second": "the lead muni's hands begin to join"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "The lead muni's brows rise in a question; his hands join at the chest",
+    "camera": "wide, slow truck right continues",
+    "spatial_position": "munis left, mid depth",
+    "audio_cue": "kusha mats creak as they shift",
+    "handoff_to_next_second": "the group's gaze settles on the sage"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "The munis nod together, eyes fixed on Markandeya, waiting",
+    "camera": "medium-wide, slow truck right continues",
+    "spatial_position": "munis left, mid depth",
+    "audio_cue": "a soft rustle of bark garments",
+    "handoff_to_next_second": "Markandeya's fingers move on the mala"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Markandeya turns one mala bead; his eyes close to recall",
+    "camera": "medium, slow truck right continues",
+    "spatial_position": "Markandeya center-right, mid depth",
+    "audio_cue": "a wooden bead clicks",
+    "handoff_to_next_second": "his teaching palm begins to rise"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "He raises his teaching palm; the shawl edge lifts in the dawn breeze and settles late",
+    "camera": "medium, slow truck right continues",
+    "spatial_position": "Markandeya center-right, mid depth",
+    "audio_cue": "a breeze through the deodar",
+    "handoff_to_next_second": "his eyes begin to open"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "His eyes open, calm and bright; the beard sways a beat after his head",
+    "camera": "medium on Markandeya, truck slows",
+    "spatial_position": "Markandeya center-right, mid depth",
+    "audio_cue": "the fire stones tick softly",
+    "handoff_to_next_second": "smoke curls up from the fire stones"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "A curl of smoke rises between sage and munis and drifts toward the sky; everyone stays still, listening",
+    "camera": "truck ends, medium on Markandeya",
+    "spatial_position": "smoke at center, rising to the upper third",
+    "audio_cue": "a soft whoosh of rising smoke",
+    "handoff_to_next_second": "smoke rises into cloud"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "At dawn, sages came asking.",
+    "language": "en",
+    "time_range": [
+     0.3,
+     2.1
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "At dawn, sages came asking.",
+     "language": "en",
+     "time_range": [
+      0.3,
+      2.1
+     ]
+    },
+    "hi": {
+     "text": "भोर में मुनि सवाल लेकर आए।",
+     "language": "hi",
+     "time_range": [
+      0.3,
+      2.1
+     ]
+    },
+    "mr": {
+     "text": "पहाटे ऋषी प्रश्न घेऊन आले.",
+     "language": "mr",
+     "time_range": [
+      0.3,
+      2.1
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-HIMALAYAN-MUNIS",
+     "tone": "curious, reverent",
+     "text": "Sati's birth? Shiva's marriage? Please tell.",
+     "language": "en",
+     "time_range": [
+      2.3,
+      4.4
+     ]
+    },
+    {
+     "speaker": "CHAR-MARKANDEYA",
+     "tone": "calm, warm, teaching",
+     "text": "Listen. Brahma told this story first.",
+     "language": "en",
+     "time_range": [
+      4.6,
+      6.8
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-HIMALAYAN-MUNIS",
+      "tone": "curious, reverent",
+      "text": "Sati's birth? Shiva's marriage? Please tell.",
+      "language": "en",
+      "time_range": [
+       2.3,
+       4.4
+      ]
+     },
+     {
+      "speaker": "CHAR-MARKANDEYA",
+      "tone": "calm, warm, teaching",
+      "text": "Listen. Brahma told this story first.",
+      "language": "en",
+      "time_range": [
+       4.6,
+       6.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-HIMALAYAN-MUNIS",
+      "tone": "curious, reverent",
+      "text": "सती कैसे जन्मीं? शिव का ब्याह कैसे?",
+      "language": "hi",
+      "time_range": [
+       2.3,
+       4.4
+      ]
+     },
+     {
+      "speaker": "CHAR-MARKANDEYA",
+      "tone": "calm, warm, teaching",
+      "text": "सुनो। ब्रह्मा ने पहले ये कहानी सुनाई।",
+      "language": "hi",
+      "time_range": [
+       4.6,
+       6.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-HIMALAYAN-MUNIS",
+      "tone": "curious, reverent",
+      "text": "सती कशी जन्मली? शिवांचं लग्न कसं?",
+      "language": "mr",
+      "time_range": [
+       2.3,
+       4.4
+      ]
+     },
+     {
+      "speaker": "CHAR-MARKANDEYA",
+      "tone": "calm, warm, teaching",
+      "text": "ऐका. ही कथा आधी ब्रह्मदेवांनी सांगितली.",
+      "language": "mr",
+      "time_range": [
+       4.6,
+       6.8
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "The old story begins",
+      "time_range": [
+       0.5,
+       6.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "पुरानी कथा शुरू होती है",
+      "time_range": [
+       0.5,
+       6.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "जुनी कथा सुरू होते",
+      "time_range": [
+       0.5,
+       6.8
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "0.0-2.0s",
+     "sfx_key": "dawn_birds_stream",
+     "description": "dawn birdsong over a clear mountain stream"
+    },
+    {
+     "time_range": "3.0-3.4s",
+     "sfx_key": "mala_bead_click",
+     "description": "a single wooden mala bead clicks"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Narrator voice, then the munis and Markandeya as ElevenLabs voices laid over closed-mouth acting; no lip sync in the clip. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "open_non_verbal_breath",
+     "5": "closed",
+     "6": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "hanuman_vayu",
+   "act": "BUILD",
+   "phase": "PH-BUILD",
+   "focal": "CHAR-MARKANDEYA",
+   "focal_value": "lightest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Gada Gold",
+     "role": "ember glint on the fire stones"
+    },
+    {
+     "color": "Cloud White",
+     "role": "rising smoke and mist bands"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": null
+  },
+  "captions": [
+   "The old story begins"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 8.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Brahma on the lotus throne turns his creating palm upward; the eyes of his front face open 1.0-2.0s The mind-born sages appear in a row on the right, eyes widening in wonder 2.0-3.0s Brahma's front eyes close in meditation; his palm stays raised 3.0-4.0s A soft golden light gathers above the petal step on the left 4.0-5.0s The light becomes Sandhya: four arms, a fully draped twilight-violet sari, the veil over both shoulders 5.0-6.0s Sandhya's eyes open, startled like a doe's; she lowers her gaze at once 6.0-7.0s She draws the veil across with one hand and stands still with dignity, two hands folded 7.0-8.0s The sages exchange puzzled looks; Brahma's eyes open again and his gaze turns inward",
+  "camera": "wide, slow crane down from cloud level to the petal steps begins wide, slow crane down continues wide, slow crane down continues medium-wide, crane down continues medium-wide, crane down continues medium-wide, crane slows medium-wide, crane nearly at rest crane ends, wide on the court",
+  "sound": "soft chimes as each mind-born sage forms one clear bell as Sandhya takes form",
+  "id": "SHOT-004",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 14,
+  "pixel_frames": 243,
+  "latent_slots": 72,
+  "editorial_duration_sec": 8.0,
+  "purpose": "Brahma creates the gods, sages and Daksha; from his meditation Sandhya is born, shown with dignity and a lowered gaze.",
+  "continuity_handoff": {
+   "incoming": "Smoke rising from SHOT-003 dissolves into cloud; the camera arrives already craning down onto the lotus court.",
+   "outgoing": "Brahma's eyes reopen and turn inward as a golden light begins to gather at his chest.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "far"
+    },
+    {
+     "id": "CHAR-SANDHYA",
+     "screen": "left",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "screen": "right",
+     "depth": "mid"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-KALI",
+     "left_after_shot": "SHOT-002",
+     "off_stage_shots": 2,
+     "released": true
+    },
+    {
+     "id": "CHAR-MARKANDEYA",
+     "left_after_shot": "SHOT-003",
+     "off_stage_shots": 1,
+     "released": false
+    },
+    {
+     "id": "CHAR-HIMALAYAN-MUNIS",
+     "left_after_shot": "SHOT-003",
+     "off_stage_shots": 1,
+     "released": false
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "BUILD: key softened by cloud haze to 0.20-0.45; Sandhya stands against bright Surya White haze so she reads darkest"
+   }
+  },
+  "hook_type": "reveal",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": "HARD CUT — new place: dawn sun left to cloud-court light upper right",
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Brahma on the lotus throne turns his creating palm upward; the eyes of his front face open",
+    "camera": "wide, slow crane down from cloud level to the petal steps begins",
+    "spatial_position": "Brahma center, far depth, on the throne",
+    "audio_cue": "a deep conch-like swell",
+    "handoff_to_next_second": "figures begin to form on the right"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "The mind-born sages appear in a row on the right, eyes widening in wonder",
+    "camera": "wide, slow crane down continues",
+    "spatial_position": "sages right, mid depth",
+    "audio_cue": "a soft chime as each figure forms",
+    "handoff_to_next_second": "Brahma's eyes begin to close"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "Brahma's front eyes close in meditation; his palm stays raised",
+    "camera": "wide, slow crane down continues",
+    "spatial_position": "Brahma center, far depth",
+    "audio_cue": "a low steady hum",
+    "handoff_to_next_second": "light gathers on the left step"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "A soft golden light gathers above the petal step on the left",
+    "camera": "medium-wide, crane down continues",
+    "spatial_position": "light left, mid depth",
+    "audio_cue": "a rising shimmer",
+    "handoff_to_next_second": "the light takes a standing shape"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "The light becomes Sandhya: four arms, a fully draped twilight-violet sari, the veil over both shoulders",
+    "camera": "medium-wide, crane down continues",
+    "spatial_position": "Sandhya left, mid depth, full figure",
+    "audio_cue": "a single clear bell as she forms",
+    "handoff_to_next_second": "her eyes begin to open"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Sandhya's eyes open, startled like a doe's; she lowers her gaze at once",
+    "camera": "medium-wide, crane slows",
+    "spatial_position": "Sandhya left, mid depth, full figure",
+    "audio_cue": "a soft gasp of air through cloth",
+    "handoff_to_next_second": "one hand moves to the veil"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "She draws the veil across with one hand and stands still with dignity, two hands folded",
+    "camera": "medium-wide, crane nearly at rest",
+    "spatial_position": "Sandhya left, mid depth, full figure",
+    "audio_cue": "a veil rustle",
+    "handoff_to_next_second": "the sages turn toward each other"
+   },
+   {
+    "t0": 7.0,
+    "t1": 8.0,
+    "action_pose_expression": "The sages exchange puzzled looks; Brahma's eyes open again and his gaze turns inward",
+    "camera": "crane ends, wide on the court",
+    "spatial_position": "Brahma center far, sages right mid, Sandhya left mid",
+    "audio_cue": "the hum drops lower",
+    "handoff_to_next_second": "golden light stirs at Brahma's chest"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Brahma made the gods, the sages and Daksha. Then, from his deep thought, a daughter was born.",
+    "language": "en",
+    "time_range": [
+     0.4,
+     7.6
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Brahma made the gods, the sages and Daksha. Then, from his deep thought, a daughter was born.",
+     "language": "en",
+     "time_range": [
+      0.4,
+      7.6
+     ]
+    },
+    "hi": {
+     "text": "ब्रह्मा जी ने देवता, ऋषि और दक्ष बनाए। फिर उनके ध्यान से एक बेटी जन्मी।",
+     "language": "hi",
+     "time_range": [
+      0.4,
+      7.6
+     ]
+    },
+    "mr": {
+     "text": "ब्रह्मदेवांनी देव, ऋषी आणि दक्ष घडवले. मग त्यांच्या ध्यानातून एक मुलगी जन्मली.",
+     "language": "mr",
+     "time_range": [
+      0.4,
+      7.6
+     ]
+    }
+   },
+   "dialogue": [],
+   "dialogue_by_lang": {
+    "en": [],
+    "hi": [],
+    "mr": []
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Brahma's daughter, Sandhya",
+      "time_range": [
+       4.5,
+       7.6
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "ब्रह्मा जी की बेटी, संध्या",
+      "time_range": [
+       4.5,
+       7.6
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "ब्रह्मदेवांची मुलगी, संध्या",
+      "time_range": [
+       4.5,
+       7.6
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "1.0-2.0s",
+     "sfx_key": "creation_chimes",
+     "description": "soft chimes as each mind-born sage forms"
+    },
+    {
+     "time_range": "4.0-4.6s",
+     "sfx_key": "sandhya_birth_bell",
+     "description": "one clear bell as Sandhya takes form"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Narrator voice only, gentle wonder, recorded on ElevenLabs. Sandhya is shown full figure and fully draped, gaze lowered. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "open_non_verbal_breath",
+     "6": "closed",
+     "7": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "BUILD",
+   "phase": "PH-BUILD",
+   "focal": "CHAR-SANDHYA",
+   "focal_value": "darkest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Kavach Glow",
+     "role": "light of thought forming into Sandhya"
+    },
+    {
+     "color": "Surya White",
+     "role": "cloud haze behind the court"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Brahma's daughter, Sandhya"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 8.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s A golden light swells at Brahma's chest; the brows of his front face lift in surprise 1.0-2.0s The light pours down onto the petal step in front of a dark pillar 2.0-3.0s The light becomes a youth with golden skin and red-tinged hands, face and feet 3.0-4.0s Kamadeva's eyes open; a playful half smile appears 4.0-5.0s He finds the flower bow in his left hand and looks at it, curious 5.0-6.0s He kneels on one knee before Brahma and bows his head low 6.0-7.0s His garland swings forward and settles a beat late; his eyes lift to Brahma, eager 7.0-8.0s The sages far behind lean in, astonished; Kamadeva waits with bright eyes",
+  "camera": "medium, slow arc right around the forming light begins medium, slow arc right continues medium, slow arc right continues medium close-up, slow arc right continues medium, slow arc right continues medium, slow arc right continues medium, arc slows arc ends, medium-wide",
+  "sound": "a rushing breath as the light pours onto the step a light twang as Kamadeva's eyes open",
+  "id": "SHOT-005",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 14,
+  "pixel_frames": 243,
+  "latent_slots": 72,
+  "editorial_duration_sec": 8.0,
+  "purpose": "Re-hook reveal: Kamadeva is born golden from Brahma's mind with the flower bow, kneels, and asks for his work, a place and a wife.",
+  "continuity_handoff": {
+   "incoming": "Golden light stirring at Brahma's chest at the end of SHOT-004 swells in the first frame.",
+   "outgoing": "Kamadeva kneels with eager eyes on Brahma; Brahma's palm is about to rise over him.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "far"
+    },
+    {
+     "id": "CHAR-KAMADEVA",
+     "screen": "center-right",
+     "depth": "near"
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "screen": "right",
+     "depth": "far"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-SANDHYA",
+     "left_after_shot": "SHOT-004",
+     "off_stage_shots": 1,
+     "released": false
+    },
+    {
+     "id": "CHAR-MARKANDEYA",
+     "left_after_shot": "SHOT-003",
+     "off_stage_shots": 2,
+     "released": true
+    },
+    {
+     "id": "CHAR-HIMALAYAN-MUNIS",
+     "left_after_shot": "SHOT-003",
+     "off_stage_shots": 2,
+     "released": true
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "BUILD: Kamadeva framed against a Charcoal Iron pillar so his gold body reads lightest; brightness 0.20-0.45"
+   }
+  },
+  "hook_type": "reveal",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "A golden light swells at Brahma's chest; the brows of his front face lift in surprise",
+    "camera": "medium, slow arc right around the forming light begins",
+    "spatial_position": "Brahma center, far depth",
+    "audio_cue": "a deep warm hum rises",
+    "handoff_to_next_second": "the light spills forward"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "The light pours down onto the petal step in front of a dark pillar",
+    "camera": "medium, slow arc right continues",
+    "spatial_position": "light center-right, near depth",
+    "audio_cue": "a rushing breath of light",
+    "handoff_to_next_second": "the light takes a human outline"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "The light becomes a youth with golden skin and red-tinged hands, face and feet",
+    "camera": "medium, slow arc right continues",
+    "spatial_position": "Kamadeva center-right, near depth",
+    "audio_cue": "a warm shimmer settles",
+    "handoff_to_next_second": "his eyelids flutter"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Kamadeva's eyes open; a playful half smile appears",
+    "camera": "medium close-up, slow arc right continues",
+    "spatial_position": "Kamadeva center-right, near depth",
+    "audio_cue": "a light bowstring twang",
+    "handoff_to_next_second": "his gaze drops to his left hand"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "He finds the flower bow in his left hand and looks at it, curious",
+    "camera": "medium, slow arc right continues",
+    "spatial_position": "Kamadeva center-right, near depth",
+    "audio_cue": "bees hum faintly on the bowstring",
+    "handoff_to_next_second": "he turns toward Brahma"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "He kneels on one knee before Brahma and bows his head low",
+    "camera": "medium, slow arc right continues",
+    "spatial_position": "Kamadeva center-right, near depth, kneeling",
+    "audio_cue": "knee touches the petal step softly",
+    "handoff_to_next_second": "the garland swings forward"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "His garland swings forward and settles a beat late; his eyes lift to Brahma, eager",
+    "camera": "medium, arc slows",
+    "spatial_position": "Kamadeva center-right, near depth",
+    "audio_cue": "flower garland rustle",
+    "handoff_to_next_second": "the sages lean in behind"
+   },
+   {
+    "t0": 7.0,
+    "t1": 8.0,
+    "action_pose_expression": "The sages far behind lean in, astonished; Kamadeva waits with bright eyes",
+    "camera": "arc ends, medium-wide",
+    "spatial_position": "sages right, far depth; Kamadeva center-right, near",
+    "audio_cue": "a murmur of cloth as the sages shift",
+    "handoff_to_next_second": "Brahma's palm begins to rise"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Then one more came from his mind, shining like gold.",
+    "language": "en",
+    "time_range": [
+     0.3,
+     3.6
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Then one more came from his mind, shining like gold.",
+     "language": "en",
+     "time_range": [
+      0.3,
+      3.6
+     ]
+    },
+    "hi": {
+     "text": "फिर उनके मन से एक और निकला, सूरज जैसा सुनहरा।",
+     "language": "hi",
+     "time_range": [
+      0.3,
+      3.6
+     ]
+    },
+    "mr": {
+     "text": "मग त्यांच्या मनातून आणखी एक आला, सूर्यासारखा सोनेरी.",
+     "language": "mr",
+     "time_range": [
+      0.3,
+      3.6
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-KAMADEVA",
+     "tone": "humble, eager",
+     "text": "Lord, what's my work? Give me a home and wife.",
+     "language": "en",
+     "time_range": [
+      4.2,
+      7.6
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "humble, eager",
+      "text": "Lord, what's my work? Give me a home and wife.",
+      "language": "en",
+      "time_range": [
+       4.2,
+       7.6
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "humble, eager",
+      "text": "प्रभु, मेरा काम क्या है? मुझे घर दीजिए, और पत्नी भी।",
+      "language": "hi",
+      "time_range": [
+       4.2,
+       7.6
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "humble, eager",
+      "text": "प्रभू, माझं काम काय? मला जागा द्या, आणि बायकोही.",
+      "language": "mr",
+      "time_range": [
+       4.2,
+       7.6
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Born with a flower bow",
+      "time_range": [
+       0.5,
+       3.6
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "फूलों का धनुष लेकर जन्मा",
+      "time_range": [
+       0.5,
+       3.6
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "फुलांचं धनुष्य घेऊन जन्मला",
+      "time_range": [
+       0.5,
+       3.6
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "1.0-2.0s",
+     "sfx_key": "golden_light_rush",
+     "description": "a rushing breath as the light pours onto the step"
+    },
+    {
+     "time_range": "3.2-3.6s",
+     "sfx_key": "flower_bow_twang",
+     "description": "a light twang as Kamadeva's eyes open"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Narrator voice, then Kamadeva as an ElevenLabs voice over closed-mouth kneeling acting. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "open_non_verbal_breath",
+     "4": "closed",
+     "5": "closed",
+     "6": "closed",
+     "7": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "BUILD",
+   "phase": "PH-BUILD",
+   "focal": "CHAR-KAMADEVA",
+   "focal_value": "lightest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Kavach Glow",
+     "role": "birth light forming Kamadeva"
+    },
+    {
+     "color": "Molten Gold",
+     "role": "warm spill on the petal step"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Born with a flower bow"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 7.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Brahma raises his creating palm over Kamadeva; his eyes are steady and commanding 1.0-2.0s Kamadeva's eyes widen at the words, then sparkle with delight 2.0-3.0s He rises from his knee, chest lifting with pride; the dhoti pleats swing and settle late 3.0-4.0s Far behind, the sages raise folded hands toward him one after another, naming him 4.0-5.0s Kamadeva lifts the flower bow; the fine bee string glints 5.0-6.0s He draws one flower arrow from his sash and notches it; the tip glints 6.0-7.0s His eyes slide toward Brahma; a sly half smile forms",
+  "camera": "medium, slow push in toward Kamadeva begins medium, slow push in continues medium, slow push in continues medium, slow push in continues medium close-up, slow push in continues medium close-up, push in slows push in ends, medium close-up",
+  "sound": "a ripple of joined palms as the sages name him a light click as the flower arrow meets the string",
+  "id": "SHOT-006",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 12,
+  "pixel_frames": 209,
+  "latent_slots": 62,
+  "editorial_duration_sec": 7.0,
+  "purpose": "Brahma gives Kamadeva his task over every heart, even Vishnu's and Shiva's; the sages name him, and he notches an arrow with a bold thought.",
+  "continuity_handoff": {
+   "incoming": "Kamadeva is still kneeling at center-right from SHOT-005 as Brahma's palm rises over him.",
+   "outgoing": "Kamadeva stands with an arrow notched and a sly glance toward Brahma; his bow arm is about to draw.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-KAMADEVA",
+     "screen": "center-right",
+     "depth": "near"
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "screen": "right",
+     "depth": "far"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-SANDHYA",
+     "left_after_shot": "SHOT-004",
+     "off_stage_shots": 2,
+     "released": true
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "DROP: key lifts to 0.25-0.55; the Arrow Energy glint on the notched tip is the single neon accent"
+   }
+  },
+  "hook_type": "suspense",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Brahma raises his creating palm over Kamadeva; his eyes are steady and commanding",
+    "camera": "medium, slow push in toward Kamadeva begins",
+    "spatial_position": "Brahma center, mid depth; Kamadeva center-right, near, kneeling",
+    "audio_cue": "a deep resonant hum",
+    "handoff_to_next_second": "Kamadeva's eyes widen"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Kamadeva's eyes widen at the words, then sparkle with delight",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "a soft intake of breath",
+    "handoff_to_next_second": "he begins to rise"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "He rises from his knee, chest lifting with pride; the dhoti pleats swing and settle late",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near, standing",
+    "audio_cue": "silk swish",
+    "handoff_to_next_second": "the sages raise their hands"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Far behind, the sages raise folded hands toward him one after another, naming him",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "sages right, far depth",
+    "audio_cue": "soft palms meeting in a ripple",
+    "handoff_to_next_second": "Kamadeva lifts his bow"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "Kamadeva lifts the flower bow; the fine bee string glints",
+    "camera": "medium close-up, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "bees hum on the string",
+    "handoff_to_next_second": "his hand reaches for an arrow"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "He draws one flower arrow from his sash and notches it; the tip glints",
+    "camera": "medium close-up, push in slows",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "a light click of the arrow on the string",
+    "handoff_to_next_second": "his eyes slide sideways"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "His eyes slide toward Brahma; a sly half smile forms",
+    "camera": "push in ends, medium close-up",
+    "spatial_position": "Kamadeva center-right, near; Brahma center, mid, soft focus",
+    "audio_cue": "the hum cuts to near silence",
+    "handoff_to_next_second": "the bow arm begins to draw"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "The sages named him Manmatha, Madana, Kandarpa.",
+    "language": "en",
+    "time_range": [
+     3.9,
+     6.8
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "The sages named him Manmatha, Madana, Kandarpa.",
+     "language": "en",
+     "time_range": [
+      3.9,
+      6.8
+     ]
+    },
+    "hi": {
+     "text": "मुनियों ने उसे नाम दिए, मन्मथ, मदन, कंदर्प।",
+     "language": "hi",
+     "time_range": [
+      3.9,
+      6.8
+     ]
+    },
+    "mr": {
+     "text": "ऋषींनी त्याला नावं दिली, मन्मथ, मदन, कंदर्प.",
+     "language": "mr",
+     "time_range": [
+      3.9,
+      6.8
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-BRAHMA",
+     "tone": "grand, commanding",
+     "text": "Your flower arrows win every heart. Mine, Vishnu's, even Shiva's.",
+     "language": "en",
+     "time_range": [
+      0.3,
+      3.6
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "grand, commanding",
+      "text": "Your flower arrows win every heart. Mine, Vishnu's, even Shiva's.",
+      "language": "en",
+      "time_range": [
+       0.3,
+       3.6
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "grand, commanding",
+      "text": "तुम्हारे फूल-बाण हर मन जीतेंगे। मेरा, विष्णु का, शिव का भी।",
+      "language": "hi",
+      "time_range": [
+       0.3,
+       3.6
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "grand, commanding",
+      "text": "तुझे फुलांचे बाण प्रत्येक मन जिंकतील. माझं, विष्णूंचं, शिवांचंसुद्धा.",
+      "language": "mr",
+      "time_range": [
+       0.3,
+       3.6
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Five arrows. One bold thought.",
+      "time_range": [
+       4.0,
+       6.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "पाँच बाण, एक साहसी सोच",
+      "time_range": [
+       4.0,
+       6.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "पाच बाण, एक धाडसी विचार",
+      "time_range": [
+       4.0,
+       6.8
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "3.0-4.0s",
+     "sfx_key": "sages_palms_ripple",
+     "description": "a ripple of joined palms as the sages name him"
+    },
+    {
+     "time_range": "5.4-5.8s",
+     "sfx_key": "arrow_notch_click",
+     "description": "a light click as the flower arrow meets the string"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Brahma as an ElevenLabs voice over closed-mouth acting, then the narrator. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "open_non_verbal_breath",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "closed",
+     "6": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "DROP",
+   "phase": "PH-DROP",
+   "focal": "CHAR-KAMADEVA",
+   "focal_value": "lightest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Arrow Energy",
+     "role": "glint on the notched arrow tip"
+    },
+    {
+     "color": "Kavach Glow",
+     "role": "ornament speculars"
+    }
+   ],
+   "accent_use": true,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Five arrows. One bold thought."
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 7.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Kamadeva draws the bow back; his eyes narrow on his aim 1.0-2.0s Full draw, held tight; the dhoti flares and his curls lift 2.0-2.5s Release: the flower arrow leaps across the court with a bright trail 2.5-3.0s A wave of petals and warm wind sweeps across the petal steps 3.0-4.0s On the left, Sandhya draws her veil close and turns her face away, gaze lowered 4.0-5.0s Far at center, Brahma grips the arms of his throne; a bead of sweat forms on his brow 5.0-6.0s Brahma's four heads lower and his eyes shut tight, struggling to hold himself 6.0-7.0s Petals drift down; Kamadeva lowers the bow, pleased, with a small smile",
+  "camera": "medium on Kamadeva, steady pull back begins medium, pull back continues medium-wide, pull back continues wide, pull back continues wide, pull back continues wide, pull back continues wide, pull back slows pull back ends, wide on the court",
+  "sound": "a sharp twang and whoosh as the arrow flies a warm rushing wind full of petals the lotus throne creaks under a tight grip",
+  "id": "SHOT-007",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 12,
+  "pixel_frames": 209,
+  "latent_slots": 62,
+  "editorial_duration_sec": 7.0,
+  "purpose": "Reversal: Kamadeva tests Brahma's words on Brahma's own court; the sweet wind sweeps through, Sandhya turns away and Brahma struggles, shown with restraint.",
+  "continuity_handoff": {
+   "incoming": "Kamadeva's bow arm begins its draw from the notched pose of SHOT-006.",
+   "outgoing": "Petals settle; Kamadeva lowers the bow, pleased, as a cold cloud shadow starts to slide across the gold steps.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-KAMADEVA",
+     "screen": "center-right",
+     "depth": "near"
+    },
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "far"
+    },
+    {
+     "id": "CHAR-SANDHYA",
+     "screen": "left",
+     "depth": "mid"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "left_after_shot": "SHOT-006",
+     "off_stage_shots": 1,
+     "released": false
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "DROP: 0.25-0.55; the arrow trail is the single neon; white impact in post at the release"
+   }
+  },
+  "hook_type": "reversal",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Kamadeva draws the bow back; his eyes narrow on his aim",
+    "camera": "medium on Kamadeva, steady pull back begins",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "the bowstring creaks as it stretches",
+    "handoff_to_next_second": "the draw reaches full"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Full draw, held tight; the dhoti flares and his curls lift",
+    "camera": "medium, pull back continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "bees on the string hum louder",
+    "handoff_to_next_second": "his fingers open"
+   },
+   {
+    "t0": 2.0,
+    "t1": 2.5,
+    "action_pose_expression": "Release: the flower arrow leaps across the court with a bright trail",
+    "camera": "medium-wide, pull back continues",
+    "spatial_position": "arrow crossing from center-right toward center",
+    "audio_cue": "a sharp twang and a whoosh",
+    "handoff_to_next_second": "a wave of petals follows the arrow"
+   },
+   {
+    "t0": 2.5,
+    "t1": 3.0,
+    "action_pose_expression": "A wave of petals and warm wind sweeps across the petal steps",
+    "camera": "wide, pull back continues",
+    "spatial_position": "petals sweeping left across the court",
+    "audio_cue": "a rush of fragrant wind",
+    "handoff_to_next_second": "the wind reaches Sandhya"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "On the left, Sandhya draws her veil close and turns her face away, gaze lowered",
+    "camera": "wide, pull back continues",
+    "spatial_position": "Sandhya left, mid depth, full figure",
+    "audio_cue": "a veil snaps softly in the wind",
+    "handoff_to_next_second": "the wind reaches the throne"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "Far at center, Brahma grips the arms of his throne; a bead of sweat forms on his brow",
+    "camera": "wide, pull back continues",
+    "spatial_position": "Brahma center, far depth",
+    "audio_cue": "wood of the throne creaks",
+    "handoff_to_next_second": "his heads begin to lower"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Brahma's four heads lower and his eyes shut tight, struggling to hold himself",
+    "camera": "wide, pull back slows",
+    "spatial_position": "Brahma center, far depth",
+    "audio_cue": "a heavy held breath",
+    "handoff_to_next_second": "petals begin to fall still"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "Petals drift down; Kamadeva lowers the bow, pleased, with a small smile",
+    "camera": "pull back ends, wide on the court",
+    "spatial_position": "Kamadeva center-right, near; Brahma center, far; Sandhya left, mid",
+    "audio_cue": "the wind dies to a whisper",
+    "handoff_to_next_second": "a cold cloud shadow slides over the steps"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "He aimed at Brahma's own court. Every mind slipped.",
+    "language": "en",
+    "time_range": [
+     3.2,
+     6.8
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "He aimed at Brahma's own court. Every mind slipped.",
+     "language": "en",
+     "time_range": [
+      3.2,
+      6.8
+     ]
+    },
+    "hi": {
+     "text": "उसने ब्रह्मा जी की सभा पर ही बाण चलाया। सबका मन डोला।",
+     "language": "hi",
+     "time_range": [
+      3.2,
+      6.8
+     ]
+    },
+    "mr": {
+     "text": "त्याने ब्रह्मदेवांच्या सभेवरच बाण सोडला. सगळ्यांचं मन डळमळलं.",
+     "language": "mr",
+     "time_range": [
+      3.2,
+      6.8
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-KAMADEVA",
+     "tone": "playful, daring, under the breath",
+     "text": "Let's see if it's true.",
+     "language": "en",
+     "time_range": [
+      0.2,
+      1.8
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "playful, daring, under the breath",
+      "text": "Let's see if it's true.",
+      "language": "en",
+      "time_range": [
+       0.2,
+       1.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "playful, daring, under the breath",
+      "text": "देखूँ, सच है या नहीं।",
+      "language": "hi",
+      "time_range": [
+       0.2,
+       1.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "playful, daring, under the breath",
+      "text": "बघू, हे खरं का?",
+      "language": "mr",
+      "time_range": [
+       0.2,
+       1.8
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Struck by his own creation",
+      "time_range": [
+       3.2,
+       6.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "अपनी ही रचना का बाण",
+      "time_range": [
+       3.2,
+       6.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "आपल्याच निर्मितीचा बाण",
+      "time_range": [
+       3.2,
+       6.8
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "2.0-2.5s",
+     "sfx_key": "flower_arrow_release",
+     "description": "a sharp twang and whoosh as the arrow flies"
+    },
+    {
+     "time_range": "2.5-3.5s",
+     "sfx_key": "fragrant_wind_rush",
+     "description": "a warm rushing wind full of petals"
+    },
+    {
+     "time_range": "4.0-4.4s",
+     "sfx_key": "throne_creak",
+     "description": "the lotus throne creaks under a tight grip"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Kamadeva's line is an inner whisper on ElevenLabs over closed-mouth acting; the narrator follows. The stirred court is shown only through turned faces, shut eyes and a sweat bead. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "open_non_verbal_breath",
+     "3": "closed",
+     "4": "closed",
+     "5": "closed",
+     "6": "closed"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "DROP",
+   "phase": "PH-DROP",
+   "focal": "CHAR-KAMADEVA",
+   "focal_value": "lightest",
+   "impact_frames": [
+    {
+     "at_s": 2.1,
+     "type": "white_out",
+     "frames": 2
+    }
+   ],
+   "vfx": [
+    {
+     "color": "Arrow Energy",
+     "role": "flower arrow flight trail"
+    },
+    {
+     "color": "Surya White",
+     "role": "petal wave highlights"
+    }
+   ],
+   "accent_use": true,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Struck by his own creation"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 8.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s A cloud shadow slides over the court; Shiva steps out of it on the left, eyes open and stern 1.0-2.0s Shiva lifts two fingers and points at Brahma; his brows knit 2.0-3.0s Cool rim light catches his crescent and jata strands, which lift and lag 3.0-4.0s Brahma's four heads bow; his shoulders fall 4.0-5.0s The sages on the right lower their heads in shame, hands at their chests 5.0-6.0s Shiva's pointing hand lowers slowly; his gaze stays fixed on Brahma 6.0-7.0s Brahma's palms close over his knees; a drop of sweat falls from his brow 7.0-8.0s Brahma's eyes open and flash toward screen right, shame turning to anger",
+  "camera": "wide, slow push in toward Shiva begins wide, slow push in continues medium-wide, slow push in continues medium-wide, slow push in continues medium-wide, slow push in continues medium, slow push in continues medium, push in slows push in ends, medium on Brahma",
+  "sound": "the warm wind drops away as the cloud shadow passes a single drop taps the petal step",
+  "id": "SHOT-008",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 14,
+  "pixel_frames": 243,
+  "latent_slots": 72,
+  "editorial_duration_sec": 8.0,
+  "purpose": "Shiva appears out of the cloud shadow and rebukes Brahma; Brahma and the sages bow their heads in shame, and Brahma's anger turns toward Kamadeva.",
+  "continuity_handoff": {
+   "incoming": "The cold cloud shadow from the end of SHOT-007 slides over the court in the first frame, and Shiva steps out of it.",
+   "outgoing": "Brahma's eyes flash toward screen right, where Kamadeva stands off frame.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-SHIVA",
+     "screen": "left",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "screen": "right",
+     "depth": "mid"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-KAMADEVA",
+     "left_after_shot": "SHOT-007",
+     "off_stage_shots": 1,
+     "released": false
+    },
+    {
+     "id": "CHAR-SANDHYA",
+     "left_after_shot": "SHOT-007",
+     "off_stage_shots": 1,
+     "released": false
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "DROP: cloud shadow passes over for the shame beat, dropping the gold field toward 0.25; Shiva lit by Moon Silver rim so he reads lightest"
+   }
+  },
+  "hook_type": "reveal",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "A cloud shadow slides over the court; Shiva steps out of it on the left, eyes open and stern",
+    "camera": "wide, slow push in toward Shiva begins",
+    "spatial_position": "Shiva left, mid depth; Brahma center, mid; sages right, mid",
+    "audio_cue": "the wind drops and serpents hiss softly",
+    "handoff_to_next_second": "Shiva's hand begins to rise"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Shiva lifts two fingers and points at Brahma; his brows knit",
+    "camera": "wide, slow push in continues",
+    "spatial_position": "Shiva left, mid depth",
+    "audio_cue": "a heavy rustle of tiger skin",
+    "handoff_to_next_second": "moonlight catches his crescent"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "Cool rim light catches his crescent and jata strands, which lift and lag",
+    "camera": "medium-wide, slow push in continues",
+    "spatial_position": "Shiva left, mid depth",
+    "audio_cue": "a low cold hum",
+    "handoff_to_next_second": "Brahma's heads begin to bow"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Brahma's four heads bow; his shoulders fall",
+    "camera": "medium-wide, slow push in continues",
+    "spatial_position": "Brahma center, mid depth",
+    "audio_cue": "a long sigh of cloth",
+    "handoff_to_next_second": "the sages lower their heads"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "The sages on the right lower their heads in shame, hands at their chests",
+    "camera": "medium-wide, slow push in continues",
+    "spatial_position": "sages right, mid depth",
+    "audio_cue": "kamandalus knock softly as hands drop",
+    "handoff_to_next_second": "Shiva's hand begins to lower"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Shiva's pointing hand lowers slowly; his gaze stays fixed on Brahma",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "Shiva left, mid depth",
+    "audio_cue": "serpents shift with a faint dry slide",
+    "handoff_to_next_second": "sweat falls from Brahma's brow"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "Brahma's palms close over his knees; a drop of sweat falls from his brow",
+    "camera": "medium, push in slows",
+    "spatial_position": "Brahma center, mid depth",
+    "audio_cue": "a single drop taps the petal step",
+    "handoff_to_next_second": "Brahma's eyes begin to lift"
+   },
+   {
+    "t0": 7.0,
+    "t1": 8.0,
+    "action_pose_expression": "Brahma's eyes open and flash toward screen right, shame turning to anger",
+    "camera": "push in ends, medium on Brahma",
+    "spatial_position": "Brahma center, mid depth, gaze to screen right",
+    "audio_cue": "a sharp breath in",
+    "handoff_to_next_second": "his anger turns toward Kamadeva"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Brahma and the sages hung their heads in shame.",
+    "language": "en",
+    "time_range": [
+     4.8,
+     7.7
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Brahma and the sages hung their heads in shame.",
+     "language": "en",
+     "time_range": [
+      4.8,
+      7.7
+     ]
+    },
+    "hi": {
+     "text": "ब्रह्मा जी और मुनियों ने शर्म से सिर झुका लिया।",
+     "language": "hi",
+     "time_range": [
+      4.8,
+      7.7
+     ]
+    },
+    "mr": {
+     "text": "ब्रह्मदेव आणि ऋषींनी लाजेने मान खाली घातली.",
+     "language": "mr",
+     "time_range": [
+      4.8,
+      7.7
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-SHIVA",
+     "tone": "stern, quiet, cutting",
+     "text": "Brahma, she's your own daughter. How could your mind slip?",
+     "language": "en",
+     "time_range": [
+      1.2,
+      4.4
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-SHIVA",
+      "tone": "stern, quiet, cutting",
+      "text": "Brahma, she's your own daughter. How could your mind slip?",
+      "language": "en",
+      "time_range": [
+       1.2,
+       4.4
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-SHIVA",
+      "tone": "stern, quiet, cutting",
+      "text": "ब्रह्मा जी, वो आपकी अपनी बेटी है। आपका मन कैसे डोला?",
+      "language": "hi",
+      "time_range": [
+       1.2,
+       4.4
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-SHIVA",
+      "tone": "stern, quiet, cutting",
+      "text": "ब्रह्मदेव, ती तुमचीच मुलगी आहे. तुमचं मन कसं डळमळलं?",
+      "language": "mr",
+      "time_range": [
+       1.2,
+       4.4
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Sharper than any arrow",
+      "time_range": [
+       4.8,
+       7.7
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "किसी भी बाण से तीखा",
+      "time_range": [
+       4.8,
+       7.7
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "कोणत्याही बाणापेक्षा धारदार",
+      "time_range": [
+       4.8,
+       7.7
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "0.0-1.0s",
+     "sfx_key": "cloud_shadow_wind_drop",
+     "description": "the warm wind drops away as the cloud shadow passes"
+    },
+    {
+     "time_range": "6.4-6.7s",
+     "sfx_key": "sweat_drop_tap",
+     "description": "a single drop taps the petal step"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Shiva as an ElevenLabs voice over closed-mouth acting, low and controlled, no shouting; the narrator follows. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "closed",
+     "6": "closed",
+     "7": "open_non_verbal_breath"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "shiva_neelkanth",
+   "act": "DROP",
+   "phase": "PH-DROP",
+   "focal": "CHAR-SHIVA",
+   "focal_value": "lightest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Moon Silver",
+     "role": "rim light on the crescent and jata"
+    },
+    {
+     "color": "Himalaya Mist",
+     "role": "cloud shadow passing over the court"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": null
+  },
+  "captions": [
+   "Sharper than any arrow"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 8.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Brahma's eyes snap onto Kamadeva; his brows draw down in anger 1.0-2.0s Kamadeva hurriedly gathers his arrows to his chest, eyes wide 2.0-3.0s Brahma rises from the throne; the uttariya swings out and lags 3.0-4.0s Brahma's arm extends, one finger pointed at Kamadeva 4.0-5.0s The curse lands in a white flash; Kamadeva flinches back a step 5.0-6.0s Kamadeva's bow slips under his arm; his hands tremble, eyes fixed on Brahma 6.0-7.0s Brahma's pointing arm stays raised; his eyes are hard and unmoving 7.0-8.0s Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes",
+  "camera": "medium, slow push in on Brahma begins medium, slow push in continues medium, slow push in continues medium close-up, slow push in continues medium close-up, slow push in continues medium close-up, push in slows medium close-up, push in nearly at rest push in ends, medium close-up on Brahma",
+  "sound": "flower arrows knock together as they are clutched a deep thunder crack as the curse lands",
+  "id": "SHOT-009",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 14,
+  "pixel_frames": 243,
+  "latent_slots": 72,
+  "editorial_duration_sec": 8.0,
+  "purpose": "Reversal: Brahma, shamed, curses Kamadeva that Mahadeva's eye fire will burn him; Kamadeva's pride turns to fear.",
+  "continuity_handoff": {
+   "incoming": "Brahma's eyes, already flashing to screen right at the end of SHOT-008, snap onto Kamadeva.",
+   "outgoing": "Brahma's arm drops and his breath goes out; Kamadeva trembles, bow slipping under his arm.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "mid"
+    },
+    {
+     "id": "CHAR-KAMADEVA",
+     "screen": "center-right",
+     "depth": "near"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-SHIVA",
+     "left_after_shot": "SHOT-008",
+     "off_stage_shots": 1,
+     "released": false
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "left_after_shot": "SHOT-008",
+     "off_stage_shots": 1,
+     "released": false
+    },
+    {
+     "id": "CHAR-SANDHYA",
+     "left_after_shot": "SHOT-007",
+     "off_stage_shots": 2,
+     "released": true
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "DROP: cloud shadow still over the court, Brahma lit against a Charcoal Iron sky so he reads lightest; white impact in post as the curse lands"
+   }
+  },
+  "hook_type": "reversal",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": false,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Brahma's eyes snap onto Kamadeva; his brows draw down in anger",
+    "camera": "medium, slow push in on Brahma begins",
+    "spatial_position": "Brahma center, mid depth; Kamadeva center-right, near, soft focus",
+    "audio_cue": "a sharp rustle of the uttariya",
+    "handoff_to_next_second": "Kamadeva startles"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "Kamadeva hurriedly gathers his arrows to his chest, eyes wide",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "arrows clatter softly together",
+    "handoff_to_next_second": "Brahma begins to rise"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "Brahma rises from the throne; the uttariya swings out and lags",
+    "camera": "medium, slow push in continues",
+    "spatial_position": "Brahma center, mid depth, standing",
+    "audio_cue": "the throne creaks as he stands",
+    "handoff_to_next_second": "his arm extends"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Brahma's arm extends, one finger pointed at Kamadeva",
+    "camera": "medium close-up, slow push in continues",
+    "spatial_position": "Brahma center, mid depth; arm toward center-right",
+    "audio_cue": "a low building rumble",
+    "handoff_to_next_second": "the curse lands"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "The curse lands in a white flash; Kamadeva flinches back a step",
+    "camera": "medium close-up, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near, recoiling",
+    "audio_cue": "a deep thunder crack",
+    "handoff_to_next_second": "the bow slips under his arm"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Kamadeva's bow slips under his arm; his hands tremble, eyes fixed on Brahma",
+    "camera": "medium close-up, push in slows",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "flowers on the bow rustle",
+    "handoff_to_next_second": "Brahma's arm holds"
+   },
+   {
+    "t0": 6.0,
+    "t1": 7.0,
+    "action_pose_expression": "Brahma's pointing arm stays raised; his eyes are hard and unmoving",
+    "camera": "medium close-up, push in nearly at rest",
+    "spatial_position": "Brahma center, mid depth",
+    "audio_cue": "the rumble fades",
+    "handoff_to_next_second": "his arm begins to drop"
+   },
+   {
+    "t0": 7.0,
+    "t1": 8.0,
+    "action_pose_expression": "Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes",
+    "camera": "push in ends, medium close-up on Brahma",
+    "spatial_position": "Brahma center, mid depth",
+    "audio_cue": "a long exhale",
+    "handoff_to_next_second": "Kamadeva sinks to his knees"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Kama's hands began to shake.",
+    "language": "en",
+    "time_range": [
+     5.6,
+     7.8
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Kama's hands began to shake.",
+     "language": "en",
+     "time_range": [
+      5.6,
+      7.8
+     ]
+    },
+    "hi": {
+     "text": "काम के हाथ काँपने लगे।",
+     "language": "hi",
+     "time_range": [
+      5.6,
+      7.8
+     ]
+    },
+    "mr": {
+     "text": "कामाचे हात थरथरू लागले.",
+     "language": "mr",
+     "time_range": [
+      5.6,
+      7.8
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-BRAHMA",
+     "tone": "wounded anger, rising",
+     "text": "At me, before my eyes? Fire from Mahadeva's eye will burn you.",
+     "language": "en",
+     "time_range": [
+      1.2,
+      5.2
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "wounded anger, rising",
+      "text": "At me, before my eyes? Fire from Mahadeva's eye will burn you.",
+      "language": "en",
+      "time_range": [
+       1.2,
+       5.2
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "wounded anger, rising",
+      "text": "मेरे सामने ही मुझ पर बाण? महादेव की आँख की आग तुम्हें जला देगी।",
+      "language": "hi",
+      "time_range": [
+       1.2,
+       5.2
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-BRAHMA",
+      "tone": "wounded anger, rising",
+      "text": "माझ्या डोळ्यांसमोर माझ्यावरच बाण? महादेवांच्या डोळ्यांतली आग तुला जाळून टाकेल.",
+      "language": "mr",
+      "time_range": [
+       1.2,
+       5.2
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "A curse spoken in anger",
+      "time_range": [
+       5.6,
+       7.8
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "गुस्से में दिया श्राप",
+      "time_range": [
+       5.6,
+       7.8
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "रागात दिलेला शाप",
+      "time_range": [
+       5.6,
+       7.8
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "1.0-1.6s",
+     "sfx_key": "arrows_gathered_clatter",
+     "description": "flower arrows knock together as they are clutched"
+    },
+    {
+     "time_range": "4.0-4.6s",
+     "sfx_key": "curse_thunder_crack",
+     "description": "a deep thunder crack as the curse lands"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Brahma as an ElevenLabs voice over closed-mouth acting, the anger rising to the last word; the narrator follows quietly. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "open_non_verbal_breath",
+     "6": "closed",
+     "7": "open_non_verbal_breath"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "DROP",
+   "phase": "PH-DROP",
+   "focal": "CHAR-BRAHMA",
+   "focal_value": "lightest",
+   "impact_frames": [
+    {
+     "at_s": 4.0,
+     "type": "white_out",
+     "frames": 2
+    }
+   ],
+   "vfx": [
+    {
+     "color": "Ember Red",
+     "role": "heat edge along Brahma's outline in anger"
+    },
+    {
+     "color": "Charcoal Iron",
+     "role": "darkened sky behind Brahma"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": null
+  },
+  "captions": [
+   "A curse spoken in anger"
+  ]
+ },
+ {
+  "mode": "ref2va",
+  "seconds": 6.0,
+  "aspect": "9:16",
+  "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
+  "action": "0.0-1.0s Kamadeva drops to his knees, palms open in plea, eyes glistening 1.0-2.0s His brows tilt up in pleading; loose petals fall around him 2.0-3.0s He presses his palms together and looks up toward Brahma 3.0-4.0s Far behind at center, Brahma's silhouette stays still, his face unreadable 4.0-5.0s Hold: Kamadeva's eyes stay locked on Brahma, waiting, barely breathing 5.0-6.0s Hold: a last petal lands on the bow at his knee; his breath catches",
+  "camera": "close-up on Kamadeva, slow push in begins close-up, slow push in continues close-up, slow push in continues close-up, push in continues, focus pulls to the far figure close-up, push in slows push in ends on his eyes",
+  "sound": "a soft thud as Kamadeva drops to his knees a tiny tick as the last petal lands on the bow",
+  "id": "SHOT-010",
+  "episode": 1,
+  "route": "Ref2VA",
+  "lattice_n": 9,
+  "pixel_frames": 158,
+  "latent_slots": 47,
+  "editorial_duration_sec": 6.0,
+  "purpose": "Cliffhanger: Kamadeva kneels and pleads that he only obeyed; Brahma stands silent, and the last two seconds hold on the open question of whether the curse can be undone.",
+  "continuity_handoff": {
+   "incoming": "Kamadeva sinks to his knees from the trembling pose of SHOT-009, with Brahma still at center behind him.",
+   "outgoing": "Episode end: Kamadeva frozen in plea, a last petal resting on his bow, Brahma's silhouette unmoving.",
+   "loop_seam": null
+  },
+  "reference_anchors": {
+   "fixed_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "character_positions": [
+    {
+     "id": "CHAR-KAMADEVA",
+     "screen": "center-right",
+     "depth": "near"
+    },
+    {
+     "id": "CHAR-BRAHMA",
+     "screen": "center",
+     "depth": "far"
+    }
+   ],
+   "exited_character_status": [
+    {
+     "id": "CHAR-SHIVA",
+     "left_after_shot": "SHOT-008",
+     "off_stage_shots": 2,
+     "released": true
+    },
+    {
+     "id": "CHAR-MANASA-PUTRAS",
+     "left_after_shot": "SHOT-008",
+     "off_stage_shots": 2,
+     "released": true
+    }
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "OUTRO: key dimmed by cloud to 0.15-0.40, saturation low; a thin Kavach Glow rim keeps Kamadeva lightest against the shadowed court"
+   }
+  },
+  "hook_type": "suspense",
+  "is_opening_0_2s_hook": false,
+  "is_closing_hook": true,
+  "deliberate_flip_marker": null,
+  "per_second_directives": [
+   {
+    "t0": 0.0,
+    "t1": 1.0,
+    "action_pose_expression": "Kamadeva drops to his knees, palms open in plea, eyes glistening",
+    "camera": "close-up on Kamadeva, slow push in begins",
+    "spatial_position": "Kamadeva center-right, near; Brahma center, far, soft focus",
+    "audio_cue": "knees strike the petal step",
+    "handoff_to_next_second": "his brows tilt upward"
+   },
+   {
+    "t0": 1.0,
+    "t1": 2.0,
+    "action_pose_expression": "His brows tilt up in pleading; loose petals fall around him",
+    "camera": "close-up, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "petals whisper as they fall",
+    "handoff_to_next_second": "his palms come together"
+   },
+   {
+    "t0": 2.0,
+    "t1": 3.0,
+    "action_pose_expression": "He presses his palms together and looks up toward Brahma",
+    "camera": "close-up, slow push in continues",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "a soft clasp of hands",
+    "handoff_to_next_second": "focus drifts to Brahma behind"
+   },
+   {
+    "t0": 3.0,
+    "t1": 4.0,
+    "action_pose_expression": "Far behind at center, Brahma's silhouette stays still, his face unreadable",
+    "camera": "close-up, push in continues, focus pulls to the far figure",
+    "spatial_position": "Brahma center, far depth",
+    "audio_cue": "wind thins to almost nothing",
+    "handoff_to_next_second": "focus returns to Kamadeva"
+   },
+   {
+    "t0": 4.0,
+    "t1": 5.0,
+    "action_pose_expression": "Hold: Kamadeva's eyes stay locked on Brahma, waiting, barely breathing",
+    "camera": "close-up, push in slows",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "a faint heartbeat-like drum of silence",
+    "handoff_to_next_second": "a last petal drifts down"
+   },
+   {
+    "t0": 5.0,
+    "t1": 6.0,
+    "action_pose_expression": "Hold: a last petal lands on the bow at his knee; his breath catches",
+    "camera": "push in ends on his eyes",
+    "spatial_position": "Kamadeva center-right, near",
+    "audio_cue": "the petal touches the bow with a tiny tick",
+    "handoff_to_next_second": "episode ends on the held plea"
+   }
+  ],
+  "audio_and_dialogue_track": {
+   "narration": {
+    "text": "Would Brahma ever take it back?",
+    "language": "en",
+    "time_range": [
+     3.8,
+     5.8
+    ]
+   },
+   "narration_by_lang": {
+    "en": {
+     "text": "Would Brahma ever take it back?",
+     "language": "en",
+     "time_range": [
+      3.8,
+      5.8
+     ]
+    },
+    "hi": {
+     "text": "क्या ब्रह्मा जी श्राप वापस लेंगे?",
+     "language": "hi",
+     "time_range": [
+      3.8,
+      5.8
+     ]
+    },
+    "mr": {
+     "text": "ब्रह्मदेव शाप परत घेतील का?",
+     "language": "mr",
+     "time_range": [
+      3.8,
+      5.8
+     ]
+    }
+   },
+   "dialogue": [
+    {
+     "speaker": "CHAR-KAMADEVA",
+     "tone": "frightened, pleading",
+     "text": "You said aim at everyone. Why blame me?",
+     "language": "en",
+     "time_range": [
+      0.6,
+      3.4
+     ]
+    }
+   ],
+   "dialogue_by_lang": {
+    "en": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "frightened, pleading",
+      "text": "You said aim at everyone. Why blame me?",
+      "language": "en",
+      "time_range": [
+       0.6,
+       3.4
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "frightened, pleading",
+      "text": "आपने ही कहा था, सब पर चलाओ। मेरी गलती क्या?",
+      "language": "hi",
+      "time_range": [
+       0.6,
+       3.4
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "speaker": "CHAR-KAMADEVA",
+      "tone": "frightened, pleading",
+      "text": "तुम्हीच सांगितलं होतं, सगळ्यांवर सोड. माझी काय चूक?",
+      "language": "mr",
+      "time_range": [
+       0.6,
+       3.4
+      ]
+     }
+    ]
+   },
+   "captions_by_lang": {
+    "en": [
+     {
+      "text": "Can a curse be undone?",
+      "time_range": [
+       3.8,
+       6.0
+      ]
+     }
+    ],
+    "hi": [
+     {
+      "text": "क्या श्राप टल सकता है?",
+      "time_range": [
+       3.8,
+       6.0
+      ]
+     }
+    ],
+    "mr": [
+     {
+      "text": "शाप टळू शकतो का?",
+      "time_range": [
+       3.8,
+       6.0
+      ]
+     }
+    ]
+   },
+   "sfx_cues": [
+    {
+     "time_range": "0.0-0.4s",
+     "sfx_key": "knees_on_petal_step",
+     "description": "a soft thud as Kamadeva drops to his knees"
+    },
+    {
+     "time_range": "5.4-5.7s",
+     "sfx_key": "petal_on_bow_tick",
+     "description": "a tiny tick as the last petal lands on the bow"
+    }
+   ],
+   "non_diegetic_music": "N/A",
+   "performance_notes": {
+    "text": "Kamadeva as an ElevenLabs voice over closed-mouth pleading acting; the narrator asks the closing question softly. Non-diegetic music: N/A.",
+    "narrator_mouth_closed": true,
+    "mouth_state": {
+     "0": "closed",
+     "1": "closed",
+     "2": "closed",
+     "3": "closed",
+     "4": "closed",
+     "5": "open_non_verbal_breath"
+    }
+   }
+  },
+  "look": {
+   "palette_id": "karna_surya",
+   "act": "OUTRO",
+   "phase": "PH-OUTRO",
+   "focal": "CHAR-KAMADEVA",
+   "focal_value": "lightest",
+   "impact_frames": [],
+   "vfx": [
+    {
+     "color": "Kavach Glow",
+     "role": "thin rim on Kamadeva and dim ornament glints"
+    },
+    {
+     "color": "Bronze Oxide",
+     "role": "shadowed petal steps"
+    }
+   ],
+   "accent_use": false,
+   "hold_purpose": "Kamadeva's fear is held so the curse sinks in before the cut to the next episode"
+  },
+  "captions": [
+   "Can a curse be undone?"
+  ]
+ }
+]

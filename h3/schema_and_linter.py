@@ -107,7 +107,8 @@ TAG_RES = (CHIP_RE, BRACKET_TAG_RE, PANEL_RE, ARROW_RE, TIMING_LABEL_RE)
 QUOTE_RE = re.compile(r'"[^"\n]*"|“[^”\n]*”')                   # TX-01 on-screen text
 SFX_CUE_RE = re.compile(r"\b(?:sound|hiss|rustle|splash|wind|water|step|breath|hum|whoosh|roar|crack|thud|drip|flow|"
                         r"ring|voice|pop|click|tick|knock|snap|slam|scrape|tap|clink|creak|crunch|rain|spray|swish|"
-                        r"thump|buzz|chime|bell)\w*", re.I)                    # SX-01 synchronized physical sound
+                        r"thump|buzz|chime|bell|bird|song|stream|breeze|murmur|whisper|crackle|rumble|echo|tone|chant|drone|gust|sigh|"
+                        r"flutter|patter|ripple|trickle|clang|rush|swell|twang|clasp|conch|thunk)\w*", re.I)                    # SX-01 synchronized physical sound
 SX_MIN_STAGE_CUES = 7        # SX-01 (owner 2026-11-07: more sound effects hit harder): every one of the 7 action sentences carries a sound cue
 SX_MAX_SENTENCES = 4         # SX-01: overall_soundscape is 1-4 English sentences
 REF2VA_RE = re.compile(

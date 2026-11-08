@@ -283,3 +283,9 @@ def test_structure_matches_contract(tmp_path):
             for i in s["impacts"]:
                 assert set(i) == IMPACT_KEYS
     assert eps[0]["shots"][1]["impacts"] and eps_v[0]["shots"][0]["impacts"]
+
+
+def test_v4_row_clock_is_the_editorial_length_not_the_pixel_frames():
+    from core import timeline
+    row = {"lattice_n": 9, "pixel_frames": 158, "editorial_duration_sec": 6.0, "seconds": 6.0}
+    assert timeline.shot_editorial_frames(row) == 144

@@ -25,6 +25,14 @@ BANNED = re.compile(r"ramayana:\s*the legend of prince rama|solo leveling|ufotab
 COUNTS = re.compile(r"\b(101|202)\b")
 
 
+def _kept_frames(s):
+    """Frames the viewer sees. V4 rows: the editorial length (audit gap 4, 2026-11-08: pixel frames include unseen handles)."""
+    ed = s.get("editorial_duration_sec")
+    if "lattice_n" in s and isinstance(ed, (int, float)) and not isinstance(ed, bool) and ed > 0:
+        return round(ed * FPS)
+    return s["edit_frames"] if "edit_frames" in s else frames_for_shot(s)
+
+
 def _p0(message, shot=None):
     return {"rule": "P0", "level": "FAIL", "shot": shot, "episode": None, "message": message}
 
@@ -75,7 +83,7 @@ def _shot_stats(shots, per_ep, modes, issues, errors):
         sid = s.get("id")
         try:
             modes[s.get("mode")] += 1
-            per_ep[s.get("episode")] += (s["edit_frames"] if "edit_frames" in s else frames_for_shot(s)) / FPS   # kept part counts
+            per_ep[s.get("episode")] += _kept_frames(s) / FPS   # kept part counts
             text = " ".join(str(s.get(k, "")) for k in ("style", "world", "action", "camera", "sound"))
             text += " ".join(str(b.get("acting", "")) for b in s.get("beats", []))   # rich shots carry their prompt in beats
             m = BANNED.search(text)
@@ -116,12 +124,14 @@ def check(pack_dir, story_path=None):
 
     story, story_exists = _load_story(_find_story(d, story_path))
     pack, pack_errors = None, []
-    if story is not None and "style_pack" in story:
+    core = load_core()
+    # audit gap 6 (2026-11-08): a story that names no style_pack uses the studio default, as the writer does
+    style_id = story.get("style_pack") or core.get("default_style_pack") if story is not None else None
+    if style_id:
         try:
-            pack = load_pack(story["style_pack"])
+            pack = load_pack(style_id)
         except ValueError as exc:
             pack_errors.append(_p1(f"style pack could not be loaded: {exc}"))
-    core = load_core()
     episodes, problems = build_episodes(shots)
     rules = (errors + problems + pack_errors
              + check_pack_rules(episodes, pack, core, story=story, story_path_exists=story_exists)

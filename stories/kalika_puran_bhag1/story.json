@@ -1,0 +1,32 @@
+{
+ "slug": "kalika_puran_bhag1",
+ "title": "Kalika Puran, Parts 1 and 2 (Sati, Shiva, Shakti Peethas)",
+ "language": null,
+ "source": {
+  "type": "youtube",
+  "urls": [
+   "https://youtu.be/qu6gqOoehQQ",
+   "https://youtu.be/0gev0728XCM"
+  ],
+  "note": "two videos, one story; YouTube captions language auto",
+  "chars": 93913
+ },
+ "created_at": "2026-11-07T21:41:52+05:30",
+ "owner_request_text": "",
+ "tags": [],
+ "schema_version": 1,
+ "source_sha256": "1fb92339896d13ca93d101e869c91043ec6c0a8524762f830809e5b438476ef0",
+ "output_language": "en",
+ "rating": null,
+ "output_languages": [
+  "en",
+  "hi",
+  "mr"
+ ],
+ "voice_engine": {
+  "en": "elevenlabs",
+  "hi": "elevenlabs",
+  "mr": "elevenlabs"
+ },
+ "style_pack": "deva_neon"
+}

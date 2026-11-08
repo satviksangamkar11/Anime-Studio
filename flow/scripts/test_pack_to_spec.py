@@ -297,3 +297,46 @@ def test_v4_bible_fields_reach_the_texts():
     assert "Daksha's daughter" in sentence and "attached CHAR-SATI" in sentence
     place = p._place_text("Void", {"description": "A vast indigo void with a crescent moon.", "lighting_baseline": {"key": "soft gold at the horizon"}})
     assert "indigo void" in place and "soft gold at the horizon" in place
+
+
+# --- V4 writer rows (audit gap 1, 2026-11-08): no set/cast/keyframes in the row, derived from reference_anchors ---
+def _v4_fixture():
+    bible = {"characters": {"CHAR-A": {"name": "Aa"}},
+             "environments": {"ENV-X": {"name": "Hall", "continuity_landmarks": ["lotus throne"],
+                                        "description": "A hall."}},
+             "props": {"PROP-BOW": {"name": "Bow"}}}
+
+    def row(i, ed, pf=144):
+        return {"id": f"SHOT-00{i}", "episode": 1, "aspect": "9:16", "route": "Ref2VA", "pixel_frames": pf,
+                "editorial_duration_sec": ed,
+                "reference_anchors": {"fixed_landmarks": ["lotus throne"],
+                                      "character_positions": [{"id": "CHAR-A", "screen": "left", "depth": "near"}],
+                                      "lighting_baseline": {"key": "warm key", "fill": "blue fill", "rim": "none"}},
+                "per_second_directives": [{"action_pose_expression": "A holds PROP-BOW", "camera": "wide, slow"},
+                                          {"action_pose_expression": "A lowers it", "camera": "close, slow"}]}
+    return [row(1, 5.0), row(2, 5.0)], bible
+
+
+def test_v4_rows_convert_to_keyframes():
+    shots, bible = _v4_fixture()
+    spec, _ = p2s.convert(shots, bible, 1, "demo")
+    ids = [s["shot_id"] for s in spec["shots"]]
+    assert ids == ["SHOT-001A", "SHOT-001B", "SHOT-002A", "SHOT-002B"]      # dynamic cut: each shot has its own start frame
+    assert spec["shots"][0]["place"] == "ENV-X" and spec["shots"][0]["props"] == ["PROP-BOW"]
+    assert spec["shots"][1]["keyframe_file"] == "SHOT-001-B.png"
+
+
+def test_v4_chained_cut_has_no_start_frame_on_second_shot():
+    shots, bible = _v4_fixture()
+    for r in shots:
+        r["editorial_duration_sec"] = 6.0
+        r["pixel_frames"] = 144                                       # fills its lattice: CHAINED
+    spec, _ = p2s.convert(shots, bible, 1, "demo")
+    assert [s["shot_id"] for s in spec["shots"]] == ["SHOT-001A", "SHOT-001B", "SHOT-002B"]
+
+
+def test_v4_row_without_matching_set_is_refused():
+    shots, bible = _v4_fixture()
+    bible["environments"]["ENV-X"]["continuity_landmarks"] = ["something else"]
+    with pytest.raises(p2s.PackError, match="no set id"):
+        p2s.convert(shots, bible, 1, "demo")

@@ -1,0 +1,1768 @@
+{
+ "style_lock": {
+  "medium": "2D hand-drawn cel-shaded anime with modern 2.5D compositing: crisp cel characters over painted multi-plane environments, held background plates, motivated volumetric light only where the scene has a source",
+  "proportions": "Indian classical Puranic facial proportions: long almond eyes, lotus-petal eyelids, arched brows, straight nose, full lower lip; adult women 7 heads, adult men and gods 7.5 heads, young maiden goddess forms 6 to 6.5 heads, children 5 to 6 heads, infants 4 heads",
+  "line": "organic hand-drawn line weight, heavier on outer contours and thin on inner folds, with a frame-by-frame cel redraw feel",
+  "shading": "two-tone cel with hard shadow planes and one motivated rim light from a visible source, deep readable blacks",
+  "colour": "deva_neon palettes only: Mahakal Void #0B0E1C, Vibhuti Ash #8C93A6 and Moon Silver #D9E4F2 for Shiva and his host; Midnight Indigo #171233, Rani Pink #E93A7D, Blood Crimson #A61C3C and Tiger Amber #E8A13D for every form of the goddess; Molten Gold #FFB627, Bronze Oxide #9C6B30 and Dusk Clay #8A5A44 for Brahma's court, Daksha, Kamadeva and the yajna; Sky Teal #2BB3C0, Stone Grey #6E6A5E and Gada Gold #F2B233 for Vishnu, the sages and the mountains; Shadow Violet #3A1D5C and Feral Amber #FFA51E for Sandhya's twilight and Tarakasura; Trialokya Saffron #FF7A1B for Shiva's third eye only",
+  "frame_law": "one palette_id per shot; carried characters keep their locked swatches; at most one neon colour per shot taken from the shot's palette; colour area split 70/20/10 dominant/secondary/accent; the focal character reads lightest against the background by at least 55 dL*, or reads darkest against a lit ground when it is a dark goddess form; pure white covers at most 8 percent of the frame",
+  "act_looks": {
+   "HOOK": "mean brightness 0.30-0.55, saturation 0.35-0.60: one strong motivated key, one neon accent",
+   "BUILD": "mean brightness 0.20-0.45, saturation 0.20-0.40: low-key, haze-led, earth and ash fields",
+   "DROP": "mean brightness 0.25-0.55, saturation 0.40-0.70: the act's single neon accent at full strength, impact frames in post",
+   "OUTRO": "mean brightness 0.15-0.40, saturation 0.15-0.35: lamp light, moonlight, quiet reverent stillness"
+  },
+  "iconography": "attributes come only from the character cards; divine light always comes from a visible source such as a lamp, fire, moon, the third eye or the goddess's own glow core; mudras only in worship or a named gesture; the full crown of Vishnu and the four faces of Brahma stay on model",
+  "restraint": "devotional staging: modest fully draped classical dress, dignified poses, grief and wrath shown through eyes, breath, light and cloth; the goddess is framed with reverence at all times",
+  "prefix": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours."
+ },
+ "characters": {
+  "CHAR-KALI": {
+   "name": "Adya Dakshina Kali (opening iconography)",
+   "role": "voice-over iconography for the opening of Episode 1",
+   "source_class": "CANON (described in this telling); lotus seat is VISUAL_STAGING",
+   "description": "The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads. Her Raktabija-mardini form adds four arms holding khadga, trishula and khappar bowl, with the fourth hand in the boon gesture. The text's severed-head garland and seat of hands are replaced by the syllable garland and a lotus seat. A small red tongue tip shows at the lips in the classical manner, and her gaze is calm and compassionate.",
+   "proportions": "7 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Midnight Indigo #171233 (skin mass, deepened)",
+    "Blade Steel #A9B4C4 (khadga and trishula, cool rim)",
+    "Tiger Amber #E8A13D (crescent, warm rim)",
+    "Bone White #F2EDE4 (eyes, syllable beads)",
+    "Blood Crimson #A61C3C (lower garment, tongue tip)",
+    "Rani Pink #E93A7D (neon accent: third-eye glint only)"
+   ],
+   "signature_gestures": [
+    "boon palm lowered toward the viewer",
+    "khadga held upright and still",
+    "three eyes opening one after another"
+   ],
+   "costume_physics": "open hair lifts like smoke in wind and lags a beat; crimson lower garment flares on a turn and settles one beat late; bead garland swings out and settles last",
+   "poses": [
+    "POSE-KALI-SEATED-LOTUS",
+    "POSE-KALI-STANDING-VARADA",
+    "POSE-KALI-KHADGA-UPRIGHT",
+    "POSE-KALI-EYES-OPEN"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Adya Kali face close-up with three eyes and forehead crescent, full body front seated on a lotus seat, full body rear; four arms holding khadga, trishula, a plain dark khappar bowl and the boon gesture; garland of fifty carved syllable beads; open flowing hair; expression row: serene, compassionate, fierce resolve; locked colours Midnight Indigo #171233 skin, Blade Steel #A9B4C4 metal, Tiger Amber #E8A13D rim, Bone White #F2EDE4 eyes and beads, Blood Crimson #A61C3C garment, one Rani Pink #E93A7D glint; costume callouts for hair, garland and garment; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-MARKANDEYA": {
+   "name": "Markandeya Rishi",
+   "role": "narrating sage of the frame story",
+   "source_class": "CANON (frame narrator); look UNVERIFIED",
+   "description": "A lean, elderly Himalayan sage with a tall white jata knot and a long white beard. He wears a stone-grey shawl and a maroon dhoti, holds a tulsi-bead mala, and has a calm teaching gaze.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Cloud White #F5F1E8 (hair, beard)",
+    "Stone Grey #6E6A5E (shawl)",
+    "Maroon Deep #7A2A1C (dhoti)",
+    "Gada Gold #F2B233 (mala beads)",
+    "Storm Slate #3E4A5A (shadow)"
+   ],
+   "signature_gestures": [
+    "raised teaching palm",
+    "mala beads turned between fingers",
+    "eyes closing to recall"
+   ],
+   "costume_physics": "shawl lifts at the edge in wind and settles late; dhoti hem flaps when walking; beard sways one beat after a head turn",
+   "poses": [
+    "POSE-MARK-SEATED-TEACHING",
+    "POSE-MARK-RAISED-PALM",
+    "POSE-MARK-EYES-CLOSED-RECALL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: elderly sage Markandeya face close-up, full body front, full body rear; tall white jata knot, long white beard, stone-grey shawl, maroon dhoti, tulsi mala; expression row: calm teaching, gentle smile, eyes closed in recall; locked colours Cloud White #F5F1E8, Stone Grey #6E6A5E, Maroon Deep #7A2A1C, Gada Gold #F2B233; costume callouts for shawl and dhoti.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-HIMALAYAN-MUNIS": {
+   "name": "The Himalayan munis",
+   "role": "listeners who ask the questions (group)",
+   "source_class": "CANON; look UNVERIFIED",
+   "description": "A group of ascetics with 5 to 7 visible in front and the rest suggested by depth and shadow. They have matted hair, bark-ochre garments and kamandalus.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Stone Grey #6E6A5E (garments)",
+    "Maroon Deep #7A2A1C (shadow folds)",
+    "Cloud White #F5F1E8 (beards)",
+    "Storm Slate #3E4A5A (depth)"
+   ],
+   "signature_gestures": [
+    "folded hands at the chest",
+    "leaning in to listen",
+    "nodding together"
+   ],
+   "costume_physics": "bark garments stiff, swing little; shawls lift slightly in wind",
+   "poses": [
+    "POSE-MUNIS-SEATED-ASKING",
+    "POSE-MUNIS-FOLDED-HANDS",
+    "POSE-MUNIS-LEANING-IN"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: a row of 5 to 7 Himalayan ascetics, one lead face close-up, full group front, full group rear; matted hair, bark garments, kamandalus; expression row: curious, reverent, moved; locked colours Stone Grey #6E6A5E, Maroon Deep #7A2A1C, Cloud White #F5F1E8.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-BRAHMA": {
+   "name": "Brahma",
+   "role": "creator; sets the story in motion, curses and restores Kamadeva",
+   "source_class": "CANON (four-faced, lotus-filament colour in Part 2); hand attributes UNVERIFIED",
+   "description": "The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard. He wears a gold crown band, a white dhoti with a gold border and a sacred thread. His four arms hold a kamandalu, a mala, a palm-leaf book and a lotus; these attributes are UNVERIFIED. He rides a hamsa or the swan chariot.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Molten Gold #FFB627 (skin key)",
+    "Bronze Oxide #9C6B30 (skin shadow)",
+    "Surya White #FFF6DF (dhoti, beards)",
+    "Kavach Glow #FFD966 (ornaments)",
+    "Charcoal Iron #1C1C24 (line accents)"
+   ],
+   "signature_gestures": [
+    "creating palm turned upward",
+    "four heads bowing together in shame",
+    "a long sigh with shoulders falling"
+   ],
+   "costume_physics": "dhoti pleats swing on a turn and settle one beat late; uttariya lifts and lags in wind; beards sway after head turns",
+   "poses": [
+    "POSE-BRAHMA-LOTUS-THRONE",
+    "POSE-BRAHMA-CREATING-PALM",
+    "POSE-BRAHMA-SHAMED-BOWED",
+    "POSE-BRAHMA-CURSING-POINT",
+    "POSE-BRAHMA-PRAISE-FOLDED",
+    "POSE-BRAHMA-ON-HAMSA-RATHA",
+    "POSE-BRAHMA-SIGH"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Brahma with four faces, three visible from the front, face close-up, full body front, full body rear; lotus-filament gold skin, white beards, gold crown band, white dhoti with gold border, four arms with kamandalu, mala, palm-leaf book and lotus; expression row: serene creator, ashamed, angry curse, softened mercy; locked colours Molten Gold #FFB627, Bronze Oxide #9C6B30, Surya White #FFF6DF, Kavach Glow #FFD966; costume callouts for dhoti and uttariya.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SAVITRI": {
+   "name": "Savitri",
+   "role": "Brahma's consort, present at the visit to Shiva and to Daksha",
+   "source_class": "CANON (presence); look UNVERIFIED",
+   "description": "A serene consort in a white sari with a gold border and gold ornaments. She always stands at Brahma's side.",
+   "proportions": "7 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Surya White #FFF6DF (sari)",
+    "Molten Gold #FFB627 (border)",
+    "Kavach Glow #FFD966 (ornaments)",
+    "Bronze Oxide #9C6B30 (skin shadow)"
+   ],
+   "signature_gestures": [
+    "namaskar at the chest",
+    "hand resting on the pallu",
+    "soft nod"
+   ],
+   "costume_physics": "pallu lifts and lags in wind; sari pleats swing on a turn and settle late",
+   "poses": [
+    "POSE-SAVITRI-STANDING-BESIDE",
+    "POSE-SAVITRI-NAMASKAR",
+    "POSE-SAVITRI-SEATED-RATHA"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Savitri face close-up, full body front, full body rear; modest white sari with gold border, gold ornaments; expression row: serene, gentle smile, concern; locked colours Surya White #FFF6DF, Molten Gold #FFB627, Kavach Glow #FFD966; costume callouts for pallu and pleats.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-DAKSHA": {
+   "name": "Daksha Prajapati",
+   "role": "Sati's father; the antagonistic pressure, devoted and later proud",
+   "source_class": "CANON (role); look UNVERIFIED",
+   "description": "An upright, broad-shouldered Prajapati with a trimmed, grey-streaked beard and a tall gold crown band. He wears a bronze silk dhoti, a white uttariya, a sacred thread and a kusha-grass ring. His tapasya variant is bare-chested, with a clay-brown loincloth, matted hair and a thin frame. He is never shown beheaded or with a goat head.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Bronze Oxide #9C6B30 (dhoti, skin shadow)",
+    "Molten Gold #FFB627 (crown band, borders)",
+    "Surya White #FFF6DF (uttariya, beard highlights)",
+    "Dusk Clay #8A5A44 (tapasya loincloth)",
+    "Charcoal Iron #1C1C24 (hair mass)"
+   ],
+   "signature_gestures": [
+    "chin lifted with eyes half-lidded",
+    "thumb running along the sacred thread",
+    "palm brushing the air away"
+   ],
+   "costume_physics": "silk dhoti flares on a sharp turn and settles one beat late; uttariya slips and is pulled back up; tapasya loincloth barely moves",
+   "poses": [
+    "POSE-DAKSHA-TAPAS-SEATED",
+    "POSE-DAKSHA-PROSTRATE",
+    "POSE-DAKSHA-WELCOME-ARGHYA",
+    "POSE-DAKSHA-KANYADAAN",
+    "POSE-DAKSHA-HAND-RAISED-STOP",
+    "POSE-DAKSHA-PROUD-YAJNA",
+    "POSE-DAKSHA-HUMBLED-KNEEL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Daksha face close-up, full body front, full body rear, plus a tapasya variant panel; grey-streaked trimmed beard, tall gold crown band, bronze silk dhoti, white uttariya, sacred thread, kusha ring; expression row: devoted, joyful father, proud disdain, alarm, humbled; locked colours Bronze Oxide #9C6B30, Molten Gold #FFB627, Surya White #FFF6DF, Dusk Clay #8A5A44; costume callouts for dhoti and uttariya.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-MANASA-PUTRAS": {
+   "name": "Marichi and the mind-born sons",
+   "role": "Brahma's mind-born sages (group); Marichi leads",
+   "source_class": "CANON; look UNVERIFIED",
+   "description": "Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Surya White #FFF6DF (garments)",
+    "Bronze Oxide #9C6B30 (shadow, skin)",
+    "Dusk Clay #8A5A44 (ochre bands)",
+    "Charcoal Iron #1C1C24 (hair)"
+   ],
+   "signature_gestures": [
+    "heads lowered in shame",
+    "hands raised in alarm",
+    "folded hands in chorus"
+   ],
+   "costume_physics": "uttariyas lift together in wind; hems flap when they step back",
+   "poses": [
+    "POSE-PUTRAS-STANDING-ROW",
+    "POSE-PUTRAS-ASHAMED",
+    "POSE-PUTRAS-ALARM"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: Marichi face close-up, the group of 5 to 7 mind-born sages front and rear; white and ochre garments, sacred threads, kamandalus; expression row: wonder, shame, alarm; locked colours Surya White #FFF6DF, Bronze Oxide #9C6B30, Dusk Clay #8A5A44.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-NARADA": {
+   "name": "Devarshi Narada",
+   "role": "messenger sage; blesses Sati with Brahma",
+   "source_class": "CANON (role); vina UNVERIFIED (traditional)",
+   "description": "A youthful devarshi with a top-knot. He wears a white dhoti and a teal uttariya, carries a vina on his shoulder, and moves with a quick, light walk.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Cloud White #F5F1E8 (dhoti)",
+    "Sky Teal #2BB3C0 (uttariya)",
+    "Gada Gold #F2B233 (vina fittings)",
+    "Maroon Deep #7A2A1C (vina body)"
+   ],
+   "signature_gestures": [
+    "fingers resting on vina strings",
+    "blessing palm",
+    "quick smile with a tilted head"
+   ],
+   "costume_physics": "teal uttariya streams behind when walking and settles late; dhoti hem flaps",
+   "poses": [
+    "POSE-NARADA-VINA-WALK",
+    "POSE-NARADA-BLESSING",
+    "POSE-NARADA-ARRIVE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Narada face close-up, full body front, full body rear; top-knot, white dhoti, teal uttariya, vina on the shoulder; expression row: cheerful, blessing, thoughtful; locked colours Cloud White #F5F1E8, Sky Teal #2BB3C0, Gada Gold #F2B233, Maroon Deep #7A2A1C.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SANDHYA": {
+   "name": "Sandhya",
+   "role": "mind-born daughter of Brahma; restrained dramatic beat only",
+   "source_class": "CANON (born of Brahma's mind, four arms as told here); dress is VISUAL_STAGING under owner restraint",
+   "description": "A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders. She is always framed full or mid-shot and never in bodily close-ups.",
+   "proportions": "7 heads",
+   "palette_id": "narasimha_twilight",
+   "swatches": [
+    "Shadow Violet #3A1D5C (sari)",
+    "Dusk Cream #EFE3D3 (skin highlight)",
+    "Mane Ember #D14D1F (border)",
+    "Pill Stone #55504B (hair shadow)",
+    "Dusk Purple #6B2FA0 (neon accent: veil edge only)"
+   ],
+   "signature_gestures": [
+    "veil drawn across with one hand",
+    "gaze lowered and turned aside",
+    "two hands folded and two lowered"
+   ],
+   "costume_physics": "veil lifts slightly in wind and settles late; sari pleats swing on a turn",
+   "poses": [
+    "POSE-SANDHYA-STANDING-BOWED",
+    "POSE-SANDHYA-TURNING-AWAY",
+    "POSE-SANDHYA-VEILED"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Sandhya face close-up, full body front, full body rear; four arms, peacock-dark hair, wide blue-lotus eyes, modest fully draped twilight-violet sari with the uttariya over both shoulders, dignified standing pose; expression row: startled, ashamed, composed; locked colours Shadow Violet #3A1D5C, Dusk Cream #EFE3D3, Mane Ember #D14D1F, a Dusk Purple #6B2FA0 veil edge; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-KAMADEVA": {
+   "name": "Kamadeva (Manmatha, Madana, Kandarpa)",
+   "role": "mind-born god of desire; tries again and again to move Shiva",
+   "source_class": "CANON (golden body with red hands, face and feet, flower bow, makara mount); garments and ornaments from traditional sources; the parrot mount is not used",
+   "description": "A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck. He wears a dark charcoal dhoti, gold ornaments, a flower garland and pomegranate-flower earrings. He carries Unmada, the flower bow, in his left hand, with five flower-tipped arrows. His mount is a makara. He carries himself with a playful confidence that turns quickly to fear.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Molten Gold #FFB627 (skin)",
+    "Ember Red #C4442A (hands, face, feet tint)",
+    "Charcoal Iron #1C1C24 (dhoti)",
+    "Kavach Glow #FFD966 (ornaments)",
+    "Bronze Oxide #9C6B30 (shadow)",
+    "Arrow Energy #FFE08A (neon accent: arrow flight only)"
+   ],
+   "signature_gestures": [
+    "arrow twirled between two fingers",
+    "head tilted with a half smile",
+    "bow tucked under the arm in retreat"
+   ],
+   "costume_physics": "dhoti flares on the draw and settles one beat late; garland swings out on a turn; curls lift and lag in wind",
+   "poses": [
+    "POSE-KAMA-BORN-BOW",
+    "POSE-KAMA-DRAW-BOW",
+    "POSE-KAMA-RELEASE",
+    "POSE-KAMA-COWER",
+    "POSE-KAMA-PLEAD",
+    "POSE-KAMA-HIDE-BEHIND-TREE",
+    "POSE-KAMA-ON-MAKARA"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Kamadeva face close-up, full body front, full body rear, plus a side panel with his makara mount; golden skin with red-tinged hands, face and feet, broad chest, conch-like neck, charcoal dhoti, gold ornaments, flower garland, pomegranate-flower earrings; prop callouts: the flower bow Unmada and five flower-tipped arrows; expression row: playful confidence, aim, fear, pleading; locked colours Molten Gold #FFB627, Ember Red #C4442A, Charcoal Iron #1C1C24, Kavach Glow #FFD966; costume callouts for dhoti and garland.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-RATI": {
+   "name": "Rati",
+   "role": "Kamadeva's wife and companion, born of Daksha's sweat",
+   "source_class": "CANON (origin, golden-lotus eyes, cloud-dark hair knot); dress is VISUAL_STAGING under owner restraint",
+   "description": "A graceful young woman with golden-lotus eyes and a hair knot dark as a rain cloud. She wears a fully draped bronze sari with a gold border and fine gold ornaments. Her poses are modest and dignified, and she is never framed sensually.",
+   "proportions": "7 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Bronze Oxide #9C6B30 (sari)",
+    "Molten Gold #FFB627 (border, eyes)",
+    "Charcoal Iron #1C1C24 (hair knot)",
+    "Kavach Glow #FFD966 (ornaments)",
+    "Surya White #FFF6DF (highlights)"
+   ],
+   "signature_gestures": [
+    "hand resting on Kamadeva's bow arm",
+    "graceful turn of the wrist",
+    "folded hands in plea"
+   ],
+   "costume_physics": "pallu lifts and lags in wind; sari pleats swing on a turn and settle late",
+   "poses": [
+    "POSE-RATI-BESIDE-KAMA",
+    "POSE-RATI-GRACEFUL-TURN",
+    "POSE-RATI-KNEEL-GRIEF",
+    "POSE-RATI-PLEAD-FOLDED"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Rati face close-up, full body front, full body rear; golden-lotus eyes, hair knot dark as a rain cloud, modest fully draped bronze sari with gold border, fine gold ornaments, dignified pose; expression row: gentle joy, devotion, grief, pleading; locked colours Bronze Oxide #9C6B30, Molten Gold #FFB627, Charcoal Iron #1C1C24, Kavach Glow #FFD966.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-VASANTA": {
+   "name": "Vasanta (Spring)",
+   "role": "Kamadeva's friend, born of Brahma's sigh",
+   "source_class": "CANON (born of Brahma's sigh, adorned with flowers, as told here); look UNVERIFIED",
+   "description": "A bright youth wreathed in blossoms, with a crown of flowers and a sash of fresh blooms. Petals drift from his hands as he moves.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Surya White #FFF6DF (blossoms)",
+    "Molten Gold #FFB627 (skin light)",
+    "Bronze Oxide #9C6B30 (sash, skin shadow)",
+    "Kavach Glow #FFD966 (pollen speculars)"
+   ],
+   "signature_gestures": [
+    "palms opening to release petals",
+    "light skip step",
+    "arm flung around Kamadeva's shoulder"
+   ],
+   "costume_physics": "flower sash trails and sheds petals on a turn; blossom crown bobs one beat late",
+   "poses": [
+    "POSE-VASANTA-BORN-OF-BREATH",
+    "POSE-VASANTA-SCATTER-BLOOM",
+    "POSE-VASANTA-BESIDE-KAMA"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Vasanta face close-up, full body front, full body rear; blossom crown, sash of fresh flowers, petals drifting from the palms; expression row: joyful, mischievous, worried; locked colours Surya White #FFF6DF, Molten Gold #FFB627, Bronze Oxide #9C6B30.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SHIVA": {
+   "name": "Shiva (Shambhu, Mahadeva, Hara)",
+   "role": "the ascetic lord; Sati's husband; grieving and wrathful; later Parvati's husband",
+   "source_class": "CANON (crystal-white chandrashekhar, jatajut, tiger skin, serpents, crescent, trishula, pinaka, Nandi, third eye)",
+   "description": "Crystal-ash skin with moon-silver highlights. He has a tall jatajut with a crescent moon, and serpents coil at his neck and upper arms. He wears a tiger-skin garment with stripes in ash and void tones. The third eye is a closed vertical mark on his forehead that opens only in saffron fire. He carries a trishula, the pinaka bow and a plain kapala. At rest his eyes are half-closed in yoga; in wrath they burn.",
+   "proportions": "7.5 heads",
+   "palette_id": "shiva_neelkanth",
+   "swatches": [
+    "Vibhuti Ash #8C93A6 (skin shading)",
+    "Moon Silver #D9E4F2 (skin highlight, crescent, rim)",
+    "Mahakal Void #0B0E1C (jata mass, tiger stripes)",
+    "Himalaya Mist #2A3350 (serpent bodies)",
+    "Bone White #F2EDE4 (eyes)",
+    "Trialokya Saffron #FF7A1B (third eye only, neon)",
+    "Neel Cyan #27E0FC (neon accent: yogic energy only)"
+   ],
+   "signature_gestures": [
+    "two fingers resting on the trishula shaft",
+    "eyes half-closed with chin lifted",
+    "palm lowered slowly to steady the world"
+   ],
+   "costume_physics": "jata strands lift and lag in wind; tiger-skin garment is heavy and swings late on a turn; serpents shift a beat after his movement",
+   "poses": [
+    "POSE-SHIVA-SAMADHI",
+    "POSE-SHIVA-REBUKE-POINT",
+    "POSE-SHIVA-BOON-STANDING",
+    "POSE-SHIVA-ON-NANDI",
+    "POSE-SHIVA-TRISHULA-RAISED",
+    "POSE-SHIVA-GENTLE-SMILE",
+    "POSE-SHIVA-RISING-WRATH",
+    "POSE-SHIVA-CARRY-SATI",
+    "POSE-SHIVA-THIRD-EYE-OPEN",
+    "POSE-SHIVA-GRIEF-KNEEL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Shiva face close-up with the closed vertical third eye and a crescent in the jatajut, full body front, full body rear; crystal-ash skin, serpents at the neck and upper arms, tiger-skin garment; prop callouts: trishula, pinaka bow, plain kapala; expression row: samadhi calm, rebuke, tender smile, rising wrath, grief, third eye open in saffron fire; locked colours Vibhuti Ash #8C93A6, Moon Silver #D9E4F2, Mahakal Void #0B0E1C, Himalaya Mist #2A3350, Trialokya Saffron #FF7A1B on the third eye only; costume callouts for jata and tiger skin.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SHIVA-BRAHMACHARI": {
+   "name": "Shiva as the brahmachari",
+   "role": "Shiva's disguise to test Parvati",
+   "source_class": "CANON (the test, Part 2); look UNVERIFIED",
+   "description": "A young celibate student with a short matted knot. He wears a bark garment and a sacred thread and carries a palasha staff and a kamandalu. He has Shiva's eyes, with a hidden smile. There is no third eye or crescent until the reveal.",
+   "proportions": "7.5 heads",
+   "palette_id": "shiva_neelkanth",
+   "swatches": [
+    "Vibhuti Ash #8C93A6 (skin)",
+    "Himalaya Mist #2A3350 (bark garment)",
+    "Moon Silver #D9E4F2 (highlights)",
+    "Bone White #F2EDE4 (eyes)"
+   ],
+   "signature_gestures": [
+    "staff planted while asking",
+    "eyebrow raised in a challenging question",
+    "hidden half smile"
+   ],
+   "costume_physics": "bark garment stiff; sacred thread swings on a turn",
+   "poses": [
+    "POSE-BRAHMACHARI-STAFF-STAND",
+    "POSE-BRAHMACHARI-QUESTION",
+    "POSE-BRAHMACHARI-SMILE-REVEAL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: young brahmachari face close-up, full body front, full body rear; short matted knot, bark garment, sacred thread, palasha staff, kamandalu, ash skin; expression row: probing question, mock doubt, hidden smile; locked colours Vibhuti Ash #8C93A6, Himalaya Mist #2A3350, Moon Silver #D9E4F2.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-YOGANIDRA": {
+   "name": "Yoganidra Mahamaya (lion form)",
+   "role": "the goddess who appears to Brahma on Mandara",
+   "source_class": "CANON (dark as kajal, four arms, on a lion, khadga and blue lotus, open hair)",
+   "description": "A goddess dark as kajal, beautiful, with four arms. She is seated on a lion and holds a khadga and a blue lotus, with her hair open. Her voice is deep as a thunder cloud. She is rendered against lit grounds so that she reads as the darkest form in the frame.",
+   "proportions": "7 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Midnight Indigo #171233 (skin, deepened)",
+    "Tiger Amber #E8A13D (lion, warm rim)",
+    "Blade Steel #A9B4C4 (khadga)",
+    "Bone White #F2EDE4 (eyes)",
+    "Blood Crimson #A61C3C (garment)",
+    "Rani Pink #E93A7D (neon accent: glow core only)"
+   ],
+   "signature_gestures": [
+    "blue lotus lifted to the side",
+    "speaking palm turned outward",
+    "stillness before vanishing"
+   ],
+   "costume_physics": "open hair rises slowly like smoke and settles last; garment hem lifts with the lion's movement",
+   "poses": [
+    "POSE-YOGANIDRA-ON-LION",
+    "POSE-YOGANIDRA-SPEAK-PALM",
+    "POSE-YOGANIDRA-VANISH-STILL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Yoganidra face close-up, full body front seated on her lion, full body rear, the goddess and lion side by side in one picture; dark kajal skin, four arms holding khadga and blue lotus, open hair; expression row: majestic calm, compassion, command; locked colours Midnight Indigo #171233, Tiger Amber #E8A13D, Blade Steel #A9B4C4, Blood Crimson #A61C3C, one Rani Pink #E93A7D glow core; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-CHANDIKA": {
+   "name": "Chandika (girl form before Daksha)",
+   "role": "the goddess who grants Daksha's boon and sets her condition",
+   "source_class": "CANON (girl form, dark, four arms, blue lotus, khadga, boon gesture, slightly red eyes, open hair); restraint applied to the body description",
+   "description": "The goddess in the form of a young girl. She is dark and has four arms, holding a blue lotus and a khadga, with one hand in the boon gesture. Her eyes are slightly reddened and her hair is open. She is shown only in dignified frontal and three-quarter staging.",
+   "proportions": "6 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Midnight Indigo #171233 (skin)",
+    "Blood Crimson #A61C3C (garment, eye rims)",
+    "Tiger Amber #E8A13D (rim, ornaments)",
+    "Blade Steel #A9B4C4 (khadga)",
+    "Rani Pink #E93A7D (neon accent: glow core only)"
+   ],
+   "signature_gestures": [
+    "boon palm toward Daksha",
+    "blue lotus lifted",
+    "one raised finger as she states her condition"
+   ],
+   "costume_physics": "open hair drifts and settles last; skirt hem lifts in a soft wind",
+   "poses": [
+    "POSE-CHANDIKA-STANDING-VARADA",
+    "POSE-CHANDIKA-LOTUS-RAISED",
+    "POSE-CHANDIKA-CONDITION-FINGER",
+    "POSE-CHANDIKA-FADE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Chandika in girl form, face close-up, full body front, full body rear; dark skin, four arms with blue lotus, khadga and boon gesture, slightly reddened eyes, open hair, modest crimson garment; expression row: gentle, knowing, solemn condition; locked colours Midnight Indigo #171233, Blood Crimson #A61C3C, Tiger Amber #E8A13D, Blade Steel #A9B4C4; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-VIRINI": {
+   "name": "Virini",
+   "role": "Daksha's wife; Sati's mother",
+   "source_class": "CANON (name variants in the transcript point to Virini); look UNVERIFIED",
+   "description": "A gentle, warm mother in a bronze sari with a white pallu and simple gold ornaments.",
+   "proportions": "7 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Bronze Oxide #9C6B30 (sari)",
+    "Surya White #FFF6DF (pallu)",
+    "Molten Gold #FFB627 (ornaments, skin light)",
+    "Charcoal Iron #1C1C24 (hair)"
+   ],
+   "signature_gestures": [
+    "hand on the pallu",
+    "cradling with the head bowed",
+    "namaskar to the infant goddess"
+   ],
+   "costume_physics": "pallu slips on a bend and is drawn back; pleats swing on a turn",
+   "poses": [
+    "POSE-VIRINI-CRADLE",
+    "POSE-VIRINI-NAMASKAR",
+    "POSE-VIRINI-HAND-ON-PALLU"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Virini face close-up, full body front, full body rear; bronze sari with white pallu, simple gold ornaments; expression row: tender, awed, worried; locked colours Bronze Oxide #9C6B30, Surya White #FFF6DF, Molten Gold #FFB627.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SATI-CHILD": {
+   "name": "Sati as infant and child",
+   "role": "Mahamaya born as Daksha's daughter; sings Shiva's names",
+   "source_class": "CANON (birth, growth like the waxing moon, songs of Shambhu, Hara and Rudra)",
+   "description": "The infant panel shows her at 4 heads, wrapped in crimson cloth. The child panel shows her at 5.5 heads, with a single braid, an amber skirt with a crimson border and bright eyes. She has the adult Sati's face shape.",
+   "proportions": "4 heads (infant), 5.5 heads (child)",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Tiger Amber #E8A13D (skirt, skin light)",
+    "Blood Crimson #A61C3C (border, wrap)",
+    "Bone White #F2EDE4 (eyes)",
+    "Midnight Indigo #171233 (hair)",
+    "Rani Pink #E93A7D (neon accent: bindi only)"
+   ],
+   "signature_gestures": [
+    "clapping in time while singing",
+    "bowing with palms joined",
+    "braid flicked back on a spin"
+   ],
+   "costume_physics": "skirt flares on a spin and settles late; braid swings out and lands one beat after",
+   "poses": [
+    "POSE-SATI-INFANT-CRY",
+    "POSE-SATI-CHILD-SINGING",
+    "POSE-SATI-CHILD-BOW",
+    "POSE-SATI-CHILD-PLAY"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: infant Sati panel in a crimson wrap, child Sati face close-up, full body front, full body rear; single braid, amber skirt with crimson border, small bindi; expression row: crying infant, singing child, reverent bow, playful laugh; locked colours Tiger Amber #E8A13D, Blood Crimson #A61C3C, Midnight Indigo #171233, Rani Pink #E93A7D bindi.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SAKHIS": {
+   "name": "Sati's childhood friends",
+   "role": "playmates (group)",
+   "source_class": "CANON (friends mentioned); look VISUAL_STAGING",
+   "description": "Three to four girls at 5.5 heads, in amber and steel-grey skirts, playing in a circle.",
+   "proportions": "5.5 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Tiger Amber #E8A13D (skirts)",
+    "Blade Steel #A9B4C4 (skirts)",
+    "Blood Crimson #A61C3C (borders)",
+    "Midnight Indigo #171233 (hair)"
+   ],
+   "signature_gestures": [
+    "hands joined in a circle",
+    "clapping in rhythm"
+   ],
+   "costume_physics": "skirts flare as the circle turns; braids swing late",
+   "poses": [
+    "POSE-SAKHIS-CIRCLE-PLAY",
+    "POSE-SAKHIS-CLAP-SONG"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: three to four young girls front and rear, one face close-up; amber and steel-grey skirts with crimson borders, braids; expression row: laughing, singing; locked colours Tiger Amber #E8A13D, Blade Steel #A9B4C4, Blood Crimson #A61C3C.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SATI": {
+   "name": "Sati (Dakshayani)",
+   "role": "protagonist; Mahamaya as Daksha's daughter and Shiva's wife",
+   "source_class": "CANON (vigils, vrat, marriage, vow, yogic departure); skin and costume VISUAL_STAGING",
+   "description": "She has a lotus-like face, a charming smile, fine teeth, red lips and paired arched brows, and wears a long braid. Her skin is warm amber-cream. She wears a fully draped crimson sari with a Rani Pink border, amber ornaments and, after marriage, sindoor. Her shyness reads in lowered eyes and a hand at the pallu; her anger reads in reddened eyes and knit brows. At her departure a crown-light rises, with no wound shown. At rest her body is fully draped and her eyes are closed.",
+   "proportions": "7 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Blood Crimson #A61C3C (sari)",
+    "Rani Pink #E93A7D (neon accent: sari border, crown-light)",
+    "Tiger Amber #E8A13D (ornaments, warm skin light)",
+    "Bone White #F2EDE4 (skin highlight, eyes)",
+    "Midnight Indigo #171233 (hair)",
+    "Blade Steel #A9B4C4 (cool rim)"
+   ],
+   "signature_gestures": [
+    "fingertips at the pallu edge in shyness",
+    "a bilva leaf held between two fingers",
+    "eyes lowered, then lifting to meet his"
+   ],
+   "costume_physics": "running: sari hem hitched in one hand, pallu flaps; wind: pallu lifts and lags; water: sari darkens and clings at the hem, drags on the ghat steps; turning: pleats swing out and settle one beat late",
+   "poses": [
+    "POSE-SATI-VIGIL-SEATED",
+    "POSE-SATI-BOW-FEET",
+    "POSE-SATI-SHY-LOWERED-GAZE",
+    "POSE-SATI-BRIDE-SEATED",
+    "POSE-SATI-ON-NANDI",
+    "POSE-SATI-GARLAND-RECEIVE",
+    "POSE-SATI-STORM-FEAR",
+    "POSE-SATI-ANGER-SEATED-GROUND",
+    "POSE-SATI-YOGIC-STILL",
+    "POSE-SATI-AT-REST"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Sati face close-up with a lotus-like face and paired arched brows, full body front, full body rear; long braid, warm amber-cream skin, modest fully draped crimson sari with Rani Pink border, amber ornaments, a sindoor variant panel; prop callouts: bilva leaves, clay lamp; expression row: devotion, shyness, joy, storm fear, anger with reddened eyes, yogic stillness; locked colours Blood Crimson #A61C3C, Rani Pink #E93A7D, Tiger Amber #E8A13D, Bone White #F2EDE4, Midnight Indigo #171233; costume callouts for pallu, pleats and braid; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-VISHNU": {
+   "name": "Vishnu (Hari, Narayana, Janardana)",
+   "role": "mediator; stops the trishula, teaches the unity of the three, sends the chakra",
+   "source_class": "CANON (blue limbs, conch, chakra, mace in Part 2); lotus and crown UNVERIFIED (traditional)",
+   "description": "A blue-limbed god with four arms holding a conch, the Sudarshan chakra, a mace and a lotus. He wears a gold pitambara, a kirita crown and pearl strands, and smiles calmly and slightly. In the vision scenes he appears as a light form.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Sky Teal #2BB3C0 (skin key)",
+    "Storm Slate #3E4A5A (skin shadow)",
+    "Gada Gold #F2B233 (pitambara, crown, mace)",
+    "Cloud White #F5F1E8 (pearls, conch)",
+    "Dawn Vermilion #E8451F (lotus, tilak)"
+   ],
+   "signature_gestures": [
+    "staying palm raised between two others",
+    "gentle smile with the head inclined",
+    "chakra lifted on one finger"
+   ],
+   "costume_physics": "pitambara streams in wind and settles late; pearl strands swing on a turn; crown stays fixed",
+   "poses": [
+    "POSE-VISHNU-STANDING-FOUR-ARMS",
+    "POSE-VISHNU-STAYING-PALM",
+    "POSE-VISHNU-TEACHING-SMILE",
+    "POSE-VISHNU-LIGHT-FORM",
+    "POSE-VISHNU-CHAKRA-SEND",
+    "POSE-VISHNU-BLESSING-PAIR"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Vishnu face close-up, full body front, full body rear; blue skin, four arms with conch, Sudarshan chakra, mace and lotus, gold pitambara, kirita crown, pearl strands; expression row: calm smile, firm restraint, teaching, compassion; locked colours Sky Teal #2BB3C0, Storm Slate #3E4A5A, Gada Gold #F2B233, Cloud White #F5F1E8, Dawn Vermilion #E8451F; costume callouts for pitambara and pearls.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-LAKSHMI": {
+   "name": "Lakshmi",
+   "role": "Vishnu's consort, present at the visit and the wedding",
+   "source_class": "CANON (presence); look UNVERIFIED",
+   "description": "A radiant consort in a vermilion sari with gold ornaments, holding a lotus.",
+   "proportions": "7 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Dawn Vermilion #E8451F (sari)",
+    "Maroon Deep #7A2A1C (sari shadow)",
+    "Gada Gold #F2B233 (ornaments)",
+    "Cloud White #F5F1E8 (highlights)"
+   ],
+   "signature_gestures": [
+    "lotus held at the chest",
+    "blessing palm",
+    "standing a half step behind Vishnu"
+   ],
+   "costume_physics": "pallu lifts and lags in wind; pleats swing on a turn",
+   "poses": [
+    "POSE-LAKSHMI-BESIDE-VISHNU",
+    "POSE-LAKSHMI-BLESSING",
+    "POSE-LAKSHMI-NAMASKAR"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Lakshmi face close-up, full body front, full body rear; modest vermilion sari, gold ornaments, lotus in hand; expression row: serene, blessing, joyful; locked colours Dawn Vermilion #E8451F, Maroon Deep #7A2A1C, Gada Gold #F2B233.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-NANDI": {
+   "name": "Nandi",
+   "role": "Shiva's bull mount",
+   "source_class": "CANON (Shiva rides the bull in Part 2)",
+   "description": "A powerful pale bull with a broad hump. He wears a bell on a cord and has calm dark eyes.",
+   "proportions": "bull, withers at about 0.7 of Shiva's height",
+   "palette_id": "shiva_neelkanth",
+   "swatches": [
+    "Moon Silver #D9E4F2 (coat light)",
+    "Vibhuti Ash #8C93A6 (coat shadow)",
+    "Mahakal Void #0B0E1C (eyes, hooves)",
+    "Bone White #F2EDE4 (horn highlight)"
+   ],
+   "signature_gestures": [
+    "slow head turn toward Shiva",
+    "kneeling to let a rider mount",
+    "bell sway on each step"
+   ],
+   "costume_physics": "bell cord swings on each step and settles late",
+   "poses": [
+    "POSE-NANDI-STANDING",
+    "POSE-NANDI-WALK",
+    "POSE-NANDI-KNEEL"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Nandi the bull, head close-up, full body side front, full body rear; pale coat, broad hump, bell on a cord; expression row: calm, alert, devoted; locked colours Moon Silver #D9E4F2, Vibhuti Ash #8C93A6, Mahakal Void #0B0E1C.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-GANAS": {
+   "name": "Shiva's ganas",
+   "role": "Shiva's host in the procession and at the yajna (group)",
+   "source_class": "CANON (many forms, conches, bells, drums); individual looks UNVERIFIED",
+   "description": "Attendants of many shapes, with 5 to 7 visible and the rest suggested by depth. Some have horse, elephant, lion, bear, bull or parrot faces; some are tall and some tiny, some broad and some thin. They carry conches, bells, mridangas and dimdim drums. Their energy is joyous and rowdy, never monstrous.",
+   "proportions": "varied, 3 to 9 heads",
+   "palette_id": "shiva_neelkanth",
+   "swatches": [
+    "Vibhuti Ash #8C93A6 (skin range)",
+    "Himalaya Mist #2A3350 (skin range, shadow)",
+    "Ganga Teal #3FD9C5 (sashes)",
+    "Moon Silver #D9E4F2 (highlights)",
+    "Mahakal Void #0B0E1C (hair masses)"
+   ],
+   "signature_gestures": [
+    "drums beaten overhead",
+    "conches raised to the lips",
+    "arms thrown up in cheer"
+   ],
+   "costume_physics": "sashes and loose hair whip in wind; bells swing late on each stomp",
+   "poses": [
+    "POSE-GANAS-MARCH-DRUMS",
+    "POSE-GANAS-CHEER",
+    "POSE-GANAS-SURGE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: 5 to 7 ganas of different shapes and sizes, some with horse, elephant, lion, bear, bull and parrot faces, front and rear, carrying conches, bells and drums; expression row: joyous, rowdy, fierce loyalty; locked colours Vibhuti Ash #8C93A6, Himalaya Mist #2A3350, Ganga Teal #3FD9C5, Moon Silver #D9E4F2.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-RITVIJS": {
+   "name": "The yajna priests",
+   "role": "hotas, udgatas and adhvaryus at Daksha's yajna (group)",
+   "source_class": "CANON (thousands of priests); a visible count is suggested only",
+   "description": "Rows of priests in white dhotis and bronze uttariyas, holding golden ladles, with 5 to 7 visible in front and the rest suggested by depth and smoke.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Surya White #FFF6DF (dhotis)",
+    "Bronze Oxide #9C6B30 (uttariyas)",
+    "Molten Gold #FFB627 (ladles, fire light)",
+    "Charcoal Iron #1C1C24 (hair)"
+   ],
+   "signature_gestures": [
+    "ladle tipped into the fire",
+    "hands raised in chant",
+    "scattering in fear"
+   ],
+   "costume_physics": "uttariyas flap when they flee; dhoti hems hitch on running",
+   "poses": [
+    "POSE-RITVIJS-OFFERING",
+    "POSE-RITVIJS-CHANT",
+    "POSE-RITVIJS-FLEE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: 5 to 7 yajna priests front and rear, one face close-up; white dhotis, bronze uttariyas, golden ladles; expression row: chanting, alarmed, fleeing; locked colours Surya White #FFF6DF, Bronze Oxide #9C6B30, Molten Gold #FFB627.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-VIJAYA": {
+   "name": "Vijaya",
+   "role": "Sati's sister's daughter; the witness who tells Shiva",
+   "source_class": "CANON (Part 2); look UNVERIFIED",
+   "description": "A young woman in a steel-grey sari with a crimson border. Her face shows raw grief, with her hands at her mouth.",
+   "proportions": "6.5 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Blade Steel #A9B4C4 (sari)",
+    "Blood Crimson #A61C3C (border)",
+    "Tiger Amber #E8A13D (skin light)",
+    "Midnight Indigo #171233 (hair)"
+   ],
+   "signature_gestures": [
+    "hands pressed over the mouth",
+    "rocking while kneeling",
+    "pointing toward the yajna while telling"
+   ],
+   "costume_physics": "pallu falls from the shoulder when she collapses; braid swings and settles late",
+   "poses": [
+    "POSE-VIJAYA-KNEEL-WAIL",
+    "POSE-VIJAYA-TELLING",
+    "POSE-VIJAYA-HANDS-OVER-MOUTH"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Vijaya face close-up, full body front, full body rear; modest steel-grey sari with crimson border, braid; expression row: shock, wailing grief, telling through tears; locked colours Blade Steel #A9B4C4, Blood Crimson #A61C3C, Tiger Amber #E8A13D.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-VIRABHADRA": {
+   "name": "Virabhadra",
+   "role": "Shiva's gana commander who destroys the yajna",
+   "source_class": "CANON (sent by Shiva, Part 2); jata-born origin is a variation (Part 1 recap); arm count is a textual choice",
+   "description": "A towering wrath form with dark mist-ash skin, a flame-shaped jata and three eyes. He has a fan of 6 to 8 visible arms holding trident, sword, bow, shield and club, with further arms suggested by shadow. He wears rudraksha strands. His destruction is shown in broken poles and scattered fire, never in wounds.",
+   "proportions": "7.5 heads, heavy frame",
+   "palette_id": "shiva_neelkanth",
+   "swatches": [
+    "Himalaya Mist #2A3350 (skin mass)",
+    "Vibhuti Ash #8C93A6 (skin highlight)",
+    "Mahakal Void #0B0E1C (jata)",
+    "Moon Silver #D9E4F2 (weapon edges)",
+    "Neel Cyan #27E0FC (neon accent: energy trails only)"
+   ],
+   "signature_gestures": [
+    "landing in a low crouch",
+    "a sweeping strike that clears a row",
+    "a bow of the head to Shiva"
+   ],
+   "costume_physics": "jata whips like flame and settles last; rudraksha strands swing out on each strike",
+   "poses": [
+    "POSE-VIRA-ARRIVE-CROUCH",
+    "POSE-VIRA-SWEEP-STRIKE",
+    "POSE-VIRA-ROAR-STAND",
+    "POSE-VIRA-KNEEL-TO-SHIVA"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Virabhadra face close-up with three eyes, full body front, full body rear; dark mist-ash skin, flame-shaped jata, a fan of 6 to 8 visible arms with trident, sword, bow, shield and club, rudraksha strands; expression row: fury, roar, devotion to Shiva; locked colours Himalaya Mist #2A3350, Vibhuti Ash #8C93A6, Mahakal Void #0B0E1C, Moon Silver #D9E4F2, Neel Cyan #27E0FC trails only.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-BHAGA": {
+   "name": "Bhaga",
+   "role": "a form of the sun at the yajna, struck by Shiva",
+   "source_class": "CANON (Part 2); the strike is non-graphic VISUAL_STAGING",
+   "description": "A proud sun-deva in bronze and gold. The strike is shown as a white impact frame with his face turned away and his hands over his eyes. No injury is shown.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Molten Gold #FFB627 (ornaments)",
+    "Bronze Oxide #9C6B30 (garments, skin shadow)",
+    "Surya White #FFF6DF (highlights)",
+    "Ember Red #C4442A (edges)"
+   ],
+   "signature_gestures": [
+    "striding forward boldly",
+    "turning away with hands over the eyes"
+   ],
+   "costume_physics": "uttariya flares on the turn away and settles late",
+   "poses": [
+    "POSE-BHAGA-APPROACH",
+    "POSE-BHAGA-COVER-EYES"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Bhaga face close-up, full body front, full body rear; bronze garments, gold ornaments; expression row: proud, startled, turned away with hands over the eyes; locked colours Molten Gold #FFB627, Bronze Oxide #9C6B30, Surya White #FFF6DF.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-SURYA": {
+   "name": "Surya (Divakara)",
+   "role": "the sun god who challenges Shiva at the yajna",
+   "source_class": "CANON (Part 2); the strike is non-graphic VISUAL_STAGING",
+   "description": "A radiant sun god in gold armour with a sun-disc ornament behind his crown. The blow is shown as a white impact frame with his face turned and his hand over his mouth. No injury is shown.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Molten Gold #FFB627 (armour)",
+    "Surya White #FFF6DF (disc core)",
+    "Kavach Glow #FFD966 (speculars)",
+    "Bronze Oxide #9C6B30 (shadow)"
+   ],
+   "signature_gestures": [
+    "chest out, palm thrust forward in challenge",
+    "turning away with a hand over the mouth"
+   ],
+   "costume_physics": "armour skirts clank and swing late on the turn",
+   "poses": [
+    "POSE-SURYA-CHALLENGE",
+    "POSE-SURYA-COVER-MOUTH"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Surya face close-up, full body front, full body rear; gold armour, sun-disc ornament behind the crown; expression row: challenge, shock, turned away with a hand over the mouth; locked colours Molten Gold #FFB627, Surya White #FFF6DF, Kavach Glow #FFD966.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-YAJNA-MRIGA": {
+   "name": "Yajna in deer form",
+   "role": "the yajna itself, fleeing Shiva and entering Sati's body",
+   "source_class": "CANON (Part 2)",
+   "description": "A deer made of golden flame-light, with a soft-edged form and a trailing glow.",
+   "proportions": "deer, about half Shiva's height",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Kavach Glow #FFD966 (form)",
+    "Molten Gold #FFB627 (core)",
+    "Bronze Oxide #9C6B30 (inner shadow)",
+    "Arrow Energy #FFE08A (neon accent: trail only)"
+   ],
+   "signature_gestures": [
+    "leaping skyward",
+    "descending softly",
+    "dissolving into light"
+   ],
+   "costume_physics": "the light trail lags two beats behind each leap",
+   "poses": [
+    "POSE-MRIGA-FLEE-LEAP",
+    "POSE-MRIGA-DESCEND",
+    "POSE-MRIGA-DISSOLVE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: a deer of golden flame-light, head close-up, full body side, full body rear, leap pose; locked colours Kavach Glow #FFD966, Molten Gold #FFB627, Arrow Energy #FFE08A trail.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-DEVAS": {
+   "name": "The devas (Indra in front)",
+   "role": "gods at the yajna, in council and under Tarakasura (group)",
+   "source_class": "CANON (presence); look UNVERIFIED",
+   "description": "Crowned gods with 3 to 5 visible and the rest suggested by depth. Indra stands in front with a gold crown and a slate robe.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Storm Slate #3E4A5A (robes)",
+    "Gada Gold #F2B233 (crowns)",
+    "Sky Teal #2BB3C0 (sashes)",
+    "Cloud White #F5F1E8 (highlights)"
+   ],
+   "signature_gestures": [
+    "heads together in council",
+    "fleeing with robes hitched",
+    "joined palms raised in prayer"
+   ],
+   "costume_physics": "sashes stream when fleeing; robes swing late on turns",
+   "poses": [
+    "POSE-DEVAS-CONFER",
+    "POSE-DEVAS-FLEE",
+    "POSE-DEVAS-PRAY"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled group sheet on a plain neutral grey backdrop: Indra face close-up, 3 to 5 crowned devas front and rear; slate robes, gold crowns, teal sashes; expression row: worry, fear, hope; locked colours Storm Slate #3E4A5A, Gada Gold #F2B233, Sky Teal #2BB3C0.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-HIMAVAN": {
+   "name": "Himavan",
+   "role": "king of mountains; Parvati's father",
+   "source_class": "CANON (Part 2); look UNVERIFIED",
+   "description": "A broad, stately king with a snow-white beard and a gold crown. He wears a slate robe with a stone-grey shawl.",
+   "proportions": "7.5 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Stone Grey #6E6A5E (shawl)",
+    "Storm Slate #3E4A5A (robe)",
+    "Cloud White #F5F1E8 (beard)",
+    "Gada Gold #F2B233 (crown)"
+   ],
+   "signature_gestures": [
+    "arms opened in welcome",
+    "blessing hand on a bowed head",
+    "giving his daughter's hand"
+   ],
+   "costume_physics": "heavy shawl swings slowly, settles late",
+   "poses": [
+    "POSE-HIMAVAN-WELCOME",
+    "POSE-HIMAVAN-BLESS",
+    "POSE-HIMAVAN-KANYADAAN"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Himavan face close-up, full body front, full body rear; snow-white beard, gold crown, slate robe, stone-grey shawl; expression row: warm pride, blessing, joy; locked colours Stone Grey #6E6A5E, Storm Slate #3E4A5A, Cloud White #F5F1E8, Gada Gold #F2B233.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-MENA": {
+   "name": "Mena (Menaka)",
+   "role": "Himavan's wife; Parvati's mother",
+   "source_class": "CANON (Part 2 names Menaka); name variant UNVERIFIED; look UNVERIFIED",
+   "description": "A gentle queen in a maroon sari with gold ornaments.",
+   "proportions": "7 heads",
+   "palette_id": "hanuman_vayu",
+   "swatches": [
+    "Maroon Deep #7A2A1C (sari)",
+    "Gada Gold #F2B233 (ornaments)",
+    "Cloud White #F5F1E8 (pallu edge)",
+    "Stone Grey #6E6A5E (shadow)"
+   ],
+   "signature_gestures": [
+    "cradling her infant",
+    "hand on the pallu",
+    "watching with joy"
+   ],
+   "costume_physics": "pallu lifts and lags in wind; pleats swing on a turn",
+   "poses": [
+    "POSE-MENA-CRADLE",
+    "POSE-MENA-WATCH-JOY",
+    "POSE-MENA-HAND-ON-PALLU"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Mena face close-up, full body front, full body rear; modest maroon sari, gold ornaments; expression row: tender, joyful, worried; locked colours Maroon Deep #7A2A1C, Gada Gold #F2B233, Cloud White #F5F1E8.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-PARVATI-CHILD": {
+   "name": "Parvati as infant and child",
+   "role": "Sati reborn to Himavan and Mena",
+   "source_class": "CANON (Part 2)",
+   "description": "The infant is 4 heads and the child 5.5 heads, with the same face shape as Sati. She wears an amber skirt with a steel-grey border, setting her apart from Sati's crimson.",
+   "proportions": "4 heads (infant), 5.5 heads (child)",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Tiger Amber #E8A13D (skirt)",
+    "Blade Steel #A9B4C4 (border)",
+    "Bone White #F2EDE4 (eyes)",
+    "Midnight Indigo #171233 (hair)"
+   ],
+   "signature_gestures": [
+    "arms up to be lifted",
+    "running laughter with mountain girls"
+   ],
+   "costume_physics": "skirt flares when running; braid swings late",
+   "poses": [
+    "POSE-PARVATI-INFANT",
+    "POSE-PARVATI-CHILD-PLAY"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: infant Parvati panel, child Parvati face close-up, full body front, full body rear; amber skirt with steel-grey border, braid, same face shape as Sati; expression row: gurgling infant, laughing child, earnest; locked colours Tiger Amber #E8A13D, Blade Steel #A9B4C4, Midnight Indigo #171233.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-PARVATI": {
+   "name": "Parvati",
+   "role": "Sati reborn; serves Shiva, keeps the vigil, wins him by her own tapasya",
+   "source_class": "CANON (service, tapasya, test, wedding); costume VISUAL_STAGING",
+   "description": "She has Sati's face and eyes, now steadier. Her serving look is a fully draped amber sari with a crimson border, a mountain-flower garland and simple steel ornaments. Her tapasya look is an amber bark garment shaded crimson, a matted hair knot, no ornaments and a thinned frame. Her bridal look is a crimson sari with a Rani Pink border. She echoes Sati's riverbank vigil but answers for herself.",
+   "proportions": "7 heads",
+   "palette_id": "durga_kali_shakti",
+   "swatches": [
+    "Tiger Amber #E8A13D (sari, bark garment)",
+    "Blood Crimson #A61C3C (border, shadow, bridal sari)",
+    "Blade Steel #A9B4C4 (ornaments, cool rim)",
+    "Bone White #F2EDE4 (skin highlight, eyes)",
+    "Midnight Indigo #171233 (hair)",
+    "Rani Pink #E93A7D (neon accent: bridal border, vigil glow)"
+   ],
+   "signature_gestures": [
+    "flowers laid down without a sound",
+    "chin lifted to answer for herself",
+    "palms joined over a bilva leaf"
+   ],
+   "costume_physics": "running: sari hem hitched, pallu flaps; wind: pallu lifts and lags, bark garment barely moves; water: hem darkens and clings; turning: pleats swing out and settle one beat late, matted knot stays fixed",
+   "poses": [
+    "POSE-PARVATI-SERVE-FLOWERS",
+    "POSE-PARVATI-WATCH-SHIVA",
+    "POSE-PARVATI-SHOCK-ASH",
+    "POSE-PARVATI-TAPAS-STANDING",
+    "POSE-PARVATI-TAPAS-SEATED-VIGIL",
+    "POSE-PARVATI-ANSWER-UPLIFTED",
+    "POSE-PARVATI-BRIDE",
+    "POSE-PARVATI-HOLD-INFANT"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Parvati face close-up with Sati's face shape, full body front, full body rear, plus tapasya and bridal variant panels; modest amber sari with crimson border, mountain-flower garland, steel ornaments; tapasya bark garment with matted knot; bridal crimson sari with Rani Pink border; prop callouts: bilva leaves, clay lamp; expression row: quiet service, shock, resolve, calm answer, bridal joy; locked colours Tiger Amber #E8A13D, Blood Crimson #A61C3C, Blade Steel #A9B4C4, Midnight Indigo #171233, Rani Pink #E93A7D; costume callouts for pallu, pleats and bark garment; reverent framing.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-TARAKASURA": {
+   "name": "Tarakasura",
+   "role": "the asura whom only Shiva's son can slay",
+   "source_class": "CANON (boon and defeat, as told); look UNVERIFIED",
+   "description": "A massive asura king in violet armour. He has stone-grey skin, an ember mane of hair and amber eyes. His defeat is shown as a fall to one knee and then a collapse into dust, with no gore.",
+   "proportions": "7.5 heads, massive frame",
+   "palette_id": "narasimha_twilight",
+   "swatches": [
+    "Shadow Violet #3A1D5C (armour)",
+    "Pill Stone #55504B (skin)",
+    "Mane Ember #D14D1F (hair)",
+    "Dusk Cream #EFE3D3 (highlights)",
+    "Feral Amber #FFA51E (neon accent: eyes only)"
+   ],
+   "signature_gestures": [
+    "sneer from the throne",
+    "heavy stride with the fist closed",
+    "slow fall to one knee"
+   ],
+   "costume_physics": "armour plates clank and swing late; cape whips in battle wind",
+   "poses": [
+    "POSE-TARAKA-THRONE-SNEER",
+    "POSE-TARAKA-STRIDE",
+    "POSE-TARAKA-FALL-KNEE"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Tarakasura face close-up, full body front, full body rear; violet armour, stone-grey skin, ember mane, amber eyes, cape; expression row: arrogant sneer, rage, defeat; locked colours Shadow Violet #3A1D5C, Pill Stone #55504B, Mane Ember #D14D1F, Feral Amber #FFA51E eyes.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  },
+  "CHAR-KARTIKEYA": {
+   "name": "Kartikeya (Skanda)",
+   "role": "son of Shiva and Parvati; slays Tarakasura",
+   "source_class": "CANON (birth and victory, as told); single face and age UNVERIFIED (the six-faced form is traditional)",
+   "description": "A radiant young warrior in gold armour with bronze skin, carrying a shakti spear. His bearing is calm and certain.",
+   "proportions": "7.5 heads",
+   "palette_id": "karna_surya",
+   "swatches": [
+    "Molten Gold #FFB627 (armour)",
+    "Bronze Oxide #9C6B30 (skin)",
+    "Kavach Glow #FFD966 (spear tip, speculars)",
+    "Charcoal Iron #1C1C24 (hair)",
+    "Arrow Energy #FFE08A (neon accent: spear trail only)"
+   ],
+   "signature_gestures": [
+    "spear held upright beside him",
+    "one-step thrust",
+    "calm stand after victory"
+   ],
+   "costume_physics": "sash streams on the thrust and settles late; armour skirt swings on a turn",
+   "poses": [
+    "POSE-KARTIKEYA-BIRTH-LIGHT",
+    "POSE-KARTIKEYA-SPEAR-READY",
+    "POSE-KARTIKEYA-THRUST",
+    "POSE-KARTIKEYA-STAND-VICTOR"
+   ],
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Kartikeya face close-up, full body front, full body rear; gold armour, bronze skin, shakti spear, sash; expression row: calm, resolve, victory; locked colours Molten Gold #FFB627, Bronze Oxide #9C6B30, Kavach Glow #FFD966, Arrow Energy #FFE08A spear trail.",
+   "aspect": "16:9",
+   "backdrop": "plain neutral"
+  }
+ },
+ "environments": {
+  "ENV-COSMIC-VOID": {
+   "name": "Void before creation",
+   "description": "Abstract indigo void for the opening voice-over of Episode 1.",
+   "palette_id": "durga_kali_shakti",
+   "continuity_landmarks": [
+    "thin pale crescent of light in the upper third",
+    "single soft Rani Pink glow core low in the centre",
+    "far ring of fifty faint syllable sparks"
+   ],
+   "lighting_baseline": {
+    "key": "Rani Pink glow core from low centre",
+    "fill": "Midnight Indigo ambient haze",
+    "rim": "cool Blade Steel edge from the crescent above",
+    "shot_modifiers": "HOOK: lift the glow core to land 0.30-0.55 brightness; OUTRO: dim the core, keep the crescent"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a boundless Midnight Indigo #171233 void before creation, slow layered indigo haze in three parallax planes, a thin pale crescent of light high in the upper third, a far ring of fifty faint syllable-shaped sparks in Blade Steel #A9B4C4, one soft Rani Pink #E93A7D glow core low in the centre as the only neon accent, Tiger Amber #E8A13D warmth along the crescent."
+  },
+  "ENV-MARKANDEYA-ASHRAM": {
+   "name": "Himalayan foothill hermitage",
+   "description": "Dawn hermitage where the frame story is asked and told.",
+   "palette_id": "hanuman_vayu",
+   "continuity_landmarks": [
+    "thatched hut of deodar poles on the right",
+    "tall deodar on the left",
+    "round stone platform with a low ring of fire stones",
+    "three snow peaks above"
+   ],
+   "lighting_baseline": {
+    "key": "low dawn sun from screen left",
+    "fill": "Sky Teal sky bounce",
+    "rim": "warm Gada Gold edge from the fire stones",
+    "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and a low ring of fire stones with a thin curl of smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows."
+  },
+  "ENV-BRAHMA-SABHA": {
+   "name": "Lotus assembly in the clouds",
+   "description": "Creation court for Episodes 1 and 2.",
+   "palette_id": "karna_surya",
+   "continuity_landmarks": [
+    "raised lotus throne at the centre",
+    "four Charcoal Iron pillars at the corners",
+    "concentric petal steps"
+   ],
+   "lighting_baseline": {
+    "key": "Surya White morning light from upper right",
+    "fill": "Molten Gold cloud bounce",
+    "rim": "Kavach Glow edge on the petal steps",
+    "shot_modifiers": "HOOK: bright key for 0.30-0.55; BUILD: cloud shadow passes over for the shame beat"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a vast open assembly platform shaped like a thousand-petal lotus floating in morning cloud, concentric petal steps of Molten Gold #FFB627 shaded Bronze Oxide #9C6B30, a raised empty lotus throne at the centre, four tall Charcoal Iron #1C1C24 pillars with gold capitals at the corners, Surya White #FFF6DF haze, Kavach Glow #FFD966 speculars on the petal edges, sky deepening to Charcoal Iron at the top."
+  },
+  "ENV-SHIVA-PEAK": {
+   "name": "Night summit seat",
+   "description": "Himalayan summit used in Episodes 1, 5 and 6.",
+   "palette_id": "shiva_neelkanth",
+   "continuity_landmarks": [
+    "flat ash-grey rock seat at the centre",
+    "lone deodar leaning to the right",
+    "twin snow horns beyond",
+    "crescent moon high left"
+   ],
+   "lighting_baseline": {
+    "key": "Moon Silver moonlight from upper left",
+    "fill": "Himalaya Mist fog",
+    "rim": "Moon Silver edge from the crescent",
+    "shot_modifiers": "OUTRO: key down to 0.15-0.40; DROP: Neel Cyan energy accent allowed"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan summit at night, a flat ash-grey rock seat at the centre, a lone deodar leaning to the right, Moon Silver #D9E4F2 snowfields, twin snow horns beyond, Mahakal Void #0B0E1C sky fading to Himalaya Mist #2A3350 near the horizon, a crescent moon high left, Vibhuti Ash #8C93A6 rock planes, fine snow drift."
+  },
+  "ENV-TAPAS-GROVE": {
+   "name": "Secluded spring grove",
+   "description": "Grove below the summit where spring is spread, Episodes 2 and 12.",
+   "palette_id": "shiva_neelkanth",
+   "continuity_landmarks": [
+    "smooth meditation rock under an old deodar",
+    "still lotus pond on the left",
+    "two vine-wrapped trunks on the right"
+   ],
+   "lighting_baseline": {
+    "key": "soft daylight from upper right through leaves",
+    "fill": "Ganga Teal pond bounce",
+    "rim": "Moon Silver edge on blossoms",
+    "shot_modifiers": "DROP: Trialokya Saffron third-eye burn allowed only as the shot's neon; after the burn, ash haze lowers saturation"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a secluded Himalayan grove below the summit, a smooth meditation rock under an old deodar, a still lotus pond of Ganga Teal #3FD9C5 on the left, two trunks wrapped in flowering vines on the right, champak and ashoka branches in pale #F2EDE4 bloom, drifting petals, Himalaya Mist #2A3350 depth fog, Vibhuti Ash #8C93A6 stones, Moon Silver #D9E4F2 rim on leaves."
+  },
+  "ENV-MANDARA": {
+   "name": "Mandara plateau at dusk",
+   "description": "Sacred plateau of the hundred-year praise, Episode 3.",
+   "palette_id": "durga_kali_shakti",
+   "continuity_landmarks": [
+    "round boulder altar at the centre",
+    "ridge curving down to the right",
+    "amber sunset band on the horizon"
+   ],
+   "lighting_baseline": {
+    "key": "Tiger Amber sunset from low screen right",
+    "fill": "Midnight Indigo sky ambient",
+    "rim": "Blade Steel edge on rock",
+    "shot_modifiers": "DROP: Rani Pink glow core allowed at the appearance; key stays behind a dark goddess form so she reads darkest"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: the sacred Mandara mountain at dusk, a high plateau with a single round boulder altar at the centre, the ridge curving down to the right, a Tiger Amber #E8A13D sunset band low on the horizon, Midnight Indigo #171233 sky above, Blade Steel #A9B4C4 rock planes, scattered blue lotus blooms in a small rock pool, slow dust in the last light."
+  },
+  "ENV-DAKSHA-TAPOVAN": {
+   "name": "Fallen-leaf tapovan",
+   "description": "Austere forest clearing of the long tapasya, Episode 3.",
+   "palette_id": "karna_surya",
+   "continuity_landmarks": [
+    "ring of seven grey stones",
+    "broad sacred fig trunk on the left",
+    "floor of fallen dry leaves",
+    "small clay water pot beside the stones"
+   ],
+   "lighting_baseline": {
+    "key": "single Molten Gold sun shaft from upper left",
+    "fill": "Dusk Clay earth bounce",
+    "rim": "Kavach Glow edge from the shaft",
+    "shot_modifiers": "BUILD: shaft narrows for 0.20-0.45; DROP: Rani Pink glow core allowed at the appearance"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: an austere forest clearing, a ring of seven grey stones on a floor of fallen dry leaves, a broad sacred fig trunk on the left, Dusk Clay #8A5A44 earth, Charcoal Iron #1C1C24 trunks in the rear, one Molten Gold #FFB627 shaft of sunlight through the canopy, a small clay water pot beside the stones, still air."
+  },
+  "ENV-DAKSHA-PALACE": {
+   "name": "Sandstone palace-ashram",
+   "description": "Birth, childhood, the vrat shrine and the first wedding, Episodes 4 to 6.",
+   "palette_id": "karna_surya",
+   "continuity_landmarks": [
+    "tall toran gateway on the left",
+    "square fire altar at the centre",
+    "inner shrine on the right with a black aniconic shrine stone",
+    "carved bronze pillars"
+   ],
+   "lighting_baseline": {
+    "key": "Surya White daylight from upper left",
+    "fill": "Molten Gold flagstone bounce",
+    "rim": "warm edge from the shrine lamp",
+    "shot_modifiers": "night vrat: lamp key only, 0.15-0.40; wedding: banners and fire raise brightness to 0.25-0.55"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a palace-ashram of carved sandstone, a tall toran gateway on the left, a courtyard of Dusk Clay #8A5A44 flagstones, carved Bronze Oxide #9C6B30 pillars, a square fire altar at the centre, an inner shrine on the right with a smooth black aniconic shrine stone on a stepped pedestal and a brass lamp niche, Molten Gold #FFB627 banners, Surya White #FFF6DF daylight from the upper left."
+  },
+  "ENV-VIGIL-RIVERBANK": {
+   "name": "Night ghat of the vigils",
+   "description": "Riverbank of the night vigils with bilva leaves, Episode 4; the anchor image reused in Episode 13.",
+   "palette_id": "durga_kali_shakti",
+   "continuity_landmarks": [
+    "three worn stone ghat steps",
+    "single bilva tree on the left bank",
+    "small shrine stone with a clay lamp on the top step",
+    "far bank as a flat dark band"
+   ],
+   "lighting_baseline": {
+    "key": "clay lamp from low screen left, Tiger Amber pool",
+    "fill": "Midnight Indigo night ambient",
+    "rim": "Blade Steel moonlight edge from upper right",
+    "shot_modifiers": "OUTRO: lamp only, 0.15-0.40; the lamp stays screen left in every shot"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied, night: a wide slow river of Blade Steel #A9B4C4 under a Midnight Indigo #171233 sky, three worn stone ghat steps descending to the water, a single bilva tree on the left bank, a small smooth shrine stone on the top step with a lit clay lamp giving a Tiger Amber #E8A13D pool of light, the far bank tree line as a flat dark band, a high horizon, faint moonlit ripples."
+  },
+  "ENV-PARVATI-TAPOVAN": {
+   "name": "Snow-line tapovan",
+   "description": "High stone shelf of the final tapasya, Episode 13; it rhymes with the riverbank vigil.",
+   "palette_id": "durga_kali_shakti",
+   "continuity_landmarks": [
+    "stone shelf at the snow line",
+    "small shrine stone with a lamp in a rock niche",
+    "young bilva sapling on the left",
+    "thin stream across the lower third"
+   ],
+   "lighting_baseline": {
+    "key": "clay lamp from low screen left, Tiger Amber pool",
+    "fill": "Midnight Indigo night ambient",
+    "rim": "Blade Steel snow-light edge from upper right",
+    "shot_modifiers": "OUTRO: lamp only, 0.15-0.40; dawn variant lifts the Tiger Amber horizon for the union beat"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied, night: a high Himalayan stone shelf at the snow line, a small smooth shrine stone with one lit clay lamp in a rock niche giving a Tiger Amber #E8A13D pool of light, a single young bilva sapling on the left, a thin stream crossing the lower third, a Blade Steel #A9B4C4 snow ridge above, Midnight Indigo #171233 sky, fine falling snow."
+  },
+  "ENV-PROCESSION-ROAD": {
+   "name": "Wedding mountain road",
+   "description": "Route of the wedding procession, Episode 6.",
+   "palette_id": "shiva_neelkanth",
+   "continuity_landmarks": [
+    "S-curve road descending",
+    "line of lit braziers on both edges",
+    "twin peaks behind"
+   ],
+   "lighting_baseline": {
+    "key": "Moon Silver sky light from upper left",
+    "fill": "Himalaya Mist valley fog",
+    "rim": "warm brazier edge from both sides",
+    "shot_modifiers": "DROP: Ganga Teal petal glints as the single accent"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a wide mountain road winding down in an S-curve from snow peaks toward warm plains, a line of lit braziers along both edges, deodar forests on the slopes, flower petals drifting in the air, twin peaks behind in Moon Silver #D9E4F2, Himalaya Mist #2A3350 valley fog, a Ganga Teal #3FD9C5 river glint far below, Vibhuti Ash #8C93A6 road stones."
+  },
+  "ENV-HIMALAYA-HOME": {
+   "name": "Crystal summit above the clouds",
+   "description": "The married home, Episodes 7 to 9; the place of the yogic departure.",
+   "palette_id": "shiva_neelkanth",
+   "continuity_landmarks": [
+    "rounded cave arch on the right",
+    "crystal stone terrace",
+    "flowering vine bower on the left",
+    "sea of clouds below the terrace edge"
+   ],
+   "lighting_baseline": {
+    "key": "Moon Silver light from upper left",
+    "fill": "Ganga Teal pool bounce",
+    "rim": "Moon Silver edge on the crystal",
+    "shot_modifiers": "Episode 9: fill drops to 0.15-0.40 and the crown-light is the shot's only accent"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a hidden Himalayan summit above the clouds, terraces of clear crystal stone in Moon Silver #D9E4F2, a rounded cave arch on the right, a flowering bower of vines on the left, a still lotus pool of Ganga Teal #3FD9C5, a sea of clouds below the terrace edge, Himalaya Mist #2A3350 shadows, Mahakal Void #0B0E1C upper sky, a crescent moon."
+  },
+  "ENV-MONSOON-RIDGE": {
+   "name": "Monsoon ridge",
+   "description": "Storm ridge where the fear of the rains is spoken, Episode 8.",
+   "palette_id": "hanuman_vayu",
+   "continuity_landmarks": [
+    "cluster of wind-bent trees on the left",
+    "rock overhang shelter on the right",
+    "lightning-lit cloud wall"
+   ],
+   "lighting_baseline": {
+    "key": "lightning flashes from upper right",
+    "fill": "Storm Slate cloud ambient",
+    "rim": "Cloud White rain highlight",
+    "shot_modifiers": "BUILD: 0.20-0.45 between flashes; flash frames in post only"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a high ridge in the rainy season, walls of many-toned cloud in Storm Slate #3E4A5A and Sky Teal #2BB3C0, thin lightning ribbons like banners, a cluster of trees bent hard by wind on the left, a rock overhang shelter on the right, slanting rain, the sun hidden, Stone Grey #6E6A5E wet rock, Cloud White #F5F1E8 rain highlights."
+  },
+  "ENV-YAJNA-GROUND": {
+   "name": "Great yajna enclosure",
+   "description": "Daksha's yajna, Episodes 8 and 10; it has an intact state and a destroyed state.",
+   "palette_id": "karna_surya",
+   "continuity_landmarks": [
+    "central square fire pit",
+    "eight directional banner poles around the edge",
+    "canopy pavilion on the right",
+    "entry gate on the left"
+   ],
+   "lighting_baseline": {
+    "key": "Molten Gold fire from the central pit",
+    "fill": "Dusk Clay earth bounce",
+    "rim": "Ember Red heat edge",
+    "shot_modifiers": "destroyed state: toppled poles, scattered ash and smoke, brightness 0.25-0.55 with Arrow Energy as the only neon"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a vast yajna enclosure on open earth, a long rectangular earth altar of Dusk Clay #8A5A44 with a central square fire pit burning Molten Gold #FFB627, rows of smaller fire pits, eight tall directional banner poles with weapon stands around the edge, a canopy pavilion of Bronze Oxide #9C6B30 cloth on the right, an entry gate on the left, golden ladles and offering bowls on mats, Charcoal Iron #1C1C24 smoke columns, Ember Red #C4442A heat edges."
+  },
+  "ENV-COSMIC-SKY": {
+   "name": "Night sky above the earth",
+   "description": "The sky-wandering and the falling lights of the Shakti Peethas, Episode 11.",
+   "palette_id": "durga_kali_shakti",
+   "continuity_landmarks": [
+    "earth curve across the lower third",
+    "Himalaya range as a pale band on the left",
+    "rising lotus-shaped light points on the ground"
+   ],
+   "lighting_baseline": {
+    "key": "rising Rani Pink lotus lights from below",
+    "fill": "Midnight Indigo night ambient",
+    "rim": "Tiger Amber starlight edge on cloud",
+    "shot_modifiers": "DROP: Rani Pink lights are the only neon; OUTRO: lights settle, brightness 0.15-0.40"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a night sky high above the earth, the curve of the land across the lower third with rivers as thin Blade Steel #A9B4C4 lines, the Himalaya range as a pale band on the left, cloud belts in Midnight Indigo #171233, scattered points on the ground where soft lotus-shaped Rani Pink #E93A7D lights rise as the only neon, Tiger Amber #E8A13D starlight warmth on cloud edges."
+  },
+  "ENV-COSMIC-EGG": {
+   "name": "Primordial waters and the golden egg",
+   "description": "Vision of creation in Vishnu's teaching, Episode 7.",
+   "palette_id": "karna_surya",
+   "continuity_landmarks": [
+    "golden egg at the centre",
+    "flat water horizon",
+    "slow ring of light around the egg"
+   ],
+   "lighting_baseline": {
+    "key": "Surya White crack light from the egg",
+    "fill": "Charcoal Iron water ambient",
+    "rim": "Kavach Glow reflection",
+    "shot_modifiers": "DROP: the egg opening is the reveal beat; Arrow Energy is the only neon"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: primordial dark waters of Charcoal Iron #1C1C24 stretching to a flat horizon, a great golden egg of Molten Gold #FFB627 floating at the centre, a thin crack of Surya White #FFF6DF light along its side, Kavach Glow #FFD966 reflections in the water, a slow ring of light around it, Bronze Oxide #9C6B30 mist."
+  },
+  "ENV-HIMAVAN-PALACE": {
+   "name": "Snow-roofed mountain palace",
+   "description": "Birth and childhood of Parvati and the second wedding, Episodes 12 and 13.",
+   "palette_id": "hanuman_vayu",
+   "continuity_landmarks": [
+    "wide stone gate on the left",
+    "great cedar in the central courtyard",
+    "long hall with carved wooden pillars on the right"
+   ],
+   "lighting_baseline": {
+    "key": "clear daylight from upper left",
+    "fill": "Cloud White snow bounce",
+    "rim": "Gada Gold brass glint",
+    "shot_modifiers": "wedding: a canopy and lamps added, brightness 0.25-0.55"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a palace of Stone Grey #6E6A5E stone and deodar timber, snow on the sloped roofs, a wide stone gate on the left, a great cedar in the central courtyard, a long hall with carved wooden pillars on the right, Gada Gold #F2B233 brass fittings, Sky Teal #2BB3C0 sky, Cloud White #F5F1E8 snow, Storm Slate #3E4A5A shadows."
+  },
+  "ENV-TARAKA-FIELD": {
+   "name": "Twilight battle plain",
+   "description": "Tarakasura's terror and his defeat, Episodes 12 and 13.",
+   "palette_id": "narasimha_twilight",
+   "continuity_landmarks": [
+    "pair of broken stone pillars on the left",
+    "long ground fissure",
+    "low ridge on the far horizon"
+   ],
+   "lighting_baseline": {
+    "key": "low twilight from screen right",
+    "fill": "Shadow Violet sky ambient",
+    "rim": "Dusk Cream edge on the pillar tops",
+    "shot_modifiers": "DROP: Feral Amber is the only neon; impact frames in post"
+   },
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a wide battle plain at twilight, cracked Pill Stone #55504B ground with a long fissure, a pair of broken stone pillars on the left, a low ridge on the far horizon, Shadow Violet #3A1D5C sky, Mane Ember #D14D1F dust low in the air, Dusk Cream #EFE3D3 light on the pillar tops."
+  }
+ },
+ "props": {
+  "PROP-TRISHULA": {
+   "name": "Shiva's trishula",
+   "description": "A tall three-pronged trident with an ash-steel shaft and a small damaru-free plain collar.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single tall trishula on a plain neutral grey backdrop, Vibhuti Ash #8C93A6 shaft, Moon Silver #D9E4F2 prong edges, front and side views."
+  },
+  "PROP-PINAKA": {
+   "name": "Pinaka bow",
+   "description": "Shiva's great bow, dark horn-curved and serpent-bound.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single great bow on a plain neutral grey backdrop, Mahakal Void #0B0E1C limbs, Moon Silver #D9E4F2 string, Himalaya Mist #2A3350 bindings, front and side views."
+  },
+  "PROP-KAPALA": {
+   "name": "Kapala bowl",
+   "description": "Shiva's ascetic bowl, the reason for Daksha's insult; shown smooth and plain.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single smooth ash-grey ascetic bowl with a plain rim on a plain neutral grey backdrop, Vibhuti Ash #8C93A6 with Moon Silver #D9E4F2 highlight, top and side views."
+  },
+  "PROP-KAMA-BOW": {
+   "name": "Unmada, the flower bow",
+   "description": "Kamadeva's bow of flowers on a sugarcane core, with a string of tiny dark bees (the bee string is a traditional detail).",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single bow on a plain neutral grey backdrop: a sugarcane core wound with flowers in Surya White #FFF6DF and Molten Gold #FFB627, a fine string of tiny Charcoal Iron #1C1C24 bees, front and side views."
+  },
+  "PROP-PUSHPA-BANA": {
+   "name": "Five flower arrows",
+   "description": "Arrows with tips of ashoka, mango blossom, jasmine, blue lotus and white lotus; names as told: Harshana, Lochana, Mohana, Shoshana, Marana (UNVERIFIED except Mohana).",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Five arrows laid side by side on a plain neutral grey backdrop, Bronze Oxide #9C6B30 shafts, tips of ashoka, mango blossom, jasmine, blue lotus and white lotus, Arrow Energy #FFE08A glint on one tip."
+  },
+  "PROP-SUDARSHAN-CHAKRA": {
+   "name": "Sudarshan chakra",
+   "description": "Vishnu's spinning discus; in Episode 11 it is shown only as a moving ring of light.",
+   "palette_id": "hanuman_vayu",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single radiant discus on a plain neutral grey backdrop, Gada Gold #F2B233 hub, Cloud White #F5F1E8 serrated rim light, front view still and a spinning blur view."
+  },
+  "PROP-KHADGA": {
+   "name": "Khadga",
+   "description": "The goddess's curved sword.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single curved khadga sword on a plain neutral grey backdrop, Blade Steel #A9B4C4 blade, Tiger Amber #E8A13D hilt, front and side views."
+  },
+  "PROP-NEELKAMAL": {
+   "name": "Blue lotus",
+   "description": "The goddess's blue lotus.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single blue lotus on a long stem on a plain neutral grey backdrop, Blade Steel #A9B4C4 petals deepening to Midnight Indigo #171233, Tiger Amber #E8A13D centre."
+  },
+  "PROP-BILVA-PATRA": {
+   "name": "Bilva leaves",
+   "description": "Three-lobed bilva leaves of the vigils; the anchor prop in Episodes 4 and 13.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. A small stack of three-lobed bilva leaves on a plain neutral grey backdrop, leaves in Blade Steel #A9B4C4 shade with Tiger Amber #E8A13D lamp-warm edges, top and side views."
+  },
+  "PROP-VIGIL-DIYA": {
+   "name": "Clay vigil lamp",
+   "description": "The single clay lamp of every vigil; it is always the key light.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single small lit clay lamp on a plain neutral grey backdrop, Blood Crimson #A61C3C clay, Tiger Amber #E8A13D flame, side and top views."
+  },
+  "PROP-PUJA-THALI": {
+   "name": "Monthly offering tray",
+   "description": "Tray for the month-by-month worship: palasha flowers, barley and rice, sesame seeds, curd, fruits.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single round offering tray on a plain neutral grey backdrop holding palasha flowers, barley and rice, sesame seeds, a small curd bowl and fruits, Tiger Amber #E8A13D brass, Blood Crimson #A61C3C flowers, top view."
+  },
+  "PROP-YAJNA-KUNDA": {
+   "name": "Yajna fire pit",
+   "description": "Square stepped fire pit with ladles.",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single square stepped fire pit on a plain neutral grey backdrop, Dusk Clay #8A5A44 brick, Molten Gold #FFB627 flames, two golden ladles, three-quarter view."
+  },
+  "PROP-HAMSA-RATHA": {
+   "name": "Swan chariot",
+   "description": "Brahma's chariot drawn by swans.",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single lotus-shaped chariot drawn by a pair of white swans on a plain neutral grey backdrop, Molten Gold #FFB627 body, Surya White #FFF6DF swans, side and three-quarter views."
+  },
+  "PROP-KAMANDALU": {
+   "name": "Kamandalu",
+   "description": "Ascetic water pot used for arghya and padya.",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single water pot with a spout and handle on a plain neutral grey backdrop, Bronze Oxide #9C6B30 metal, Kavach Glow #FFD966 highlight, side view."
+  },
+  "PROP-VINA": {
+   "name": "Narada's vina",
+   "description": "A two-gourd vina (traditional, UNVERIFIED).",
+   "palette_id": "hanuman_vayu",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single two-gourd vina on a plain neutral grey backdrop, Maroon Deep #7A2A1C gourds, Gada Gold #F2B233 fittings, front and side views."
+  },
+  "PROP-WILDFLOWER-GARLAND": {
+   "name": "Wildflower garland",
+   "description": "The garland Shiva makes from forest flowers for Sati, Episode 8.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single loose garland of small mountain wildflowers on a plain neutral grey backdrop, pale #F2EDE4 blossoms, Ganga Teal #3FD9C5 leaves, Vibhuti Ash #8C93A6 cord."
+  },
+  "PROP-DARPAN": {
+   "name": "Hand mirror",
+   "description": "The mirror Sati looks into while Shiva looks with her, Episode 8.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single round hand mirror with a carved rim on a plain neutral grey backdrop, Moon Silver #D9E4F2 glass, Vibhuti Ash #8C93A6 rim, front and side views."
+  },
+  "PROP-PEETHA-LOTUS-LIGHT": {
+   "name": "Shakti Peetha lotus light",
+   "description": "A soft lotus-shaped light that marks each place where a part of Sati's body fell. It stands in for any body part and is never shown as anatomy.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single soft lotus-shaped light rising from a small patch of earth on a plain neutral grey backdrop, Rani Pink #E93A7D glow, Tiger Amber #E8A13D inner core, three stages: falling spark, landing, open lotus light."
+  },
+  "PROP-KAMA-ASH": {
+   "name": "Kama's ash",
+   "description": "The drift of ash left after the third-eye burn, Episode 12.",
+   "palette_id": "shiva_neelkanth",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. A low drift of fine grey ash with a few unburnt flower petals and a fallen flower bow on a plain neutral grey backdrop, Vibhuti Ash #8C93A6 ash, Moon Silver #D9E4F2 highlights."
+  },
+  "PROP-SHAKTI-SPEAR": {
+   "name": "Kartikeya's shakti spear",
+   "description": "The spear that ends Tarakasura.",
+   "palette_id": "karna_surya",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single long spear with a leaf-shaped head on a plain neutral grey backdrop, Bronze Oxide #9C6B30 shaft, Kavach Glow #FFD966 head, front and side views."
+  },
+  "PROP-AKSHARA-MALA": {
+   "name": "Fifty-syllable garland",
+   "description": "Kali's garland of fifty syllable beads, used in place of the severed-head garland.",
+   "palette_id": "durga_kali_shakti",
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single long garland of carved syllable beads on a plain neutral grey backdrop, Bone White #F2EDE4 beads, Blood Crimson #A61C3C cord, laid in a loop."
+  }
+ },
+ "forbidden_looks": [
+  "3D CG",
+  "Pixar look",
+  "Cinema 4D",
+  "Octane render",
+  "uniform vector lines",
+  "smooth plastic skin",
+  "photoreal render",
+  "chibi or super-deformed proportions",
+  "western comic halftone",
+  "glossy airbrushed gradients on skin",
+  "constant halo glow without a source",
+  "lightning beams, energy auras and magic circles",
+  "more than one neon colour in a frame",
+  "gore-shock framing of the goddess",
+  "bodily close-ups or sensual framing of Sandhya, Rati, Sati or Parvati",
+  "beheading, dismemberment or wound close-ups"
+ ],
+ "voice_map": {
+  "NARRATOR": {
+   "en": "placeholder-NARRATOR-en",
+   "hi": "placeholder-NARRATOR-hi",
+   "mr": "placeholder-NARRATOR-mr"
+  },
+  "CHAR-KALI": {
+   "en": "placeholder-KALI-en",
+   "hi": "placeholder-KALI-hi",
+   "mr": "placeholder-KALI-mr"
+  },
+  "CHAR-MARKANDEYA": {
+   "en": "placeholder-MARKANDEYA-en",
+   "hi": "placeholder-MARKANDEYA-hi",
+   "mr": "placeholder-MARKANDEYA-mr"
+  },
+  "CHAR-HIMALAYAN-MUNIS": {
+   "en": "placeholder-MUNIS-en",
+   "hi": "placeholder-MUNIS-hi",
+   "mr": "placeholder-MUNIS-mr"
+  },
+  "CHAR-BRAHMA": {
+   "en": "placeholder-BRAHMA-en",
+   "hi": "placeholder-BRAHMA-hi",
+   "mr": "placeholder-BRAHMA-mr"
+  },
+  "CHAR-SAVITRI": {
+   "en": "placeholder-SAVITRI-en",
+   "hi": "placeholder-SAVITRI-hi",
+   "mr": "placeholder-SAVITRI-mr"
+  },
+  "CHAR-DAKSHA": {
+   "en": "placeholder-DAKSHA-en",
+   "hi": "placeholder-DAKSHA-hi",
+   "mr": "placeholder-DAKSHA-mr"
+  },
+  "CHAR-MANASA-PUTRAS": {
+   "en": "placeholder-MANASA-PUTRAS-en",
+   "hi": "placeholder-MANASA-PUTRAS-hi",
+   "mr": "placeholder-MANASA-PUTRAS-mr"
+  },
+  "CHAR-NARADA": {
+   "en": "placeholder-NARADA-en",
+   "hi": "placeholder-NARADA-hi",
+   "mr": "placeholder-NARADA-mr"
+  },
+  "CHAR-SANDHYA": {
+   "en": "placeholder-SANDHYA-en",
+   "hi": "placeholder-SANDHYA-hi",
+   "mr": "placeholder-SANDHYA-mr"
+  },
+  "CHAR-KAMADEVA": {
+   "en": "placeholder-KAMADEVA-en",
+   "hi": "placeholder-KAMADEVA-hi",
+   "mr": "placeholder-KAMADEVA-mr"
+  },
+  "CHAR-RATI": {
+   "en": "placeholder-RATI-en",
+   "hi": "placeholder-RATI-hi",
+   "mr": "placeholder-RATI-mr"
+  },
+  "CHAR-VASANTA": {
+   "en": "placeholder-VASANTA-en",
+   "hi": "placeholder-VASANTA-hi",
+   "mr": "placeholder-VASANTA-mr"
+  },
+  "CHAR-SHIVA": {
+   "en": "placeholder-SHIVA-en",
+   "hi": "placeholder-SHIVA-hi",
+   "mr": "placeholder-SHIVA-mr"
+  },
+  "CHAR-SHIVA-BRAHMACHARI": {
+   "en": "placeholder-SHIVA-en",
+   "hi": "placeholder-SHIVA-hi",
+   "mr": "placeholder-SHIVA-mr"
+  },
+  "CHAR-YOGANIDRA": {
+   "en": "placeholder-MAHAMAYA-en",
+   "hi": "placeholder-MAHAMAYA-hi",
+   "mr": "placeholder-MAHAMAYA-mr"
+  },
+  "CHAR-CHANDIKA": {
+   "en": "placeholder-MAHAMAYA-en",
+   "hi": "placeholder-MAHAMAYA-hi",
+   "mr": "placeholder-MAHAMAYA-mr"
+  },
+  "CHAR-VIRINI": {
+   "en": "placeholder-VIRINI-en",
+   "hi": "placeholder-VIRINI-hi",
+   "mr": "placeholder-VIRINI-mr"
+  },
+  "CHAR-SATI-CHILD": {
+   "en": "placeholder-SATI-CHILD-en",
+   "hi": "placeholder-SATI-CHILD-hi",
+   "mr": "placeholder-SATI-CHILD-mr"
+  },
+  "CHAR-SAKHIS": {
+   "en": "placeholder-SAKHIS-en",
+   "hi": "placeholder-SAKHIS-hi",
+   "mr": "placeholder-SAKHIS-mr"
+  },
+  "CHAR-SATI": {
+   "en": "placeholder-SATI-en",
+   "hi": "placeholder-SATI-hi",
+   "mr": "placeholder-SATI-mr"
+  },
+  "CHAR-VISHNU": {
+   "en": "placeholder-VISHNU-en",
+   "hi": "placeholder-VISHNU-hi",
+   "mr": "placeholder-VISHNU-mr"
+  },
+  "CHAR-LAKSHMI": {
+   "en": "placeholder-LAKSHMI-en",
+   "hi": "placeholder-LAKSHMI-hi",
+   "mr": "placeholder-LAKSHMI-mr"
+  },
+  "CHAR-NANDI": {
+   "en": "placeholder-NANDI-en",
+   "hi": "placeholder-NANDI-hi",
+   "mr": "placeholder-NANDI-mr"
+  },
+  "CHAR-GANAS": {
+   "en": "placeholder-GANAS-en",
+   "hi": "placeholder-GANAS-hi",
+   "mr": "placeholder-GANAS-mr"
+  },
+  "CHAR-RITVIJS": {
+   "en": "placeholder-RITVIJS-en",
+   "hi": "placeholder-RITVIJS-hi",
+   "mr": "placeholder-RITVIJS-mr"
+  },
+  "CHAR-VIJAYA": {
+   "en": "placeholder-VIJAYA-en",
+   "hi": "placeholder-VIJAYA-hi",
+   "mr": "placeholder-VIJAYA-mr"
+  },
+  "CHAR-VIRABHADRA": {
+   "en": "placeholder-VIRABHADRA-en",
+   "hi": "placeholder-VIRABHADRA-hi",
+   "mr": "placeholder-VIRABHADRA-mr"
+  },
+  "CHAR-BHAGA": {
+   "en": "placeholder-BHAGA-en",
+   "hi": "placeholder-BHAGA-hi",
+   "mr": "placeholder-BHAGA-mr"
+  },
+  "CHAR-SURYA": {
+   "en": "placeholder-SURYA-en",
+   "hi": "placeholder-SURYA-hi",
+   "mr": "placeholder-SURYA-mr"
+  },
+  "CHAR-YAJNA-MRIGA": {
+   "en": "placeholder-YAJNA-MRIGA-en",
+   "hi": "placeholder-YAJNA-MRIGA-hi",
+   "mr": "placeholder-YAJNA-MRIGA-mr"
+  },
+  "CHAR-DEVAS": {
+   "en": "placeholder-DEVAS-en",
+   "hi": "placeholder-DEVAS-hi",
+   "mr": "placeholder-DEVAS-mr"
+  },
+  "CHAR-HIMAVAN": {
+   "en": "placeholder-HIMAVAN-en",
+   "hi": "placeholder-HIMAVAN-hi",
+   "mr": "placeholder-HIMAVAN-mr"
+  },
+  "CHAR-MENA": {
+   "en": "placeholder-MENA-en",
+   "hi": "placeholder-MENA-hi",
+   "mr": "placeholder-MENA-mr"
+  },
+  "CHAR-PARVATI-CHILD": {
+   "en": "placeholder-PARVATI-CHILD-en",
+   "hi": "placeholder-PARVATI-CHILD-hi",
+   "mr": "placeholder-PARVATI-CHILD-mr"
+  },
+  "CHAR-PARVATI": {
+   "en": "placeholder-PARVATI-en",
+   "hi": "placeholder-PARVATI-hi",
+   "mr": "placeholder-PARVATI-mr"
+  },
+  "CHAR-TARAKASURA": {
+   "en": "placeholder-TARAKASURA-en",
+   "hi": "placeholder-TARAKASURA-hi",
+   "mr": "placeholder-TARAKASURA-mr"
+  },
+  "CHAR-KARTIKEYA": {
+   "en": "placeholder-KARTIKEYA-en",
+   "hi": "placeholder-KARTIKEYA-hi",
+   "mr": "placeholder-KARTIKEYA-mr"
+  }
+ }
+}

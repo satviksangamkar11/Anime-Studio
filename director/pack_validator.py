@@ -658,6 +658,57 @@ def _s55_6(shots, bible, errs, warns):
                f"unmarked flip from {prev.get('id')} to {cur.get('id')}: {'; '.join(flips)}")
 
 
+# SPEECH-01 (audit gap 3, 2026-11-08): a spoken line must fit its time window BEFORE any paid voice call. Words per second a
+# line may need, per language. Calibration knobs, not facts: replace them with the rates measured from the first real ElevenLabs
+# wavs (h3/gate_d_audio.vo_fit_check is the exact check once a wav exists).
+MAX_WORDS_PER_SEC = {"en": 3.2, "hi": 3.6, "mr": 3.0}
+
+
+def _words(text):
+    return len([w for w in str(text).split() if any(ch.isalnum() for ch in w)])
+
+
+def _speech_rate(shots, errs):
+    for i, r in enumerate(shots):
+        t = r.get("audio_and_dialogue_track") if isinstance(r, dict) else None
+        if not isinstance(t, dict):
+            continue
+        w = f"shots[{i}].audio_and_dialogue_track"
+        lines = []                                                    # (lang, text, range, where)
+        nbl = t.get("narration_by_lang") if isinstance(t.get("narration_by_lang"), dict) else {}
+        for lang, e in nbl.items():
+            if isinstance(e, dict):
+                lines.append((lang, e.get("text"), _range(e.get("time_range")), f"{w}.narration_by_lang.{lang}"))
+        n = t.get("narration")
+        if isinstance(n, dict) and not nbl:
+            lines.append((n.get("language"), n.get("text"), _range(n.get("time_range")), f"{w}.narration"))
+        dbl = t.get("dialogue_by_lang") if isinstance(t.get("dialogue_by_lang"), dict) else {}
+        for lang, items in dbl.items():
+            for j, x in enumerate(items if isinstance(items, list) else []):
+                if isinstance(x, dict):
+                    lines.append((lang, x.get("text"), _range(x.get("time_range")), f"{w}.dialogue_by_lang.{lang}[{j}]"))
+        for lang, text, rng, where in lines:
+            cap = MAX_WORDS_PER_SEC.get(lang)
+            if cap is None or rng is None or not isinstance(text, str):
+                continue
+            rate = _words(text) / (rng[1] - rng[0])
+            if rate > cap + 1e-9:
+                _e(errs, "SPEECH-01", where,
+                   f"{_words(text)} words in {round(rng[1] - rng[0], 2)} s = {round(rate, 2)} words/s, {lang} allows {cap}; "
+                   f"shorten the line or widen its time window")
+
+
+def _h3_time(shots, errs):
+    """H3-01 (audit gap 2, 2026-11-08): every row must have a lattice n that H3 can cut (head 8..35 and tail 24..47 frames,
+    matching seam classes). h3.v4_to_h3.fit_lattice names the n that works; the writer applies it itself."""
+    from h3 import v4_to_h3
+    _, changes, problems = v4_to_h3.fit_lattice(shots)
+    for line in changes:
+        _e(errs, "H3-01", "shots", f"lattice cannot be cut by H3: {line}")
+    for line in problems:
+        _e(errs, "H3-01", "shots", line)
+
+
 def _reel(shots, reel_range, errs, stats, legacy=False):
     lo, hi = reel_range
     out = {}
@@ -681,6 +732,8 @@ def self_check(shots, bible, reel_range=STUDIO_REEL_RANGE):
     _s55_4(shots, bible, errs)
     _s55_5(shots, errs)
     _s55_6(shots, bible, errs, warns)
+    _h3_time(shots, errs)
+    _speech_rate(shots, errs)
     _reel(shots, reel_range, errs, stats)
     stats["shots"] = len(shots)
     return _rep(errs, warns, stats)
@@ -1005,6 +1058,27 @@ def _peek_voice_engines(d):
     return None
 
 
+def _source_check(pack_dir, errs, warns):
+    """SRC-01 (audit gap 5, 2026-11-08): the story file on record must be the text the pack was written from. The writer's
+    story_gate_checks quote its own plan, so this is the one check made against the source file itself:
+    story.json source_sha256 must equal sha256(SOURCE.md). Semantic fidelity (events, names) needs a reviewer, see the audit."""
+    import hashlib
+    story = Path(pack_dir).resolve().parent
+    sj, src = story / "story.json", story / "SOURCE.md"
+    if not (sj.is_file() and src.is_file()):
+        return
+    try:
+        want = json.loads(sj.read_text(encoding="utf-8")).get("source_sha256")
+    except (OSError, ValueError, AttributeError):
+        return
+    if not want:
+        warns.append({"code": "SRC-01", "where": "story.json", "message": "no source_sha256: the source text cannot be tied to the pack"})
+        return
+    got = hashlib.sha256(src.read_bytes()).hexdigest()
+    if got != want:
+        _e(errs, "SRC-01", "story.json", f"source_sha256 {want[:12]} does not match SOURCE.md {got[:12]}: the pack was not written from this text")
+
+
 def validate_pack(pack_dir, legacy=False, *, output_languages=None, lang_check=None, voice_engines=None):
     """Read shots.json and bible.json (plus stage_1*/stage_2* files when present). Writes nothing.
     output_languages=None is read from the stage_1 file when it carries one."""
@@ -1026,6 +1100,7 @@ def validate_pack(pack_dir, legacy=False, *, output_languages=None, lang_check=N
                                                    lang_check=lang_check, voice_engines=voice_engines))
     if bible is not None:
         _absorb(errs, warns, stats, validate_stage("bible", bible))
+    _source_check(d, errs, warns)
     story_src = _story_file(d)   # the parsed stage 1 block; the *_raw.json envelopes are model output, never story data
     if story_src is not None:
         data = _load(story_src, errs, "PACK-01")

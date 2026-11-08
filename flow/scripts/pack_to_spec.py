@@ -116,6 +116,8 @@ def _action(sid, shot, kind, chars_b, props_b):
         bits = [f"on screen {c['screen']}"] if c.get("screen") else []
         if c.get("facing"):
             bits.append(f"facing {c['facing']}")
+        if c.get("depth"):
+            bits.append(f"{c['depth']} depth")
         cast_bits.append(f"{_name(c['id'], chars_b[c['id']] or {})} {', '.join(bits)}".rstrip())
     prop_bits = []
     for p in shot.get("props") or []:
@@ -207,6 +209,60 @@ def _style_text(bible):
     return ", ".join(bits) + "."
 
 
+def _v4_row(shot):
+    """A V4 writer row (director/write_pack.py stage 3) has a route and reference_anchors, not set/cast/keyframes."""
+    return isinstance(shot, dict) and isinstance(shot.get("reference_anchors"), dict) and "set" not in shot
+
+
+def _v4_chained(prev, shot):
+    """True when the cut from prev to shot is CHAINED (both fill their lattice), so shot reuses prev's end frame as its start
+    (h3/v4_to_h3._seam_defaults: a shorter editorial length than the pixel frames means a DYNAMIC cut)."""
+    def full(r):
+        ed, pf = r.get("editorial_duration_sec"), r.get("pixel_frames")
+        return isinstance(ed, (int, float)) and isinstance(pf, int) and round(ed * 24) == pf
+    return prev is not None and full(prev) and full(shot)
+
+
+def _v4_view(shot, bible, prev):
+    """Image-spec fields for a V4 row, derived only from the row and the bible (nothing invented):
+    cast = reference_anchors.character_positions; set = the one bible ENV whose continuity_landmarks list the row's
+    fixed_landmarks (h3.v4_to_h3._location); props = bible props named in the row (h3.v4_to_h3._props);
+    start/end state = first/last per_second_directives action; camera framing = first/last per-second camera text;
+    light = lighting_baseline (fill is written as the mood); keyframes = SHOT-NNN-A.png / -B.png (the names the H3
+    converter looks for), with no start frame when the cut is CHAINED."""
+    root = str(Path(__file__).resolve().parents[2])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from h3 import v4_to_h3
+    sid = shot.get("id")
+    anchors = shot["reference_anchors"]
+    directives = [d for d in shot.get("per_second_directives") or [] if isinstance(d, dict)]
+    if not directives:
+        raise PackError(f"shot {sid}: per_second_directives is empty, no start or end state")
+    set_id, why = v4_to_h3._location(shot, bible)
+    if set_id is None:
+        raise PackError(f"shot {sid}: no set id from fixed_landmarks ({why})")
+    cast = [{"id": c.get("id"), "screen": c.get("screen"), "depth": c.get("depth")}
+            for c in anchors.get("character_positions") or [] if isinstance(c, dict)]
+    light = anchors.get("lighting_baseline") if isinstance(anchors.get("lighting_baseline"), dict) else {}
+
+    def framing(d):
+        return str(d.get("camera") or "").split(",")[0].strip()
+    first, last = directives[0], directives[-1]
+    out = dict(shot)
+    out.update({
+        "set": set_id,
+        "cast": cast,
+        "props": [{"id": p} for p in v4_to_h3._props(shot, bible)],
+        "start_state": str(first.get("action_pose_expression") or ""),
+        "end_state": str(last.get("action_pose_expression") or ""),
+        "camera": {"start_framing": framing(first), "end_framing": framing(last)},
+        "light": {"key": light.get("key"), "mood": light.get("fill"), "rim": light.get("rim")},
+        "keyframes": {"end": f"{sid}-B.png"} if _v4_chained(prev, shot) else {"start": f"{sid}-A.png", "end": f"{sid}-B.png"},
+    })
+    return out
+
+
 def convert(shots, bible, adhyay, slug, outputs_root=None, flow_project=None):
     """Return (spec_dict, series_dict) for build_jobs. Raises PackError for a pack that must not be converted."""
     _check_id(slug, "slug")
@@ -228,9 +284,13 @@ def convert(shots, bible, adhyay, slug, outputs_root=None, flow_project=None):
     used_chars, used_envs, used_props = {}, {}, {}  # ordered sets of referenced ids
     seen = set()
     checked = []  # (shot, sid, scene, cast, set_id, props, keyframes, wanted), validated before any build
+    prev_row = None
     for shot in shots:
         if not isinstance(shot, dict):
             raise PackError("every shot must be an object")
+        if _v4_row(shot):
+            row, shot = shot, _v4_view(shot, bible, prev_row if prev_row and prev_row.get("episode") == shot.get("episode") else None)
+            prev_row = row
         sid = _check_id(shot.get("id"), "shot")
         if sid in seen:
             raise PackError(f"duplicate shot id {sid}")

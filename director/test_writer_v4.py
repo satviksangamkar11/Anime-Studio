@@ -224,7 +224,7 @@ def test_the_canonical_bible_and_the_v4_rows_are_written(tmp_path, story, fake_c
     assert set(bible["characters"]) == {"CHAR-RAJ"} and set(bible["environments"]) == {"ENV-HALL"}
     assert bible["environments"]["ENV-HALL"]["continuity_landmarks"]
     shot = json.loads((out / "shots.json").read_text(encoding="utf-8"))[0]
-    assert shot["lattice_n"] == 10 and shot["pixel_frames"] == 175 and shot["latent_slots"] == 52
+    assert shot["lattice_n"] == 10 and shot["pixel_frames"] == 175 and shot["latent_slots"] == 52   # one-shot reel: no cut, the model's n stays (gap 2)
     assert shot["reference_anchors"]["lighting_baseline"]["key"]
     assert shot["mode"] == "ref2va" and shot["seconds"] == 7.0 and shot["aspect"] == "9:16"       # legacy fields derived
     assert shot["action"].startswith("0.0-1.0s Raj lifts his eyes")

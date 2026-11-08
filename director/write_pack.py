@@ -732,6 +732,21 @@ class StageFailed(ValueError):
     """A stage whose answer still fails its checks after the one repair retry. The run stops; the stage's files say why."""
 
 
+def fit_lattice_rows(shots):
+    """Audit gap 2 (2026-11-08): re-pick lattice_n / pixel_frames / latent_slots in place so H3 can cut every row
+    (h3.v4_to_h3.fit_lattice, deterministic, no model call). Returns error lines when a row has no legal lattice, else None."""
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from h3 import v4_to_h3
+    fitted, changes, problems = v4_to_h3.fit_lattice(shots)
+    for row, new in zip(shots, fitted):
+        row.update({k: new[k] for k in ("lattice_n", "pixel_frames", "latent_slots") if k in new})
+    for line in changes:
+        print(f"lattice fitted for H3 cuts: {line}")
+    return [f"H3-TIME {p}" for p in problems] or None
+
+
 def checked_call(name, call, *args):
     """One model call. A refusal (ValueError, e.g. a paid model) passes through as before; any other failure (missing key files,
     ModelGaveUp, network) becomes StageFailed, so the run stops with a message and the registry step is marked failed."""
@@ -1129,6 +1144,8 @@ def record_output_language(story_dir, langs, engines=None):
         meta["output_language"] = langs[0]
         if engines is not None:
             meta["voice_engine"] = dict(engines)
+        if not isinstance(meta.get("style_pack"), str) or not meta["style_pack"]:
+            meta["style_pack"] = default_style_pack()          # audit gap 6: the pack the writer uses is written down, so every later check agrees
         path.write_text(json.dumps(meta, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     except Exception as exc:
         print(f"write_pack: output_language not recorded in story.json ({type(exc).__name__}: {exc})", file=sys.stderr)
@@ -1280,8 +1297,8 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         base = list(done)                                       # stages 1 and 2: every later call sees them
         for ep in episodes:
             first = 1 + sum(len(s) for s in per_episode)
-            check = (lambda shots, ep=ep: gate("3", {"episode": ep, "shots": shots}, bible,
-                                               lambda: shot_language_errors(shots, langs) + episode_id_errors(shots, ep)))
+            check = (lambda shots, ep=ep: (fit_lattice_rows(shots) or gate("3", {"episode": ep, "shots": shots}, bible,
+                                               lambda: shot_language_errors(shots, langs) + episode_id_errors(shots, ep))))
             prev = [(f"3e{p}", ep_texts[p]) for p in [episodes[episodes.index(ep) - 1]] if episodes.index(ep) > 0]
             text, ep_shots = stage(f"3e{ep}", parse, check, first=first, seconds=seconds.get(ep), earlier=base + prev)
             done.append((f"3e{ep}", text))

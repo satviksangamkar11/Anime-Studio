@@ -148,6 +148,15 @@ def shot_editorial_frames(shot, fps=FPS):
         if not _is_int(ed) or ed < 1:
             raise ValueError("timing_and_lattice.editorial_frames must be an integer >= 1")
         return ed
+    ed_sec = shot.get("editorial_duration_sec")
+    if "lattice_n" in shot and _is_num(ed_sec) and ed_sec > 0:
+        # V4 writer row (audit gap 4, 2026-11-08): the cut length is the editorial length. pixel_frames / the legacy
+        # `seconds` include handle frames the viewer never sees, so they must not feed the reel clock or the retention windows.
+        frames = round(ed_sec * fps)
+        pf = shot.get("pixel_frames")
+        if frames < 1 or (_is_int(pf) and frames > pf):
+            raise ValueError(f"editorial_duration_sec {ed_sec!r} must be > 0 and within the {pf} rendered frames")
+        return frames
     if "edit_frames" in shot:
         edit = shot["edit_frames"]
         if not _is_int(edit) or edit < 1:

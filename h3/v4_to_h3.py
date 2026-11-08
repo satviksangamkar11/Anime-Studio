@@ -34,7 +34,8 @@ from h3.schema_and_linter import (CHAINED, DYN, ID_PATTERN, INTER, LATTICE_CUT_B
 from h3.shot_table_spec import FPS, lattice
 
 LANGS = ("en", "hi", "mr")
-MOTION_WORDS = (("push in", "Push In"), ("pull out", "Pull Out"), ("zoom in", "Zoom In"), ("zoom out", "Zoom Out"),
+MOTION_WORDS = (("push in", "Push In"), ("pull out", "Pull Out"), ("pull back", "Pull Out"), ("crane down", "Pedestal Down"), ("crane up", "Pedestal Up"),
+                ("arc ", "Arc Shot"), ("zoom in", "Zoom In"), ("zoom out", "Zoom Out"),
                 ("pan left", "Pan Left"), ("pan right", "Pan Right"), ("truck left", "Truck Left"),
                 ("truck right", "Truck Right"), ("tilt up", "Tilt Up"), ("tilt down", "Tilt Down"),
                 ("track", "Tracking Shot"), ("hold", "Static Shot"), ("static", "Static Shot"))
@@ -99,6 +100,12 @@ def _source(pack):
         if isinstance(data, dict) and ("output_languages" in data or "voice_engine" in data or "story_gate_checks" in data):
             stage = data
             break
+    if not stage:   # the V4 writer keeps languages and voice engines in the story's story.json (audit 11-08), not in stage_1
+        try:
+            story = json.loads((d.resolve().parent / "story.json").read_text(encoding="utf-8"))
+            stage = {k: story[k] for k in ("output_languages", "voice_engine") if isinstance(story, dict) and k in story}
+        except (OSError, ValueError):
+            pass
     return shots, bible, stage, str(d.resolve()), problems
 
 
@@ -159,7 +166,7 @@ def _stages(directives, pf, sid, problems):
     return out, [list(s) for s in spans]
 
 
-def _mouth(track, pf, sid, problems):
+def _mouth(track, pf, sid, problems, ed=None):
     pn = track.get("performance_notes") if isinstance(track.get("performance_notes"), dict) else {}
     if pn.get("narrator_mouth_closed") is not True:
         problems.append(f"{sid}: performance_notes.narrator_mouth_closed must be true")
@@ -167,6 +174,8 @@ def _mouth(track, pf, sid, problems):
     states = {}
     for s in range(math.ceil(pf / FPS)):
         v = ms.get(str(s))
+        if v is None and ed is not None and s * FPS >= ed:
+            v = "closed"        # a second made only of handle frames (after the editorial end) is never seen; narrator mouth is closed
         if v is None:
             problems.append(f"{sid}: no mouth_state for second {s} in performance_notes")
         states[str(s)] = v
@@ -282,6 +291,60 @@ def _plan_handles(sid, pf, ed, inc, out, n):
     if not a6 <= ed <= b6:
         probs.append(f"{sid}: MO-03 trim_out {ed} must sit inside the 6_impact_result span {a6}..{b6} for a dynamic outgoing cut")
     return {"trim_in_frame": 0, "trim_out_frame": ed, "head_handle_frames": 0, "tail_handle_frames": tail}, probs
+
+
+def fit_lattice(shots):
+    """Re-pick lattice_n / pixel_frames / latent_slots of every row so that H3 can cut it (audit gap 2, 2026-11-08).
+
+    The writer used to take the smallest lattice that holds the editorial length, which leaves 4..14 spare frames; a cut
+    needs a head handle of 8..35 and a tail handle of 24..47 frames (CN-04/05), so such a row can never be rendered.
+    Pure and deterministic, no model call: rows are taken in reel order; a row keeps its n when that already gives a legal
+    handle plan whose seam class matches the previous cut, else the smallest n that does. editorial_duration_sec, the
+    per-second directives and the narration never change (only frames the viewer never sees are added).
+    Returns (new_shots, changes, problems); changes = ["SHOT-002: n 7 -> 9 (pixel 124 -> 158)"]."""
+    from h3.shot_table_spec import LATTICE_N_MAX, LATTICE_N_MIN
+    out = copy.deepcopy(shots)
+    changes, problems = [], []
+    items, _ = group_rows(out)
+    prev_out = {}
+    for it in items:
+        row, ep = it["row"], it["ep"]
+        sid, e_sec = row.get("id"), row.get("editorial_duration_sec")
+        if not _is_num(e_sec) or e_sec <= 0:
+            continue
+        ed = round(e_sec * FPS)
+        cur = row.get("lattice_n")
+        cands = ([cur] if isinstance(cur, int) and not isinstance(cur, bool) and LATTICE_N_MIN <= cur <= LATTICE_N_MAX else [])             + [n for n in range(LATTICE_N_MIN, LATTICE_N_MAX + 1) if n != cur]
+        chosen, why = None, ""
+        if it["first"] and it["last"]:                       # a one-shot reel has no cut inside it: keep the model's n
+            if cands and lattice(cands[0])["pixel_frames"] >= ed:
+                prev_out[ep] = INTER
+                continue
+        for n in cands:
+            pf = lattice(n)["pixel_frames"]
+            if pf < ed:
+                continue
+            inc, outt = _seam_defaults(it["first"], it["last"], ed, pf)
+            before = prev_out.get(ep)
+            if before is not None and (before in STATIC_SEAMS) != (inc in STATIC_SEAMS):
+                why = f"seam class of the cut from the previous shot ({before} -> {inc})"
+                continue
+            _, probs = _plan_handles(sid, pf, ed, inc, outt, n)
+            if probs:
+                why = probs[0]
+                continue
+            chosen = (n, outt)
+            break
+        if chosen is None:
+            problems.append(f"{sid}: no lattice n in {LATTICE_N_MIN}..{LATTICE_N_MAX} gives a legal cut ({why})")
+            continue
+        n, outt = chosen
+        prev_out[ep] = outt
+        if n != cur:
+            L = lattice(n)
+            changes.append(f"{sid}: n {cur} -> {n} (pixel {row.get('pixel_frames')} -> {L['pixel_frames']})")
+            row["lattice_n"], row["pixel_frames"], row["latent_slots"] = n, L["pixel_frames"], L["latent_slots"]
+    return out, changes, problems
 
 
 def _own_keyframe(keyframes_dir, sid, letter):
@@ -497,7 +560,8 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
     for name in STAGE_NAMES:
         if not stage_text[name]:
             problems.append(f"{sid}: motion stage {name} has no text")
-    mouth, mouth_rule = _mouth(track, pf, sid, problems)
+    ed_sec = row.get("editorial_duration_sec")
+    mouth, mouth_rule = _mouth(track, pf, sid, problems, round(ed_sec * FPS) if _is_num(ed_sec) else None)
     cont = row.get("continuity_handoff") if isinstance(row.get("continuity_handoff"), dict) else {}
     positions = row.get("reference_anchors", {}).get("character_positions") if isinstance(row.get("reference_anchors"), dict) else []
     positions = positions if isinstance(positions, list) else []  # a scalar here (e.g. 42) must not abort the shot

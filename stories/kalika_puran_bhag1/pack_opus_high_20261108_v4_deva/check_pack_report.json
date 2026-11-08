@@ -1,0 +1,184 @@
+{
+ "shots": 10,
+ "modes": {
+  "ref2va": 10
+ },
+ "episode_seconds": {
+  "1": 70.0
+ },
+ "total_seconds": 70.0,
+ "code_blocks_naming_a_film": 0,
+ "issues": [
+  "P4 WARN: cast id 'CHAR-MARKANDEYA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-HIMALAYAN-MUNIS' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-SANDHYA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-KAMADEVA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-KAMADEVA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-KAMADEVA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-SANDHYA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-KAMADEVA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-KAMADEVA' is not listed in any palette's characters",
+  "P4 WARN: cast id 'CHAR-BRAHMA' is not listed in any palette's characters",
+  "P8 WARN: last shot palette 'karna_surya' differs from first shot palette 'durga_kali_shakti'"
+ ],
+ "rules": [
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-003",
+   "episode": 1,
+   "message": "cast id 'CHAR-MARKANDEYA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-003",
+   "episode": 1,
+   "message": "cast id 'CHAR-HIMALAYAN-MUNIS' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-004",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-004",
+   "episode": 1,
+   "message": "cast id 'CHAR-SANDHYA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-004",
+   "episode": 1,
+   "message": "cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-005",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-005",
+   "episode": 1,
+   "message": "cast id 'CHAR-KAMADEVA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-005",
+   "episode": 1,
+   "message": "cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-006",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-006",
+   "episode": 1,
+   "message": "cast id 'CHAR-KAMADEVA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-006",
+   "episode": 1,
+   "message": "cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-007",
+   "episode": 1,
+   "message": "cast id 'CHAR-KAMADEVA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-007",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-007",
+   "episode": 1,
+   "message": "cast id 'CHAR-SANDHYA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-008",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-008",
+   "episode": 1,
+   "message": "cast id 'CHAR-MANASA-PUTRAS' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-009",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-009",
+   "episode": 1,
+   "message": "cast id 'CHAR-KAMADEVA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-010",
+   "episode": 1,
+   "message": "cast id 'CHAR-KAMADEVA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P4",
+   "level": "WARN",
+   "shot": "SHOT-010",
+   "episode": 1,
+   "message": "cast id 'CHAR-BRAHMA' is not listed in any palette's characters"
+  },
+  {
+   "rule": "P8",
+   "level": "WARN",
+   "shot": "SHOT-010",
+   "episode": 1,
+   "message": "last shot palette 'karna_surya' differs from first shot palette 'durga_kali_shakti'"
+  }
+ ],
+ "fail": false
+}

@@ -266,9 +266,13 @@ Col 4 hook_type: one of {hooks}. The opening shot (is_opening_0_2s_hook true) an
    start time of each shot from the sum of the shot lengths before it).
 Col 5 per_second_directives: contiguous brackets from 0.0 with no gap and no overlap, up to editorial_duration_sec. One-second
    brackets, plus a sub-second bracket such as 2.0 to 2.5 for a fast burst. Every bracket has t0, t1, action_pose_expression, camera,
-   spatial_position, audio_cue (the synchronized birth or impact sound) and handoff_to_next_second.
+   spatial_position, audio_cue (the synchronized birth or impact sound) and handoff_to_next_second. Name the camera move with one of the
+   official words (push in, pull out, zoom in, zoom out, pan left/right, truck left/right, tilt up/down, pedestal up/down, arc, tracking,
+   static) so the H3 step can read it; one move per shot. Every audio_cue is a real sound word (rustle, hum, bell, chime, whoosh, crack, ...).
 Col 6 audio_and_dialogue_track: {_col6_text(langs)}performance_notes {{text, narrator_mouth_closed: true, mouth_state: {{"0": "closed", "1": "closed", ...}} with one entry per second}}.
    Output language{'s' if multi(langs) else ''} of this story: {languages_clause(langs)}. sfx_cues [{{time_range "1.2-1.6s", sfx_key, description}}] are in English.
+   Speech pace (checked): a spoken line needs words / (end - start) of at most 3.2 words per second in English, 3.6 in Hindi and 3.0 in
+   Marathi, so count the words of every narration and dialogue line in every language and widen the time_range or shorten the line.
    The speech text is for ElevenLabs. Every H3 field describes picture and sound only: no (S1) ids, no [Language] tags, no <d> tags, no <Audio N>.
 Col 7 look (audit A 11-08: the checker needs it on EVERY shot): an object with palette_id, act, phase (all three from the STYLE PACK RULES section),
    focal (a character of this shot), focal_value, impact_frames, vfx (colour names of that palette), accent_use and hold_purpose; the FIRST shot of

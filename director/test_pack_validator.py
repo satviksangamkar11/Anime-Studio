@@ -85,7 +85,9 @@ def shots_for_episode(ep, count=12, dur=5.5):
             "props": [{"id": "PROP-BOW", "where": "leaning on post"}],
             "set": "ENV-CLEARING",
         })
-    return rows
+    from h3 import v4_to_h3                      # H3-01: the lattice must be one that H3 can cut (head 8..35, tail 24..47)
+    fitted, _, _ = v4_to_h3.fit_lattice(rows)
+    return fitted
 
 
 def valid_shots():
@@ -614,3 +616,34 @@ def test_validate_pack_reads_output_languages_from_the_story(tmp_path):
     assert "ML-03" in codes(validate_pack(pack))
     pack2 = write_pack(tmp_path / "ml_pack_ok", ml_shots(("en", "hi")), story_data=s)
     assert validate_pack(pack2)["ok"]
+
+
+# --- audit gaps 3 and 5 (2026-11-08) ---
+def test_speech_rate_flags_a_line_that_cannot_fit_its_window():
+    shots = valid_shots()
+    track = shots[0]["audio_and_dialogue_track"]
+    track["narration_by_lang"] = {"en": {"text": "one two three four five six seven eight nine", "language": "en", "time_range": [0.0, 2.0]}}
+    rep = pv.self_check(shots, None)
+    assert any(e["code"] == "SPEECH-01" and "4.5 words/s" in e["message"] for e in rep["errors"])
+    track["narration_by_lang"]["en"]["time_range"] = [0.0, 3.5]
+    assert not any(e["code"] == "SPEECH-01" for e in pv.self_check(shots, None)["errors"])
+
+
+def test_unfit_lattice_is_error_h3_01():
+    shots = valid_shots()
+    shots[3].update(lattice_n=6, pixel_frames=107, latent_slots=32)
+    assert any(e["code"] == "H3-01" for e in pv.self_check(shots, None)["errors"])
+
+
+def test_source_hash_must_match(tmp_path):
+    import hashlib
+    story = tmp_path / "s"
+    (story / "pack").mkdir(parents=True)
+    (story / "SOURCE.md").write_text("text", encoding="utf-8")
+    (story / "story.json").write_text('{"source_sha256": "%s"}' % hashlib.sha256(b"text").hexdigest(), encoding="utf-8")
+    errs, warns = [], []
+    pv._source_check(story / "pack", errs, warns)
+    assert errs == []
+    (story / "SOURCE.md").write_text("changed", encoding="utf-8")
+    pv._source_check(story / "pack", errs, warns)
+    assert errs and errs[0]["code"] == "SRC-01"

@@ -1,0 +1,108 @@
+{
+ "story_gate_checks": {
+  "active_protagonist": {
+   "pass": true,
+   "evidence": "The spine says: 'At Daksha's tapasya she promises to be born his daughter and Shiva's wife, and she sets her own condition.'"
+  },
+  "crisis_from_flaw": {
+   "pass": true,
+   "evidence": "The spine says: 'When Daksha shuts Shiva and her out of his yajna as the skull-bearer's wife, her own anger and her own vow leave her no road back, and she gives up her body by yoga.'"
+  },
+  "no_coincidence_resolution": {
+   "pass": true,
+   "evidence": "The spine says: 'Shiva comes to her because of her vrat, and the last union is won by Parvati's own tapasya after Kamadeva's arrow has turned to ash.'"
+  },
+  "ending_reuses_emotional_anchor": {
+   "pass": true,
+   "evidence": "The spine says: 'Parvati keeps the same vigil, alone and without any arrow, and this time she answers Shiva herself.'"
+  },
+  "non_flat_antagonistic_pressure": {
+   "pass": true,
+   "evidence": "The spine says Daksha 'did hard tapasya to have her as his daughter and gave her to Shiva with joy, but pride in ritual purity turns him against the son-in-law who carries skulls.'"
+  },
+  "dialogue_shows_relationship_change": {
+   "pass": true,
+   "evidence": "The spine says: 'Daksha's words turn from My daughter is meant for Shiva alone to He carries skulls; he has no place at my yajna.'"
+  }
+ },
+ "duration_bucket": "60-90",
+ "reel_seconds": 68.0,
+ "episodes": [
+  {
+   "episode": 1,
+   "title": "Kama's First Arrow",
+   "seconds": 70.0
+  },
+  {
+   "episode": 2,
+   "title": "Spring Cannot Move Him",
+   "seconds": 66.0
+  },
+  {
+   "episode": 3,
+   "title": "The Dark Goddess Says Yes",
+   "seconds": 72.0
+  },
+  {
+   "episode": 4,
+   "title": "Born Singing His Name",
+   "seconds": 68.0
+  },
+  {
+   "episode": 5,
+   "title": "The Boon She Could Not Say",
+   "seconds": 72.0
+  },
+  {
+   "episode": 6,
+   "title": "The Trident at the Wedding",
+   "seconds": 70.0
+  },
+  {
+   "episode": 7,
+   "title": "Three Are One",
+   "seconds": 68.0
+  },
+  {
+   "episode": 8,
+   "title": "Above the Clouds",
+   "seconds": 68.0
+  },
+  {
+   "episode": 9,
+   "title": "The Vow Kept",
+   "seconds": 66.0
+  },
+  {
+   "episode": 10,
+   "title": "Shiva's Wrath",
+   "seconds": 68.0
+  },
+  {
+   "episode": 11,
+   "title": "Lights upon the Earth",
+   "seconds": 70.0
+  },
+  {
+   "episode": 12,
+   "title": "The Flower Arrow Burns",
+   "seconds": 70.0
+  },
+  {
+   "episode": 13,
+   "title": "Her Own Tapasya",
+   "seconds": 72.0
+  }
+ ],
+ "output_languages": [
+  "en",
+  "hi",
+  "mr"
+ ],
+ "output_language": "en",
+ "voice_engine": {
+  "en": "elevenlabs",
+  "hi": "elevenlabs",
+  "mr": "elevenlabs"
+ }
+}
