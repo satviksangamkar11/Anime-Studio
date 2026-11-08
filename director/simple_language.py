@@ -48,8 +48,8 @@ _SENT_SPLIT = re.compile(r"(?<=[.!?…][\"'”’»])\s+|(?<=[.!?…])\s+|\n+") 
 _LANG_ALIASES = {"hi": "hi", "hindi": "hi", "mr": "mr", "marathi": "mr", "en": "en", "english": "en"}
 
 # Detection markers (token-level). MR_MARK / HI_MARK come from asr_transcribe.
-MR_ONLY = {"ला", "ने", "चा", "ची", "चे", "मध्ये", "साठी", "पासून", "होते", "होती", "होता", "आहेत", "आहोत", "मला", "माझ्या"}
-HI_ONLY = {"है", "हैं", "नहीं", "में", "से", "को", "थे", "थी", "था"}
+MR_ONLY = {"ला", "चा", "ची", "चे", "मध्ये", "साठी", "पासून", "होते", "होती", "होता", "आहेत", "आहोत", "मला", "माझ्या"}
+HI_ONLY = {"है", "हैं", "नहीं", "में", "से", "को", "ने", "थे", "थी", "था"}   # ने as its own word is the Hindi ergative marker; Marathi attaches it to the noun (11-08 Kalika 3e1)
 HI_WEAK = {"का", "की", "के"}  # Hindi possessives, but also Marathi words (का = why, की = or/that): half point
 
 

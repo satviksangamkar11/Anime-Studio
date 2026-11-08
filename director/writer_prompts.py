@@ -257,7 +257,11 @@ Col 3 reference_anchors, with all four sub-fields:
 Col 4 hook_type: one of {hooks}. The opening shot (is_opening_0_2s_hook true) and the closing shot (is_closing_hook true) use one of
    {strong}. chase, callback and expression-beat never open or close the reel. At least one shot in every three in a row is reveal,
    reversal or callback. An intended flip of eyeline, screen position or lighting carries deliberate_flip_marker (for example
-   "HARD CUT — time skip: 2h"); otherwise deliberate_flip_marker is null. When the episode runs {REHOOK_REEL_MIN_SEC:.0f} s or longer, a shot that
+   "HARD CUT — time skip: 2h"); otherwise deliberate_flip_marker is null. The checker compares each shot with the one before it
+   inside an episode: if a character's screen side or facing, or the lighting_baseline key side (left or right in the key text), differs
+   from the previous shot, the LATER shot must carry a non-empty deliberate_flip_marker. This includes every change of place: a cut
+   to a new environment whose key light comes from the other side is a flip, so mark it (for example "HARD CUT — new place: dawn
+   sun left to cloud-court light right"). Check the key side of each shot against the shot before it before you answer. When the episode runs {REHOOK_REEL_MIN_SEC:.0f} s or longer, a shot that
    STARTS between {REHOOK_WINDOW[0]:.0f} s and {REHOOK_WINDOW[1]:.0f} s of the episode must use one of {strong} (the re-hook; the checker counts the
    start time of each shot from the sum of the shot lengths before it).
 Col 5 per_second_directives: contiguous brackets from 0.0 with no gap and no overlap, up to editorial_duration_sec. One-second

@@ -282,3 +282,11 @@ def test_story_output_language_drives_untagged_texts():
 def test_cli_accepts_english_lang(tmp_path, capsys):
     clean = _write(tmp_path / "en.json", [{"id": "S1", "audio_and_dialogue_track": {"narration": {"text": "The sage spoke."}}}])
     assert sl.main([str(clean), "--lang", "en"]) == 0
+
+
+def test_ne_alone_is_hindi_and_aai_mother_is_not_a_leak_in_marathi():
+    # Kalika 3e1 (11-08): standalone "ne" is the Hindi ergative marker; "aai" is Marathi for mother
+    hi = sl.check_text("कामदेव ने सोचा: ब्रह्मा जी ने कहा शिव भी। अभी आज़माता हूँ।", "hi")
+    assert hi["language_detected"] != "mr" and not any(f["code"] == "LANG-01" for f in hi["flags"])
+    mr = sl.check_text("आकाशाच्या आधी, काळाच्या आधी, काली आई होती.", "mr")
+    assert not any(f["word"] == "आई" for f in mr["flags"])

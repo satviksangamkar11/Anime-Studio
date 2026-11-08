@@ -631,3 +631,18 @@ def test_web_call_reads_the_stream(monkeypatch):
     monkeypatch.setattr(w.subprocess, "run", lambda cmd, **kw: seen.setdefault("cmd", cmd) and R())
     w.call_claude("brief", "opus", "high", web=True)
     assert "stream-json" in seen["cmd"] and "--verbose" in seen["cmd"]
+
+
+def test_episodes_option_writes_only_the_named_reel(tmp_path, story, fake_claude, monkeypatch):
+    two = dict(STORY_ANSWER, episodes=[{"episode": 1, "title": "river", "seconds": 68.0}, {"episode": 2, "title": "lake", "seconds": 66.0}])
+    fake_claude["state"]["answers"]["1"] = "# Gate 1\n\nEpisode 1: the river\nEpisode 2: the lake\n\n```json story\n" + json.dumps(two) + "\n```\n"
+    monkeypatch.setattr(write_pack, "ONLY_EPISODES", None)
+    fake_validator(monkeypatch, lambda stage, data, bible: [])
+    run(story, tmp_path / "pack", "--episodes", "1")
+    names = [c["name"] for c in fake_claude["calls"]]
+    assert "3e1" in names and "3e2" not in names and "5e2" not in names
+
+
+def test_style_rules_tell_the_writer_the_impact_budget():
+    text = write_pack.style_rules("deva_neon")
+    assert "Impact frames" in text and "white_out" in text and "at most 4 in total" in text and "shake" not in text

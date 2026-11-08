@@ -142,6 +142,36 @@ def style_rules(pack_id, styles_dir=None):
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _impact_rules(pack):
+    """The impact-frame budget as writer rules (pack check P6; Kalika reel 1 used a type outside the pack and 7 frames in 30 s because
+    the writer was never told): allowed types, frames per type, the window budget and the palette laws on impacts."""
+    imp = pack.get("impact") if isinstance(pack.get("impact"), dict) else {}
+    allowed = _strings(imp.get("allowed_types"))
+    if not allowed:
+        return []
+    try:
+        cfg = json.loads((Path(__file__).resolve().parent.parent / "core" / "core.json").read_text(encoding="utf-8")).get("impact") or {}
+    except (OSError, ValueError):
+        cfg = {}
+    per = imp.get("type_max_frames") if isinstance(imp.get("type_max_frames"), dict) else {}
+    line = ("Impact frames (impacts / impact_frames): use ONLY these types: " + ", ".join(allowed) + ". Frames per entry at most: "
+            + ", ".join(f"{t} {n}" for t, n in per.items()) + ".")
+    if cfg.get("window_s") and cfg.get("max_frames_per_window"):
+        line += (f" In any {cfg['window_s']} s window the impact frames add up to at most {cfg['max_frames_per_window']} in total"
+                 " (count frames, not entries), so a reel needs only a few impacts: keep to the strongest beats.")
+    if cfg.get("min_gap_frames"):
+        line += f" Keep at least {cfg['min_gap_frames']} frames between two impacts."
+    out = [line]
+    for pid, p in (pack.get("palettes") or {}).items():
+        for law in (p.get("special_laws") or []) if isinstance(p, dict) else []:
+            if isinstance(law, dict) and law.get("tag") and law.get("only_impact_types"):
+                out.append(f"Palette {pid}: a shot tagged {law['tag']} uses only {', '.join(_strings(law['only_impact_types']))} impacts.")
+            if isinstance(law, dict) and isinstance(law.get("reveal_impact"), dict):
+                r = law["reveal_impact"]
+                out.append(f"Palette {pid}: an impact inside a reveal beat is {r.get('type')} x{r.get('frames')} frames.")
+    return out + [""]
+
+
 def _look_rules(pack):
     """The pack's look as writer rules (owner 2026-11-08: the writer must follow the chosen style): grade ranges per act, frame law,
     and every palette with its colours and roles. The style_lock colour line and the locked swatches come from here."""
@@ -165,6 +195,7 @@ def _look_rules(pack):
         law.append(f"pure white covers at most {round(fl['pure_white_area_cap_frac'] * 100)} percent of the frame")
     if law:
         out += ["Frame law: " + "; ".join(law) + ".", ""]
+    out += _impact_rules(pack)
     pals = pack.get("palettes") if isinstance(pack.get("palettes"), dict) else {}
     if pals:
         out += ["Palettes. The style_lock colour line, every CHAR sheet's locked swatches and every shot's colours use these. A palette",
@@ -189,6 +220,7 @@ def _look_rules(pack):
     return out
 
 
+ONLY_EPISODES = None   # set by --episodes (e.g. {1}): only those reels are written; the pack then holds just them
 STYLE_PACK = None   # the chosen style pack (dict), set in main; stage 2 is checked against it (STYLE-01, STYLE-02)
 HEX = re.compile(r"#[0-9A-Fa-f]{6}(?![0-9A-Fa-f])")
 
@@ -340,7 +372,8 @@ def call_claude(prompt, model, effort, web=False, rule=True):
                             *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
                            input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=empty, env=env, timeout=TIMEOUT_S)
     if r.returncode != 0:
-        raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-800:]}")
+        # stream-json puts the CLI's error in stdout (its last `result` event), so stderr alone is often empty
+        raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-400:]} | stdout tail: {r.stdout[-400:]}")
     return join_stream(r.stdout)
 
 
@@ -1239,6 +1272,10 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
             episodes = episodes_from(text1)
         except ValueError as exc:       # stage 1 passed its checks but names no usable episodes: a failed stage, not a traceback
             raise StageFailed(f"stage 1 answer is unusable: {exc}; delete {out.name}/stage_1_raw.json to redo it") from exc
+        if ONLY_EPISODES:                                       # --episodes: write only these reels (owner 11-08: reel 1 first)
+            episodes = [e for e in episodes if e in ONLY_EPISODES]
+            if not episodes:
+                raise StageFailed(f"--episodes {sorted(ONLY_EPISODES)} names no episode of the plan")
         per_episode, seconds, ep_texts = [], episode_seconds(plan), {}
         base = list(done)                                       # stages 1 and 2: every later call sees them
         for ep in episodes:
@@ -1353,9 +1390,18 @@ def main(argv=None):
                     help="staged only: the brief. v2.3 (default: look and hook rules, plus the style pack rules) or v2.2 (the old brief)")
     ap.add_argument("--style-pack", default=None,
                     help="staged + v2.3 only: style pack id (styles/<id>.json). Default: style_pack in the story.json next to the story")
+    ap.add_argument("--episodes", default=None, metavar="N,N",
+                    help="staged only: write only these episode numbers, e.g. 1 (default: every episode of the plan)")
     a = ap.parse_args(argv)
     if not a.staged and (a.stage_via or a.stage_model or a.prompt_version or a.style_pack):
         ap.error("--stage-via, --stage-model, --prompt-version and --style-pack need --staged")
+    if a.episodes is not None and not a.staged:
+        ap.error("--episodes needs --staged")
+    global ONLY_EPISODES
+    try:
+        ONLY_EPISODES = {int(x) for x in a.episodes.split(",") if x.strip()} if a.episodes else None
+    except ValueError:
+        ap.error("--episodes takes episode numbers like 1 or 1,2")
     if not a.staged and a.out_lang is not None:
         ap.error("--out-lang needs --staged (the single-call brief does not use it)")
     if not a.staged and a.voice:
