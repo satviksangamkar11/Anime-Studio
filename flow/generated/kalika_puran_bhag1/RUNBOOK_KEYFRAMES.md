@@ -26,3 +26,6 @@ Open the kept tile's /edit/<id>, click the title (first "Editable text"), select
 
 ## RATIOS (owner 2026-11-08: always keep the ratios in mind)
 Keyframes are 9:16 PORTRAIT (768x1376). Reference sheets and place plates are 16:9 LANDSCAPE (1376x768). Before every submit: the settings bar icon must be the portrait one (keyframe) or the landscape one (sheet); after every reload the aspect can reset, so check again. The tile's picture must be 768x1376 for a keyframe (the capture snippet already looks for exactly 768x1376; if it finds nothing, the aspect was wrong: regenerate). review_shot.py now blocks any candidate with the wrong shape automatically (RATIO BLOCK).
+
+## RENAME THAT WORKS (Claude, 2026-11-08; the earlier Enter-key method did not save)
+On the tile's /edit/<id> page (wait 5 s after load): left_click the title in the header at about (160,45) so it becomes an INPUT (verify with javascript: document.activeElement.tagName == "INPUT" and its aria-label "Editable text"); key ctrl+a; type the new name; then `find` "Done editing" and left_click that button (do NOT rely on Enter); wait 5 s; navigate to the same /edit/<id> URL again, wait 5 s and verify with javascript_tool: document.querySelector('input[aria-label="Editable text"]').value must equal the new name. If not, repeat once.
