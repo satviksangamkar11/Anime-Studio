@@ -141,13 +141,13 @@ def _camera(directives, sid, problems, notes):
             "compiled_clause": f"The camera {OFFICIAL_CAMERA_MOTION_PHRASES[motion][0]}."}
 
 
-def _stages(directives, pf, sid, problems):
+def _stages(directives, pf, sid, problems, ti=0):
     """The 7 action sentences. A second belongs to the stage holding its midpoint; a stage with no second takes the
     nearest one. Each sentence keeps the audio cues of the seconds it covers (SX-01 needs one in every stage)."""
     spans = _stage_spans(pf)
     rows = []
     for d in directives:
-        a, b = round(float(d["t0"]) * FPS), round(float(d["t1"]) * FPS)
+        a, b = round(float(d["t0"]) * FPS) + ti, round(float(d["t1"]) * FPS) + ti   # editorial time -> clip frames: the head handle comes first
         rows.append(((a + b) / 2, d))
     out = {}
     for k, (name, (a, b)) in enumerate(zip(STAGE_NAMES, spans)):
@@ -166,18 +166,24 @@ def _stages(directives, pf, sid, problems):
     return out, [list(s) for s in spans]
 
 
-def _mouth(track, pf, sid, problems, ed=None):
+def _mouth(track, pf, sid, problems, ed=None, ti=0):
+    """mouth_state keyed by CLIP second (MO-01). The V4 row keys it by EDITORIAL second, and the clip starts `ti` frames
+    (the head handle) before the editorial start, so each clip second takes the state of the editorial second holding its
+    midpoint; a second made only of handle frames (before the cut-in or after the editorial end) is never seen: closed."""
     pn = track.get("performance_notes") if isinstance(track.get("performance_notes"), dict) else {}
     if pn.get("narrator_mouth_closed") is not True:
         problems.append(f"{sid}: performance_notes.narrator_mouth_closed must be true")
     ms = pn.get("mouth_state") if isinstance(pn.get("mouth_state"), dict) else {}
     states = {}
     for s in range(math.ceil(pf / FPS)):
-        v = ms.get(str(s))
-        if v is None and ed is not None and s * FPS >= ed:
-            v = "closed"        # a second made only of handle frames (after the editorial end) is never seen; narrator mouth is closed
+        mid = (s * FPS + min(s * FPS + FPS, pf)) / 2 - ti          # editorial frame of this clip second's midpoint
+        if ed is not None and not 0 <= mid < ed:
+            states[str(s)] = "closed"
+            continue
+        e = int(mid // FPS) if mid >= 0 else 0
+        v = ms.get(str(e))
         if v is None:
-            problems.append(f"{sid}: no mouth_state for second {s} in performance_notes")
+            problems.append(f"{sid}: no mouth_state for second {e} in performance_notes")
         states[str(s)] = v
     open_secs = [k for k, v in states.items() if v == "open_non_verbal_breath"]
     rule = ("The figure's mouth stays closed for the whole shot." if not open_secs else
@@ -556,12 +562,12 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
             problems.append(f"{sid}: per_second_directives[{j}] needs numeric t0 and t1")
             directives = []
             break
-    stage_text, spans = _stages(directives, pf, sid, problems) if directives else ({k: "" for k in STAGE_NAMES}, _stage_spans(pf))
+    stage_text, spans = _stages(directives, pf, sid, problems, ti) if directives else ({k: "" for k in STAGE_NAMES}, _stage_spans(pf))
     for name in STAGE_NAMES:
         if not stage_text[name]:
             problems.append(f"{sid}: motion stage {name} has no text")
     ed_sec = row.get("editorial_duration_sec")
-    mouth, mouth_rule = _mouth(track, pf, sid, problems, round(ed_sec * FPS) if _is_num(ed_sec) else None)
+    mouth, mouth_rule = _mouth(track, pf, sid, problems, round(ed_sec * FPS) if _is_num(ed_sec) else None, ti)
     cont = row.get("continuity_handoff") if isinstance(row.get("continuity_handoff"), dict) else {}
     positions = row.get("reference_anchors", {}).get("character_positions") if isinstance(row.get("reference_anchors"), dict) else []
     positions = positions if isinstance(positions, list) else []  # a scalar here (e.g. 42) must not abort the shot
