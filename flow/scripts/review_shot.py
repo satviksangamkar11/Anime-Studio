@@ -42,6 +42,8 @@ finally:
 MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"          # primary (owner 2026-11-08: Super VL replaces omni)
 FALLBACK_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"  # used only on a model-not-found 404/400
 TEMPERATURE, TOP_P, SEED, MAX_TOKENS = 0.0, 1.0, 108, 8192
+SEP = chr(10) * 2 + "=== PASS 2 ===" + chr(10) * 2
+PASSES = 2        # owner 2026-11-08: stricter and stronger. Two independent passes (different seeds); a candidate is PASS only if BOTH passes pass (worst answer per question wins)
 IMG_SIDE, IMG_QUALITY = 1600, 85
 _http_post = requests.post                                  # the scheduler's transport; tests replace it
 
@@ -52,7 +54,12 @@ QUESTIONS = [
     ("Q4", "CONTINUITY: the candidate cuts cleanly from PREVIOUS and into NEXT: same place, same clothes, the same props beside each person, consistent positions and facing, same light and time of day. A prop's left/right side compared with a neighbour taken from a DIFFERENT camera angle or framing (close-up vs wide) is ADVISORY, not a blocker, unless the prompt states the side; if the two neighbours disagree with each other, follow the prompt"),
     ("Q5", "STYLE AND FRAME: Indian classical figure proportions and faces with 2D cel-shaded anime rendering (clean ink lines, cel shading with hard-edged shadow planes, motivated light, painterly background depth). BLOCK if it reads as a generic Japanese anime character, as Western cartoon, 3D/plastic CGI or photoreal, or if it has no cel-shaded rendering at all; the framing and layout the prompt asks for (a reference sheet's panels count as one frame); no text, letters, border or modern objects. The small four-point Flow sparkle watermark in the lower-right corner is REMOVED LATER by the studio's watermark tool: it is NEVER a defect, a blocker or an advisory; do not mention it"),
     ("Q6", "STORY FIT: nothing invented beyond the prompt (no extra people, props or actions that change the story)"),
+    ("Q7", "ANATOMY AND TEXT: every person has the right number of heads, eyes, arms, hands and fingers as in the sheet and the prompt (a four-armed deity has exactly four distinct arms, no merged, doubled, missing or melted limbs, hands with five readable fingers or a clean mudra), natural pose, no warped faces, AND no readable or letter-like glyphs, captions, labels, logos or fake script anywhere unless the prompt asks for them (BLOCK on any visible letters, even small drifting ones)"),
+    ("Q8", "COLOUR AND CANON: skin, clothes, jewellery, eyes and props use the colours of the reference sheets and the style palette (no off-palette skin tint, no recoloured hands or garments, no extra ornaments that the sheet does not show, no pale or plastic 3D look)"),
 ]
+STRICT = ("BE STRICT. This is a quality gate for a paid production, not a courtesy review. Look at the picture at full size, zone by zone (face, hands, props, background edges), before answering. "
+          "A visible defect or a doubt about one = BLOCK, never PASS. PASS only when you actually checked the item and found it correct. Each reason must name what you SAW (for example 'four arms: sword, trident, bowl, open palm'), "
+          "never just 'ok' or 'matches'. Use UNSURE only when the picture cannot be seen at all.")
 FIELDS = ("VERDICT", "FIX", "EDIT_INSTRUCTION", "REGEN_SENTENCE")
 
 
@@ -62,6 +69,8 @@ def review_prompt(job: dict, labels: list) -> str:
     shown = " | ".join(["PREVIOUS (" + prev.get("flow_title", "none") + ")"] + [f"CANDIDATE {l}" for l in labels] + ["NEXT (" + nxt.get("flow_title", "none") + ")"])
     full = ", ".join(f"image {k + 2} = CANDIDATE {l} at full size" for k, l in enumerate(labels))
     return f"""You are a READ-ONLY image reviewer. Do not create, edit, move or delete any file and do not run commands that change anything.
+
+{STRICT}
 
 Image 1 is a continuity sheet, top row: {shown}; bottom row: the reference sheets (characters, then the place, then story props: compare props with their sheet exactly).
 IGNORE the small Flow sparkle watermark at the lower right of every picture: the studio removes it afterwards with its own watermark tool, so it is never a defect, never a blocker and never an advisory, and a candidate must never be blocked, edited or regenerated because of it. Then {full}: judge faces, clothes, hands and small details there.
@@ -84,7 +93,7 @@ def parse(text: str, label: str = "") -> dict:
     """The answers of one candidate. `label` "A"/"B" reads the `A Q1: ...` lines; "" reads unlabelled lines."""
     pre = rf"[<*`\[]*(?:candidate\s+)?{re.escape(label)}[>*`\]]*[:\s]+" if label else ""
     answers = {m[1]: {"result": m[2], "reason": m[3].strip()}
-               for m in re.finditer(rf"^\s*{pre}(Q[1-6])\s*[:\-]\s*(PASS|BLOCK|ADVISORY|UNSURE)\b\s*[-:]?\s*(.*)$", text or "", re.M)}
+               for m in re.finditer(rf"^\s*{pre}(Q[1-8])\s*[:\-]\s*(PASS|BLOCK|ADVISORY|UNSURE)\b\s*[-:]?\s*(.*)$", text or "", re.M)}
     fields = {m[1]: m[2].strip() for m in re.finditer(rf"^\s*{pre}({'|'.join(FIELDS)})\s*:\s*(.*)$", text or "", re.M)}
     missing = [q for q, _ in QUESTIONS if q not in answers]
     results = [a["result"] for a in answers.values()]
@@ -102,6 +111,30 @@ def parse(text: str, label: str = "") -> dict:
     regen = fields.get("REGEN_SENTENCE")
     return {"verdict": verdict, "stated_verdict": stated, "answers": answers, "missing": missing, "fix": fix if verdict == "BLOCK" else "none",
             "edit_instruction": ins if verdict == "BLOCK" and fix == "edit" else None, "regen_sentence": regen if regen and regen.lower() != "none" else None}
+
+
+_RANK = {"PASS": 0, "ADVISORY": 1, "UNSURE": 2, "BLOCK": 3}
+
+
+def merge_passes(runs: list[dict]) -> dict:
+    """Worst case of several passes over one candidate: any BLOCK blocks, any UNSURE (without a BLOCK) is UNSURE, per question the worst answer wins;
+    the fix, edit and regen text come from the first blocking pass."""
+    if len(runs) == 1:
+        return runs[0]
+    answers = {}
+    for r in runs:
+        for q, a in r["answers"].items():
+            if q not in answers or _RANK[a["result"]] > _RANK[answers[q]["result"]]:
+                answers[q] = a
+    rank = {"PASS": 0, "UNSURE": 1, "BLOCK": 2}
+    worst = max(runs, key=lambda r: rank[r["verdict"]])
+    first_block = next((r for r in runs if r["verdict"] == "BLOCK"), worst)
+    out = dict(worst, answers=answers, passes=[r["verdict"] for r in runs],
+               missing=sorted({q for r in runs for q in r.get("missing", [])}),
+               fix=first_block["fix"], edit_instruction=first_block["edit_instruction"], regen_sentence=first_block["regen_sentence"])
+    if worst["verdict"] != "BLOCK" and any(r["verdict"] == "UNSURE" for r in runs):
+        out["verdict"] = "UNSURE"
+    return out
 
 
 def choose(results: list[dict]) -> dict:
@@ -138,12 +171,13 @@ def strip_think(text: str) -> str:
 class _Params:
     """Wraps the scheduler's post: adds the fields its call() does not set (it hardcodes temperature 0.2) and notes a model-not-found reply."""
 
-    def __init__(self, inner):
+    def __init__(self, inner, seed=SEED):
         self.inner = inner
+        self.seed = seed
         self.model_missing = False
 
     def __call__(self, url, **kwargs):
-        kwargs["json"] = dict(kwargs["json"], temperature=TEMPERATURE, top_p=TOP_P, seed=SEED, chat_template_kwargs={"enable_thinking": True})
+        kwargs["json"] = dict(kwargs["json"], temperature=TEMPERATURE, top_p=TOP_P, seed=self.seed, chat_template_kwargs={"enable_thinking": True})
         response = self.inner(url, **kwargs)
         low = (getattr(response, "text", "") or "").lower()
         if response.status_code in (400, 404) and ("not found" in low or "does not exist" in low):
@@ -151,8 +185,8 @@ class _Params:
         return response
 
 
-def make_scheduler(keys: list, *, clock=time.monotonic, sleep=time.sleep):
-    params = _Params(_http_post)
+def make_scheduler(keys: list, *, clock=time.monotonic, sleep=time.sleep, seed=SEED):
+    params = _Params(_http_post, seed)
     return NvidiaScheduler(keys, model=MODEL, clock=clock, sleep=sleep, post=params), params
 
 
@@ -183,22 +217,29 @@ def review(job: dict, candidates, keys: list, *, clock=time.monotonic, sleep=tim
     build_sheet(job, [str(c) for c in cands], sheet)
     report = base.with_name(base.stem + "__review.md")
     parts = [{"type": "text", "text": review_prompt(job, labels)}] + [image_part(p) for p in [sheet, *cands]]
-    sched, params = make_scheduler(keys, clock=clock, sleep=sleep)
-    reply = call_review(parts, sched, params)
-    text = reply.get("text") or ""
-    report.write_text(text, encoding="utf-8")
-    base.with_name(base.stem + "__raw.txt").write_text(reply.get("raw") or "", encoding="utf-8")   # the full reply incl. thinking, for calibration
+    replies, texts = [], []
+    for k in range(PASSES):
+        sched, params = make_scheduler(keys, clock=clock, sleep=sleep, seed=SEED + k)
+        reply = call_review(parts, sched, params)
+        replies.append(reply)
+        texts.append(reply.get("text") or "")
+    reply, text = replies[0], texts[0]
+    report.write_text(SEP.join(texts), encoding="utf-8")
+    base.with_name(base.stem + "__raw.txt").write_text(SEP.join(r.get("raw") or "" for r in replies), encoding="utf-8")   # the full replies incl. thinking, for calibration
     results = []
     for lab, c in zip(labels, cands):
-        r = parse(text, lab) if text.strip() else {"verdict": "UNSURE", "answers": {}, "missing": [q for q, _ in QUESTIONS], "fix": "none",
-                                                   "edit_instruction": None, "regen_sentence": None, "error": reply.get("error") or "empty reply"}
+        runs = [parse(tx, lab) if tx.strip() else {"verdict": "UNSURE", "answers": {}, "missing": [q for q, _ in QUESTIONS], "fix": "none",
+                                                   "edit_instruction": None, "regen_sentence": None, "error": rp.get("error") or "empty reply"}
+                for tx, rp in zip(texts, replies)]
+        r = merge_passes(runs)
         r.update(label=lab, candidate=str(c))
         results.append(r)
     out = {"shot_id": job["shot_id"], "flow_title": job["flow_title"], "results": results, "choice": choose(results), "sheet": str(sheet), "report": str(report),
            "model": reply["model"], "key_used": reply["key_used"], "tries": reply["tries"], "advisory_only": True, "backend": "nvidia-scheduler",
            "prompt_sha256": job["prompt_sha256"], "time": datetime.datetime.now().astimezone().isoformat()}
-    if reply.get("error"):
-        out["error"] = reply["error"]
+    errs = [rp["error"] for rp in replies if rp.get("error")]
+    if errs:
+        out["error"] = errs[0]
     base.with_name(base.stem + "__review.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
 

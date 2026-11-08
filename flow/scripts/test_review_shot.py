@@ -65,13 +65,13 @@ def ok(text):
 
 
 def canned(label="A", verdict="PASS", blocked=()):
-    lines = [f"{label} {q}: {'BLOCK' if q in blocked else 'PASS'} - checked {q}" for q in ("Q1", "Q2", "Q3", "Q4", "Q5", "Q6")]
+    lines = [f"{label} {q}: {'BLOCK' if q in blocked else 'PASS'} - checked {q}" for q in ("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8")]
     lines += [f"{label} FIX: none", f"{label} EDIT_INSTRUCTION: none", f"{label} REGEN_SENTENCE: none", f"{label} VERDICT: {verdict}"]
     return "\n".join(lines)
 
 
 def partial(label="A"):
-    return "\n".join(line for line in canned(label).splitlines() if not line.startswith((f"{label} Q5", f"{label} Q6")))
+    return "\n".join(line for line in canned(label).splitlines() if not line.startswith((f"{label} Q7", f"{label} Q8")))
 
 
 def make_jpg(path, size=(640, 480)):
@@ -200,7 +200,7 @@ def test_missing_answers_give_unsure(tmp_path, monkeypatch):
     monkeypatch.setattr(rs, "_http_post", lambda url, **kw: ok(partial("A")))
     cand = make_jpg(tmp_path / "cand.jpg")
     out = rs.review(job_dict(), [cand], KEYS, clock=FakeClock(), sleep=lambda s: None)
-    assert out["results"][0]["verdict"] == "UNSURE" and out["results"][0]["missing"] == ["Q5", "Q6"]
+    assert out["results"][0]["verdict"] == "UNSURE" and out["results"][0]["missing"] == ["Q7", "Q8"]
     assert out["choice"]["decision"] == "UNSURE"
 
 
@@ -245,3 +245,18 @@ def test_no_key_in_any_output(tmp_path, monkeypatch, capsys, env14):
     for f in tmp_path.iterdir():
         for k in env14:
             assert k.encode("utf-8") not in f.read_bytes(), f.name
+
+
+def test_two_passes_merge_to_the_worst_answer():
+    ok_run = rs.parse(canned("A"), "A")
+    bad_run = rs.parse(canned("A", blocked=("Q7",)), "A")
+    m = rs.merge_passes([ok_run, bad_run])
+    assert m["verdict"] == "BLOCK" and m["answers"]["Q7"]["result"] == "BLOCK" and m["passes"] == ["PASS", "BLOCK"]
+    assert rs.merge_passes([ok_run, rs.parse(canned("A"), "A")])["verdict"] == "PASS"
+    unsure = rs.parse(canned("A").replace("A Q8: PASS", "A Q8: UNSURE"), "A")
+    assert rs.merge_passes([ok_run, unsure])["verdict"] == "UNSURE"
+
+
+def test_prompt_is_strict_and_asks_anatomy_text_colour():
+    prompt = rs.review_prompt({"people_count": 1, "prompt": "x", "previous_shot": None, "next_shot": None}, ["A"])
+    assert "BE STRICT" in prompt and "Q7:" in prompt and "Q8:" in prompt and "letter-like glyphs" in prompt
