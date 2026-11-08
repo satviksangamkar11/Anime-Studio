@@ -12,3 +12,9 @@ Final report per job: status, kept edit id, reviewer key lines, anything unexpec
 3. After the LAST chip, `type` the full job prompt text (the `prompt` field, exact) with the computer `type` action (it appends after the chips; form_input would wipe the chips).
 4. Check: three/four/five thumbnails above the box = the chips; settings bar shows Nano Banana 2.1, the portrait icon (9:16) and x2. Click the round arrow button at the bottom right to submit once. Tiles show a percentage while generating; wait ~60 s.
 5. The composer keeps the old prompt after a submit: for the next job clear it (click the box, ctrl+a, Backspace; chips vanish too) and repeat from step 2.
+
+## LESSONS (2026-11-08 evening, from Claude's own runs)
+- The picker search lists OLD- tiles too and the exact-name row is NOT always first: after attaching, VERIFY the chips. Open any generated tile's /edit/<id> page, click the "Show asset info" button (aria-label) and read the page text: it lists the chip names used, then the exact prompt. A tile whose chip list contains an OLD-... name, or whose prompt differs from the job, must be discarded.
+- Mapping tiles to jobs: the info panel prompt text is the job's prompt (exact), so match tiles to jobs by that text, never by gallery position (gallery order is not reliable, only ~12 tiles are in the DOM at once).
+- Renames need a ~4 s wait before reload; about half of the first attempts do not save.
+- Batched click recipe (Claude): navigate to the project, wait 6 s; click composer (250,667); per chip: type "@", wait 3, click picker search (280,117), type the name, wait 2, click first row (130,185), wait 2; then type the prompt; submit arrow (452,725). The chip order matters only for the prompt text. The reload before each job clears the composer.
