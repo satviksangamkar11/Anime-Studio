@@ -44,7 +44,7 @@
     "POSE-KALI-KHADGA-UPRIGHT",
     "POSE-KALI-EYES-OPEN"
    ],
-   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Adya Kali face close-up with three eyes and forehead crescent, full body front seated on a lotus seat, full body rear; four arms holding khadga, trishula, a plain dark khappar bowl and the boon gesture; garland of fifty carved syllable beads; open flowing hair; expression row: serene, compassionate, fierce resolve; locked colours Midnight Indigo #171233 skin, Blade Steel #A9B4C4 metal, Tiger Amber #E8A13D rim, Bone White #F2EDE4 eyes and beads, Blood Crimson #A61C3C garment, one Rani Pink #E93A7D glint; costume callouts for hair, garland and garment; reverent framing.",
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Adya Kali face close-up with three eyes and forehead crescent, full body front seated on a lotus seat, full body rear; four arms holding the khadga (a broad flat ceremonial blade like a cleaver, straight lower edge, the upper edge rising to a bold round crescent hook cut into the tip like a bird's beak, a small round eye mark inside the crescent, a slim straight shaft ending in a round gold pommel; NOT a curved scimitar or sabre), trishula, a plain dark khappar bowl and the boon gesture; garland of fifty carved syllable beads; open flowing hair; expression row: serene, compassionate, fierce resolve; locked colours Midnight Indigo #171233 skin, Blade Steel #A9B4C4 metal, Tiger Amber #E8A13D rim, Bone White #F2EDE4 eyes and beads, Blood Crimson #A61C3C garment, one Rani Pink #E93A7D glint; costume callouts for hair, garland and garment; reverent framing.",
    "aspect": "16:9",
    "backdrop": "plain neutral"
   },
@@ -1466,9 +1466,9 @@
   },
   "PROP-KHADGA": {
    "name": "Khadga",
-   "description": "The goddess's curved sword.",
+   "description": "The goddess's khadga: a broad flat ceremonial blade like a cleaver, straight lower edge, the upper edge rising to a bold round crescent hook cut into the tip like a bird's beak, a small round eye mark inside the crescent, a slim straight shaft ending in a round gold pommel; NOT a curved scimitar or sabre.",
    "palette_id": "durga_kali_shakti",
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single curved khadga sword on a plain neutral grey backdrop, Blade Steel #A9B4C4 blade, Tiger Amber #E8A13D hilt, front and side views."
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single the Kali khadga: a broad flat ceremonial blade like a cleaver, straight lower edge, the upper edge rising to a bold round crescent hook cut into the tip like a bird's beak, a small round eye mark inside the crescent, a slim straight shaft ending in a round gold pommel; NOT a curved scimitar or sabre, on a plain neutral grey backdrop, Blade Steel #A9B4C4 blade, Tiger Amber #E8A13D shaft and pommel, front and side views."
   },
   "PROP-NEELKAMAL": {
    "name": "Blue lotus",
