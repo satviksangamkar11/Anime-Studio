@@ -148,6 +148,15 @@ def test_model_not_found_404_falls_back(monkeypatch):
     assert res["model"] == rs.FALLBACK_MODEL and "A Q1" in res["text"]
 
 
+def test_empty_reply_is_retried_once(monkeypatch):
+    replies = [ok("<think>only thinking</think>"), ok(canned("A"))]
+    monkeypatch.setattr(rs, "_http_post", lambda url, **kw: replies.pop(0))
+    clock = FakeClock()
+    sched, params = rs.make_scheduler(KEYS, clock=clock, sleep=clock.sleep)
+    res = rs.call_review(PARTS, sched, params)
+    assert "A Q1" in res["text"] and not replies
+
+
 def test_other_client_error_does_not_fall_back(monkeypatch):
     models = []
 
