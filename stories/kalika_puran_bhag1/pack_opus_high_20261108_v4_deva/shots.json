@@ -4,7 +4,7 @@
   "seconds": 6.0,
   "aspect": "9:16",
   "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
-  "action": "0.0-1.0s Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep 1.0-2.0s Her left eye opens; the brows soften, the gaze is steady and kind 2.0-3.0s The forehead eye opens with a small Rani Pink glint; the crescent above catches cool light 3.0-4.0s All three eyes stay open and calm; strands of open hair lift like smoke behind her head 4.0-5.0s A faint smile reaches the eyes; the syllable beads of her garland glint as they sway 5.0-6.0s Her gaze lowers toward the viewer with compassion",
+  "action": "0.0-1.0s Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep 1.0-2.0s Her left eye opens; the brows soften, the gaze is steady and kind 2.0-3.0s The forehead eye opens with a small Rani Pink glint; the crescent above catches cool light 3.0-4.0s All three eyes stay open and calm; strands of open hair lift like smoke behind her head 4.0-5.0s A faint smile reaches the eyes; the bone-white skulls of her garland glint as they sway 5.0-6.0s Her gaze lowers toward the viewer with compassion",
   "camera": "extreme close-up on the eyes, slow push in begins extreme close-up, slow push in continues extreme close-up, slow push in continues push in eases, focus shifts to the drifting hair slow push in, framing the face and the top of the garland push in ends on the face",
   "sound": "a low bell blooms out of silence as the first eye opens a soft rush of fire as the forehead eye opens",
   "id": "SHOT-001",
@@ -85,7 +85,7 @@
    {
     "t0": 4.0,
     "t1": 5.0,
-    "action_pose_expression": "A faint smile reaches the eyes; the syllable beads of her garland glint as they sway",
+    "action_pose_expression": "A faint smile reaches the eyes; the bone-white skulls of her garland glint as they sway",
     "camera": "slow push in, framing the face and the top of the garland",
     "spatial_position": "center, near depth",
     "audio_cue": "carved beads click softly",

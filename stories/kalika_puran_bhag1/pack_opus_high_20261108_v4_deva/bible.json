@@ -21,14 +21,14 @@
    "name": "Adya Dakshina Kali (opening iconography)",
    "role": "voice-over iconography for the opening of Episode 1",
    "source_class": "CANON (described in this telling); lotus seat is VISUAL_STAGING",
-   "description": "The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads. Her Raktabija-mardini form adds four arms holding khadga, trishula and khappar bowl, with the fourth hand in the boon gesture. The text's severed-head garland and seat of hands are replaced by the syllable garland and a lotus seat. A small red tongue tip shows at the lips in the classical manner, and her gaze is calm and compassionate.",
+   "description": "The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty human skulls (munda-mala, one for each letter of the alphabet). Her Raktabija-mardini form adds four arms holding khadga, trishula and khappar bowl, with the fourth hand in the boon gesture. The text's garland of human skulls (narmunda-mala) is shown as a clean bone-white garland of fifty skulls, one for each letter of the alphabet; only the seat of severed hands is replaced by a lotus seat. A small red tongue tip shows at the lips in the classical manner, and her gaze is calm and compassionate.",
    "proportions": "7 heads",
    "palette_id": "durga_kali_shakti",
    "swatches": [
     "Midnight Indigo #171233 (skin mass, deepened)",
     "Blade Steel #A9B4C4 (khadga and trishula, cool rim)",
     "Tiger Amber #E8A13D (crescent, warm rim)",
-    "Bone White #F2EDE4 (eyes, syllable beads)",
+    "Bone White #F2EDE4 (eyes, skull garland)",
     "Blood Crimson #A61C3C (lower garment, tongue tip)",
     "Rani Pink #E93A7D (neon accent: third-eye glint only)"
    ],
@@ -44,7 +44,7 @@
     "POSE-KALI-KHADGA-UPRIGHT",
     "POSE-KALI-EYES-OPEN"
    ],
-   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Adya Kali face close-up with three eyes and forehead crescent, full body front seated on a lotus seat, full body rear; four arms holding the khadga (a broad flat ceremonial blade like a cleaver, straight lower edge, the upper edge rising to a bold round crescent hook cut into the tip like a bird's beak, a small round eye mark inside the crescent, a slim straight shaft ending in a round gold pommel; NOT a curved scimitar or sabre), trishula, a plain dark khappar bowl and the boon gesture; garland of fifty carved syllable beads; open flowing hair; expression row: serene, compassionate, fierce resolve; locked colours Midnight Indigo #171233 skin, Blade Steel #A9B4C4 metal, Tiger Amber #E8A13D rim, Bone White #F2EDE4 eyes and beads, Blood Crimson #A61C3C garment, one Rani Pink #E93A7D glint; costume callouts for hair, garland and garment; reverent framing.",
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Adya Kali face close-up with three eyes and forehead crescent, full body front seated on a lotus seat, full body rear; four arms holding the khadga (a broad flat ceremonial blade like a cleaver, straight lower edge, the upper edge rising to a bold round crescent hook cut into the tip like a bird's beak, a small round eye mark inside the crescent, a slim straight shaft ending in a round gold pommel; NOT a curved scimitar or sabre), trishula, a plain dark khappar bowl and the boon gesture; garland of fifty human skulls (munda-mala: bone-white skulls, one for each letter of the alphabet, no blood); open flowing hair; expression row: serene, compassionate, fierce resolve; locked colours Midnight Indigo #171233 skin, Blade Steel #A9B4C4 metal, Tiger Amber #E8A13D rim, Bone White #F2EDE4 eyes and skulls, Blood Crimson #A61C3C garment, one Rani Pink #E93A7D glint; costume callouts for hair, garland and garment; reverent framing.",
    "aspect": "16:9",
    "backdrop": "plain neutral"
   },
@@ -1549,10 +1549,10 @@
    "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single long spear with a leaf-shaped head on a plain neutral grey backdrop, Bronze Oxide #9C6B30 shaft, Kavach Glow #FFD966 head, front and side views."
   },
   "PROP-AKSHARA-MALA": {
-   "name": "Fifty-syllable garland",
-   "description": "Kali's garland of fifty syllable beads, used in place of the severed-head garland.",
+   "name": "Munda-mala (garland of fifty skulls)",
+   "description": "Kali's garland of fifty human skulls (munda-mala, one for each letter of the alphabet).",
    "palette_id": "durga_kali_shakti",
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single long garland of carved syllable beads on a plain neutral grey backdrop, Bone White #F2EDE4 beads, Blood Crimson #A61C3C cord, laid in a loop."
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single long garland of fifty bone-white human skulls on a cord on a plain neutral grey backdrop, each skull carved with a letter, no blood, Bone White #F2EDE4 skulls, Blood Crimson #A61C3C cord, laid in a loop."
   }
  },
  "forbidden_looks": [
