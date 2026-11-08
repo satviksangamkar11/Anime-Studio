@@ -762,9 +762,9 @@
    "name": "Himalayan foothill hermitage",
    "description": "Dawn hermitage where the frame story is asked and told.",
    "palette_id": "hanuman_vayu",
-   "continuity_landmarks": ["thatched hut of deodar poles on the right", "tall deodar on the left", "round stone platform with a low ring of fire stones", "three snow peaks above"],
-   "lighting_baseline": {"key": "low dawn sun from screen left", "fill": "Sky Teal sky bounce", "rim": "warm Gada Gold edge from the fire stones", "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"},
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and a low ring of fire stones with a thin curl of smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows."
+   "continuity_landmarks": ["thatched hut of deodar poles on the right", "tall deodar on the left", "round stone platform holding a square brick yajna kunda (sacrificial fire pit) with ritual vessels", "three snow peaks above"],
+   "lighting_baseline": {"key": "low dawn sun from screen left", "fill": "Sky Teal sky bounce", "rim": "warm Gada Gold edge from the yajna fire", "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"},
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and a low ring of yajna kunda with a thin curl of smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows."
   },
   "ENV-BRAHMA-SABHA": {
    "name": "Lotus assembly in the clouds",
@@ -1295,7 +1295,7 @@
    "fixed_landmarks": [
     "thatched hut of deodar poles on the right",
     "tall deodar on the left",
-    "round stone platform with a low ring of fire stones",
+    "round stone platform holding a square brick yajna kunda (sacrificial fire pit) with ritual vessels",
     "three snow peaks above"
    ],
    "character_positions": [
@@ -1321,7 +1321,7 @@
    "lighting_baseline": {
     "key": "low dawn sun from screen left",
     "fill": "Sky Teal sky bounce",
-    "rim": "warm Gada Gold edge from the fire stones",
+    "rim": "warm Gada Gold edge from the yajna fire",
     "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"
    }
   },
@@ -1381,8 +1381,8 @@
     "action_pose_expression": "His eyes open, calm and bright; the beard sways a beat after his head",
     "camera": "medium on Markandeya, truck slows",
     "spatial_position": "Markandeya center-right, mid depth",
-    "audio_cue": "the fire stones tick softly",
-    "handoff_to_next_second": "smoke curls up from the fire stones"
+    "audio_cue": "the yajna kunda tick softly",
+    "handoff_to_next_second": "smoke curls up from the yajna fire"
    },
    {
     "t0": 6.0,
@@ -1465,7 +1465,7 @@
    "focal_value": "lightest",
    "impact_frames": [],
    "vfx": [
-    {"color": "Gada Gold", "role": "ember glint on the fire stones"},
+    {"color": "Gada Gold", "role": "ember glint on the yajna kunda"},
     {"color": "Cloud White", "role": "rising smoke and mist bands"}
    ],
    "accent_use": false,

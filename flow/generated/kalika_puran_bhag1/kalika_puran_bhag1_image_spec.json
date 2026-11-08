@@ -128,7 +128,7 @@
    "place": "ENV-MARKANDEYA-ASHRAM",
    "props": [],
    "action": "Wide shot: The munis on the left lean in, eyes lifting toward the sage. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth.",
-   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones.",
+   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the yajna fire.",
    "reference_sentence": "Portrait 9:16 frame, vertical picture.",
    "base_edit_id": null,
    "edit_instruction": null,
@@ -147,7 +147,7 @@
    "place": "ENV-MARKANDEYA-ASHRAM",
    "props": [],
    "action": "Truck ends shot: A curl of smoke rises between sage and munis and drifts toward the sky; everyone stays still, listening. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth.",
-   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones.",
+   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the yajna fire.",
    "reference_sentence": "Portrait 9:16 frame, vertical picture.",
    "base_edit_id": null,
    "edit_instruction": null,
@@ -438,7 +438,6 @@
   "chip names are derived from ids (character id; place id with _ and __v01; prop id; style STYLE_CHIP_SHEET__v01): check each against the exact Flow asset name when uploaded",
   "character sentences, place texts, prop sentences and the style text are built from bible fields only (age, heads, attributes, layers, light, line, shading): the owner's approved wording is not in the pack, so review them before any Flow run",
   "END frames (B) are new generations from end_state text: not edits of their A tile, and the A tile is not attached as a chip (build_jobs has no such chip; IMAGE_SYSTEM_FULL.md section 3)",
-  "outputs_root defaulted to D:/aai work/flow_outputs/anime_kalika_puran_bhag1 (pass --outputs-root to change it)",
-  "flow_project is not set: fill in the Flow project id before any Flow run"
+  "outputs_root defaulted to D:/aai work/flow_outputs/anime_kalika_puran_bhag1 (pass --outputs-root to change it)"
  ]
 }

@@ -288,12 +288,12 @@
    "name": "Kamadeva (Manmatha, Madana, Kandarpa)",
    "role": "mind-born god of desire; tries again and again to move Shiva",
    "source_class": "CANON (golden body with red hands, face and feet, flower bow, makara mount); garments and ornaments from traditional sources; the parrot mount is not used",
-   "description": "A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck. He wears a dark charcoal dhoti, gold ornaments, a flower garland and pomegranate-flower earrings. He carries Unmada, the flower bow, in his left hand, with five flower-tipped arrows. His mount is a makara. He carries himself with a playful confidence that turns quickly to fear.",
+   "description": "A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck. He wears a dark charcoal dhoti, gold ornaments, a flower garland and pomegranate-flower earrings. He carries Unmada, the flower bow, in his left hand, with five flower-tipped arrows. His mount is a makara. He carries himself with a playful confidence that turns quickly to fear.",
    "proportions": "7.5 heads",
    "palette_id": "karna_surya",
    "swatches": [
     "Molten Gold #FFB627 (skin)",
-    "Ember Red #C4442A (hands, face, feet tint)",
+    "Ember Red #C4442A (faint blush tint on palms, soles, cheeks only)",
     "Charcoal Iron #1C1C24 (dhoti)",
     "Kavach Glow #FFD966 (ornaments)",
     "Bronze Oxide #9C6B30 (shadow)",
@@ -314,7 +314,7 @@
     "POSE-KAMA-HIDE-BEHIND-TREE",
     "POSE-KAMA-ON-MAKARA"
    ],
-   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Kamadeva face close-up, full body front, full body rear, plus a side panel with his makara mount; golden skin with red-tinged hands, face and feet, broad chest, conch-like neck, charcoal dhoti, gold ornaments, flower garland, pomegranate-flower earrings; prop callouts: the flower bow Unmada and five flower-tipped arrows; expression row: playful confidence, aim, fear, pleading; locked colours Molten Gold #FFB627, Ember Red #C4442A, Charcoal Iron #1C1C24, Kavach Glow #FFD966; costume callouts for dhoti and garland.",
+   "sheet_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Kamadeva face close-up, full body front, full body rear, plus a side panel with his makara mount; golden skin (Molten Gold #FFB627 on the whole body, face and hands) with only a faint rosy-red tinge (Ember Red #C4442A at low strength, a soft blush) on the palms, fingertips, soles and cheeks, NOT solid red hands, NOT red feet, NOT a red or orange face, broad chest, conch-like neck, charcoal dhoti, gold ornaments, flower garland, pomegranate-flower earrings; large prop callouts: the flower bow Unmada with a sugarcane core wound with flowers and a fine string of tiny dark bees (add a close-up of the bee string), and five flower-tipped arrows laid in a row, each tip clearly different and drawn in detail: ashoka blossom, mango blossom, jasmine, blue lotus, white lotus (named Harshana, Lochana, Mohana, Shoshana, Marana in that order), the same bow held in his left hand in the front view; expression row: playful confidence, aim, fear, pleading; locked colours Molten Gold #FFB627, Ember Red #C4442A, Charcoal Iron #1C1C24, Kavach Glow #FFD966; costume callouts for dhoti and garland.",
    "aspect": "16:9",
    "backdrop": "plain neutral"
   },
@@ -1131,21 +1131,21 @@
   },
   "ENV-MARKANDEYA-ASHRAM": {
    "name": "Himalayan foothill hermitage",
-   "description": "Dawn hermitage where the frame story is asked and told.",
+   "description": "Dawn hermitage with a yajna kunda, where the frame story is asked and told.",
    "palette_id": "hanuman_vayu",
    "continuity_landmarks": [
     "thatched hut of deodar poles on the right",
     "tall deodar on the left",
-    "round stone platform with a low ring of fire stones",
+    "round stone platform holding a square brick yajna kunda (sacrificial fire pit) with ritual vessels",
     "three snow peaks above"
    ],
    "lighting_baseline": {
     "key": "low dawn sun from screen left",
     "fill": "Sky Teal sky bounce",
-    "rim": "warm Gada Gold edge from the fire stones",
+    "rim": "warm Gada Gold edge from the yajna fire",
     "shot_modifiers": "BUILD: keep fill low for 0.20-0.45 brightness"
    },
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and a low ring of fire stones with a thin curl of smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows."
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and, at its centre, a square stepped brick yajna kunda (Vedic sacrificial fire pit, three tiers of fired brick with a raised rim) holding small steady sacred flames, with a golden sruva ladle, a bundle of kusha grass, neatly stacked samidha sticks and a copper ghee vessel placed beside it, and a thin curl of sacred smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows."
   },
   "ENV-BRAHMA-SABHA": {
    "name": "Lotus assembly in the clouds",
@@ -1345,18 +1345,18 @@
    "description": "Daksha's yajna, Episodes 8 and 10; it has an intact state and a destroyed state.",
    "palette_id": "karna_surya",
    "continuity_landmarks": [
-    "central square fire pit",
+    "central square yajna kunda on a raised vedi",
     "eight directional banner poles around the edge",
     "canopy pavilion on the right",
     "entry gate on the left"
    ],
    "lighting_baseline": {
-    "key": "Molten Gold fire from the central pit",
+    "key": "Molten Gold fire from the central yajna kunda",
     "fill": "Dusk Clay earth bounce",
     "rim": "Ember Red heat edge",
     "shot_modifiers": "destroyed state: toppled poles, scattered ash and smoke, brightness 0.25-0.55 with Arrow Energy as the only neon"
    },
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a vast yajna enclosure on open earth, a long rectangular earth altar of Dusk Clay #8A5A44 with a central square fire pit burning Molten Gold #FFB627, rows of smaller fire pits, eight tall directional banner poles with weapon stands around the edge, a canopy pavilion of Bronze Oxide #9C6B30 cloth on the right, an entry gate on the left, golden ladles and offering bowls on mats, Charcoal Iron #1C1C24 smoke columns, Ember Red #C4442A heat edges."
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 9:16 vertical, unoccupied: a vast yajna enclosure on open earth, a long rectangular earth altar of Dusk Clay #8A5A44 with a central square stepped brick yajna kunda burning sacred Molten Gold #FFB627 flames on a raised vedi, rows of smaller yajna kundas, sacrificial posts (yupa), seated rows of priests' mats, eight tall directional banner poles with weapon stands around the edge, a canopy pavilion of Bronze Oxide #9C6B30 cloth on the right, an entry gate on the left, golden ladles and offering bowls on mats, Charcoal Iron #1C1C24 smoke columns, Ember Red #C4442A heat edges."
   },
   "ENV-COSMIC-SKY": {
    "name": "Night sky above the earth",
@@ -1495,10 +1495,10 @@
    "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single round offering tray on a plain neutral grey backdrop holding palasha flowers, barley and rice, sesame seeds, a small curd bowl and fruits, Tiger Amber #E8A13D brass, Blood Crimson #A61C3C flowers, top view."
   },
   "PROP-YAJNA-KUNDA": {
-   "name": "Yajna fire pit",
-   "description": "Square stepped fire pit with ladles.",
+   "name": "Yajna kunda (Vedic sacrificial altar)",
+   "description": "A square stepped brick yajna kunda with the full ritual set: sruva and sruchi ladles, kusha grass, samidha sticks, a ghee vessel and a kalash with mango leaves. It is a sacred altar of offering, never a campfire or a fireplace.",
    "palette_id": "karna_surya",
-   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Single square stepped fire pit on a plain neutral grey backdrop, Dusk Clay #8A5A44 brick, Molten Gold #FFB627 flames, two golden ladles, three-quarter view."
+   "card_prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Yajna kunda on a plain neutral grey backdrop: a square stepped brick Vedic altar pit of Dusk Clay #8A5A44 brick with a raised rim, Molten Gold #FFB627 sacred flames rising straight, golden sruva and sruchi ladles, a bundle of kusha grass, stacked samidha sticks, a copper ghee vessel and a kalash with mango leaves laid beside it, three-quarter view; clearly a sacrificial altar, not a campfire or fireplace."
   },
   "PROP-HAMSA-RATHA": {
    "name": "Swan chariot",

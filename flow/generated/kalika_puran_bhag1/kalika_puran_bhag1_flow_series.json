@@ -76,7 +76,7 @@
    "sheet_adhyay": 1,
    "sheet": "CHAR-KAMADEVA__identity_master.png",
    "accepted": false,
-   "sentence": "Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet"
+   "sentence": "Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet"
   },
   "CHAR-SHIVA": {
    "name": "Shiva (Shambhu, Mahadeva, Hara)",
@@ -99,7 +99,7 @@
    "sheet_adhyay": 1,
    "sheet": "ENV-MARKANDEYA-ASHRAM.png",
    "accepted": false,
-   "text": "the himalayan foothill hermitage set: Dawn hermitage where the frame story is asked and told; light low dawn sun from screen left"
+   "text": "the himalayan foothill hermitage set: Dawn hermitage with a yajna kunda, where the frame story is asked and told; light low dawn sun from screen left"
   },
   "ENV-BRAHMA-SABHA": {
    "chip": "ENV_BRAHMA_SABHA__v01",

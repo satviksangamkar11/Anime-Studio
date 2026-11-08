@@ -467,5 +467,73 @@
   "props": [],
   "sheets": [],
   "note": "regenerate after PROP-KHADGA is accepted; replaces tile CHAR-KALI (rename old to OLD-CHAR-KALI-v01 first); chip_name stays CHAR-KALI"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "CHAR-KAMADEVA-v02",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v02",
+  "flow_title": "CHAR-KAMADEVA",
+  "characters": [
+   "CHAR-KAMADEVA"
+  ],
+  "chips": [],
+  "unaccepted_sheets": [],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. 16:9 labeled character sheet on a plain neutral grey backdrop: Kamadeva face close-up, full body front, full body rear, plus a side panel with his makara mount; golden skin (Molten Gold #FFB627 on the whole body, face and hands) with only a faint rosy-red tinge (Ember Red #C4442A at low strength, a soft blush) on the palms, fingertips, soles and cheeks, NOT solid red hands, NOT red feet, NOT a red or orange face, broad chest, conch-like neck, charcoal dhoti, gold ornaments, flower garland, pomegranate-flower earrings; large prop callouts: the flower bow Unmada with a sugarcane core wound with flowers and a fine string of tiny dark bees (add a close-up of the bee string), and five flower-tipped arrows laid in a row, each tip clearly different and drawn in detail: ashoka blossom, mango blossom, jasmine, blue lotus, white lotus (named Harshana, Lochana, Mohana, Shoshana, Marana in that order), the same bow held in his left hand in the front view; expression row: playful confidence, aim, fear, pleading; locked colours Molten Gold #FFB627, Ember Red #C4442A, Charcoal Iron #1C1C24, Kavach Glow #FFD966; costume callouts for dhoti and garland.",
+  "prompt_sha256": "de60e79ce95a7cf7adc0e4cc7061e150bc830245fcb6306bc20a2880bbca4e05",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "",
+  "aspect": "16:9",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "16:9"
+  },
+  "status": "TODO",
+  "chip_name": "CHAR-KAMADEVA",
+  "people_count": 1,
+  "props": [],
+  "sheets": [],
+  "note": "regenerate: v01 had solid red hands/feet and thin prop detail (owner 2026-11-08); replaces tile CHAR-KAMADEVA (rename old to OLD-CHAR-KAMADEVA-v01 first); chip_name stays CHAR-KAMADEVA"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "ENV-MARKANDEYA-ASHRAM-v02",
+  "scene": "REF",
+  "method": "generate",
+  "file_version": "v02",
+  "flow_title": "ENV_MARKANDEYA_ASHRAM__v01",
+  "characters": [],
+  "chips": [],
+  "unaccepted_sheets": [],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Empty environment plate, 16:9 wide frame, unoccupied: a Himalayan foothill hermitage at dawn, a thatched hut of deodar poles and Stone Grey #6E6A5E river stones on the right, a tall deodar on the left, a round stone platform with kusha grass mats and, at its centre, a square stepped brick yajna kunda (Vedic sacrificial fire pit, three tiers of fired brick with a raised rim) holding small steady sacred flames, with a golden sruva ladle, a bundle of kusha grass, neatly stacked samidha sticks and a copper ghee vessel placed beside it, and a thin curl of sacred smoke, a clear stream in the middle distance, three snow peaks in Sky Teal #2BB3C0 haze above, Cloud White #F5F1E8 mist bands, Storm Slate #3E4A5A shadows.",
+  "prompt_sha256": "d548dd949e8fa5d2f02d2855a32d87db3c87cae789fc536306835074da9b0518",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "",
+  "aspect": "16:9",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "16:9"
+  },
+  "status": "TODO",
+  "chip_name": "ENV_MARKANDEYA_ASHRAM__v01",
+  "people_count": 0,
+  "props": [],
+  "sheets": [],
+  "note": "regenerate: owner 2026-11-08 wants a real yajna kunda, not a fireplace; replaces tile ENV_MARKANDEYA_ASHRAM__v01 (rename old to RETIRED-ASHRAM-v01 first); chip_name stays ENV_MARKANDEYA_ASHRAM__v01"
  }
 ]
