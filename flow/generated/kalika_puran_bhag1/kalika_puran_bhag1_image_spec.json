@@ -1,0 +1,444 @@
+{
+ "_note": "Generated from the kalika_puran_bhag1 pack by flow/scripts/pack_to_spec.py (10 shots, 20 keyframes). Each spec shot is one keyframe: A = start, B = end. Regenerate, do not hand-edit.",
+ "adhyay": 1,
+ "slug": "kalika_puran_bhag1",
+ "slot_order": {
+  "SHOT-001": [
+   "SHOT-001A",
+   "SHOT-001B"
+  ],
+  "SHOT-002": [
+   "SHOT-002A",
+   "SHOT-002B"
+  ],
+  "SHOT-003": [
+   "SHOT-003A",
+   "SHOT-003B"
+  ],
+  "SHOT-004": [
+   "SHOT-004A",
+   "SHOT-004B"
+  ],
+  "SHOT-005": [
+   "SHOT-005A",
+   "SHOT-005B"
+  ],
+  "SHOT-006": [
+   "SHOT-006A",
+   "SHOT-006B"
+  ],
+  "SHOT-007": [
+   "SHOT-007A",
+   "SHOT-007B"
+  ],
+  "SHOT-008": [
+   "SHOT-008A",
+   "SHOT-008B"
+  ],
+  "SHOT-009": [
+   "SHOT-009A",
+   "SHOT-009B"
+  ],
+  "SHOT-010": [
+   "SHOT-010A",
+   "SHOT-010B"
+  ]
+ },
+ "shots": [
+  {
+   "shot_id": "SHOT-001A",
+   "scene": "SHOT-001",
+   "method": "generate",
+   "characters": [
+    "CHAR-KALI"
+   ],
+   "place": "ENV-COSMIC-VOID",
+   "props": [],
+   "action": "Extreme close-up on the eyes shot: Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep. Adya Dakshina Kali (opening iconography) on screen center, near depth.",
+   "light": "Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-001-A.png",
+   "source_shot": "SHOT-001"
+  },
+  {
+   "shot_id": "SHOT-001B",
+   "scene": "SHOT-001",
+   "method": "generate",
+   "characters": [
+    "CHAR-KALI"
+   ],
+   "place": "ENV-COSMIC-VOID",
+   "props": [],
+   "action": "Push in ends on the face shot: Her gaze lowers toward the viewer with compassion. Adya Dakshina Kali (opening iconography) on screen center, near depth.",
+   "light": "Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-001-B.png",
+   "source_shot": "SHOT-001"
+  },
+  {
+   "shot_id": "SHOT-002A",
+   "scene": "SHOT-002",
+   "method": "generate",
+   "characters": [
+    "CHAR-KALI"
+   ],
+   "place": "ENV-COSMIC-VOID",
+   "props": [],
+   "action": "Medium shot: Kali's boon palm lowers toward the viewer; her eyes follow it, gentle. Adya Dakshina Kali (opening iconography) on screen center, mid depth.",
+   "light": "Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-002-A.png",
+   "source_shot": "SHOT-002"
+  },
+  {
+   "shot_id": "SHOT-002B",
+   "scene": "SHOT-002",
+   "method": "generate",
+   "characters": [
+    "CHAR-KALI"
+   ],
+   "place": "ENV-COSMIC-VOID",
+   "props": [],
+   "action": "Full figure shot: Her whole figure stills, eyes calm; the glow core behind her dims. Adya Dakshina Kali (opening iconography) on screen center, mid depth.",
+   "light": "Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-002-B.png",
+   "source_shot": "SHOT-002"
+  },
+  {
+   "shot_id": "SHOT-003A",
+   "scene": "SHOT-003",
+   "method": "generate",
+   "characters": [
+    "CHAR-MARKANDEYA",
+    "CHAR-HIMALAYAN-MUNIS"
+   ],
+   "place": "ENV-MARKANDEYA-ASHRAM",
+   "props": [],
+   "action": "Wide shot: The munis on the left lean in, eyes lifting toward the sage. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth.",
+   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-003-A.png",
+   "source_shot": "SHOT-003"
+  },
+  {
+   "shot_id": "SHOT-003B",
+   "scene": "SHOT-003",
+   "method": "generate",
+   "characters": [
+    "CHAR-MARKANDEYA",
+    "CHAR-HIMALAYAN-MUNIS"
+   ],
+   "place": "ENV-MARKANDEYA-ASHRAM",
+   "props": [],
+   "action": "Truck ends shot: A curl of smoke rises between sage and munis and drifts toward the sky; everyone stays still, listening. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth.",
+   "light": "Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-003-B.png",
+   "source_shot": "SHOT-003"
+  },
+  {
+   "shot_id": "SHOT-004A",
+   "scene": "SHOT-004",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-SANDHYA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Wide shot: Brahma on the lotus throne turns his creating palm upward; the eyes of his front face open. Brahma on screen center, far depth; Sandhya on screen left, mid depth; Marichi and the mind-born sons on screen right, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-004-A.png",
+   "source_shot": "SHOT-004"
+  },
+  {
+   "shot_id": "SHOT-004B",
+   "scene": "SHOT-004",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-SANDHYA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Crane ends shot: The sages exchange puzzled looks; Brahma's eyes open again and his gaze turns inward. Brahma on screen center, far depth; Sandhya on screen left, mid depth; Marichi and the mind-born sons on screen right, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-004-B.png",
+   "source_shot": "SHOT-004"
+  },
+  {
+   "shot_id": "SHOT-005A",
+   "scene": "SHOT-005",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Medium shot: A golden light swells at Brahma's chest; the brows of his front face lift in surprise. Brahma on screen center, far depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-005-A.png",
+   "source_shot": "SHOT-005"
+  },
+  {
+   "shot_id": "SHOT-005B",
+   "scene": "SHOT-005",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Arc ends shot: The sages far behind lean in, astonished; Kamadeva waits with bright eyes. Brahma on screen center, far depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-005-B.png",
+   "source_shot": "SHOT-005"
+  },
+  {
+   "shot_id": "SHOT-006A",
+   "scene": "SHOT-006",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Medium shot: Brahma raises his creating palm over Kamadeva; his eyes are steady and commanding. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-006-A.png",
+   "source_shot": "SHOT-006"
+  },
+  {
+   "shot_id": "SHOT-006B",
+   "scene": "SHOT-006",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Push in ends shot: His eyes slide toward Brahma; a sly half smile forms. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-006-B.png",
+   "source_shot": "SHOT-006"
+  },
+  {
+   "shot_id": "SHOT-007A",
+   "scene": "SHOT-007",
+   "method": "generate",
+   "characters": [
+    "CHAR-KAMADEVA",
+    "CHAR-BRAHMA",
+    "CHAR-SANDHYA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Medium on Kamadeva shot: Kamadeva draws the bow back; his eyes narrow on his aim. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-007-A.png",
+   "source_shot": "SHOT-007"
+  },
+  {
+   "shot_id": "SHOT-007B",
+   "scene": "SHOT-007",
+   "method": "generate",
+   "characters": [
+    "CHAR-KAMADEVA",
+    "CHAR-BRAHMA",
+    "CHAR-SANDHYA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Pull back ends shot: Petals drift down; Kamadeva lowers the bow, pleased, with a small smile. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-007-B.png",
+   "source_shot": "SHOT-007"
+  },
+  {
+   "shot_id": "SHOT-008A",
+   "scene": "SHOT-008",
+   "method": "generate",
+   "characters": [
+    "CHAR-SHIVA",
+    "CHAR-BRAHMA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Wide shot: A cloud shadow slides over the court; Shiva steps out of it on the left, eyes open and stern. Shiva (Shambhu, Mahadeva, Hara) on screen left, mid depth; Brahma on screen center, mid depth; Marichi and the mind-born sons on screen right, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-008-A.png",
+   "source_shot": "SHOT-008"
+  },
+  {
+   "shot_id": "SHOT-008B",
+   "scene": "SHOT-008",
+   "method": "generate",
+   "characters": [
+    "CHAR-SHIVA",
+    "CHAR-BRAHMA",
+    "CHAR-MANASA-PUTRAS"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Push in ends shot: Brahma's eyes open and flash toward screen right, shame turning to anger. Shiva (Shambhu, Mahadeva, Hara) on screen left, mid depth; Brahma on screen center, mid depth; Marichi and the mind-born sons on screen right, mid depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-008-B.png",
+   "source_shot": "SHOT-008"
+  },
+  {
+   "shot_id": "SHOT-009A",
+   "scene": "SHOT-009",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Medium shot: Brahma's eyes snap onto Kamadeva; his brows draw down in anger. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-009-A.png",
+   "source_shot": "SHOT-009"
+  },
+  {
+   "shot_id": "SHOT-009B",
+   "scene": "SHOT-009",
+   "method": "generate",
+   "characters": [
+    "CHAR-BRAHMA",
+    "CHAR-KAMADEVA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Push in ends shot: Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-009-B.png",
+   "source_shot": "SHOT-009"
+  },
+  {
+   "shot_id": "SHOT-010A",
+   "scene": "SHOT-010",
+   "method": "generate",
+   "characters": [
+    "CHAR-KAMADEVA",
+    "CHAR-BRAHMA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Close-up on Kamadeva shot: Kamadeva drops to his knees, palms open in plea, eyes glistening. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "start",
+   "keyframe_file": "SHOT-010-A.png",
+   "source_shot": "SHOT-010"
+  },
+  {
+   "shot_id": "SHOT-010B",
+   "scene": "SHOT-010",
+   "method": "generate",
+   "characters": [
+    "CHAR-KAMADEVA",
+    "CHAR-BRAHMA"
+   ],
+   "place": "ENV-BRAHMA-SABHA",
+   "props": [],
+   "action": "Push in ends on his eyes shot: Hold: a last petal lands on the bow at his knee; his breath catches. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth.",
+   "light": "Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps.",
+   "reference_sentence": "Portrait 9:16 frame, vertical picture.",
+   "base_edit_id": null,
+   "edit_instruction": null,
+   "keyframe": "end",
+   "keyframe_file": "SHOT-010-B.png",
+   "source_shot": "SHOT-010"
+  }
+ ],
+ "warnings": [
+  "characters with no age, heads or attributes in the bible (sentence is name only): CHAR-KALI, CHAR-MARKANDEYA, CHAR-HIMALAYAN-MUNIS, CHAR-BRAHMA, CHAR-SANDHYA, CHAR-MANASA-PUTRAS, CHAR-KAMADEVA, CHAR-SHIVA",
+  "not accepted yet: 8 characters, 3 places, 0 props have accepted=false, so no reference sheet is attached and no prop chip is used until the owner accepts the sheet and sets accepted=true in kalika_puran_bhag1_flow_series.json",
+  "chip names are derived from ids (character id; place id with _ and __v01; prop id; style STYLE_CHIP_SHEET__v01): check each against the exact Flow asset name when uploaded",
+  "character sentences, place texts, prop sentences and the style text are built from bible fields only (age, heads, attributes, layers, light, line, shading): the owner's approved wording is not in the pack, so review them before any Flow run",
+  "END frames (B) are new generations from end_state text: not edits of their A tile, and the A tile is not attached as a chip (build_jobs has no such chip; IMAGE_SYSTEM_FULL.md section 3)",
+  "outputs_root defaulted to D:/aai work/flow_outputs/anime_kalika_puran_bhag1 (pass --outputs-root to change it)",
+  "flow_project is not set: fill in the Flow project id before any Flow run"
+ ]
+}

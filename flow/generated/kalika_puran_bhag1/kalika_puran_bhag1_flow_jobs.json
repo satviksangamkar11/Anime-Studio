@@ -1,0 +1,900 @@
+[
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-001A",
+  "scene": "SHOT-001",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-001A__v01",
+  "characters": [
+   "CHAR-KALI"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KALI",
+   "ENV_COSMIC_VOID__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KALI__identity_master.png",
+   "ENV-COSMIC-VOID.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 1 person: Adya Dakshina Kali (opening iconography) (attached CHAR-KALI): The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads; exactly as in the attached character sheet. Setting: the void before creation set: Abstract indigo void for the opening voice-over of Episode 1; light Rani Pink glow core from low centre. Extreme close-up on the eyes shot: Syllable sparks drift inward; in the dark, Kali's right eye opens, calm and deep. Adya Dakshina Kali (opening iconography) on screen center, near depth. Show only these people and no others. Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "ff8bb109f883bca753982ab0ef6343e0081d2a3d6cc9187fbfb4a13e3990b107",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-001B",
+  "scene": "SHOT-001",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-001B__v01",
+  "characters": [
+   "CHAR-KALI"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KALI",
+   "ENV_COSMIC_VOID__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KALI__identity_master.png",
+   "ENV-COSMIC-VOID.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 1 person: Adya Dakshina Kali (opening iconography) (attached CHAR-KALI): The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads; exactly as in the attached character sheet. Setting: the void before creation set: Abstract indigo void for the opening voice-over of Episode 1; light Rani Pink glow core from low centre. Push in ends on the face shot: Her gaze lowers toward the viewer with compassion. Adya Dakshina Kali (opening iconography) on screen center, near depth. Show only these people and no others. Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "be4f6f4e6f37b601b3c009d292077c517c65c1dc7aa4ea45f0c2cb30a3405dd0",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-002A",
+  "scene": "SHOT-002",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-002A__v01",
+  "characters": [
+   "CHAR-KALI"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KALI",
+   "ENV_COSMIC_VOID__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KALI__identity_master.png",
+   "ENV-COSMIC-VOID.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 1 person: Adya Dakshina Kali (opening iconography) (attached CHAR-KALI): The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads; exactly as in the attached character sheet. Setting: the void before creation set: Abstract indigo void for the opening voice-over of Episode 1; light Rani Pink glow core from low centre. Medium shot: Kali's boon palm lowers toward the viewer; her eyes follow it, gentle. Adya Dakshina Kali (opening iconography) on screen center, mid depth. Show only these people and no others. Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "486bca2d7b5995fc4a7480fc9197b644acc3676937a50643276eaed19f5b5857",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-002B",
+  "scene": "SHOT-002",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-002B__v01",
+  "characters": [
+   "CHAR-KALI"
+  ],
+  "people_count": 1,
+  "props": [],
+  "chips": [
+   "CHAR-KALI",
+   "ENV_COSMIC_VOID__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KALI__identity_master.png",
+   "ENV-COSMIC-VOID.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 1 person: Adya Dakshina Kali (opening iconography) (attached CHAR-KALI): The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads; exactly as in the attached character sheet. Setting: the void before creation set: Abstract indigo void for the opening voice-over of Episode 1; light Rani Pink glow core from low centre. Full figure shot: Her whole figure stills, eyes calm; the glow core behind her dims. Adya Dakshina Kali (opening iconography) on screen center, mid depth. Show only these people and no others. Light: Rani Pink glow core from low centre; Midnight Indigo ambient haze; rim cool Blade Steel edge from the crescent above. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "c968de916b16dbf4620e146f52dba9f23d27cf61b28c9ab17a4061b6630d034b",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-003A",
+  "scene": "SHOT-003",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-003A__v01",
+  "characters": [
+   "CHAR-MARKANDEYA",
+   "CHAR-HIMALAYAN-MUNIS"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-MARKANDEYA",
+   "CHAR-HIMALAYAN-MUNIS",
+   "ENV_MARKANDEYA_ASHRAM__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-MARKANDEYA__identity_master.png",
+   "CHAR-HIMALAYAN-MUNIS__identity_master.png",
+   "ENV-MARKANDEYA-ASHRAM.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Markandeya Rishi (attached CHAR-MARKANDEYA): A lean, elderly Himalayan sage with a tall white jata knot and a long white beard. He wears a stone-grey shawl and a maroon dhoti, holds a tulsi-bead mala, and has a calm teaching gaze; exactly as in the attached character sheet; The Himalayan munis (attached CHAR-HIMALAYAN-MUNIS): A group of ascetics with 5 to 7 visible in front and the rest suggested by depth and shadow. They have matted hair, bark-ochre garments and kamandalus; exactly as in the attached character sheet. Setting: the himalayan foothill hermitage set: Dawn hermitage where the frame story is asked and told; light low dawn sun from screen left. Wide shot: The munis on the left lean in, eyes lifting toward the sage. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth. Show only these people and no others. Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "5ac05ab2a78fb3b287a6d4b0670b9cd7522cb6f7ff904e5b3ce0e51060e81d85",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-003B",
+  "scene": "SHOT-003",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-003B__v01",
+  "characters": [
+   "CHAR-MARKANDEYA",
+   "CHAR-HIMALAYAN-MUNIS"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-MARKANDEYA",
+   "CHAR-HIMALAYAN-MUNIS",
+   "ENV_MARKANDEYA_ASHRAM__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-MARKANDEYA__identity_master.png",
+   "CHAR-HIMALAYAN-MUNIS__identity_master.png",
+   "ENV-MARKANDEYA-ASHRAM.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Markandeya Rishi (attached CHAR-MARKANDEYA): A lean, elderly Himalayan sage with a tall white jata knot and a long white beard. He wears a stone-grey shawl and a maroon dhoti, holds a tulsi-bead mala, and has a calm teaching gaze; exactly as in the attached character sheet; The Himalayan munis (attached CHAR-HIMALAYAN-MUNIS): A group of ascetics with 5 to 7 visible in front and the rest suggested by depth and shadow. They have matted hair, bark-ochre garments and kamandalus; exactly as in the attached character sheet. Setting: the himalayan foothill hermitage set: Dawn hermitage where the frame story is asked and told; light low dawn sun from screen left. Truck ends shot: A curl of smoke rises between sage and munis and drifts toward the sky; everyone stays still, listening. Markandeya Rishi on screen center-right, mid depth; The Himalayan munis on screen left, mid depth. Show only these people and no others. Light: low dawn sun from screen left; Sky Teal sky bounce; rim warm Gada Gold edge from the fire stones. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "44e4e711793e8a6a63053a37f02ad0a788b69c14a326e2cc9b74c9e2a399b3ac",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-004A",
+  "scene": "SHOT-004",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-004A__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Wide shot: Brahma on the lotus throne turns his creating palm upward; the eyes of his front face open. Brahma on screen center, far depth; Sandhya on screen left, mid depth; Marichi and the mind-born sons on screen right, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "d8e572ea2ec69b07f5e38c5989e9fbdc119b458437caebe9175ef2c230b0ec60",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-004B",
+  "scene": "SHOT-004",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-004B__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Crane ends shot: The sages exchange puzzled looks; Brahma's eyes open again and his gaze turns inward. Brahma on screen center, far depth; Sandhya on screen left, mid depth; Marichi and the mind-born sons on screen right, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "78f4a5c4f6bbc941df586af861152dd6f07b9ecb71484d6e25c9cd00e314ff83",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-005A",
+  "scene": "SHOT-005",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-005A__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium shot: A golden light swells at Brahma's chest; the brows of his front face lift in surprise. Brahma on screen center, far depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "454e59c3e7dfa07af9cef0d98260d27a122d0ca1efc754b59bfec00a16929532",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-005B",
+  "scene": "SHOT-005",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-005B__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Arc ends shot: The sages far behind lean in, astonished; Kamadeva waits with bright eyes. Brahma on screen center, far depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "29b40020c242dc1008144784ca28fa553c2118419b2f4382825a9d1e9f08e570",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-006A",
+  "scene": "SHOT-006",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-006A__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium shot: Brahma raises his creating palm over Kamadeva; his eyes are steady and commanding. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "baa56791d0c491c925794216392260f12a49647286c1bf8b19e4aa0f8c70c877",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-006B",
+  "scene": "SHOT-006",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-006B__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Push in ends shot: His eyes slide toward Brahma; a sly half smile forms. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Marichi and the mind-born sons on screen right, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "5890e5cb1a2e677381f67fd508584a1e74a0abc27efec116a11a286fa0750f3b",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-007A",
+  "scene": "SHOT-007",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-007A__v01",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium on Kamadeva shot: Kamadeva draws the bow back; his eyes narrow on his aim. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "fc16d05546c8c03a246e2078ed502a11dea9d99188a0221a2ed9ac35c0739582",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-007B",
+  "scene": "SHOT-007",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-007B__v01",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Pull back ends shot: Petals drift down; Kamadeva lowers the bow, pleased, with a small smile. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "fad661b8e85856327e19f58600e014f349d2f98505944696de1d2f2459760d7a",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-008A",
+  "scene": "SHOT-008",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-008A__v01",
+  "characters": [
+   "CHAR-SHIVA",
+   "CHAR-BRAHMA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-SHIVA",
+   "CHAR-BRAHMA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-SHIVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Shiva (Shambhu, Mahadeva, Hara) (attached CHAR-SHIVA): Crystal-ash skin with moon-silver highlights. He has a tall jatajut with a crescent moon, and serpents coil at his neck and upper arms. He wears a tiger-skin garment with stripes in ash and void tones; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Wide shot: A cloud shadow slides over the court; Shiva steps out of it on the left, eyes open and stern. Shiva (Shambhu, Mahadeva, Hara) on screen left, mid depth; Brahma on screen center, mid depth; Marichi and the mind-born sons on screen right, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "a51208617c10b89ab2f3f9d3054b8552f02c466fca046d9c8cbcd3d64e594b91",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-008B",
+  "scene": "SHOT-008",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-008B__v01",
+  "characters": [
+   "CHAR-SHIVA",
+   "CHAR-BRAHMA",
+   "CHAR-MANASA-PUTRAS"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "CHAR-SHIVA",
+   "CHAR-BRAHMA",
+   "CHAR-MANASA-PUTRAS",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-SHIVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-MANASA-PUTRAS__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Shiva (Shambhu, Mahadeva, Hara) (attached CHAR-SHIVA): Crystal-ash skin with moon-silver highlights. He has a tall jatajut with a crescent moon, and serpents coil at his neck and upper arms. He wears a tiger-skin garment with stripes in ash and void tones; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Push in ends shot: Brahma's eyes open and flash toward screen right, shame turning to anger. Shiva (Shambhu, Mahadeva, Hara) on screen left, mid depth; Brahma on screen center, mid depth; Marichi and the mind-born sons on screen right, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "5c6b8ff0ac290da2168ff7b6e35621f5379f6b14b4d002816a6cbb4bc92bd067",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-009A",
+  "scene": "SHOT-009",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-009A__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium shot: Brahma's eyes snap onto Kamadeva; his brows draw down in anger. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "4c014d8e4eeaae327c71212a3df9c5bb5eaa5040bac16cbca0102d8f4f2a8787",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-009B",
+  "scene": "SHOT-009",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-009B__v01",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Push in ends shot: Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "0eb871e2c7e54dfac815a5f29fe094c306043f9a81db0bdfef2eb0055d603c4b",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-010A",
+  "scene": "SHOT-010",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-010A__v01",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Close-up on Kamadeva shot: Kamadeva drops to his knees, palms open in plea, eyes glistening. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "f2e792ad1e4daa9d318e2e633cf5ef53e53fc8e53981534f3090b526a3da9872",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-010B",
+  "scene": "SHOT-010",
+  "method": "generate",
+  "file_version": "v01",
+  "flow_title": "SHOT-010B__v01",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA"
+  ],
+  "people_count": 2,
+  "props": [],
+  "chips": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "ENV_BRAHMA_SABHA__v01",
+   "STYLE_CHIP_SHEET__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 2 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Push in ends on his eyes shot: Hold: a last petal lands on the bow at his knee; his breath catches. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+  "prompt_sha256": "eaabb41969820b07e4c66b790587905ac24879c2311e5927a5969cfe5d78bf82",
+  "base_edit_id": null,
+  "edit_instruction": null,
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana 2.1",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+   "download": "2K Upscaled",
+   "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+  },
+  "status": "TODO"
+ }
+]

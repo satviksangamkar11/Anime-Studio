@@ -1,0 +1,113 @@
+{
+ "_note": "Generated from the kalika_puran_bhag1 pack by flow/scripts/pack_to_spec.py. The owner sets accepted=true and the exact Flow chip name after each sheet is approved and uploaded.",
+ "version": 1,
+ "slug": "kalika_puran_bhag1",
+ "flow_project": null,
+ "outputs_root": "D:/aai work/flow_outputs/anime_kalika_puran_bhag1",
+ "model": {
+  "name": "Nano Banana 2.1",
+  "fallback": null,
+  "count": "x2",
+  "aspect": "per job: 16:9 for sheets and plates, 9:16 for keyframes (set the chip per job; see RUN_NOTES.md)",
+  "download": "2K Upscaled",
+  "_note": "Nano Banana 2.1 only, no fallback, always x2 (studio rule, IMAGE_SYSTEM_FULL.md section 1)."
+ },
+ "style": {
+  "chip": "STYLE_CHIP_SHEET__v01",
+  "chip_sheet": {
+   "sheet_adhyay": 1,
+   "sheet": "STYLE_CHIP_SHEET.png",
+   "accepted": false
+  },
+  "text": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours."
+ },
+ "tail": "Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo.",
+ "forbidden_words": [
+  "loincloth",
+  "naked",
+  "nude",
+  "bare-chested"
+ ],
+ "characters": {
+  "CHAR-KALI": {
+   "name": "Adya Dakshina Kali (opening iconography)",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-KALI__identity_master.png",
+   "accepted": false,
+   "sentence": "Adya Dakshina Kali (opening iconography) (attached CHAR-KALI): The dark shyama goddess who holds all colours. She has three eyes (sun, moon and fire) and a crescent on her forehead, and she wears a garland of fifty syllable beads; exactly as in the attached character sheet"
+  },
+  "CHAR-MARKANDEYA": {
+   "name": "Markandeya Rishi",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-MARKANDEYA__identity_master.png",
+   "accepted": false,
+   "sentence": "Markandeya Rishi (attached CHAR-MARKANDEYA): A lean, elderly Himalayan sage with a tall white jata knot and a long white beard. He wears a stone-grey shawl and a maroon dhoti, holds a tulsi-bead mala, and has a calm teaching gaze; exactly as in the attached character sheet"
+  },
+  "CHAR-HIMALAYAN-MUNIS": {
+   "name": "The Himalayan munis",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-HIMALAYAN-MUNIS__identity_master.png",
+   "accepted": false,
+   "sentence": "The Himalayan munis (attached CHAR-HIMALAYAN-MUNIS): A group of ascetics with 5 to 7 visible in front and the rest suggested by depth and shadow. They have matted hair, bark-ochre garments and kamandalus; exactly as in the attached character sheet"
+  },
+  "CHAR-BRAHMA": {
+   "name": "Brahma",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-BRAHMA__identity_master.png",
+   "accepted": false,
+   "sentence": "Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet"
+  },
+  "CHAR-SANDHYA": {
+   "name": "Sandhya",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-SANDHYA__identity_master.png",
+   "accepted": false,
+   "sentence": "Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet"
+  },
+  "CHAR-MANASA-PUTRAS": {
+   "name": "Marichi and the mind-born sons",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-MANASA-PUTRAS__identity_master.png",
+   "accepted": false,
+   "sentence": "Marichi and the mind-born sons (attached CHAR-MANASA-PUTRAS): Five to seven visible sages, with the rest suggested by depth. Marichi stands in front with a dark beard and an ochre-white uttariya. They wear sacred threads and carry kamandalus; exactly as in the attached character sheet"
+  },
+  "CHAR-KAMADEVA": {
+   "name": "Kamadeva (Manmatha, Madana, Kandarpa)",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-KAMADEVA__identity_master.png",
+   "accepted": false,
+   "sentence": "Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet tinged red. He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet"
+  },
+  "CHAR-SHIVA": {
+   "name": "Shiva (Shambhu, Mahadeva, Hara)",
+   "sheet_adhyay": 1,
+   "sheet": "CHAR-SHIVA__identity_master.png",
+   "accepted": false,
+   "sentence": "Shiva (Shambhu, Mahadeva, Hara) (attached CHAR-SHIVA): Crystal-ash skin with moon-silver highlights. He has a tall jatajut with a crescent moon, and serpents coil at his neck and upper arms. He wears a tiger-skin garment with stripes in ash and void tones; exactly as in the attached character sheet"
+  }
+ },
+ "places": {
+  "ENV-COSMIC-VOID": {
+   "chip": "ENV_COSMIC_VOID__v01",
+   "sheet_adhyay": 1,
+   "sheet": "ENV-COSMIC-VOID.png",
+   "accepted": false,
+   "text": "the void before creation set: Abstract indigo void for the opening voice-over of Episode 1; light Rani Pink glow core from low centre"
+  },
+  "ENV-MARKANDEYA-ASHRAM": {
+   "chip": "ENV_MARKANDEYA_ASHRAM__v01",
+   "sheet_adhyay": 1,
+   "sheet": "ENV-MARKANDEYA-ASHRAM.png",
+   "accepted": false,
+   "text": "the himalayan foothill hermitage set: Dawn hermitage where the frame story is asked and told; light low dawn sun from screen left"
+  },
+  "ENV-BRAHMA-SABHA": {
+   "chip": "ENV_BRAHMA_SABHA__v01",
+   "sheet_adhyay": 1,
+   "sheet": "ENV-BRAHMA-SABHA.png",
+   "accepted": false,
+   "text": "the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right"
+  }
+ },
+ "props": {}
+}
