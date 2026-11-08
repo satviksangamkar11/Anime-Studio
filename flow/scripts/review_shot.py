@@ -168,7 +168,7 @@ def call_review(parts: list, sched, params: _Params) -> dict:
         return {"error": f"scheduler {res['status']}{code}", **info}
     text = strip_think(res["text"])
     if not text:   # reasoning can eat max_tokens on a busy call: one more try before failing closed (2026-11-08, Super VL gave an empty reply once, then answered twice)
-        res = sched.call(parts, max_tokens=MAX_TOKENS)
+        res = sched.call(parts, max_tokens=MAX_TOKENS * 2)   # second try gets double room: the reasoning had used up the first budget
         text = strip_think(res["text"]) if res["status"] == "OK" else ""
     if not text:
         return {"error": "empty reply (no content outside <think>; reasoning may have used max_tokens)", **info}
