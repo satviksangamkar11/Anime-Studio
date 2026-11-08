@@ -1,0 +1,4 @@
+[
+  "test_bible_to_sheet_jobs.py::test_cli_writes_once_and_refuses_overwrite",
+  "test_bible_to_sheet_jobs.py::test_jobs_in_order_16x9_no_chips"
+]

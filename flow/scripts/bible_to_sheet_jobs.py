@@ -33,7 +33,8 @@ def sheet_jobs(bible, only=None):
             if not isinstance(prompt, str) or not prompt.strip() or (only and sid not in only):
                 continue
             jobs.append({"adhyay": 1, "shot_id": sid, "scene": "REF", "method": "generate", "file_version": "v01",
-                         "flow_title": f"{sid}__v01", "characters": [sid] if group == "characters" else [], "chips": [],
+                         "flow_title": f"{sid}__v01", "characters": [sid] if group == "characters" else [], "people_count": 1 if group == "characters" else 0,
+                         "props": [], "sheets": [], "chips": [],
                          "unaccepted_sheets": [], "prompt": prompt.strip(),
                          "prompt_sha256": hashlib.sha256(prompt.strip().encode("utf-8")).hexdigest(),
                          "base_edit_id": None, "edit_instruction": None, "previous_shot": None, "next_shot": None,

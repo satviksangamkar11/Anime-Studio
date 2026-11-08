@@ -15,6 +15,7 @@ def test_jobs_in_order_16x9_no_chips():
     assert jobs[0]["prompt"] == "Sati sheet" and jobs[0]["flow_title"] == "CHAR-SATI__v01" and jobs[0]["aspect"] == "16:9"
     assert all(j["chips"] == [] and j["method"] == "generate" for j in jobs)
     assert [j["shot_id"] for j in b.sheet_jobs(BIBLE, {"ENV-HALL"})] == ["ENV-HALL"]
+    assert [j["people_count"] for j in jobs] == [1, 0, 0] and all(j["props"] == [] and j["sheets"] == [] for j in jobs)   # review_shot reads these
 
 
 def test_cli_writes_once_and_refuses_overwrite(tmp_path):

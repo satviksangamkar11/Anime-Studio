@@ -39,8 +39,8 @@ try:
 finally:
     sys.dont_write_bytecode = _dont_write
 
-MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"    # primary: listed on /v1/models on 2026-11-06 and answered a live image call
-FALLBACK_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"  # the scheduler's own model; used only on a model-not-found 404/400
+MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"          # primary (owner 2026-11-08: Super VL replaces omni)
+FALLBACK_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"  # used only on a model-not-found 404/400
 TEMPERATURE, TOP_P, SEED, MAX_TOKENS = 0.0, 1.0, 108, 8192
 IMG_SIDE, IMG_QUALITY = 1600, 85
 _http_post = requests.post                                  # the scheduler's transport; tests replace it

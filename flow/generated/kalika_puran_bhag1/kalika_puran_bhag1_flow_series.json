@@ -2,7 +2,7 @@
  "_note": "Generated from the kalika_puran_bhag1 pack by flow/scripts/pack_to_spec.py. The owner sets accepted=true and the exact Flow chip name after each sheet is approved and uploaded.",
  "version": 1,
  "slug": "kalika_puran_bhag1",
- "flow_project": null,
+ "flow_project": "9d936443-27e4-4192-a040-a72aa77f086f",
  "outputs_root": "D:/aai work/flow_outputs/anime_kalika_puran_bhag1",
  "model": {
   "name": "Nano Banana 2.1",
