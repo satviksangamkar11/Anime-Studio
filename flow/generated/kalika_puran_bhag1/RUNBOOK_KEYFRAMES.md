@@ -29,3 +29,4 @@ Keyframes are 9:16 PORTRAIT (768x1376). Reference sheets and place plates are 16
 
 ## RENAME THAT WORKS (Claude, 2026-11-08; the earlier Enter-key method did not save)
 On the tile's /edit/<id> page (wait 5 s after load): left_click the title in the header at about (160,45) so it becomes an INPUT (verify with javascript: document.activeElement.tagName == "INPUT" and its aria-label "Editable text"); key ctrl+a; type the new name; then `find` "Done editing" and left_click that button (do NOT rely on Enter); wait 5 s; navigate to the same /edit/<id> URL again, wait 5 s and verify with javascript_tool: document.querySelector('input[aria-label="Editable text"]').value must equal the new name. If not, repeat once.
+NOTE (H3, 2026-11-08): on some layouts the "Done editing" click did not save; clicking the small check button right next to the title (about x=192,y=47) saved and verified. Try Done editing first, then the small check; always verify after reload.
