@@ -2588,7 +2588,7 @@
   "seconds": 6.0,
   "aspect": "9:16",
   "style": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours.",
-  "action": "0.0-1.0s Kamadeva drops to his knees, palms open in plea, eyes glistening 1.0-2.0s His brows tilt up in pleading; loose petals fall around him 2.0-3.0s He presses his palms together and looks up toward Brahma 3.0-4.0s Far behind at center, Brahma's silhouette stays still, his face unreadable 4.0-5.0s Hold: Kamadeva's eyes stay locked on Brahma, waiting, barely breathing 5.0-6.0s Hold: a last petal lands on the bow at his knee; his breath catches",
+  "action": "0.0-1.0s Kamadeva drops to his knees, palms open in plea, eyes glistening 1.0-2.0s His brows tilt up in pleading; loose petals fall around him 2.0-3.0s He presses his palms together and looks up toward Brahma 3.0-4.0s Far behind at center, Brahma's silhouette turns toward him, his face softening as he draws breath to answer 4.0-5.0s Hold: Kamadeva's eyes stay locked on Brahma, waiting, barely breathing 5.0-6.0s Hold: a last petal lands on the bow at his knee; his breath catches",
   "camera": "close-up on Kamadeva, slow push in begins close-up, slow push in continues close-up, slow push in continues close-up, push in continues, focus pulls to the far figure close-up, push in slows push in ends on his eyes",
   "sound": "a soft thud as Kamadeva drops to his knees a tiny tick as the last petal lands on the bow",
   "id": "SHOT-010",
@@ -2598,10 +2598,10 @@
   "pixel_frames": 158,
   "latent_slots": 47,
   "editorial_duration_sec": 6.0,
-  "purpose": "Cliffhanger: Kamadeva kneels and pleads that he only obeyed; Brahma stands silent, and the last two seconds hold on the open question of whether the curse can be undone.",
+  "purpose": "Cliffhanger: Kamadeva kneels and pleads that he only obeyed; Brahma draws breath to answer, and the last two seconds hold on the open question of whether the curse can be undone.",
   "continuity_handoff": {
    "incoming": "Kamadeva sinks to his knees from the trembling pose of SHOT-009, with Brahma still at center behind him.",
-   "outgoing": "Episode end: Kamadeva frozen in plea, a last petal resting on his bow, Brahma's silhouette unmoving.",
+   "outgoing": "Episode end: Kamadeva frozen in plea, a last petal resting on his bow, Brahma's silhouette turning toward him.",
    "loop_seam": null
   },
   "reference_anchors": {
@@ -2678,7 +2678,7 @@
    {
     "t0": 3.0,
     "t1": 4.0,
-    "action_pose_expression": "Far behind at center, Brahma's silhouette stays still, his face unreadable",
+    "action_pose_expression": "Far behind at center, Brahma's silhouette turns toward him, his face softening as he draws breath to answer",
     "camera": "close-up, push in continues, focus pulls to the far figure",
     "spatial_position": "Brahma center, far depth",
     "audio_cue": "wind thins to almost nothing",

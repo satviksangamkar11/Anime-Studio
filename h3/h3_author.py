@@ -112,16 +112,45 @@ def build_repair_prompt(base, messages, prior):
             + "\n".join("- " + m for m in messages) + "\n\nYOUR PREVIOUS REPLY:\n" + (prior or "")[:4000])
 
 
+def _placeholder_png(width, height):
+    """A valid grey PNG of the given size (stdlib only). Authoring runs BEFORE Gate B makes the real boundary frames, but the linter
+    needs two pictures of the right size to judge the authored fields (KF-06, route, PR-00 prompt compile)."""
+    import struct
+    import zlib
+
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    raw = (b"\x00" + b"\x80" * width) * height
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
 def _lint_candidate(row, derived, blueprint, fields, bible, root, prev_row, sid):
     """Messages for one candidate: converter problems and lint codes for this shot only. The shot is converted inside a
-    two-shot mini pack (the previous shot when there is one, so the cross-shot rules are checked too)."""
+    two-shot mini pack (the previous shot when there is one, so the cross-shot rules are checked too). A boundary frame that
+    is not on disk yet (images come after authoring) is a placeholder of the profile size, real frames win when present."""
+    import shutil
+    import tempfile
     cur = dict(row, h3_fields=conv.merge_h3(row, derived, fields, blueprint))
     shots = ([prev_row] if prev_row is not None else []) + [cur]
-    res = conv.convert_pack({"shots": shots, "bible": bible, "stage": {}, "asset_root": root}, languages=["en"])
-    msgs = [p for p in res["problems"] if p.startswith(sid + ":")]
-    if res["story"] is None:
-        return msgs or [f"{sid}: the mini pack could not be converted"]
-    errors = lint_story(res["story"])["errors"]
+    w, h = conv.load_default_profile("sing8_864x1536")["base_resolution"]
+    with tempfile.TemporaryDirectory() as tmp:
+        kd = os.path.join(tmp, "keyframes")
+        os.makedirs(kd)
+        for r in shots:
+            for letter in "AB":
+                name = f"{r.get('id')}-{letter}.png"
+                real = os.path.join(root, "keyframes", name) if root else None
+                if real and os.path.isfile(real):
+                    shutil.copy(real, os.path.join(kd, name))
+                else:
+                    with open(os.path.join(kd, name), "wb") as f:
+                        f.write(_placeholder_png(w, h))
+        res = conv.convert_pack({"shots": shots, "bible": bible, "stage": {}, "asset_root": tmp}, languages=["en"])
+        msgs = [p for p in res["problems"] if p.startswith(sid + ":")]
+        if res["story"] is None:
+            return msgs or [f"{sid}: the mini pack could not be converted"]
+        errors = lint_story(res["story"])["errors"]
     return msgs + [e for e in errors if e.startswith(sid + ":")]
 
 

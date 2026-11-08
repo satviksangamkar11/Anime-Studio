@@ -63,3 +63,11 @@ def test_camera_words_and_sound_words_of_the_writer_are_read():
     assert v._motion_of("medium, slow arc right begins") == "Arc Shot"
     for word in ("birdsong and the stream", "a light bowstring twang", "a deep conch-like swell"):
         assert SFX_CUE_RE.search(word)
+
+
+def test_author_placeholder_frame_is_a_valid_png_of_the_profile_size(tmp_path):
+    from h3 import h3_author
+    from h3.schema_and_linter import read_png_dimensions_on_disk
+    f = tmp_path / "x.png"
+    f.write_bytes(h3_author._placeholder_png(864, 1536))
+    assert read_png_dimensions_on_disk(str(f)) == [864, 1536]

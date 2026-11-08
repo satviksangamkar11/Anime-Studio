@@ -2729,10 +2729,10 @@
   "pixel_frames": 158,
   "latent_slots": 47,
   "editorial_duration_sec": 6.0,
-  "purpose": "Cliffhanger: Kamadeva kneels and pleads that he only obeyed; Brahma stands silent, and the last two seconds hold on the open question of whether the curse can be undone.",
+  "purpose": "Cliffhanger: Kamadeva kneels and pleads that he only obeyed; Brahma draws breath to answer, and the last two seconds hold on the open question of whether the curse can be undone.",
   "continuity_handoff": {
    "incoming": "Kamadeva sinks to his knees from the trembling pose of SHOT-009, with Brahma still at center behind him.",
-   "outgoing": "Episode end: Kamadeva frozen in plea, a last petal resting on his bow, Brahma's silhouette unmoving.",
+   "outgoing": "Episode end: Kamadeva frozen in plea, a last petal resting on his bow, Brahma's silhouette turning toward him.",
    "loop_seam": null
   },
   "reference_anchors": {
@@ -2809,7 +2809,7 @@
    {
     "t0": 3.0,
     "t1": 4.0,
-    "action_pose_expression": "Far behind at center, Brahma's silhouette stays still, his face unreadable",
+    "action_pose_expression": "Far behind at center, Brahma's silhouette turns toward him, his face softening as he draws breath to answer",
     "camera": "close-up, push in continues, focus pulls to the far figure",
     "spatial_position": "Brahma center, far depth",
     "audio_cue": "wind thins to almost nothing",
