@@ -116,6 +116,26 @@ def parse(text: str, label: str = "") -> dict:
 _RANK = {"PASS": 0, "ADVISORY": 1, "UNSURE": 2, "BLOCK": 3}
 
 
+def expected_ratio(job: dict):
+    """Width/height the picture must have: keyframes are 9:16 portrait, sheets and plates 16:9 landscape (owner 2026-11-08: always keep the ratios in mind)."""
+    prompt = job.get("prompt", "")
+    if "Portrait 9:16" in prompt or job.get("aspect") == "9:16" or str(job.get("model", {}).get("aspect", "")).startswith("9:16"):
+        return 9 / 16
+    if "16:9" in prompt or job.get("aspect") == "16:9":
+        return 16 / 9
+    return None
+
+
+def ratio_problem(job: dict, path) -> str | None:
+    want = expected_ratio(job)
+    if want is None:
+        return None
+    with Image.open(path) as im:
+        w, h = im.size
+    got = w / h
+    return None if abs(got - want) / want <= 0.03 else f"wrong aspect ratio {w}x{h} ({got:.3f}), expected {want:.3f} ({'9:16' if want < 1 else '16:9'})"
+
+
 def merge_passes(runs: list[dict]) -> dict:
     """Worst case of several passes over one candidate: any BLOCK blocks, any UNSURE (without a BLOCK) is UNSURE, per question the worst answer wins;
     the fix, edit and regen text come from the first blocking pass."""
@@ -232,6 +252,10 @@ def review(job: dict, candidates, keys: list, *, clock=time.monotonic, sleep=tim
                                                    "edit_instruction": None, "regen_sentence": None, "error": rp.get("error") or "empty reply"}
                 for tx, rp in zip(texts, replies)]
         r = merge_passes(runs)
+        bad = ratio_problem(job, c)
+        if bad:   # a wrong frame shape can never be kept, whatever the model says
+            r = dict(r, verdict="BLOCK", fix="regenerate", edit_instruction=None, ratio_error=bad,
+                     regen_sentence=r.get("regen_sentence") or "Generate the picture in the correct aspect ratio.")
         r.update(label=lab, candidate=str(c))
         results.append(r)
     out = {"shot_id": job["shot_id"], "flow_title": job["flow_title"], "results": results, "choice": choose(results), "sheet": str(sheet), "report": str(report),
@@ -264,6 +288,8 @@ def main(argv: list | None = None) -> int:
         print(f"{r['label']} {r['verdict']}  fix={r['fix']}  regen={r['regen_sentence']}  edit={r['edit_instruction']}")
         for q, x in sorted(r.get("answers", {}).items()):
             print(f"  {q} {x['result']}: {x['reason'][:140]}")
+        if r.get("ratio_error"):
+            print("  RATIO BLOCK:", r["ratio_error"])
         if r.get("error"):
             print("  error:", r["error"])
     if out.get("error"):

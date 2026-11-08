@@ -260,3 +260,15 @@ def test_two_passes_merge_to_the_worst_answer():
 def test_prompt_is_strict_and_asks_anatomy_text_colour():
     prompt = rs.review_prompt({"people_count": 1, "prompt": "x", "previous_shot": None, "next_shot": None}, ["A"])
     assert "BE STRICT" in prompt and "Q7:" in prompt and "Q8:" in prompt and "letter-like glyphs" in prompt
+
+
+def test_ratio_guard_blocks_wrong_frame_shape(tmp_path):
+    from PIL import Image
+    key = {"prompt": "x Portrait 9:16 frame, vertical picture.", "model": {}}
+    sheet = {"prompt": "x 16:9 labeled character sheet", "model": {}}
+    good, bad = tmp_path / "g.png", tmp_path / "b.png"
+    Image.new("RGB", (768, 1376)).save(good)
+    Image.new("RGB", (1376, 768)).save(bad)
+    assert rs.ratio_problem(key, good) is None and "wrong aspect ratio" in rs.ratio_problem(key, bad)
+    assert rs.ratio_problem(sheet, bad) is None and rs.ratio_problem(sheet, good) is not None
+    assert rs.ratio_problem({"prompt": "no shape", "model": {}}, bad) is None
