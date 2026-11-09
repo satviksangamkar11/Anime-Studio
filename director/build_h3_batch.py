@@ -68,7 +68,28 @@ def harden(script):
               "    try: return p.wait(timeout=limit)\n"
               "    except subprocess.TimeoutExpired:\n"
               "        import signal\n"
-              "        os.killpg(p.pid, signal.SIGKILL); p.wait(); note(f\"TIMEOUT after {limit}s: {cmd[:80]}\"); return 124\n")
+              "        os.killpg(p.pid, signal.SIGKILL); p.wait(); note(f\"TIMEOUT after {limit}s: {cmd[:80]}\"); return 124\n"
+              # render attempt S009-1 (2026-11-09): GitHub answered HTTP 504 for one pip wheel and the whole run died in 5 s; retry the install
+              "def sh_retry(cmd, log, tries=4):\n"
+              "    for n in range(1, tries + 1):\n"
+              "        rc = sh(cmd, log)\n"
+              "        if rc == 0 or n == tries: return rc\n"
+              # the runner downloads timeline.txt but not setup.log (attempt S009-2 lost the pip error text), so the log tail goes into the timeline
+              "        try: note(\"LOG TAIL: \" + open(OUT / log).read()[-700:].replace(\"\\n\", \" | \"))\n"
+              "        except Exception: pass\n"
+              "        note(f\"RETRY {n}/{tries - 1} after exit {rc}: waiting {30 * n}s\"); time.sleep(30 * n)\n")
+    pip_old = "sh(f\"cd {APP} && pip install -r requirements.txt\", \"setup.log\")"
+    if script.count(pip_old) != 1:
+        raise ValueError("run_kaggle RUNNER changed (pip install line): update build_h3_batch.harden")
+    # chumpy comes from a GitHub release that answered HTTP 504 for a whole day (2026-11-09): when the vendored wheel was uploaded, requirements.txt is pointed at it
+    pip_new = ("sh_retry(f\"cd {APP} && ( [ ! -f /content/wheels/chumpy-0.71-py3-none-any.whl ] || sed -i 's#^chumpy.*#chumpy @ file:///content/wheels/chumpy-0.71-py3-none-any.whl#' requirements.txt )"
+               " && pip install -r requirements.txt\", \"setup.log\")")
+    script = script.replace(pip_old, pip_new, 1)
+    # the owner's Hugging Face token (written to /content/.hf_token by the runner through stdin, never into a batch file) lifts the 429 limit on model downloads
+    hf_old = "os.environ[\"HF_HOME\"] = str(TMP / \"hf\")"
+    if script.count(hf_old) != 1:
+        raise ValueError("run_kaggle RUNNER changed (HF_HOME line): update build_h3_batch.harden")
+    script = script.replace(hf_old, hf_old + "\nif os.path.exists(\"/content/.hf_token\"): os.environ[\"HF_TOKEN\"] = open(\"/content/.hf_token\").read().strip()", 1)
     script = script.replace("def sh(cmd, log=\"shell.log\"):", helper + "def sh(cmd, log=\"shell.log\"):", 1)
     return script.replace(a, b, 1).replace(c, d, 1).replace(e, f, 1)
 
@@ -123,6 +144,25 @@ def legacy_rows(story, episode_id, resolution="768x1344", ids=None):
     return rows
 
 
+WHEEL = Path("D:/aai work/vendor/chumpy_0.71/chumpy-0.71-py3-none-any.whl")        # supplied by the owner, verified 2026-11-09 (vendor/chumpy_0.71/VENDOR.md)
+WHEEL_SHA256 = "ab6c59c799e2a1011a36f4e080309383c0631354c881689affa4a89b7f9d7925"
+
+
+def write_wheel_upload(folder, wheel=WHEEL, sha=WHEEL_SHA256):
+    """upload_wheel.py: writes the vendored chumpy wheel to /content/wheels on the VM (the runner uploads every upload_*.py before run.py).
+    Refuses a wheel whose sha256 is not the verified one."""
+    import base64
+    import hashlib
+    data = Path(wheel).read_bytes()
+    if hashlib.sha256(data).hexdigest() != sha:
+        raise ValueError(f"{wheel} is not the verified chumpy wheel (sha256 differs)")
+    code = ("import base64, pathlib\n"
+            "d = pathlib.Path('/content/wheels'); d.mkdir(parents=True, exist_ok=True)\n"
+            f"(d / '{Path(wheel).name}').write_bytes(base64.b64decode('{base64.b64encode(data).decode()}'))\n"
+            f"print('wheel ok', (d / '{Path(wheel).name}').stat().st_size)\n")
+    (Path(folder) / "upload_wheel.py").write_text(code, encoding="utf-8")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("story"); ap.add_argument("pack"); ap.add_argument("batch")
@@ -140,6 +180,7 @@ def main(argv=None):
     folder.mkdir(parents=True, exist_ok=True)
     script = split_blobs(harden(script), folder)
     (folder / "run.py").write_text(script, encoding="utf-8")
+    write_wheel_upload(folder)
     (folder / "render_manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False), encoding="utf-8")
     print("built", folder, "|", len(rows), "shots,", sum(r["render_frames"] for r in rows), "frames,", manifest["embed_mb_total"], "MB embedded")
     return 0

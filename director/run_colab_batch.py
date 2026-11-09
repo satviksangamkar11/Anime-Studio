@@ -20,6 +20,7 @@ import run_t0_colab as t0  # noqa: E402
 ENV = {**os.environ, "MSYS_NO_PATHCONV": "1"}     # Git Bash would turn /content into C:/Program Files/Git/content
 EXEC_TIMEOUT = 6 * 3600    # exec --timeout is an IDLE limit (seconds)
 PROOF_SECONDS = 180
+HF_TOKEN_FILE = "D:/aai work/secrets/huggingface/hf_token.txt"    # one line, never printed or logged; a missing file means no token (429 retries only)
 CLI_TIMEOUT = 600               # seconds for any single colab command except the long exec of run.py
 CLIP_POLL_SECONDS = 60         # how often finished clips are copied to this PC while the render runs
 MIN_CLIP_BYTES = 50_000         # a smaller mp4 is not a finished clip
@@ -78,6 +79,19 @@ def hardware(name):
     return None
 
 
+def script_finished(timeline):
+    """0 when the on-VM timeline says ALL DONE, 1 when it says FAILED / SETUP FAILED, None while the script is still running."""
+    try:
+        text = Path(timeline).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    if re.search(r"\] ALL DONE\s*$", text, re.M):
+        return 0
+    if re.search(r"\] (SETUP FAILED|FAILED:)", text):
+        return 1
+    return None
+
+
 def fetch_ready(name, results, got):
     """Owner rule 2026-11-09: every clip is saved to this PC as soon as its shot is done (a lost session must not lose clips).
     Reads timeline.txt, and for every `END SHOT-nnn rc=0` not in `got` downloads that shot's mp4 files; the shot id joins `got` only when every
@@ -108,9 +122,16 @@ def fetch_ready(name, results, got):
 
 
 def batch(name, gpu, run_py, results, proof_seconds=PROOF_SECONDS, poll=15, popen=subprocess.Popen, sleep=time.sleep, max_seconds=MAX_BATCH_SECONDS,
-          clip_poll=CLIP_POLL_SECONDS, clock=time.monotonic):
+          clip_poll=CLIP_POLL_SECONDS, clock=time.monotonic, hf_token_file=HF_TOKEN_FILE):
     run_cli(["usage"])
-    run_cli(["new", "-s", name, "--gpu", gpu])
+    try:
+        run_cli(["new", "-s", name, "--gpu", gpu])
+    except Exception:     # 2026-11-09: a ConnectionError left an unnamed G4 billing 10 units/hour that the CLI could not stop (MISTAKES W16)
+        print("colab new FAILED: a VM may have been created anyway. Sessions and usage now:", flush=True)
+        run_cli(["sessions"], check=False)
+        run_cli(["usage"], check=False)
+        print("A listed session the CLI cannot stop: Colab > Runtime > Manage sessions > its trash icon (not 'Terminate other sessions').", flush=True)
+        raise
     keep = False      # True only when the clips may exist on the VM and are not home yet
     proc = None
     try:
@@ -118,7 +139,18 @@ def batch(name, gpu, run_py, results, proof_seconds=PROOF_SECONDS, poll=15, pope
         if got_hw != gpu:    # review R4: a VM that is not the asked GPU is stopped at once (H3 is proven on the G4 only)
             raise RunError(f"the session is {got_hw}, not {gpu}: stopping it")
         for up in sorted(Path(run_py).parent.glob("upload_*.py")):    # the pictures go up in small parts (a big single exec hangs)
-            run_cli(["exec", "-s", name, "-f", str(up), "--timeout", "300"], timeout=300)
+            for attempt in (1, 2, 3):      # attempt S009-6: one upload died with 'socket is already closed'; an upload only writes a file, so repeating it is safe
+                try:
+                    run_cli(["exec", "-s", name, "-f", str(up), "--timeout", "300"], timeout=300)
+                    break
+                except Exception:
+                    if attempt == 3:
+                        raise
+                    print(f"upload {up.name} failed (attempt {attempt}/3): trying again in 20 s", flush=True)
+                    sleep(20)
+        if hf_token_file and Path(hf_token_file).is_file():     # owner's HF token: to the VM through stdin only (run_cli prints the arguments, never stdin)
+            run_cli(["exec", "-s", name], stdin="open('/content/.hf_token', 'w').write(" + repr(Path(hf_token_file).read_text().strip()) + ")")
+            print("HF token sent to the VM (not printed)", flush=True)
         print(f"$ colab exec -s {name} -f {run_py} (background)", flush=True)
         proc = popen(["colab", "exec", "-s", name, "-f", str(run_py), "--timeout", str(EXEC_TIMEOUT)], env=ENV)
         waited, ok = 0, False
@@ -143,6 +175,12 @@ def batch(name, gpu, run_py, results, proof_seconds=PROOF_SECONDS, poll=15, pope
                     fetch_ready(name, Path(results), got)       # each finished clip comes home at once
                 except (RunError, OSError) as e:
                     print("fetch_ready problem (the final fetch will retry):", e, flush=True)
+                done = script_finished(Path(results) / "timeline.txt")
+                if done is not None:       # W17: the local `colab exec` does not exit when run.py ends, and the VM kept billing for 10 minutes
+                    print(f"run.py finished on the VM ({'ALL DONE' if done == 0 else 'FAILED'}): stopping the wait", flush=True)
+                    proc.kill()
+                    rc = done
+                    break
                 if clock() > end:
                     print(f"BATCH DEADLINE {max_seconds} s reached: stopping the wait, fetching what finished", flush=True)
                     proc.kill()

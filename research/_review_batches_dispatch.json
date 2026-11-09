@@ -1,0 +1,10 @@
+{
+ "dispatch_rules": [
+  "research/UI_PARALLEL_DISPATCH_2026-11-07.md",
+  "research/_plan_section7_extract.md"
+ ],
+ "merge_helper": [
+  "D:/aai work/anime_studio_merge/ui/i18n_merge.py",
+  "D:/aai work/anime_studio_merge/ui/test_i18n_merge.py"
+ ]
+}

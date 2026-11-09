@@ -151,3 +151,89 @@ def test_one_failed_download_does_not_strand_the_rest(monkeypatch, tmp_path):
     with pytest.raises(r.RunError, match="did not come home"):
         r.fetch("n", tmp_path)
     assert any(g.endswith("b clip with spaces.mp4") for g in got)      # a name with spaces stays ONE path
+
+
+def spy_cli(monkeypatch):
+    inner, seen = r.run_cli, []
+
+    def spy(args, stdin=None, **kw):
+        seen.append((args, stdin))
+        return inner(args, stdin=stdin, **kw)
+    monkeypatch.setattr(r, "run_cli", spy)
+    return seen
+
+
+def test_hf_token_goes_to_the_vm_through_stdin_only(monkeypatch, tmp_path, capsys):
+    tok = tmp_path / "t.txt"
+    tok.write_text("hf_SECRET123\n")
+    calls, proc = setup(monkeypatch, [True])
+    seen = spy_cli(monkeypatch)
+    r.batch("n", "G4", Path("x.py"), "res", popen=lambda *a, **k: proc, sleep=lambda s: None, hf_token_file=tok)
+    sent = [(a, s) for a, s in seen if s and "hf_SECRET123" in s]
+    assert len(sent) == 1 and sent[0][0] == ["exec", "-s", "n"]                       # stdin of one exec writes /content/.hf_token
+    assert not any("hf_SECRET123" in " ".join(a) for a, _ in seen)                    # never in an argument
+    assert "hf_SECRET123" not in capsys.readouterr().out                              # never printed
+
+
+def test_no_token_file_means_no_token_call(monkeypatch, tmp_path):
+    calls, proc = setup(monkeypatch, [True])
+    seen = spy_cli(monkeypatch)
+    r.batch("n", "G4", Path("x.py"), "res", popen=lambda *a, **k: proc, sleep=lambda s: None, hf_token_file=tmp_path / "missing.txt")
+    assert not any(s and "hf_token" in s for _, s in seen)
+
+
+def test_failed_new_checks_for_a_stray_session(monkeypatch, capsys):
+    seen = []
+
+    def fake_cli(args, stdin=None, capture=False, check=True, timeout=None):
+        seen.append(args[0])
+        if args[0] == "new":
+            raise r.RunError("colab new failed (exit 1)")
+        return ""
+    monkeypatch.setattr(r, "run_cli", fake_cli)
+    with pytest.raises(r.RunError):
+        r.batch("n", "G4", Path("x.py"), "res", popen=lambda *a, **k: FakeProc(), sleep=lambda s: None)
+    assert seen == ["usage", "new", "sessions", "usage"] and "Manage sessions" in capsys.readouterr().out
+
+
+def test_a_dropped_upload_is_repeated(monkeypatch, tmp_path):
+    (tmp_path / "upload_00.py").write_text("print(1)")
+    calls, proc = setup(monkeypatch, [True])
+    inner = r.run_cli
+    state = {"n": 0}
+
+    def flaky(args, stdin=None, **kw):
+        if args[0] == "exec" and "-f" in args and args[args.index("-f") + 1].endswith("upload_00.py"):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise r.RunError("colab exec failed (exit 1)")
+        return inner(args, stdin=stdin, **kw)
+    monkeypatch.setattr(r, "run_cli", flaky)
+    r.batch("n", "G4", tmp_path / "run.py", "res", popen=lambda *a, **k: proc, sleep=lambda s: None)
+    assert state["n"] == 2 and calls[-1] == "stop"
+
+
+def test_the_wait_ends_when_the_timeline_says_all_done(monkeypatch, tmp_path):
+    calls, proc = setup(monkeypatch, [True], rc="hang")                 # the local colab exec never exits (W17)
+
+    def fake_ready(name, results, got):
+        results.mkdir(parents=True, exist_ok=True)
+        (results / "timeline.txt").write_text("[  1.0s] START SHOT-009\n[ 514.4s] ALL DONE\n")
+        return 0
+    monkeypatch.setattr(r, "fetch_ready", fake_ready)
+    monkeypatch.setattr(r, "fetch", lambda *a, **k: None)
+    r.batch("n", "G4", Path("x.py"), tmp_path / "res", popen=lambda *a, **k: proc, sleep=lambda s: None)
+    assert proc.killed and calls[-1] == "stop"
+
+
+def test_script_finished_reads_the_timeline(tmp_path):
+    t = tmp_path / "t.txt"
+    assert r.script_finished(t) is None
+    t.write_text("[ 5.0s] START SHOT-009\n")
+    assert r.script_finished(t) is None
+    t.write_text("[ 5.0s] SETUP FAILED: see setup.log\n")
+    assert r.script_finished(t) == 1
+    t.write_text("[ 9.0s] FAILED: SHOT-009\n")
+    assert r.script_finished(t) == 1
+    t.write_text("[ 9.0s] ALL DONE\n")
+    assert r.script_finished(t) == 0
