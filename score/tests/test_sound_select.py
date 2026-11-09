@@ -62,9 +62,13 @@ def test_tonal_slot_rejects_file_out_of_key_range():
 
 def test_passes_filter_indian_and_category():
     perc = ss.BLEND[1]["indian_perc"]
-    dharma = _entry(pack="Dharma Studio - Sounds of KSHMR Vol.5 Complete Edition", categories=["perc"])
+    dharma = _entry(pack="Dharma Studio - Sounds of KSHMR Vol.5 Complete Edition", categories=["perc"],
+                    name="KSHMR Dhol Loop 01.wav")
+    pack_only = _entry(pack="Dharma Studio - Sounds of KSHMR Vol.5 Complete Edition", categories=["perc"],
+                       name="KSHMR Techno Drum Loop.wav")
     modern = _entry(categories=["perc"])
     assert ss.passes_filter(dharma, perc, True)
+    assert not ss.passes_filter(pack_only, perc, True)  # round 4: no instrument word in path or name, no pass
     assert not ss.passes_filter(modern, perc, True)
     assert ss.passes_filter(modern, perc, None)
     assert not ss.passes_filter(dharma, ss.BLEND[2]["groove"], False)  # drum_loop cat not in dharma perc item

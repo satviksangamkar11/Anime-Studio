@@ -29,6 +29,7 @@ import soundfile as sf
 from scipy.signal import butter, fftconvolve, sosfilt, sosfiltfilt
 
 from score import sound_select as ss
+from score import eq_plan as eq
 from score.key_estimate import estimate_key
 
 SR = ss.SR
@@ -115,23 +116,23 @@ def loop_length(sample, tempo):
     return sample[:, :min(n, sample.shape[1])]
 
 
-def peaking_sos(f0, gain_db, q):
-    """RBJ peaking EQ as one second-order section."""
-    a = 10 ** (gain_db / 40.0)
-    w0 = 2 * math.pi * f0 / SR
-    alpha = math.sin(w0) / (2 * q)
-    cs = math.cos(w0)
-    b0, b1, b2 = 1 + alpha * a, -2 * cs, 1 - alpha * a
-    a0, a1, a2 = 1 + alpha / a, -2 * cs, 1 - alpha / a
-    return np.array([[b0 / a0, b1 / a0, b2 / a0, 1.0, a1 / a0, a2 / a0]])
+peaking_sos = eq.peaking_sos
+GRID8_LP_HZ = 3500.0     # Indian perc groove (v4 rules): filtered low, under 3.5 kHz
+GRID8_OFF_GAIN = 0.45    # off-beat eighths sit at about 45% of the downbeats
 
 
-def process_layer(sample, layer, kind):
-    """Low-cut, low band and EQ rules applied to one conformed piece before it is placed."""
+def process_layer(sample, layer, kind, chain=None):
+    """Low-cut, low band and EQ rules applied to one conformed piece before it is placed.
+    chain: the v5 EQ chain (eq_plan.chain_for). None = the v4 rules, kept so v4 can be rebuilt."""
+    if chain is not None:
+        return eq.apply_chain(sample, chain)
     if layer == "bass":
         return sample
     if layer == "hit" and kind in ("hit", "sting"):
         return sample
+    if kind == "grid8":  # filtered low groove: low cut plus lowpass under GRID8_LP_HZ
+        x = sosfilt(butter(4, GRID8_LP_HZ, btype="lowpass", fs=SR, output="sos"), sample, axis=1)
+        return sosfilt(butter(2, LOW_CUT_HZ, btype="highpass", fs=SR, output="sos"), x, axis=1)
     cut = GROOVE_CUT_HZ if layer == "groove" else LOW_CUT_HZ
     x = sosfilt(butter(2, cut, btype="highpass", fs=SR, output="sos"), sample, axis=1)
     if layer == "bed":
@@ -149,13 +150,16 @@ def voice_mask(total, windows_s, ramp_s=0.01):
     return np.clip(fftconvolve(m, kernel, mode="same"), 0.0, 1.0)
 
 
-def gate_layer(stem, layer, mask):
-    """Duck a layer under voice. Bass and hits keep only the low band under speech."""
+def gate_layer(stem, layer, mask, dip=False):
+    """Duck a layer under voice. Bass and hits keep only the low band under speech.
+    dip: also a 1-4 kHz dip under voice (eq_plan.DYN_DIP) on the non-lead layers."""
     if layer in ("bass", "hit"):
         low = sosfiltfilt(butter(4, LOW_BAND_HZ, btype="lowpass", fs=SR, output="sos"), stem, axis=1)
         under = low * 10 ** (LOW_DUCK_DB / 20.0)
     else:
-        under = stem * 10 ** (DUCK_DB / 20.0)
+        leads = layer in ("indian_lead", "indian_lead2")
+        src = sosfilt(eq.dyn_dip_sos(), stem, axis=1) if (dip and not leads) else stem
+        under = src * 10 ** (DUCK_DB / 20.0)
     return stem * (1.0 - mask) + under * mask
 
 
@@ -243,7 +247,7 @@ def section_sanity(stems, sample_log, plan, total):
                 continue
             seg = stems[e["layer"]][:, a:b]
             level = rms_db(seg.mean(axis=0))
-            indian = bool(e["indian_pack"])
+            indian = bool(ss.indian_sound(e))  # round 3: instrument word in path or name, not the pack
             layers.append({"layer": e["layer"], "file": e["file"], "rms_dbfs": round(level, 1),
                            "audible": level > AUDIBLE_DB, "kind": "Indian" if indian else "modern"})
         audible = [x for x in layers if x["audible"]]
@@ -275,15 +279,120 @@ def extract_voice(mp4, out_wav):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", mp4, "-vn", "-ac", "2", "-ar", str(SR), out_wav], check=True)
 
 
-# ---------------------------------------------------------------- build
-def build(selection, plan, cue, voice_wav, log=print):
+VO_SHOT_DIR = "D:/aai work/flow_outputs/anime_kalika_puran_bhag1/voices/pack_opus_high_20261108_v4_deva/vo_v4/en"
+VOICE_ONLY_WAV = os.path.join(WORK, "voice_only_en.wav")
+
+
+def build_voice_only(cue, out_path=VOICE_ONLY_WAV, shot_dir=VO_SHOT_DIR):
+    """Voice-only reference: each shot's VO clip (44.1 kHz mono) resampled to 48 kHz and placed at its
+    cue start. No model SFX. Returns rows (shot, start_s, clip_s, slot_s) for the report."""
+    from scipy.signal import resample_poly
     total = int(cue["total_samples"])
-    voice_windows = [tuple(w) for w in cue["voice"]["union"]]
-    voice_data, _ = sf.read(voice_wav, dtype="float64", always_2d=True)
-    voice_mono = voice_data.mean(axis=1)
-    if len(voice_mono) < total:
-        voice_mono = np.pad(voice_mono, (0, total - len(voice_mono)))
-    voice_mono = voice_mono[:total]
+    out = np.zeros(total)
+    rows = []
+    for shot in cue["shots"]:
+        clip, sr_in = sf.read(os.path.join(shot_dir, shot["id"] + ".wav"), dtype="float64", always_2d=True)
+        mono = clip.mean(axis=1)
+        if sr_in != SR:
+            mono = resample_poly(mono, SR, sr_in)
+        slot_s = shot["end_s"] - shot["start_s"]
+        if len(mono) / SR > slot_s + 1e-6:
+            raise ValueError(f"{shot['id']} VO is {len(mono) / SR:.3f} s, slot is {slot_s:.3f} s")
+        start = time_sample(shot["start_s"])
+        n = min(len(mono), total - start)
+        out[start:start + n] += mono[:n]
+        rows.append((shot["id"], shot["start_s"], round(len(mono) / SR, 3), round(slot_s, 3)))
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    sf.write(out_path, np.stack([out, out], axis=1).astype(np.float32), SR, subtype="PCM_24")
+    return rows
+
+
+# ---------------------------------------------------------------- build
+def _spans(sample_log, plan, layers, kinds, acts=None):
+    """(a, b, bpm, section) in samples where the chosen entries of these layers play."""
+    out = []
+    for e in sample_log:
+        if e["layer"] not in layers or e["kind"] not in kinds:
+            continue
+        if acts and plan["sections"][e["section"] - 1]["act"] not in acts:
+            continue
+        if e["kind"] == "window":
+            a, b = time_sample(e["window_s"][0]), time_sample(e["window_s"][1])
+        else:
+            a, b = e["section_start_sample"], e["section_end_sample"]
+        out.append((a, b, e["tempo_bpm"], e["section"]))
+    return out
+
+
+def _sc_row(sc_id, key, targets, sections, depth, attack, release, gr):
+    active = gr[gr > 1e-6]
+    return {"id": sc_id, "key": key, "targets": list(targets), "sections": sorted(set(sections)),
+            "depth_db": depth, "attack_ms": attack, "release": release,
+            "max_gr_db": round(float(gr.max()), 2) if gr.size else 0.0,
+            "mean_gr_db": round(float(active.mean()), 2) if active.size else 0.0,
+            "max_step_db": round(eq.max_step_db(gr), 4)}
+
+
+def sidechain_stems(stems, plan, sample_log, total, perc_clash=()):
+    """The v5 sidechains, measured on the written stems. Keys are read before any duck.
+    kick -> bass (5 dB) and pads (3 dB) in BUILD/DROP; lead 1-4 kHz band -> bed and chords (2.5 dB);
+    hit and war horn events -> every other layer (4.5 / 3 dB); perc vs groove on measured clash sections.
+    Returns (stems, rows)."""
+    rows = []
+    keys = {k: v.mean(axis=0) for k, v in stems.items()}
+    # kick -> bass and pads
+    kspans = _spans(sample_log, plan, ("groove",), ("loop",), eq.KICK_ACTS)
+    kick = sosfilt(butter(4, 150.0, btype="lowpass", fs=SR, output="sos"), keys["groove"])
+    for spec in (eq.KICK_BASS, eq.KICK_PADS):
+        gr = eq.duck_gr_db(kick, kspans, spec["depth_db"], spec["attack_ms"], release_beats=spec["release_beats"])
+        for t in spec["targets"]:
+            stems[t] = stems[t] * eq.gain_from_gr(gr)[None, :]
+        rel = ", ".join(f"S{s} {spec['release_beats'] * 60000 / bpm:.0f} ms" for _, _, bpm, s in sorted(set(kspans), key=lambda x: x[3]))
+        rows.append(_sc_row(spec["id"], "groove (kick, <150 Hz)", spec["targets"], [s for *_, s in kspans],
+                            spec["depth_db"], spec["attack_ms"], f"{spec['release_beats']} beat: {rel}", gr))
+    # lead 1-4 kHz -> bed and chords, only while the lead plays
+    lspans = _spans(sample_log, plan, ("indian_lead", "indian_lead2"), ("bed", "window"))
+    lead = keys["indian_lead"] + keys["indian_lead2"]
+    lead_band = sosfilt(butter(4, [eq.LEAD_PADS["band"][0], eq.LEAD_PADS["band"][1]], btype="bandpass",
+                               fs=SR, output="sos"), lead)
+    spec = eq.LEAD_PADS
+    gr = eq.duck_gr_db(lead_band, lspans, spec["depth_db"], spec["attack_ms"], release_ms=spec["release_ms"])
+    for t in spec["targets"]:
+        stems[t] = eq.band_duck(stems[t], gr, *spec["band"])
+    rows.append(_sc_row(spec["id"], "indian_lead + indian_lead2 (1-4 kHz)", spec["targets"],
+                        [s for *_, s in lspans], spec["depth_db"], spec["attack_ms"],
+                        f"{spec['release_ms']:.0f} ms", gr))
+    # hit events -> every other layer; war horn stab -> every other layer
+    for spec, src, kinds in ((eq.HIT_DIP, "hit", None), (eq.HORN_DIP, "indian_lead", ("oneshot",))):
+        ev = [time_sample(t) for e in sample_log if e["layer"] == src and (kinds is None or e["kind"] in kinds)
+              for t in e["times_s"]]
+        secs = [e["section"] for e in sample_log if e["layer"] == src and (kinds is None or e["kind"] in kinds)]
+        gr = eq.event_dip_db(total, ev, spec["depth_db"], spec["attack_ms"], spec["release_ms"])
+        targets = [l for l in STEM_LAYERS if l != src]
+        for t in targets:
+            stems[t] = stems[t] * eq.gain_from_gr(gr)[None, :]
+        rows.append(_sc_row(spec["id"], f"{src} events ({len(ev)})", targets, secs, spec["depth_db"],
+                            spec["attack_ms"], f"{spec['release_ms']:.0f} ms", gr))
+    # perc vs groove: the weaker layer ducks on the stronger one's hits, only where they clash
+    spec = eq.PERC_GROOVE
+    for si in perc_clash:
+        sec = plan["sections"][si]
+        a = snap_frame(sec["start_s"])
+        b = total if si == len(plan["sections"]) - 1 else snap_frame(sec["end_s"])
+        rms = {l: rms_db(stems[l][:, a:b]) for l in ("groove", "indian_perc")}
+        strong, weak = ("groove", "indian_perc") if rms["groove"] >= rms["indian_perc"] else ("indian_perc", "groove")
+        gr = eq.duck_gr_db(keys[strong], [(a, b, float(sec["bpm"]), si + 1)], spec["depth_db"], spec["attack_ms"],
+                           release_ms=spec["release_ms"])
+        stems[weak] = stems[weak] * eq.gain_from_gr(gr)[None, :]
+        rows.append(_sc_row(spec["id"], f"{strong} (stronger)", [weak], [si + 1], spec["depth_db"],
+                            spec["attack_ms"], f"{spec['release_ms']:.0f} ms", gr))
+    return stems, rows
+
+
+def build(selection, plan, cue, log=print, eq_on=True, cuts=None, perc_clash=(), sidechain=True):
+    """Layer stems before the voice gate and the gain riding (see finish). Returns (stems, sample_log, sc_rows).
+    eq_on False and sidechain False rebuild the v4 stems exactly (legacy rules)."""
+    total = int(cue["total_samples"])
     stems = {layer: np.zeros((2, total)) for layer in STEM_LAYERS}
     sample_log = []
     n_sec = len(plan["sections"])
@@ -291,6 +400,8 @@ def build(selection, plan, cue, voice_wav, log=print):
         a = snap_frame(sec["start_s"])
         b = total if idx == n_sec - 1 else snap_frame(sec["end_s"])
         tempo = float(sec["bpm"])
+        bass_slot = selection["slots"].get(ss.slot_id(idx, "bass"))
+        mud = bass_slot is not None and bass_slot["status"] == "active"
         for layer in STEM_LAYERS:
             slot = selection["slots"].get(ss.slot_id(idx, layer))
             if slot is None or slot["status"] != "active":
@@ -298,6 +409,11 @@ def build(selection, plan, cue, voice_wav, log=print):
             opt = next(o for o in slot["options"] if o["rank"] == slot["chosen"])
             spec = ss.BLEND[idx][layer] if layer in ss.LAYERS else ss.EXTRA_SPEC
             kind = slot.get("kind") or spec["kind"]  # fallback bass slots are pulses
+            chain = None
+            if eq_on:
+                sec_cuts = (cuts or {}).get(idx, {}).get(layer, ())
+                chain = eq.chain_for(layer, eq.role_of(layer, kind, opt["name"]), kind, opt["name"],
+                                     sec_cuts, mud)
             src = ss.conform_audio(opt["path"], opt["stretch"], opt["shift"])
             measured_after = None
             if spec["tonal"]:
@@ -314,16 +430,18 @@ def build(selection, plan, cue, voice_wav, log=print):
             if kind in ("bed", "loop"):
                 # bed: free crossfade tile; loop: whole bars, butt joins (bars are exact)
                 piece = tile(src, b - a, 0.02 if kind == "bed" else 0.0)
-                piece = process_layer(fade_edges(piece, int(FADE_S * SR)), layer, kind)
-                stems[layer][:, a:b] += piece
+                piece = process_layer(fade_edges(piece, int(FADE_S * SR)), layer, kind, chain)
+                stems[layer][:, a:b] += piece * (10 ** (float(slot.get("level_db", 0.0)) / 20.0))
                 placed = [round(sec["start_s"], 6)]
             else:
-                src = process_layer(fade_edges(src, int(FADE_S * SR)), layer, kind)
+                src = process_layer(fade_edges(src, int(FADE_S * SR)), layer, kind, chain)
                 placed = []
-                for t in times:
+                level_gain = 10 ** (float(slot.get("level_db", 0.0)) / 20.0)
+                for k, t in enumerate(times):
                     # riser: ends on the cut (its start may fall in the previous section)
                     start = b - src.shape[1] if kind == "riser" else time_sample(t)
-                    place(stems[layer], src, start, limit if kind != "riser" else b)
+                    accent = 1.0 if (kind != "grid8" or k % 2 == 0) else GRID8_OFF_GAIN
+                    place(stems[layer], src * (level_gain * accent), start, limit if kind != "riser" else b)
                     placed.append(round(t, 6))
             sample_log.append({
                 "slot": ss.slot_id(idx, layer), "layer": layer, "section": idx + 1, "kind": kind,
@@ -337,14 +455,29 @@ def build(selection, plan, cue, voice_wav, log=print):
                 "premium": opt["premium"], "indian_pack": opt["indian_pack"],
             })
             log(f"{ss.slot_id(idx, layer)}: {opt['file']} placed {len(placed)}x")
-    # sidechain: bass and pads follow the groove envelope
-    sc = sidechain_gain(stems["groove"]) if np.any(stems["groove"]) else np.ones(total)
-    stems["bass"] *= sc
-    stems["chords"] *= sc
+    if sidechain:
+        stems, sc_rows = sidechain_stems(stems, plan, sample_log, total, perc_clash)
+    else:  # v4: bass and chords follow the groove envelope
+        sc = sidechain_gain(stems["groove"]) if np.any(stems["groove"]) else np.ones(total)
+        stems["bass"] *= sc
+        stems["chords"] *= sc
+        sc_rows = []
     stems["bass"][:] = stems["bass"].mean(axis=0, keepdims=True)  # mono low end
-    mask = voice_mask(total, voice_windows)
-    for layer in STEM_LAYERS:
-        stems[layer] = gate_layer(stems[layer], layer, mask)
+    return stems, sample_log, sc_rows
+
+
+def finish(stems, cue, voice_mono, gate=True, ride=True, dips=True):
+    """Last stages, in place: voice gate (with the 1-4 kHz dip under voice when dips), then the musical
+    level and the per-window gain riding against voice_mono (the voice-only reference).
+    gate=False and ride=False give the un-ducked listening copy. Returns (stems, level or None)."""
+    total = int(cue["total_samples"])
+    voice_windows = [tuple(w) for w in cue["voice"]["union"]]
+    if gate:
+        mask = voice_mask(total, voice_windows)
+        for layer in STEM_LAYERS:
+            stems[layer] = gate_layer(stems[layer], layer, mask, dip=dips and layer in eq.DYN_DIP_LAYERS)
+    if not ride:
+        return stems, None
     mix = sum(stems.values())
     score_db, voice_db = window_levels(mix, voice_mono, voice_windows)
     global_gain_db = VOICE_TARGET_DB - (score_db - voice_db)  # musical level outside the windows
@@ -358,14 +491,42 @@ def build(selection, plan, cue, voice_wav, log=print):
     level = {"global_gain_db": global_gain_db, "riding_gains_db": [round(float(g), 3) for g in gains],
              "per_window_db": [round(float(d), 3) for d in after], "windows": [list(w) for w in voice_windows],
              "table": window_table(after)}
-    return stems, sample_log, level
+    return stems, level
+
+
+def load_voice_mono(path, total):
+    data, _ = sf.read(path, dtype="float64", always_2d=True)
+    mono = data.mean(axis=1)
+    return np.pad(mono, (0, max(0, total - len(mono))))[:total]
+
+
+def write_noduck(stems, total, version, target_lufs=-14.0):
+    """Un-ducked listening copy: no voice gate, no riding (the caller applies the v5 global gain).
+    Gain set so the mp3 measures target_lufs, with a limiter at -1 dBTP; up to 3 passes because the
+    limiter moves the loudness. Returns (mp3 path, measured before, measured after, gain dB)."""
+    mix = sum(stems.values())[:, :total].T.astype(np.float32)
+    pre = os.path.join(WORK, f"mix_noduck_pre_{version}.wav")
+    sf.write(pre, mix, SR, subtype="PCM_24")
+    before = ebur(pre)
+    gain = target_lufs - before["integrated_lufs"]
+    mp3 = os.path.join(SOUND, f"score_full_noduck_{version}.mp3")
+    for _ in range(3):
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af",
+                        f"volume={gain:.3f}dB,alimiter=limit=0.89:attack=5:release=50",
+                        "-c:a", "libmp3lame", "-b:a", "192k", mp3], check=True)
+        after = ebur(mp3)
+        if after["integrated_lufs"] is None or abs(after["integrated_lufs"] - target_lufs) < 0.1:
+            break
+        gain += target_lufs - after["integrated_lufs"]
+    return mp3, before, after, round(gain, 3)
 
 
 def write_outputs(stems, sample_log, level, total, version):
-    os.makedirs(STEMS, exist_ok=True)
+    stems_dir = os.path.join(SOUND, f"stems_{version}")
+    os.makedirs(stems_dir, exist_ok=True)
     os.makedirs(WORK, exist_ok=True)
     for layer, arr in stems.items():
-        sf.write(os.path.join(STEMS, f"{layer}.wav"), arr[:, :total].T.astype(np.float32), SR, subtype="PCM_24")
+        sf.write(os.path.join(stems_dir, f"{layer}.wav"), arr[:, :total].T.astype(np.float32), SR, subtype="PCM_24")
     mix = sum(stems.values())
     pre = os.path.join(WORK, f"mix_pre_bus_{version}.wav")
     sf.write(pre, mix[:, :total].T.astype(np.float32), SR, subtype="PCM_24")
@@ -374,7 +535,7 @@ def write_outputs(stems, sample_log, level, total, version):
                     "acompressor=threshold=0.25:ratio=2:attack=20:release=200:makeup=1,"
                     "alimiter=limit=0.89:attack=5:release=50",
                     "-ar", str(SR), "-c:a", "pcm_s24le", bus], check=True)
-    with open(os.path.join(SOUND, "sample_log.json"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(SOUND, f"sample_log_{version}.json"), "w", encoding="utf-8") as fh:
         json.dump({"sample_rate": SR, "total_samples": total, "version": version, "level": level,
                    "files": sample_log}, fh, indent=1, ensure_ascii=False)
     return bus
@@ -435,10 +596,16 @@ def write_measurement_section(text):
         fh.write(head + text)
 
 
+def section_spans(plan, total):
+    """(a, b) sample span of each plan section on the frame grid; the last one runs to total."""
+    n = len(plan["sections"])
+    return [(snap_frame(s["start_s"]), total if i == n - 1 else snap_frame(s["end_s"]))
+            for i, s in enumerate(plan["sections"])]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--version", default="v2")
-    ap.add_argument("--preview", action="store_true")
+    ap.add_argument("--version", default="v5")
     args = ap.parse_args(argv)
     ep = ss.EP_DIR
     with open(os.path.join(ep, "score_plan.json"), encoding="utf-8") as fh:
@@ -447,39 +614,53 @@ def main(argv=None):
         cue = json.load(fh)
     total = int(cue["total_samples"])
     os.makedirs(WORK, exist_ok=True)
-    voice_wav = os.path.join(WORK, "voice_ref.wav")
-    if not os.path.exists(voice_wav):
-        extract_voice(EXPORT_MP4, voice_wav)
+    v = args.version
+    vo_rows = build_voice_only(cue)  # voice-only reference (riding, window table); voice_ref.wav is not used
+    voice_mono = load_voice_mono(VOICE_ONLY_WAV, total)
+    spans = section_spans(plan, total)
     selection = ss.load_selection()
-    stems, sample_log, level = build(selection, plan, cue, voice_wav, log=lambda m: print(m, flush=True))
-    bus = write_outputs(stems, sample_log, level, total, args.version)
-    print("table", level["table"])
+    log = lambda m: print(m, flush=True)
+    # before: the v4 rules, measured on the stems as v4 wrote them (eq off, no sidechain)
+    pre, _, _ = build(selection, plan, cue, log=log, eq_on=False, sidechain=False)
+    fin, _ = finish(pre, cue, voice_mono)
+    before_rows = eq.find_clashes(eq.section_band_levels(fin, spans))
+    del pre, fin
+    cuts = eq.clash_cuts(before_rows)
+    perc_clash = [i for i, r in enumerate(eq.sustained_pair_rows(before_rows, "indian_perc", "groove")) if r]
+    # after: v5 (EQ, sidechains, then gate and riding against the voice-only reference)
+    stems, sample_log, sc_rows = build(selection, plan, cue, log=log, eq_on=True, cuts=cuts, perc_clash=perc_clash)
+    noduck = {k: x.copy() for k, x in stems.items()}
+    stems, level = finish(stems, cue, voice_mono)
+    after_rows = eq.find_clashes(eq.section_band_levels(stems, spans))
+    bus = write_outputs(stems, sample_log, level, total, v)
     sanity = section_sanity(stems, sample_log, plan, total)
-    # independent check: read the written mix back and measure the windows from it
-    mix, sr = sf.read(bus, dtype="float64", always_2d=True)
-    voice, _ = sf.read(voice_wav, dtype="float64", always_2d=True)
-    vmono = np.pad(voice.mean(axis=1), (0, max(0, total - voice.shape[0])))[:total]
+    # independent check: read the written mix back and measure the windows against the voice-only reference
+    mix, _ = sf.read(bus, dtype="float64", always_2d=True)
     windows = [tuple(w) for w in cue["voice"]["union"]]
-    diffs = window_diffs(mix[:total].mean(axis=1), vmono, windows)
-    bus_table = window_table(diffs)
-    mp4 = mp3 = None
-    loud = voice_loud = None
-    if args.preview:
-        mp4, mp3 = preview(bus, args.version, cue["total_s"])
-        loud = ebur(bus)
-        voice_loud = ebur(voice_wav)
-        print(json.dumps({"score": loud, "voice": voice_loud, "preview_mp4": mp4, "mp3": mp3}, indent=1))
-    else:
-        mp4 = os.path.join(SOUND, f"preview_reel1_en_small_{args.version}.mp4")
-        mp3 = os.path.join(SOUND, f"score_mix_{args.version}.mp3")
-        loud = ebur(bus)
-        voice_loud = ebur(voice_wav)
+    bus_table = window_table(window_diffs(mix[:total].mean(axis=1), voice_mono, windows))
+    mp4, mp3 = preview(bus, v, cue["total_s"])
+    for layer in noduck:  # the same musical level as v5, without the gate and the riding
+        noduck[layer] *= 10 ** (level["global_gain_db"] / 20.0)
+    nd_mp3, nd_before, nd_after, nd_gain = write_noduck(noduck, total, v)
+    loud, voice_loud = ebur(bus), ebur(VOICE_ONLY_WAV)
     level["table_from_file"] = bus_table
-    with open(os.path.join(SOUND, "sample_log.json"), "w", encoding="utf-8") as fh:
-        json.dump({"sample_rate": SR, "total_samples": total, "version": args.version, "level": level,
-                   "files": sample_log, "sanity": sanity}, fh, indent=1, ensure_ascii=False)
-    text = measurement_section(args.version, level, sanity, loud, voice_loud, bus_table, mp4, mp3)
-    write_measurement_section(text)
+    report = {"version": v, "reference": VOICE_ONLY_WAV, "cuts": cuts, "perc_clash_sections": [i + 1 for i in perc_clash],
+              "sidechains": sc_rows, "before": eq.summarise(before_rows), "after": eq.summarise(after_rows),
+              "before_top": before_rows, "after_top": after_rows,
+              "level": level, "window_table_file": bus_table, "sanity": sanity, "loud": loud,
+              "voice_loud": voice_loud, "noduck": {"mp3": nd_mp3, "gain_db": nd_gain,
+                                                   "before": nd_before, "after": nd_after},
+              "voice_only_rows": vo_rows, "mp4": mp4, "mp3": mp3}
+    with open(os.path.join(WORK, f"eq_measure_{v}.json"), "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=1, ensure_ascii=False, default=float)
+    with open(os.path.join(SOUND, f"sample_log_{v}.json"), "w", encoding="utf-8") as fh:
+        json.dump({"sample_rate": SR, "total_samples": total, "version": v, "level": level,
+                   "files": sample_log, "sanity": sanity, "sidechains": sc_rows}, fh, indent=1, ensure_ascii=False)
+    print("before", [(r["section"], r["sustained"], r["load"]) for r in report["before"]])
+    print("after", [(r["section"], r["sustained"], r["load"]) for r in report["after"]])
+    print("per-window min/median/max", round(bus_table["min"], 2), round(bus_table["median"], 2),
+          round(bus_table["max"], 2), "inside", bus_table["inside_target_count"], "of", bus_table["windows"])
+    print("loud", loud, "voice", voice_loud, "noduck", nd_after)
     print("per-window min/median/max", round(bus_table["min"], 2), round(bus_table["median"], 2),
           round(bus_table["max"], 2), "inside", bus_table["inside_target_count"], "of", bus_table["windows"])
     return 0

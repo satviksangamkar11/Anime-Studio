@@ -113,3 +113,76 @@ def test_window_table_counts_inside_target():
     assert t["min"] == -25.0 and t["max"] == -12.0
     assert t["inside_target_count"] == 2
     assert t["windows"] == 4
+
+
+def test_under_voice_dip_only_inside_voice_windows():
+    total = sb.SR * 2
+    t = np.arange(total) / sb.SR
+    stem = np.stack([np.sin(2 * np.pi * 2500.0 * t)] * 2)  # 2.5 kHz: the centre of the dip
+    mask = sb.voice_mask(total, [(0.5, 1.0)], ramp_s=0.001)
+    dipped = sb.gate_layer(stem, "bed", mask, dip=True)
+    plain = sb.gate_layer(stem, "bed", mask, dip=False)
+    inside = slice(int(0.6 * sb.SR), int(0.9 * sb.SR))
+    outside = slice(int(1.2 * sb.SR), int(1.9 * sb.SR))
+    assert np.allclose(dipped[:, outside], stem[:, outside])     # outside voice: untouched
+    ratio_db = 20 * np.log10(np.max(np.abs(dipped[0, inside])) / np.max(np.abs(plain[0, inside])))
+    assert abs(ratio_db - (-3.0)) < 0.2                          # a 3 dB dip, only under voice
+    lead = sb.gate_layer(stem, "indian_lead", mask, dip=True)    # leads are never dipped
+    assert np.allclose(lead[0, inside], plain[0, inside])
+
+
+def test_sidechain_depth_and_sections_on_synthetic_stems():
+    # three 1 s sections: HOOK (no kick), BUILD (kick loop), OUTRO (no kick)
+    sr = sb.SR
+    total = sr * 3
+    plan = {"sections": [
+        {"start_s": 0.0, "end_s": 1.0, "act": "HOOK", "bpm": 120},
+        {"start_s": 1.0, "end_s": 2.0, "act": "BUILD", "bpm": 120},
+        {"start_s": 2.0, "end_s": 3.0, "act": "OUTRO", "bpm": 120}]}
+    stems = {layer: np.zeros((2, total)) for layer in sb.STEM_LAYERS}
+    t = np.arange(total) / sr
+    tone = 0.2 * np.sin(2 * np.pi * 90.0 * t)
+    stems["bass"][:] = tone
+    stems["chords"][:] = 0.1 * np.sin(2 * np.pi * 440.0 * t)
+    for k in range(total // (sr // 2)):           # kicks every half second, everywhere
+        stems["groove"][:, k * sr // 2: k * sr // 2 + 480] = 0.9
+    log = [{"layer": "groove", "kind": "loop", "section": 2, "section_start_sample": sr,
+            "section_end_sample": 2 * sr, "window_s": None, "tempo_bpm": 120.0, "times_s": [1.0]},
+           {"layer": "bass", "kind": "bed", "section": 2, "section_start_sample": sr,
+            "section_end_sample": 2 * sr, "window_s": None, "tempo_bpm": 120.0, "times_s": [1.0]}]
+    before = stems["bass"].copy()
+    before_chords = stems["chords"].copy()
+    out, rows = sb.sidechain_stems(stems, plan, log, total)
+    gain_db = 20 * np.log10(np.maximum(np.abs(out["bass"][0]), 1e-12) / np.maximum(np.abs(before[0]), 1e-12))
+    in_build = gain_db[sr:2 * sr]
+    assert in_build.min() < -4.9 and in_build.min() > -5.2         # depth 5 dB at the kick peaks
+    assert np.allclose(out["bass"][:, :sr], before[:, :sr])        # HOOK has no kick: no duck
+    assert np.allclose(out["bass"][:, 2 * sr:], before[:, 2 * sr:])  # OUTRO has no kick: no duck
+    # pads duck with the 3 dB depth, on the same kick: the smoothed level drops by about 3 dB at the kick
+    rms_b = np.sqrt(np.mean(before_chords[0, sr:2 * sr].reshape(-1, 480) ** 2, axis=1))
+    rms_o = np.sqrt(np.mean(out["chords"][0, sr:2 * sr].reshape(-1, 480) ** 2, axis=1))
+    pad_drop = 20 * np.log10(rms_o / rms_b)
+    assert -3.2 < pad_drop.min() < -2.4
+    bass_row = next(r for r in rows if r["id"] == "kick>bass")
+    assert bass_row["sections"] == [2] and bass_row["depth_db"] == 5.0
+    pad_row = next(r for r in rows if r["id"] == "kick>pads")
+    assert pad_row["sections"] == [2] and abs(pad_row["max_gr_db"] - 3.0) < 0.05
+    assert bass_row["max_step_db"] < 0.2                           # no clicks
+
+
+def test_voice_only_reference_places_each_shot_at_its_start(tmp_path):
+    sr_clip = 44100
+    shot_dir = tmp_path / "vo"
+    shot_dir.mkdir()
+    import soundfile as sf
+    clip = np.full(sr_clip, 0.5)                                   # 1 s clip at 44.1 kHz
+    sf.write(shot_dir / "SHOT-001.wav", clip, sr_clip)
+    cue = {"total_samples": sb.SR * 3,
+           "shots": [{"id": "SHOT-001", "start_s": 1.0, "end_s": 2.5}]}
+    out_path = tmp_path / "voice_only.wav"
+    rows = sb.build_voice_only(cue, out_path=str(out_path), shot_dir=str(shot_dir))
+    data, sr = sf.read(out_path, dtype="float64", always_2d=True)
+    assert sr == sb.SR and len(data) == sb.SR * 3
+    assert abs(data[sb.SR // 2, 0]) < 1e-6                          # silent before the shot
+    assert abs(data[sb.SR + sb.SR // 2, 0] - 0.5) < 0.02            # the clip starts at 1.0 s
+    assert rows[0][0] == "SHOT-001" and rows[0][2] == 1.0

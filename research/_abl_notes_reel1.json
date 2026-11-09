@@ -41,7 +41,7 @@
   {
    "pitch": 62,
    "start_time": 0.0,
-   "duration": 3.5,
+   "duration": 6.0,
    "velocity": 48
   },
   {
@@ -55,18 +55,6 @@
    "start_time": 3.5,
    "duration": 0.9,
    "velocity": 73
-  },
-  {
-   "pitch": 62,
-   "start_time": 3.5,
-   "duration": 0.9,
-   "velocity": 51
-  },
-  {
-   "pitch": 62,
-   "start_time": 4.4,
-   "duration": 1.6,
-   "velocity": 48
   },
   {
    "pitch": 57,
@@ -117,19 +105,13 @@
    "velocity": 63
   },
   {
-   "pitch": 50,
-   "start_time": 44.208,
-   "duration": 5.184,
-   "velocity": 78
-  },
-  {
    "pitch": 51,
    "start_time": 44.208,
    "duration": 5.184,
    "velocity": 78
   },
   {
-   "pitch": 57,
+   "pitch": 55,
    "start_time": 44.208,
    "duration": 5.184,
    "velocity": 78
@@ -201,31 +183,19 @@
    "velocity": 84
   },
   {
-   "pitch": 50,
-   "start_time": 62.833,
-   "duration": 4.0,
-   "velocity": 84
-  },
-  {
    "pitch": 51,
    "start_time": 62.833,
    "duration": 4.0,
    "velocity": 84
   },
   {
-   "pitch": 57,
+   "pitch": 55,
    "start_time": 62.833,
    "duration": 4.0,
    "velocity": 84
   },
   {
    "pitch": 62,
-   "start_time": 66.833,
-   "duration": 6.0,
-   "velocity": 45
-  },
-  {
-   "pitch": 64,
    "start_time": 66.833,
    "duration": 6.0,
    "velocity": 45
@@ -3003,7 +2973,7 @@
  ],
  "ostinato": [
   {
-   "pitch": 53,
+   "pitch": 52,
    "start_time": 11.375,
    "duration": 0.1875,
    "velocity": 57
@@ -3027,7 +2997,7 @@
    "velocity": 57
   },
   {
-   "pitch": 53,
+   "pitch": 52,
    "start_time": 35.125,
    "duration": 0.136364,
    "velocity": 78

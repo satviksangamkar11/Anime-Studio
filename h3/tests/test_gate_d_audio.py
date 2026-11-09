@@ -421,7 +421,7 @@ def test_burn_mux_argv_applies_subtitles_and_reencodes_video():
                                    ass_path="captions/reel_en.ass", fonts_dir="assets/fonts")
     graph = _pair(argv, "-filter_complex")
     assert graph.startswith(mix + ";")
-    assert "[0:v]subtitles=filename=captions/reel_en.ass:fontsdir=assets/fonts[vsub]" in graph
+    assert "[0:v]ass=filename=captions/reel_en.ass:fontsdir=assets/fonts:shaping=complex[vsub]" in graph
     assert _pair(argv, "-map") == "[vsub]" and "[master]" in argv
     assert _pair(argv, "-c:v") == "libx264" and "copy" not in argv
     assert _pair(argv, "-crf") == "14" and _pair(argv, "-preset") == "slow"
@@ -438,11 +438,11 @@ def test_burn_needs_an_ass_file():
 
 def test_subtitle_paths_are_windows_safe():
     assert gd.build_subtitles_filter("captions/reel_en.ass") == \
-        "subtitles=filename=captions/reel_en.ass:fontsdir=assets/fonts"
+        "ass=filename=captions/reel_en.ass:fontsdir=assets/fonts:shaping=complex"
     assert gd.build_subtitles_filter("D:/aai work/captions/x.ass", "D:/aai work/assets/fonts") == \
-        "subtitles=filename='D\\:/aai work/captions/x.ass':fontsdir='D\\:/aai work/assets/fonts'"
+        "ass=filename='D\\:/aai work/captions/x.ass':fontsdir='D\\:/aai work/assets/fonts':shaping=complex"
     assert gd.build_subtitles_filter("D:\\aai work\\captions\\x.ass", "assets/fonts").startswith(
-        "subtitles=filename='D\\:/aai work/captions/x.ass'")
+        "ass=filename='D\\:/aai work/captions/x.ass'")
     with pytest.raises(ValueError):
         gd.build_subtitles_filter("captions/a,b.ass")
     with pytest.raises(ValueError):
@@ -461,7 +461,7 @@ def test_plan_burns_each_language_caption_into_its_reel(tmp_path):
     for lang in ("en", "hi"):
         argv = out["languages"][lang]["mux_argv"]
         assert _pair(argv, "-c:v") == "libx264" and "copy" not in argv
-        assert f"subtitles=filename=captions/reel_{lang}.ass:fontsdir='" in _pair(argv, "-filter_complex")
+        assert f"ass=filename=captions/reel_{lang}.ass:fontsdir='" in _pair(argv, "-filter_complex")
     off = _run(tmp_path, ["en"], burn_captions=False)
     assert _pair(off["languages"]["en"]["mux_argv"], "-c:v") == "copy"
 

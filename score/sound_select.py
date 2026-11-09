@@ -78,7 +78,7 @@ BLEND = [
      "bass": _L("bed", ["bass_loop"], None, True, ["sub", "dark"], 1.0, (60, 300)),
      "chords": _L("bed", ["pad", "chord_loop"], False, True, ["pad", "drone", "dark"], 1.0, (400, 2000)),
      "indian_perc": None,
-     "indian_lead": _L("bed", ["vocal_chant"], True, True, ["chant", "hum", "dharma", "om"], 1.0, (200, 1200)),
+     "indian_lead": _L("bed", ["vocal_chant"], True, True, ["chant", "hum", "drone"], 1.0, (200, 1200)),
      "hit": None},
     # S2 HOOK 6-11.375 s, ambient 60: soft heartbeat, low dhol/tabla hits as the heartbeat
     {"bed": _L("bed", ["texture", "strings", "pad"], None, True, ["drone", "tanpura", "sustain", "dark"], 1.0, (150, 900)),
@@ -86,7 +86,7 @@ BLEND = [
      "bass": _L("bed", ["bass_loop"], None, True, ["sub", "dark"], 1.0, (60, 300)),
      "chords": _L("bed", ["pad", "chord_loop"], False, True, ["pad", "drone", "dark"], 1.0, (400, 2000)),
      "indian_perc": _L("pulse", ["perc", "drum_oneshot"], True, False, ["dhol", "tabla", "taiko", "low"], 1.0, (60, 500)),
-     "indian_lead": _L("bed", ["vocal_chant"], True, True, ["chant", "hum", "dharma", "om"], 1.0, (200, 1200)),
+     "indian_lead": _L("bed", ["vocal_chant"], True, True, ["chant", "hum", "drone"], 1.0, (200, 1200)),
      "hit": _L("riser", ["riser"], None, False, ["reverse", "swell"], 0.0, (1000, 8000))},
     # S3 BUILD 11.375-18.833 s, hypnotic techno 128: kick loop, tabla/ghatam loop, filtered and low
     {"bed": _L("bed", ["texture", "pad"], None, True, ["drone", "dark", "texture"], 1.0, (150, 1200)),
@@ -126,10 +126,11 @@ BLEND = [
      "bass": _L("loop", ["bass_loop"], False, True, ["distort", "crawl", "sub", "bass"], 2.0, (60, 300)),
      "chords": None,
      "indian_perc": _L("loop", ["perc", "drum_loop"], True, False, ["taiko", "dhol", "war", "tabla"], 4.0, (600, 4000)),
-     "indian_lead": _L("oneshot", ["war_horn", "brass"], True, True, ["horn", "conch", "war", "brass"], 1.0, (200, 1500)),
+     # war horn hit: untuned one-shot (pitched horns failed the D min / F maj key rule and left S7 empty)
+    "indian_lead": _L("oneshot", ["war_horn", "brass"], True, False,["horn", "conch", "war", "brass"], 1.0, (200, 1500)),
      "hit": _L("hit", ["impact", "sub_drop"], None, False, ["low", "hit", "sub"], 0.0, (60, 600))},
     # S8 OUTRO 66.833-72.833 s, unplugged 60: piano MAIN, soft tick pulse, tanpura-like drone
-    {"bed": _L("bed", ["drone", "texture"], True, True, ["tanpura", "drone", "sustain"], 1.0, (150, 900)),
+    {"bed": _L("bed", ["drone", "texture"], True, True, ["santoor", "tanpura", "drone", "hum"], 1.0, (150, 900)),
      "groove": _L("pulse", ["hat", "perc", "drum_oneshot"], False, False, ["tick", "hat", "click"], 1.0, (2000, 9000)),
      "bass": None,
      "chords": _L("bed", ["piano"], False, True, ["piano", "soft", "main"], 1.0, (300, 2500)),
@@ -158,6 +159,24 @@ def is_indian(entry):
 
 def is_premium(entry):
     return any(k in entry.get("pack", "").lower() for k in PREMIUM_PACK_KEYS)
+
+
+# whole-word match (underscores read as spaces); 'om' dropped (matched 'Room'); 'mantra' dropped (spoken words)
+INDIAN_SOUND_RE = re.compile(
+    r"(?<![a-z])(?:tabla|dhol|dholak|ghatam|sitar|bansuri|flute|shehnai|santoor|tanpura|chants?|hum|conch|"
+    r"war horn|folk|mridang|kanjira|bagal bachha)(?![a-z])")
+PERC_WORDS = ("tabla", "ghatam", "dhol", "bagal", "kanjira", "mridang", "dholak")
+# measured round 3: S3 tabla stem sat at -53 dBFS (needs above -40); S8 outro bed sat 12 dB low at the riding clamp
+SLOT_LEVEL_DB = {  # round 4: Indian layers above -40 dBFS in their section, S8 piano audible; windows stay on riding
+    "S1-indian_lead": 3.0, "S2-indian_perc": 11.5, "S3-indian_perc": 15.0, "S4-indian_lead": 10.0,
+    "S5-indian_perc": 14.0, "S5-indian_lead": 14.0, "S6-indian_perc": 12.0, "S6-indian_lead": 12.5,
+    "S7-indian_perc": 12.0, "S7-indian_lead": 12.0, "S7-indian_lead2": 14.0, "S8-bed": 18.0, "S8-chords": 14.0}
+
+
+def indian_sound(entry):
+    """True only when the file path or name has an Indian instrument word (the pack name alone does not count)."""
+    text = (entry.get("path", "") + " " + entry.get("name", "")).lower().replace("_", " ")
+    return INDIAN_SOUND_RE.search(text) is not None
 
 
 def parse_key(text):
@@ -234,7 +253,7 @@ def passes_filter(entry, spec, indian):
         return False
     if not set(entry.get("categories") or []) & set(spec["cats"]):
         return False
-    if indian is True and not is_indian(entry):
+    if indian is True and not indian_sound(entry):  # Indian layers take only a file with an instrument word
         return False
     if indian is False and is_indian(entry):
         return False
@@ -291,6 +310,10 @@ def placements(plan, idx, kind):
     s0, s1 = float(sec["start_s"]), float(sec["end_s"])
     if kind in ("bed", "loop"):
         return [s0]
+    if kind == "grid8":  # eighth-note grid; the stem builder accents the downbeats
+        step = 60.0 / float(sec["bpm"]) / 2.0
+        n = int(math.ceil((s1 - s0) / step - 1e-9))
+        return [round(s0 + k * step, 6) for k in range(n)]
     if kind == "pulse":
         beat = 60.0 / float(sec["bpm"])
         n = int(math.ceil((s1 - s0) / beat - 1e-9))
@@ -446,7 +469,7 @@ def select_all(plan, entries, log=print):
             relaxed = False
             options = []
             # only an Indian-required layer may relax its pack constraint, and the board says so
-            for indian in ([True, None] if indian_req is True else [indian_req]):
+            for indian in [indian_req]:  # no relax: an Indian-required slot never falls back to a non-Indian file
                 if options:
                     break
                 cands = []
@@ -607,10 +630,14 @@ def estimate_f0(mono, sr, fmin=30.0, fmax=200.0):
     return sr / lag
 
 
-def fill_empty_bass(selection, entries, log=print):
-    """Bass fallback: sub or 808 one-shots pitched to D2 and placed on the beat grid (kind pulse).
+ROOTS_HZ = {"D1": 36.7078, "D2": 73.4162}   # bass roots the fallback may pitch to
+MAX_808_SHIFT = 5
 
-    Only for bass slots with no option from the loop route. Returns the number filled.
+
+def fill_empty_bass(selection, entries, log=print):
+    """Bass fallback: sub or 808 one-shots pitched to the NEAREST of D1/D2 (|shift| <= 5, smallest first).
+
+    Only for bass slots with no option from the loop route. Ties prefer pitching down. Returns the number filled.
     """
     used = {o["path"] for sl in selection["slots"].values() for o in sl["options"]}
     filled = 0
@@ -618,53 +645,111 @@ def fill_empty_bass(selection, entries, log=print):
     for sid, slot in selection["slots"].items():
         if slot["layer"] != "bass" or slot["status"] != "empty":
             continue
-        cands = [e for e in entries if e["path"] not in used and not is_lyric(e)
-                 and ("sub_drop" in e.get("categories", []) or "808" in e["name"].lower())
-                 and 0.2 <= (e.get("seconds") or 0.0) <= 6.0]
-        options = []
-        for e in cands:
-            if len(options) >= TOP_N:
-                break
-            if not os.path.exists(e["path"]):
+        measured = []
+        for e in entries:
+            if e["path"] in used or is_lyric(e):
+                continue
+            if not ("sub_drop" in e.get("categories", []) or "808" in e["name"].lower()):
+                continue
+            if not (0.2 <= (e.get("seconds") or 0.0) <= 6.0) or not os.path.exists(e["path"]):
                 continue
             data, sr = sf.read(e["path"], frames=int(1.0 * 48000), dtype="float64", always_2d=True)
-            mono = data.mean(axis=1)
             if np.max(np.abs(data)) >= 0.999:
                 continue
-            f0 = estimate_f0(mono, sr)
+            f0 = estimate_f0(data.mean(axis=1), sr)
             if f0 is None:
                 continue
-            semis = 12.0 * math.log2(ROOT_BASS_HZ / f0)
-            shift = int(round(semis))
-            if abs(shift) > 12:
+            root_name, root_hz = min(ROOTS_HZ.items(), key=lambda kv: abs(12.0 * math.log2(kv[1] / f0)))
+            shift = int(round(12.0 * math.log2(root_hz / f0)))
+            if abs(shift) > MAX_808_SHIFT:
                 continue
+            measured.append((abs(shift), shift > 0, e, f0, root_name, root_hz, shift))
+        measured.sort(key=lambda t: (t[0], t[1]))  # smallest shift first, downward first on a tie
+        options = []
+        for _, _, e, f0, root_name, root_hz, shift in measured:
+            if len(options) >= TOP_N:
+                break
             rank = len(options) + 1
             snip_name = f"{sid}_{rank}.mp3"
             render_snippet(e["path"], 1.0, shift, os.path.join(SNIP_DIR, snip_name))
             snip, _ = sf.read(os.path.join(SNIP_DIR, snip_name), dtype="float64", always_2d=True)
             f0_after = estimate_f0(snip.mean(axis=1), SR)
-            if f0_after is None or abs(12.0 * math.log2(f0_after / ROOT_BASS_HZ)) > 1.0:
+            if f0_after is None or abs(12.0 * math.log2(f0_after / root_hz)) > 1.0:
                 continue
             used.add(e["path"])
             options.append({
                 "rank": rank, "file": os.path.basename(e["path"]), "path": e["path"], "pack": e["pack"],
                 "name": e["name"], "categories": e["categories"], "index_key": None, "index_key_confidence": None,
-                "shift": shift, "target_key": "D2", "feel_bpm": None, "stretch": 1.0,
+                "shift": shift, "target_key": root_name, "feel_bpm": None, "stretch": 1.0,
                 "score": None, "snippet": os.path.join("snippets", snip_name),
-                "snippet_key": f"root D2 (f0 {f0_after:.1f} Hz)",
-                "why": f"fallback route: one-shot pitched to D2; measured f0 {f0:.1f} Hz before, {f0_after:.1f} Hz after, "
-                       f"shift {shift:+d}; placed on the beat grid",
+                "snippet_key": f"root {root_name} (f0 {f0_after:.1f} Hz)",
+                "why": f"fallback route: one-shot pitched to {root_name} ({root_hz:.1f} Hz); measured f0 {f0:.1f} Hz "
+                       f"before, {f0_after:.1f} Hz after, shift {shift:+d} (smallest of the candidates)",
                 "premium": is_premium(e), "indian_pack": is_indian(e)})
         if options:
             slot.update(status="active", kind="pulse", chosen=1, options=options, relaxed=False,
-                        route="fallback: sub/808 one-shot pitched to D2 on the beat grid",
+                        route="fallback: sub/808 one-shot pitched to nearest D (D1 or D2), |shift| <= 5, beat grid",
                         note=f"only {len(options)} option(s) found" if len(options) < TOP_N else "")
             filled += 1
-            log(f"{sid}: fallback route, {len(options)} option(s)")
+            log(f"{sid}: fallback route, {len(options)} option(s), shifts {[o['shift'] for o in options]}")
         else:
-            slot["route"] = "fallback tried: no sub/808 one-shot pitched to D2 within rules"
-            log(f"{sid}: fallback found nothing")
+            slot["route"] = f"fallback tried: no sub/808 one-shot within {MAX_808_SHIFT} semitones of D1 or D2"
+            log(f"{sid}: fallback found nothing within {MAX_808_SHIFT} semitones")
     return filled
+
+
+def fill_s3_pattern(selection, entries, log=print):
+    """S3 Indian layer: tabla/ghatam/dhol/Indian perc one-shots on an eighth-note grid (kind grid8).
+
+    Two new one-shots are ranks 1-2 (darkest first); the Dharma techno loop that was there is kept as rank 3.
+    A file qualifies only when its path or name has an Indian percussion word (indian_sound).
+    """
+    slot = selection["slots"]["S3-indian_perc"]
+    if slot["status"] == "active" and slot.get("kind") == "loop":  # a tabla loop passed: keep it
+        log("S3-indian_perc: tabla loop route found options, one-shot pattern not needed")
+        return 0
+    old = list(slot["options"])
+    used = {o["path"] for sl in selection["slots"].values() for o in sl["options"]}
+    pool = [e for e in entries if e["path"] not in used and not is_lyric(e) and indian_sound(e)
+            and any(w in (e["path"] + " " + e["name"]).lower() for w in PERC_WORDS)
+            and set(e.get("categories", [])) & {"drum_oneshot", "perc"}
+            and 0.05 <= (e.get("seconds") or 0.0) <= 2.5 and os.path.exists(e["path"])]
+    scored = []
+    for e in pool:
+        data, sr = sf.read(e["path"], dtype="float64", always_2d=True)
+        if np.max(np.abs(data)) >= 0.999:
+            continue
+        mono = data.mean(axis=1)
+        n = max(4096, len(mono))
+        mag = np.abs(np.fft.rfft(mono * np.hanning(len(mono)), n=n))
+        freqs = np.fft.rfftfreq(n, 1.0 / sr)
+        cen = float((freqs * mag).sum() / (mag.sum() + 1e-12))
+        scored.append((cen, e))
+    scored.sort(key=lambda t: t[0])
+    os.makedirs(SNIP_DIR, exist_ok=True)
+    options = []
+    for cen, e in scored:
+        if len(options) >= 2:
+            break
+        rank = len(options) + 1
+        snip_name = f"S3-indian_perc_{rank}.mp3"
+        render_snippet(e["path"], 1.0, 0, os.path.join(SNIP_DIR, snip_name))
+        used.add(e["path"])
+        options.append({
+            "rank": rank, "file": os.path.basename(e["path"]), "path": e["path"], "pack": e["pack"],
+            "name": e["name"], "categories": e["categories"], "index_key": None, "index_key_confidence": None,
+            "shift": 0, "target_key": None, "feel_bpm": None, "stretch": 1.0, "score": None,
+            "snippet": os.path.join("snippets", snip_name), "snippet_key": None,
+            "why": f"one-shot tabla/ghatam/dhol/Indian perc on the 8th grid; centroid {cen:.0f} Hz (darker first)",
+            "premium": is_premium(e), "indian_pack": True})
+    if not options:
+        log("S3-indian_perc: no tabla/ghatam/dhol one-shot found; keeping the old option")
+        return 0
+    loop_opts = [dict(o, rank=3, why="Dharma techno loop (kept as option 3): " + o["why"]) for o in old[:1]]
+    slot.update(status="active", kind="grid8", chosen=1, options=options + loop_opts, relaxed=False,
+                route="one-shot tabla/ghatam/dhol pattern on the 8th grid, darker first", level_db=0.0)
+    log(f"S3-indian_perc: pattern from {len(options)} one-shot(s): {[o['file'] for o in options]}")
+    return len(options)
 
 
 def main(argv=None):
@@ -679,7 +764,8 @@ def main(argv=None):
         sel = load_selection()
         with open(args.index, encoding="utf-8") as fh:
             entries = json.load(fh)["entries"]
-        n = fill_empty_bass(sel, entries, log=lambda m: print(m, flush=True))
+        n = fill_s3_pattern(sel, entries, log=lambda m: print(m, flush=True))
+        n += fill_empty_bass(sel, entries, log=lambda m: print(m, flush=True))
         with open(SELECTION_PATH, "w", encoding="utf-8") as fh:
             json.dump(sel, fh, indent=1, ensure_ascii=False)
         write_board(sel)
@@ -701,7 +787,10 @@ def main(argv=None):
         entries = json.load(fh)["entries"]
     os.makedirs(SOUND_DIR, exist_ok=True)
     selection = select_all(plan, entries, log=lambda m: print(m, flush=True))
+    fill_s3_pattern(selection, entries, log=lambda m: print(m, flush=True))
     fill_empty_bass(selection, entries, log=lambda m: print(m, flush=True))
+    for sid, db in SLOT_LEVEL_DB.items():  # per-slot trim so the S3 Indian layer and the outro bed reach their level
+        selection["slots"][sid]["level_db"] = db
     errors = check_selection(selection)
     with open(SELECTION_PATH, "w", encoding="utf-8") as fh:
         json.dump(selection, fh, indent=1, ensure_ascii=False)

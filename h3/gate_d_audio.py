@@ -457,9 +457,10 @@ def _ff_path(p):
 
 
 def build_subtitles_filter(ass_path, fonts_dir=None):
-    """Text of the ffmpeg subtitles filter that burns the .ass file with the font in fonts_dir (default the relative
-    assets/fonts). Not run here."""
-    return f"subtitles=filename={_ff_path(ass_path)}:fontsdir={_ff_path(fonts_dir or 'assets/fonts')}"
+    """Text of the ffmpeg ass filter that burns the .ass file with the font in fonts_dir (default the relative assets/fonts).
+    shaping=complex (libass HarfBuzz) joins Devanagari conjuncts; the simple shaping of the subtitles filter broke them
+    (caption spec v2, 2026-11-09). Not run here."""
+    return f"ass=filename={_ff_path(ass_path)}:fontsdir={_ff_path(fonts_dir or 'assets/fonts')}:shaping=complex"
 
 
 # ---------------------------------------------------------------- one final reel per selected language

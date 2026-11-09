@@ -99,3 +99,36 @@ Total notes added: 578 (planned 578).
 - Hits: 808 Core Kit (Drums browser kit, deep 808 boom); no Sounds/Percussive cinematic boom loaded
 - Drums: 909 Core Kit (Drums browser kit)
 - Folk perc: Percussion Core Kit (Drums browser kit)
+
+## R3 corrected notes (after harmony fixes) - BLOCKED, no mutation made (ABL2, 17:11)
+Status: NOT DONE. Nothing was deleted or written on tracks 5-16. Tracks 1-4 untouched.
+- Blocker: the Session clip in slot 1 of each KP track cannot be replaced. add_notes_to_clip appends, create_clip refuses an occupied slot ("Clip slot already has a clip", tested on track 5 slot 1), and no tool deletes a session clip or clears its notes.
+- Blocker: create_arrangement_midi_clip makes an empty arrangement clip, and no tool adds notes to an arrangement clip, so the arrangement route cannot carry the corrected notes either.
+- Read-only state confirmed: tracks 5-16 each have 1 arrangement clip "KP ..." bars 1-19; track 5 session slot 1 has a clip (length 73, playing) with the old notes.
+- Corrected note counts from _abl_notes_reel1.json (remap needed for hits: 74->36, 76->51, 81->47; drums 36/38/39/42/46 and folk_perc 41/47 already exist on their kits):
+  drone 6 | pad 28 | bass 188 | drums 272 | ostinato 28 | pluck 3 | lead 13 | brass 6 | vocal 3 | piano 4 | hits 9 | folk_perc 13 (total 573)
+- Options for the coordinator: (a) delete the 12 session clips by hand in Live, then re-run R3; (b) write the corrected notes to empty session slot 2 on each track and duplicate from slot 2, leaving the stale slot 1 clips to delete by hand. Option (b) changes the session layout, so it needs an OK first.
+- Per-track table: notes written 0 of the JSON count on every track 5-16; arrangement clips after = 1 each (unchanged, old notes still in place).
+
+## R3 corrected notes (after harmony fixes) - DONE (ABL2, 17:15)
+Coordinator deleted the 12 session slot-1 clips by hand; slot 1 confirmed empty on tracks 5 and 16 before writing.
+Per track: old arrangement clip deleted, session clip created (length 73), corrected notes added, duplicated to arrangement bar 1 beat 0, session and arrangement clips named with the track name.
+Hits remap applied: 74->36, 76->51, 81->47. Drum pitches 36/38/39/42/46 and folk_perc 41/47 already exist on their kits, no remap.
+
+| Track | Role | Notes in JSON | Notes written (MCP reply) | Arrangement clips after | Readback |
+|---|---|---|---|---|---|
+| 5 | drone | 6 | 6 | 1 | "KP drone" bars 1-19 |
+| 6 | pad | 28 | 28 | 1 | "KP pad" bars 1-19 |
+| 7 | bass | 188 | 146+42=188 | 1 | "KP bass" bars 1-19 |
+| 8 | drums | 272 | 100+100+72=272 | 1 | "KP drums" bars 1-19 |
+| 9 | ostinato | 28 | 28 | 1 | "KP ostinato" bars 1-19 |
+| 10 | pluck | 3 | 3 | 1 | "KP pluck" bars 1-19 |
+| 11 | lead | 13 | 13 | 1 | "KP lead" bars 1-19 |
+| 12 | brass | 6 | 6 | 1 | "KP brass" bars 1-19 |
+| 13 | vocal (temp pad) | 3 | 3 | 1 | "KP vocal (temp pad)" bars 1-19 |
+| 14 | piano | 4 | 4 | 1 | "KP piano" bars 1-19 |
+| 15 | hits | 9 | 9 | 1 | "KP hits" bars 1-19 |
+| 16 | folk_perc | 13 | 13 | 1 | "KP folk_perc" bars 1-19 |
+
+Not possible: no note readback tool, so note counts are the add_notes_to_clip replies only. The session clip note contents were not re-read.
+Not done by ABL2 (coordinator): Back-to-Arrangement, scale, disarm, track cleanup, save. No clip fired.

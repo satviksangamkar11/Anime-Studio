@@ -23,6 +23,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
+from core import caption_text as ct  # noqa: E402
+from core.captions import ass_time  # noqa: E402
 from core.style_pack import load_core  # noqa: E402
 from h3 import assemble_reel as ar  # noqa: E402
 from h3 import gate_d_audio as gd  # noqa: E402
@@ -77,27 +79,62 @@ def mux_argv(rows, lang, vo_dir, video, export, ass, fonts_dir):
     return gd.build_final_mux_argv(video, inputs[1:], mix, export, burn_captions=True, ass_path=ass, fonts_dir=fonts_dir), t
 
 
-# owner 2026-11-09: Mukta ExtraBold, ~60 px at 1080 wide. The family must be the font's own name ("Mukta ExtraBold", name ID 1):
-# with plain "Mukta" libass found no match and silently drew a system font.
-CAPTION_PACK = {"typography": {"subtitle_latin": "Mukta ExtraBold", "subtitle_devanagari": "Mukta ExtraBold", "min_px_at_1080w": 60}}
-YELLOW_BGR, WHITE_BGR = "&H0000D4FF", "&H00FFFFFF"     # ASS colours are BGR: active word yellow #FFD400, the rest white (owner research)
+# Caption spec v2 (research/CAPTION_SPEC_v2_REELS_SHORTS_2026-11-09.md). The family is the font file's own name (name ID 1):
+# plain "Mukta" made libass draw a system font. Burned with the ass filter + shaping=complex (conjuncts join).
+CAPTION_FONT = "Mukta ExtraBold"
+CAPTION_FONT_FILE = "Mukta-ExtraBold.ttf"
+PLAY_W, PLAY_H = 1080, 1920
+CAPTION_SIZE = {"en": 112, "hi": 104, "mr": 104}
+CAPTION_MAX_W = 840                         # max text width in px (safe zone x 90-930 with the outline)
+CAPTION_POS = (510, 1290)                   # \an5 centre; x 510 is 30 px left of centre to clear the right button rail
+CARD_WORDS = {"en": 4, "hi": 3, "mr": 3}
+CARD_CHARS = {"en": None, "hi": 18, "mr": 18}
+GREEN_BGR, WHITE_BGR = "&H004EFF3C&", "&H00FFFFFF&"   # ASS colours are BGR: active word green #3CFF4E, the rest white
+CAPTION_PACK = {"typography": {"subtitle_latin": CAPTION_FONT, "subtitle_devanagari": CAPTION_FONT, "min_px_at_1080w": 60}}
+# Owner spelling check 2026-11-09 (caption text only; the voice files and FINAL_TEXT_v2.json are NOT changed): (line id, lang) -> (old, new)
+CAPTION_FIXES = {("SHOT-003-D1", "hi"): ("ब्याही", "ब्याहीं"), ("SHOT-010-D1", "hi"): ("गलती", "ग़लती")}
 
 
-def split_cards(text, max_words=6):
-    """Balanced cards of at most max_words words, cut at sentence ends first (a card never joins two sentences when it can avoid it)."""
-    sents = [s for s in re.split(r"(?<=[.?!।])\s+", text.strip()) if s]
+def caption_fits(font_file, lang):
+    """Card test for split_cards: the card wraps into at most 2 lines at CAPTION_MAX_W with the real font."""
+    size = CAPTION_SIZE[lang]
+
+    def fits(card):
+        return len(ct.wrap_lines(card, str(font_file), size, CAPTION_MAX_W, 2)[0]) <= 2
+    return fits
+
+
+def split_cards(text, lang="en", fits=None):
+    """Balanced cards inside the spec limits: en at most 4 words, hi/mr at most 3 words and 18 characters, and `fits` (2 lines
+    at 840 px) when given. Sentence ends are cut first. A punctuation-only token (a stray " .") joins the word before it."""
+    text = re.sub(r"\s+([.,;:!?।])", r"\1", " ".join(text.split()))
+    toks = []
+    for t in text.split(" "):
+        if toks and not re.search(r"\w", t):
+            toks[-1] += t
+        else:
+            toks.append(t)
+    sents = [s for s in re.split(r"(?<=[.?!।])\s+", " ".join(toks).strip()) if s]
+    limit, max_chars = CARD_WORDS[lang], CARD_CHARS[lang]
+
+    def ok(ws):
+        s = " ".join(ws)
+        return (max_chars is None or len(s) <= max_chars) and (fits is None or fits(s))
     cards = []
     for s in sents:
         words = s.split()
-        n = -(-len(words) // max_words)
-        size = -(-len(words) // n)
-        cards += [words[i:i + size] for i in range(0, len(words), size)]
+        for n in range(-(-len(words) // limit), len(words) + 1):      # fewest balanced cards that pass the limits
+            size = -(-len(words) // n)
+            chunks = [words[i:i + size] for i in range(0, len(words), size)]
+            if all(ok(c) for c in chunks):
+                break
+        cards += chunks
     return cards
 
 
-def word_cues(text, t0, t1):
-    """Cue dicts for one spoken line: cards of at most 6 words, time shared by letters, each word aligned inside its card (letters-proportional)."""
-    cards = split_cards(text)
+def word_cues(text, t0, t1, lang="en", fits=None):
+    """Cue dicts for one spoken line: spec-v2 cards, time shared by letters, each word aligned inside its card (letters-proportional)."""
+    cards = split_cards(text, lang, fits)
     weights = [sum(len(w) for w in c) + len(c) for c in cards]
     total, cues, cur = float(sum(weights)), [], t0
     for c, wt in zip(cards, weights):
@@ -113,8 +150,9 @@ def word_cues(text, t0, t1):
     return cues
 
 
-def spoken_cues_real(rows, report, lang):
-    """Caption cues from the REAL packed voice timings (vo_tracks_report.json of the language) and the line text of shots.json."""
+def spoken_cues_real(rows, report, lang, font_file=None):
+    """Caption cues from the REAL packed voice timings (vo_tracks_report.json of the language) and the line text of shots.json.
+    CAPTION_FIXES change the caption text only (same word count, so the timing is unchanged)."""
     offsets, t = {}, 0.0
     for r in rows:
         offsets[r["id"]] = t
@@ -127,48 +165,59 @@ def spoken_cues_real(rows, report, lang):
             text[f"{r['id']}-N"] = n["text"]
         for k, d in enumerate((a.get("dialogue_by_lang") or {}).get(lang) or [], 1):
             text[f"{r['id']}-D{k}"] = d["text"]
+    for (line_id, lg), (old, new) in CAPTION_FIXES.items():
+        if lg == lang and line_id in text:
+            text[line_id] = text[line_id].replace(old, new)
+    fits = caption_fits(font_file, lang) if font_file else None
     cues = []
     for sh in report:
         if sh["lang"] != lang:
             continue
         for ln in sh["lines"]:
-            cues += word_cues(text[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"])
+            cues += word_cues(text[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"], lang, fits)
     return sorted(cues, key=lambda c: c["t0"])
 
 
-def _ass_t(s):
-    return f"{int(s // 3600)}:{int(s % 3600 // 60):02d}:{s % 60:05.2f}"
-
-
-def _secs(t):
-    h, m, s = t.split(":")
-    return int(h) * 3600 + int(m) * 60 + float(s)
-
-
-def style_colours(ass_text):
-    """Owner look: ONLY the word being spoken is yellow, every other word of the card white. Each engine karaoke event
-    ({\\kNN}word ...) becomes one event per word, timed by the engine's \\k durations; the last word holds to the card end."""
-    out = []
-    for line in ass_text.splitlines():
-        if line.startswith("Style:"):
-            p = line.split(",")
-            p[3], p[4] = WHITE_BGR, WHITE_BGR
-            out.append(",".join(p))
-            continue
-        m = re.match(r"(Dialogue: [^,]*,)([^,]*),([^,]*),((?:[^,]*,){6})\{([^}]*)\}(.*)$", line)
-        toks = re.findall(r"\{\\k(\d+)\}([^{]*)", m.group(6)) if m else []
-        if not toks:
-            out.append(line)
-            continue
-        head = re.sub(r"\\[12]c&H[0-9A-Fa-f]+&", "", m.group(5))
-        t0, t1 = _secs(m.group(2)), _secs(m.group(3))
-        s = t0
-        for i, (k, _) in enumerate(toks):
-            e = t1 if i == len(toks) - 1 else min(t1, s + int(k) / 100)
-            body = "".join("{\\1c%s&}%s" % (YELLOW_BGR if j == i else WHITE_BGR, w) for j, (_, w) in enumerate(toks))
-            out.append(f"{m.group(1)}{_ass_t(s)},{_ass_t(e)},{m.group(4)}{{{head}}}{body}")
-            s = e
-    return "\n".join(out) + "\n"
+def caption_ass(cues, lang, fonts_dir):
+    """Spec v2 ASS text, PlayRes 1080x1920. One event per spoken word: the card shows in white and the word being spoken is green
+    #3CFF4E with a 108% pop on that word only. Lines are a balanced wrap at 840 px with the real font. Each card's words must
+    be aligned (cue["words"], from word_cues)."""
+    font = Path(fonts_dir) / CAPTION_FONT_FILE
+    size = CAPTION_SIZE[lang]
+    x, y = CAPTION_POS
+    asc, desc = ct._font(str(font), size).getmetrics()
+    line_h = asc + desc                                    # one line of the real font, px
+    lines = [
+        "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {PLAY_W}", f"PlayResY: {PLAY_H}", "WrapStyle: 2",
+        "ScaledBorderAndShadow: yes", "", "[V4+ Styles]",
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, "
+        "StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+        # outline 9 px black, shadow 4 px at 60% opacity (alpha 0x66), no box (BorderStyle 1)
+        f"Style: Cap,{CAPTION_FONT},{size},{WHITE_BGR},&H000000FF&,&H00000000&,&H66000000&,0,0,0,0,100,100,0,0,1,9,4,5,0,0,0,1",
+        "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+    ]
+    for cue in cues:
+        ws = cue["words"]
+        texts = [w["text"] for w in ws]
+        wrapped, _ = ct.wrap_lines(" ".join(texts), str(font), size, CAPTION_MAX_W, 2)
+        counts = [len(ln.split(" ")) for ln in wrapped]
+        if sum(counts) != len(texts):
+            raise ValueError(f"card {' '.join(texts)!r} cannot be wrapped without breaking a word")
+        # a 2-line card moves its centre up by half a line, so its bottom line stays at y (inside the safe zone)
+        cy = y - round((len(counts) - 1) * line_h / 2)
+        for i, w in enumerate(ws):
+            end = ws[i + 1]["t0"] if i + 1 < len(ws) else cue["t1"]
+            body, k = [], 0
+            for n in counts:
+                seg = []
+                for j in range(k, k + n):
+                    word = texts[j]
+                    seg.append("{\\1c%s\\fscx108\\fscy108}%s{\\1c%s\\fscx100\\fscy100}" % (GREEN_BGR, word, WHITE_BGR)
+                               if j == i else word)
+                body.append(" ".join(seg))
+                k += n
+            lines.append(f"Dialogue: 0,{ass_time(w['t0'])},{ass_time(end)},Cap,,0,0,0,,{{\\an5\\pos({x},{cy})}}" + "\\N".join(body))
+    return "\n".join(lines) + "\n"
 
 
 def measure(export):
@@ -241,14 +290,14 @@ def main(argv=None):
         if a.title_cards or not report_path.is_file():
             cues = lp["captions"]                       # the writer's title cards (old behaviour, only on request)
         else:
-            cues = spoken_cues_real(rows, json.loads(report_path.read_text(encoding="utf-8")), lg)   # owner 2026-11-09: captions = the spoken words
+            cues = spoken_cues_real(rows, json.loads(report_path.read_text(encoding="utf-8")), lg, Path(a.fonts) / CAPTION_FONT_FILE)   # captions = the spoken words
         for msg in gd.script_problems(cues, lg) if hasattr(gd, "script_problems") else []:
             raise SystemExit(f"{lg}: {msg}")
         ass_text, entries = gd.build_captions(cues, lang=lg, pack=CAPTION_PACK, fonts_dir=a.fonts)
         fails = [e["message"] for e in entries if e["level"] == "FAIL"]
         if fails:
             raise SystemExit(f"{lg} captions: " + "; ".join(fails))
-        ass.write_text(style_colours(ass_text), encoding="utf-8", newline="\n")
+        ass.write_text(ass_text if cues is lp["captions"] else caption_ass(cues, lg, a.fonts), encoding="utf-8", newline="\n")
         from core import caption_export as cx
         entry["caption_warnings"] = sorted({e["message"] for e in entries if e["level"] == "WARN"})[:6]
         entry["captions"] = {"cues": len(cues), "mode": "title cards" if cues is lp["captions"] else "spoken words"}
