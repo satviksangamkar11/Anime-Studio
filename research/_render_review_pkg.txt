@@ -1,0 +1,70 @@
+PRE-FLIGHT PACKAGE: one-time ElevenLabs generation of ALL spoken lines of an anime reel (18 lines x en/hi/mr = 54 mp3 clips, 2390 characters, Starter plan, 35.7k credits left).
+OWNER RULE: every clip is generated exactly ONCE; no regeneration; credits must not be wasted; audio must later fit the already rendered video clips (each line has a fixed time slot in its shot) with no sync problem.
+
+FACTS (from the API, read-only, checked): 16 of the 18 cast voices are shared-library voices NOT in the account; Starter has 10 voice slots (0 used). 3 Hindi voices (Victor=Brahma, Frederick=Markandeya, Edward=Munis) are verified for hi only on eleven_multilingual_v2; all other voice/language pairs are verified on eleven_v4. Rate 2.0 (may cost double): en Carter (Brahma), en Matthew Schmitz (Munis), hi Frederick (Markandeya). Voice settings: none (voice defaults). No emotion tags in the text.
+
+CODE (copy of GranthStudio a1_eleven.py, tests pass offline): job key sha256([lang, voice_id, model, settings, text]) names every mp3; an accepted clip with the same key is reused (never bought twice); append-only credit ledger with a file lock: reserve BEFORE each call, settle with the API's character-cost header; refuses past the cap or while any reservation is open; after each call ffprobe must decode it and duration must be 0.3-90 s, otherwise the run stops at once and the reservation stays open; manifest checkpoint after every clip; sha256 per mp3.
+
+PLAN: 1) add batch 1 (10 voices) to the account via POST /v1/voices/add (0 credits); 2) run only the lines of those voices (--only-voices) with --allow-paid --cap 3000; 3) verify clips; 4) remove the batch-1 voices (only the ones named KP-*), mp3 files stay; 5) add batch 2 (6 voices), run, remove; 6) measure every mp3 seconds against its slot; if longer than the slot, fit locally with ffmpeg atempo up to 1.08 (no new ElevenLabs call), longer than that is reported to the owner, not regenerated; 7) export wavs, freeze sha256 file.
+
+JOBS (id | voice | model | chars | slot s | chars per slot second):
+SHOT-001-N.en | NARRATOR | v4 | 46 | 5.0 | 9.2
+SHOT-001-N.hi | NARRATOR | v4 | 36 | 5.0 | 7.2
+SHOT-001-N.mr | NARRATOR | v4 | 38 | 5.0 | 7.6
+SHOT-002-N.en | NARRATOR | v4 | 54 | 4.4 | 12.3
+SHOT-002-N.hi | NARRATOR | v4 | 65 | 4.4 | 14.8
+SHOT-002-N.mr | NARRATOR | v4 | 66 | 4.4 | 15.0
+SHOT-003-N.en | NARRATOR | v4 | 27 | 1.8 | 15.0
+SHOT-003-N.hi | NARRATOR | v4 | 23 | 1.8 | 12.8
+SHOT-003-N.mr | NARRATOR | v4 | 26 | 1.8 | 14.4
+SHOT-003-D1.en | HIMALAYAN-MUNIS | v4 | 42 | 2.1 | 20.0
+SHOT-003-D1.hi | HIMALAYAN-MUNIS | multilingual_v2 | 32 | 2.1 | 15.2
+SHOT-003-D1.mr | HIMALAYAN-MUNIS | v4 | 33 | 2.1 | 15.7
+SHOT-003-D2.en | MARKANDEYA | v4 | 37 | 2.2 | 16.8
+SHOT-003-D2.hi | MARKANDEYA | multilingual_v2 | 37 | 2.2 | 16.8
+SHOT-003-D2.mr | MARKANDEYA | v4 | 39 | 2.2 | 17.7
+SHOT-004-N.en | NARRATOR | v4 | 93 | 7.2 | 12.9
+SHOT-004-N.hi | NARRATOR | v4 | 71 | 7.2 | 9.9
+SHOT-004-N.mr | NARRATOR | v4 | 78 | 7.2 | 10.8
+SHOT-005-N.en | NARRATOR | v4 | 48 | 3.3 | 14.5
+SHOT-005-N.hi | NARRATOR | v4 | 41 | 3.3 | 12.4
+SHOT-005-N.mr | NARRATOR | v4 | 54 | 3.3 | 16.4
+SHOT-005-D1.en | KAMADEVA | v4 | 45 | 3.4 | 13.2
+SHOT-005-D1.hi | KAMADEVA | v4 | 46 | 3.4 | 13.5
+SHOT-005-D1.mr | KAMADEVA | v4 | 46 | 3.4 | 13.5
+SHOT-006-N.en | NARRATOR | v4 | 47 | 2.9 | 16.2
+SHOT-006-N.hi | NARRATOR | v4 | 43 | 2.9 | 14.8
+SHOT-006-N.mr | NARRATOR | v4 | 44 | 2.9 | 15.2
+SHOT-006-D1.en | BRAHMA | v4 | 63 | 3.3 | 19.1
+SHOT-006-D1.hi | BRAHMA | multilingual_v2 | 56 | 3.3 | 17.0
+SHOT-006-D1.mr | BRAHMA | v4 | 69 | 3.3 | 20.9
+SHOT-007-N.en | NARRATOR | v4 | 50 | 3.6 | 13.9
+SHOT-007-N.hi | NARRATOR | v4 | 50 | 3.6 | 13.9
+SHOT-007-N.mr | NARRATOR | v4 | 61 | 3.6 | 16.9
+SHOT-007-D1.en | KAMADEVA | v4 | 21 | 1.6 | 13.1
+SHOT-007-D1.hi | KAMADEVA | v4 | 21 | 1.6 | 13.1
+SHOT-007-D1.mr | KAMADEVA | v4 | 15 | 1.6 | 9.4
+SHOT-008-N.en | NARRATOR | v4 | 47 | 2.9 | 16.2
+SHOT-008-N.hi | NARRATOR | v4 | 34 | 2.9 | 11.7
+SHOT-008-N.mr | NARRATOR | v4 | 43 | 2.9 | 14.8
+SHOT-008-D1.en | SHIVA | v4 | 57 | 3.2 | 17.8
+SHOT-008-D1.hi | SHIVA | v4 | 42 | 3.2 | 13.1
+SHOT-008-D1.mr | SHIVA | v4 | 52 | 3.2 | 16.2
+SHOT-009-N.en | NARRATOR | v4 | 31 | 2.2 | 14.1
+SHOT-009-N.hi | NARRATOR | v4 | 25 | 2.2 | 11.4
+SHOT-009-N.mr | NARRATOR | v4 | 26 | 2.2 | 11.8
+SHOT-009-D1.en | BRAHMA | v4 | 51 | 4.0 | 12.8
+SHOT-009-D1.hi | BRAHMA | multilingual_v2 | 49 | 4.0 | 12.2
+SHOT-009-D1.mr | BRAHMA | v4 | 52 | 4.0 | 13.0
+SHOT-010-N.en | NARRATOR | v4 | 31 | 2.0 | 15.5
+SHOT-010-N.hi | NARRATOR | v4 | 33 | 2.0 | 16.5
+SHOT-010-N.mr | NARRATOR | v4 | 27 | 2.0 | 13.5
+SHOT-010-D1.en | KAMADEVA | v4 | 39 | 2.8 | 13.9
+SHOT-010-D1.hi | KAMADEVA | v4 | 37 | 2.8 | 13.2
+SHOT-010-D1.mr | KAMADEVA | v4 | 51 | 2.8 | 18.2
+
+TEXT of the 3 languages for 4 sample lines (approved by the owner): 
+SHOT-005-N.hi: फिर उनके मन से एक और जन्मा, सोने-सा पीला.
+SHOT-009-N.en: Kamadevas hands began to shake.
+SHOT-009-D1.mr: माझ्यावर बाण? महादेवांच्या डोळ्यांतली आग तुला जाळेल.
+SHOT-010-D1.hi: आपने कहा, सब पर चलाओ, मेरी गलती क्या?

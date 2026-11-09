@@ -1,0 +1,6 @@
+DESIGN REVIEW for a paid text-to-speech voice system (owner's hard rule: NO LINE MAY EVER BE GENERATED TWICE; do not waste credits). The attached design copies a working system and adapts it. Review it like a hostile auditor.
+1. For each decision D1 to D11, say which option you would pick and why, and name any option the design MISSED (possibilities).
+2. List every way a line could still be generated twice or credits wasted (crash mid-run, duplicate call, changed setting, wrong voice, wrong model, wrong name pronunciation, timing overrun, text changes after generation, two processes at once, API returning a different cost, voice removed from the account, free preview not matching the paid model).
+3. List missing guards, missing tests, and anything in the copied Granth design that does not fit our case (Hindi + Marathi + English, six speakers, closed-mouth voice-over, one shared video, mix in a later gate).
+4. Say plainly what you could NOT verify.
+Reply as a numbered list: HIGH/MEDIUM/LOW, the exact place (D-number or section), the problem, the exact fix. Under 400 words. Think briefly and finish with the list after the line FINAL:. Do not praise.

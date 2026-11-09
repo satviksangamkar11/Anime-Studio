@@ -337,7 +337,7 @@
      ]
     },
     "hi": {
-     "text": "उनकी तलवार हमारे बंधन काटती है। उनका खुला हाथ हमें आज़ाद करता है।",
+     "text": "उनकी तलवार बंधन काटती है। खुला हाथ आज़ाद करता है।",
      "language": "hi",
      "time_range": [
       0.3,
@@ -503,7 +503,7 @@
     "action_pose_expression": "The munis on the left lean in, eyes lifting toward the sage",
     "camera": "wide, slow truck right along the munis toward Markandeya begins",
     "spatial_position": "munis left, mid depth; Markandeya center-right, mid depth",
-    "audio_cue": "dawn birdsong and the stream",
+    "audio_cue": "dawn birdsong and the sound of the stream",
     "handoff_to_next_second": "the lead muni's hands begin to join"
    },
    {
@@ -539,7 +539,7 @@
     "action_pose_expression": "He raises his teaching palm; the shawl edge lifts in the dawn breeze and settles late",
     "camera": "medium, slow truck right continues",
     "spatial_position": "Markandeya center-right, mid depth",
-    "audio_cue": "a breeze through the deodar",
+    "audio_cue": "a soft wind through the deodar",
     "handoff_to_next_second": "his eyes begin to open"
    },
    {
@@ -563,7 +563,7 @@
   ],
   "audio_and_dialogue_track": {
    "narration": {
-    "text": "At dawn, sages came asking.",
+    "text": "At dawn, sages came.",
     "language": "en",
     "time_range": [
      0.3,
@@ -572,7 +572,7 @@
    },
    "narration_by_lang": {
     "en": {
-     "text": "At dawn, sages came asking.",
+     "text": "At dawn, sages came.",
      "language": "en",
      "time_range": [
       0.3,
@@ -580,7 +580,7 @@
      ]
     },
     "hi": {
-     "text": "भोर में मुनि सवाल लेकर आए।",
+     "text": "सुबह मुनि सवाल लेकर आए।",
      "language": "hi",
      "time_range": [
       0.3,
@@ -588,7 +588,7 @@
      ]
     },
     "mr": {
-     "text": "पहाटे ऋषी प्रश्न घेऊन आले.",
+     "text": "पहाटे ऋषी आले.",
      "language": "mr",
      "time_range": [
       0.3,
@@ -600,7 +600,7 @@
     {
      "speaker": "CHAR-HIMALAYAN-MUNIS",
      "tone": "curious, reverent",
-     "text": "Sati's birth? Shiva's marriage? Please tell.",
+     "text": "How was Sati born and wed?",
      "language": "en",
      "time_range": [
       2.3,
@@ -610,7 +610,7 @@
     {
      "speaker": "CHAR-MARKANDEYA",
      "tone": "calm, warm, teaching",
-     "text": "Listen. Brahma told this story first.",
+     "text": "Listen. Brahma told it first.",
      "language": "en",
      "time_range": [
       4.6,
@@ -623,7 +623,7 @@
      {
       "speaker": "CHAR-HIMALAYAN-MUNIS",
       "tone": "curious, reverent",
-      "text": "Sati's birth? Shiva's marriage? Please tell.",
+      "text": "How was Sati born and wed?",
       "language": "en",
       "time_range": [
        2.3,
@@ -633,7 +633,7 @@
      {
       "speaker": "CHAR-MARKANDEYA",
       "tone": "calm, warm, teaching",
-      "text": "Listen. Brahma told this story first.",
+      "text": "Listen. Brahma told it first.",
       "language": "en",
       "time_range": [
        4.6,
@@ -645,7 +645,7 @@
      {
       "speaker": "CHAR-HIMALAYAN-MUNIS",
       "tone": "curious, reverent",
-      "text": "सती कैसे जन्मीं? शिव का ब्याह कैसे?",
+      "text": "सती कैसे जन्मीं और ब्याही?",
       "language": "hi",
       "time_range": [
        2.3,
@@ -655,7 +655,7 @@
      {
       "speaker": "CHAR-MARKANDEYA",
       "tone": "calm, warm, teaching",
-      "text": "सुनो। ब्रह्मा ने पहले ये कहानी सुनाई।",
+      "text": "सुनो। ब्रह्मा ने पहले ये सुनाई।",
       "language": "hi",
       "time_range": [
        4.6,
@@ -667,7 +667,7 @@
      {
       "speaker": "CHAR-HIMALAYAN-MUNIS",
       "tone": "curious, reverent",
-      "text": "सती कशी जन्मली? शिवांचं लग्न कसं?",
+      "text": "सतीचा जन्म आणि लग्न कसं?",
       "language": "mr",
       "time_range": [
        2.3,
@@ -677,7 +677,7 @@
      {
       "speaker": "CHAR-MARKANDEYA",
       "tone": "calm, warm, teaching",
-      "text": "ऐका. ही कथा आधी ब्रह्मदेवांनी सांगितली.",
+      "text": "ऐका. ब्रह्मदेवांनी सांगितलं.",
       "language": "mr",
       "time_range": [
        4.6,
@@ -848,7 +848,7 @@
     "action_pose_expression": "Brahma on the lotus throne turns his creating palm upward; the eyes of his front face open",
     "camera": "wide, slow crane down from cloud level to the petal steps begins",
     "spatial_position": "Brahma center, far depth, on the throne",
-    "audio_cue": "a deep conch-like swell",
+    "audio_cue": "a deep conch-like hum swells",
     "handoff_to_next_second": "figures begin to form on the right"
    },
    {
@@ -875,7 +875,7 @@
     "action_pose_expression": "A soft golden light gathers above the petal step on the left",
     "camera": "medium-wide, crane down continues",
     "spatial_position": "light left, mid depth",
-    "audio_cue": "a rising shimmer",
+    "audio_cue": "a rising chime shimmer",
     "handoff_to_next_second": "the light takes a standing shape"
    },
    {
@@ -893,7 +893,7 @@
     "action_pose_expression": "Sandhya's eyes open, startled like a doe's; she lowers her gaze at once",
     "camera": "medium-wide, crane slows",
     "spatial_position": "Sandhya left, mid depth, full figure",
-    "audio_cue": "a soft gasp of air through cloth",
+    "audio_cue": "a soft breath of air through cloth",
     "handoff_to_next_second": "one hand moves to the veil"
    },
    {
@@ -1137,7 +1137,7 @@
     "action_pose_expression": "The light becomes a youth with golden skin and red-tinged hands, face and feet",
     "camera": "medium, slow arc right continues",
     "spatial_position": "Kamadeva center-right, near depth",
-    "audio_cue": "a warm shimmer settles",
+    "audio_cue": "a warm shimmer hum settles",
     "handoff_to_next_second": "his eyelids flutter"
    },
    {
@@ -1146,7 +1146,7 @@
     "action_pose_expression": "Kamadeva's eyes open; a playful half smile appears",
     "camera": "medium close-up, slow arc right continues",
     "spatial_position": "Kamadeva center-right, near depth",
-    "audio_cue": "a light bowstring twang",
+    "audio_cue": "a light bowstring twang with a soft tick",
     "handoff_to_next_second": "his gaze drops to his left hand"
    },
    {
@@ -1182,13 +1182,13 @@
     "action_pose_expression": "The sages far behind lean in, astonished; Kamadeva waits with bright eyes",
     "camera": "arc ends, medium-wide",
     "spatial_position": "sages right, far depth; Kamadeva center-right, near",
-    "audio_cue": "a murmur of cloth as the sages shift",
+    "audio_cue": "a soft rustle of cloth as the sages shift",
     "handoff_to_next_second": "Brahma's palm begins to rise"
    }
   ],
   "audio_and_dialogue_track": {
    "narration": {
-    "text": "Then one more came from his mind, shining like gold.",
+    "text": "Then another was born of his mind, golden.",
     "language": "en",
     "time_range": [
      0.3,
@@ -1197,7 +1197,7 @@
    },
    "narration_by_lang": {
     "en": {
-     "text": "Then one more came from his mind, shining like gold.",
+     "text": "Then another was born of his mind, golden.",
      "language": "en",
      "time_range": [
       0.3,
@@ -1205,7 +1205,7 @@
      ]
     },
     "hi": {
-     "text": "फिर उनके मन से एक और निकला, सूरज जैसा सुनहरा।",
+     "text": "फिर उनके मन से एक और जन्मा, सोने-सा पीला।",
      "language": "hi",
      "time_range": [
       0.3,
@@ -1213,7 +1213,7 @@
      ]
     },
     "mr": {
-     "text": "मग त्यांच्या मनातून आणखी एक आला, सूर्यासारखा सोनेरी.",
+     "text": "मग त्यांच्या मनातून आणखी एक आला, सोनेरी.",
      "language": "mr",
      "time_range": [
       0.3,
@@ -1250,7 +1250,7 @@
      {
       "speaker": "CHAR-KAMADEVA",
       "tone": "humble, eager",
-      "text": "प्रभु, मेरा काम क्या है? मुझे घर दीजिए, और पत्नी भी।",
+      "text": "प्रभु, मेरा काम क्या? घर और पत्नी दीजिए।",
       "language": "hi",
       "time_range": [
        4.2,
@@ -1262,7 +1262,7 @@
      {
       "speaker": "CHAR-KAMADEVA",
       "tone": "humble, eager",
-      "text": "प्रभू, माझं काम काय? मला जागा द्या, आणि बायकोही.",
+      "text": "प्रभू, माझं काम काय? मला घर द्या, आणि बायकोही.",
       "language": "mr",
       "time_range": [
        4.2,
@@ -1449,7 +1449,7 @@
     "action_pose_expression": "Far behind, the sages raise folded hands toward him one after another, naming him",
     "camera": "medium, slow push in continues",
     "spatial_position": "sages right, far depth",
-    "audio_cue": "soft palms meeting in a ripple",
+    "audio_cue": "soft palms meeting with a light tap in a ripple",
     "handoff_to_next_second": "Kamadeva lifts his bow"
    },
    {
@@ -1482,7 +1482,7 @@
   ],
   "audio_and_dialogue_track": {
    "narration": {
-    "text": "The sages named him Manmatha, Madana, Kandarpa.",
+    "text": "The sages named him Madana.",
     "language": "en",
     "time_range": [
      3.9,
@@ -1491,7 +1491,7 @@
    },
    "narration_by_lang": {
     "en": {
-     "text": "The sages named him Manmatha, Madana, Kandarpa.",
+     "text": "The sages named him Madana.",
      "language": "en",
      "time_range": [
       3.9,
@@ -1499,7 +1499,7 @@
      ]
     },
     "hi": {
-     "text": "मुनियों ने उसे नाम दिए, मन्मथ, मदन, कंदर्प।",
+     "text": "ऋषियों ने उसे मदन कहा।",
      "language": "hi",
      "time_range": [
       3.9,
@@ -1507,7 +1507,7 @@
      ]
     },
     "mr": {
-     "text": "ऋषींनी त्याला नावं दिली, मन्मथ, मदन, कंदर्प.",
+     "text": "ऋषी त्याला मदन म्हणाले.",
      "language": "mr",
      "time_range": [
       3.9,
@@ -1519,7 +1519,7 @@
     {
      "speaker": "CHAR-BRAHMA",
      "tone": "grand, commanding",
-     "text": "Your flower arrows win every heart. Mine, Vishnu's, even Shiva's.",
+     "text": "Your flower arrows win every heart, even Shiva's.",
      "language": "en",
      "time_range": [
       0.3,
@@ -1532,7 +1532,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "grand, commanding",
-      "text": "Your flower arrows win every heart. Mine, Vishnu's, even Shiva's.",
+      "text": "Your flower arrows win every heart, even Shiva's.",
       "language": "en",
       "time_range": [
        0.3,
@@ -1544,7 +1544,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "grand, commanding",
-      "text": "तुम्हारे फूल-बाण हर मन जीतेंगे। मेरा, विष्णु का, शिव का भी।",
+      "text": "तुम्हारे बाण शिव को भी जीतेंगे।",
       "language": "hi",
       "time_range": [
        0.3,
@@ -1556,7 +1556,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "grand, commanding",
-      "text": "तुझे फुलांचे बाण प्रत्येक मन जिंकतील. माझं, विष्णूंचं, शिवांचंसुद्धा.",
+      "text": "तुझे बाण सर्वांचं मन जिंकतील, शिवांचंही.",
       "language": "mr",
       "time_range": [
        0.3,
@@ -1784,7 +1784,7 @@
   ],
   "audio_and_dialogue_track": {
    "narration": {
-    "text": "He aimed at Brahma's own court. Every mind slipped.",
+    "text": "He aimed at Brahma's own court. Every mind wavered.",
     "language": "en",
     "time_range": [
      3.2,
@@ -1793,7 +1793,7 @@
    },
    "narration_by_lang": {
     "en": {
-     "text": "He aimed at Brahma's own court. Every mind slipped.",
+     "text": "He aimed at Brahma's own court. Every mind wavered.",
      "language": "en",
      "time_range": [
       3.2,
@@ -1801,7 +1801,7 @@
      ]
     },
     "hi": {
-     "text": "उसने ब्रह्मा जी की सभा पर ही बाण चलाया। सबका मन डोला।",
+     "text": "उसने ब्रह्मा जी की सभा पर बाण चलाया। सबका मन डोला।",
      "language": "hi",
      "time_range": [
       3.2,
@@ -1809,7 +1809,7 @@
      ]
     },
     "mr": {
-     "text": "त्याने ब्रह्मदेवांच्या सभेवरच बाण सोडला. सगळ्यांचं मन डळमळलं.",
+     "text": "त्याने सभेवर बाण सोडला. सगळ्यांचं मन डळमळलं.",
      "language": "mr",
      "time_range": [
       3.2,
@@ -1821,7 +1821,7 @@
     {
      "speaker": "CHAR-KAMADEVA",
      "tone": "playful, daring, under the breath",
-     "text": "Let's see if it's true.",
+     "text": "Let me test those words.",
      "language": "en",
      "time_range": [
       0.2,
@@ -1834,7 +1834,7 @@
      {
       "speaker": "CHAR-KAMADEVA",
       "tone": "playful, daring, under the breath",
-      "text": "Let's see if it's true.",
+      "text": "Let me test those words.",
       "language": "en",
       "time_range": [
        0.2,
@@ -2034,7 +2034,7 @@
     "action_pose_expression": "A cloud shadow slides over the court; Shiva steps out of it on the left, eyes open and stern",
     "camera": "wide, slow push in toward Shiva begins",
     "spatial_position": "Shiva left, mid depth; Brahma center, mid; sages right, mid",
-    "audio_cue": "the wind drops and serpents hiss softly",
+    "audio_cue": "a soft dry rustle as the wind dies down",
     "handoff_to_next_second": "Shiva's hand begins to rise"
    },
    {
@@ -2061,7 +2061,7 @@
     "action_pose_expression": "Brahma's four heads bow; his shoulders fall",
     "camera": "medium-wide, slow push in continues",
     "spatial_position": "Brahma center, mid depth",
-    "audio_cue": "a long sigh of cloth",
+    "audio_cue": "a long soft breath of cloth",
     "handoff_to_next_second": "the sages lower their heads"
    },
    {
@@ -2070,7 +2070,7 @@
     "action_pose_expression": "The sages on the right lower their heads in shame, hands at their chests",
     "camera": "medium-wide, slow push in continues",
     "spatial_position": "sages right, mid depth",
-    "audio_cue": "kamandalus knock softly as hands drop",
+    "audio_cue": "a soft knock of kamandalus as the hands drop",
     "handoff_to_next_second": "Shiva's hand begins to lower"
    },
    {
@@ -2079,7 +2079,7 @@
     "action_pose_expression": "Shiva's pointing hand lowers slowly; his gaze stays fixed on Brahma",
     "camera": "medium, slow push in continues",
     "spatial_position": "Shiva left, mid depth",
-    "audio_cue": "serpents shift with a faint dry slide",
+    "audio_cue": "a faint dry rustle of cloth",
     "handoff_to_next_second": "sweat falls from Brahma's brow"
    },
    {
@@ -2088,7 +2088,7 @@
     "action_pose_expression": "Brahma's palms close over his knees; a drop of sweat falls from his brow",
     "camera": "medium, push in slows",
     "spatial_position": "Brahma center, mid depth",
-    "audio_cue": "a single drop taps the petal step",
+    "audio_cue": "a single tap of a drop on the petal step",
     "handoff_to_next_second": "Brahma's eyes begin to lift"
    },
    {
@@ -2120,7 +2120,7 @@
      ]
     },
     "hi": {
-     "text": "ब्रह्मा जी और मुनियों ने शर्म से सिर झुका लिया।",
+     "text": "ब्रह्मा जी और मुनि शर्म से झुक गए।",
      "language": "hi",
      "time_range": [
       4.8,
@@ -2140,7 +2140,7 @@
     {
      "speaker": "CHAR-SHIVA",
      "tone": "stern, quiet, cutting",
-     "text": "Brahma, she's your own daughter. How could your mind slip?",
+     "text": "Brahma, she's your own daughter. How could you?",
      "language": "en",
      "time_range": [
       1.2,
@@ -2153,7 +2153,7 @@
      {
       "speaker": "CHAR-SHIVA",
       "tone": "stern, quiet, cutting",
-      "text": "Brahma, she's your own daughter. How could your mind slip?",
+      "text": "Brahma, she's your own daughter. How could you?",
       "language": "en",
       "time_range": [
        1.2,
@@ -2165,7 +2165,7 @@
      {
       "speaker": "CHAR-SHIVA",
       "tone": "stern, quiet, cutting",
-      "text": "ब्रह्मा जी, वो आपकी अपनी बेटी है। आपका मन कैसे डोला?",
+      "text": "ब्रह्मा जी, वो आपकी बेटी है। मन कैसे डोला?",
       "language": "hi",
       "time_range": [
        1.2,
@@ -2177,7 +2177,7 @@
      {
       "speaker": "CHAR-SHIVA",
       "tone": "stern, quiet, cutting",
-      "text": "ब्रह्मदेव, ती तुमचीच मुलगी आहे. तुमचं मन कसं डळमळलं?",
+      "text": "ब्रह्मदेव, ती तुमचीच मुलगी आहे. मन कसं डळमळलं?",
       "language": "mr",
       "time_range": [
        1.2,
@@ -2219,7 +2219,7 @@
     {
      "time_range": "0.0-1.0s",
      "sfx_key": "cloud_shadow_wind_drop",
-     "description": "the warm wind drops away as the cloud shadow passes"
+     "description": "the warm wind dies away as the cloud shadow passes"
     },
     {
      "time_range": "6.4-6.7s",
@@ -2353,7 +2353,7 @@
     "action_pose_expression": "Kamadeva hurriedly gathers his arrows to his chest, eyes wide",
     "camera": "medium, slow push in continues",
     "spatial_position": "Kamadeva center-right, near",
-    "audio_cue": "arrows clatter softly together",
+    "audio_cue": "arrows knock softly together",
     "handoff_to_next_second": "Brahma begins to rise"
    },
    {
@@ -2371,7 +2371,7 @@
     "action_pose_expression": "Brahma's arm extends, one finger pointed at Kamadeva",
     "camera": "medium close-up, slow push in continues",
     "spatial_position": "Brahma center, mid depth; arm toward center-right",
-    "audio_cue": "a low building rumble",
+    "audio_cue": "a low rumbling roar building",
     "handoff_to_next_second": "the curse lands"
    },
    {
@@ -2398,7 +2398,7 @@
     "action_pose_expression": "Brahma's pointing arm stays raised; his eyes are hard and unmoving",
     "camera": "medium close-up, push in nearly at rest",
     "spatial_position": "Brahma center, mid depth",
-    "audio_cue": "the rumble fades",
+    "audio_cue": "the rumbling roar fades",
     "handoff_to_next_second": "his arm begins to drop"
    },
    {
@@ -2407,13 +2407,13 @@
     "action_pose_expression": "Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes",
     "camera": "push in ends, medium close-up on Brahma",
     "spatial_position": "Brahma center, mid depth",
-    "audio_cue": "a long exhale",
+    "audio_cue": "a long breath out",
     "handoff_to_next_second": "Kamadeva sinks to his knees"
    }
   ],
   "audio_and_dialogue_track": {
    "narration": {
-    "text": "Kama's hands began to shake.",
+    "text": "Kamadeva's hands began to shake.",
     "language": "en",
     "time_range": [
      5.6,
@@ -2422,7 +2422,7 @@
    },
    "narration_by_lang": {
     "en": {
-     "text": "Kama's hands began to shake.",
+     "text": "Kamadeva's hands began to shake.",
      "language": "en",
      "time_range": [
       5.6,
@@ -2430,7 +2430,7 @@
      ]
     },
     "hi": {
-     "text": "काम के हाथ काँपने लगे।",
+     "text": "कामदेव के हाथ काँपने लगे।",
      "language": "hi",
      "time_range": [
       5.6,
@@ -2438,7 +2438,7 @@
      ]
     },
     "mr": {
-     "text": "कामाचे हात थरथरू लागले.",
+     "text": "कामदेवाचे हात थरथरू लागले.",
      "language": "mr",
      "time_range": [
       5.6,
@@ -2450,7 +2450,7 @@
     {
      "speaker": "CHAR-BRAHMA",
      "tone": "wounded anger, rising",
-     "text": "At me, before my eyes? Fire from Mahadeva's eye will burn you.",
+     "text": "You shot at me? Fire from Mahadeva's eye will burn you.",
      "language": "en",
      "time_range": [
       1.2,
@@ -2463,7 +2463,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "wounded anger, rising",
-      "text": "At me, before my eyes? Fire from Mahadeva's eye will burn you.",
+      "text": "You shot at me? Fire from Mahadeva's eye will burn you.",
       "language": "en",
       "time_range": [
        1.2,
@@ -2475,7 +2475,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "wounded anger, rising",
-      "text": "मेरे सामने ही मुझ पर बाण? महादेव की आँख की आग तुम्हें जला देगी।",
+      "text": "बाण? महादेव की आँख तुम्हें जलाएगी।",
       "language": "hi",
       "time_range": [
        1.2,
@@ -2487,7 +2487,7 @@
      {
       "speaker": "CHAR-BRAHMA",
       "tone": "wounded anger, rising",
-      "text": "माझ्या डोळ्यांसमोर माझ्यावरच बाण? महादेवांच्या डोळ्यांतली आग तुला जाळून टाकेल.",
+      "text": "माझ्यावर बाण? महादेवांच्या डोळ्यांची आग जाळेल.",
       "language": "mr",
       "time_range": [
        1.2,
@@ -2663,7 +2663,7 @@
     "action_pose_expression": "His brows tilt up in pleading; loose petals fall around him",
     "camera": "close-up, slow push in continues",
     "spatial_position": "Kamadeva center-right, near",
-    "audio_cue": "petals whisper as they fall",
+    "audio_cue": "petals rustle as they fall",
     "handoff_to_next_second": "his palms come together"
    },
    {
@@ -2672,7 +2672,7 @@
     "action_pose_expression": "He presses his palms together and looks up toward Brahma",
     "camera": "close-up, slow push in continues",
     "spatial_position": "Kamadeva center-right, near",
-    "audio_cue": "a soft clasp of hands",
+    "audio_cue": "a soft click of clasped hands",
     "handoff_to_next_second": "focus drifts to Brahma behind"
    },
    {
@@ -2690,7 +2690,7 @@
     "action_pose_expression": "Hold: Kamadeva's eyes stay locked on Brahma, waiting, barely breathing",
     "camera": "close-up, push in slows",
     "spatial_position": "Kamadeva center-right, near",
-    "audio_cue": "a faint heartbeat-like drum of silence",
+    "audio_cue": "a faint heartbeat-like thump of silence",
     "handoff_to_next_second": "a last petal drifts down"
    },
    {
@@ -2722,7 +2722,7 @@
      ]
     },
     "hi": {
-     "text": "क्या ब्रह्मा जी श्राप वापस लेंगे?",
+     "text": "क्या ब्रह्मा जी श्राप लौटाएँगे?",
      "language": "hi",
      "time_range": [
       3.8,
@@ -2767,7 +2767,7 @@
      {
       "speaker": "CHAR-KAMADEVA",
       "tone": "frightened, pleading",
-      "text": "आपने ही कहा था, सब पर चलाओ। मेरी गलती क्या?",
+      "text": "आपने कहा, सब पर चलाओ। मेरी गलती क्या?",
       "language": "hi",
       "time_range": [
        0.6,
@@ -2779,7 +2779,7 @@
      {
       "speaker": "CHAR-KAMADEVA",
       "tone": "frightened, pleading",
-      "text": "तुम्हीच सांगितलं होतं, सगळ्यांवर सोड. माझी काय चूक?",
+      "text": "सर्वांवर सोडा म्हणालात! माझी चूक काय?",
       "language": "mr",
       "time_range": [
        0.6,

@@ -1,0 +1,28 @@
+diff --git a/director/write_pack.py b/director/write_pack.py
+index 0ab6080..0e38528 100644
+--- a/director/write_pack.py
++++ b/director/write_pack.py
+@@ -1365,7 +1365,9 @@ def main(argv=None):
+         meta_story = json.loads((Path(a.story).parent / "story.json").read_text(encoding="utf-8"))
+     except (OSError, ValueError):
+         pass
+-    saved_langs = meta_story.get("output_languages") if isinstance(meta_story, dict) else None
++    if not isinstance(meta_story, dict):    # a story.json that is a list or text is ignored (xing R1)
++        meta_story = {}
++    saved_langs = meta_story.get("output_languages")
+     out_langs = a.out_lang or (wp.lang_list(saved_langs) if isinstance(saved_langs, list) and saved_langs else None) or [wp.DEFAULT_OUT_LANG]
+     try:
+         writer, via, model, effort = resolve_route(a.writer, a.via, a.model, a.effort)
+diff --git a/ui/static/pipeline.js b/ui/static/pipeline.js
+index 5210786..17ff731 100644
+--- a/ui/static/pipeline.js
++++ b/ui/static/pipeline.js
+@@ -2138,7 +2138,7 @@
+     // a pack shot SHOT-001 is covered by the job ids SHOT-001A / SHOT-001B too (audit 11-08)
+     return ids.length > 0 && ids.every(function (id) {
+       id = String(id);
+-      return have[id] === true || have[id + 'A'] === true;
++      return have[id] === true || have[id + 'A'] === true || have[id + 'B'] === true;
+     });
+   }
+ 

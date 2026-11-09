@@ -170,7 +170,7 @@ def test_wrap_narrow_devanagari_sentence_two_lines_fit():
     text = "माझं कुठे ॲप"
     width = ct.measure(str(DEVA_FONT), 40, "माझं कुठे") + 5
     lines, entries = ct.wrap_lines(text, str(DEVA_FONT), 40, width, max_lines=2)
-    assert lines == ["माझं कुठे", "ॲप"]
+    assert lines == ["माझं", "कुठे ॲप"]      # balanced wrap (2026-11-09): same 2 lines, no orphan word on line 2
     assert entries == []
 
 

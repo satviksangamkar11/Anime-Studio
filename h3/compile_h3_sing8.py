@@ -19,6 +19,10 @@ VIDEO_VAE = "minimax_h3_video_vae_fp16.safetensors"
 AUDIO_VAE = "minimax_h3_audio_vae_fp32.safetensors"
 OFFSCREEN_LIP = "The on-screen character's lips remain completely closed."  # official base-en s4.4 (voiceover)
 
+def _tail(st):
+    """Stage 6 and stage 7, once when both say the same (render review 2026-11-09: the last sentence appeared twice)."""
+    return [st["6_impact_result"]] + ([st["7_settled_end_state"]] if st["7_settled_end_state"] != st["6_impact_result"] else [])
+
 
 def _mouth_lock(dlg, silent=True):
     """The mouth-state rule, plus the positive lock sentence when nobody on screen speaks (English voice mode)."""
@@ -70,7 +74,7 @@ def _fl2va(shot, registry):
         stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
         stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
         _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
-        stage["6_impact_result"], stage["7_settled_end_state"]]))
+        *_tail(stage)]))
     snd = compiled_soundscape(shot, registry)  # shared with the linter (SD-03)
     music = clean_text(shot["sound_plan"]["non_diegetic_music"])
     header = (f"How the reference pictures align with the target video — Picture 1 (from Shot 1) "
@@ -106,7 +110,7 @@ def _ref2va(shot, registry):
     body = san(" ".join([stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
                          stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
                          _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
-                         stage["6_impact_result"], stage["7_settled_end_state"]]))
+                         *_tail(stage)]))
     sections = [
         ("subject_definitions", san(" ".join(subj)) or "No named subject is in frame."),
         ("summary", san(f"{clean_text(shot['story_beat'])} {clean_text(shot['emotional_objective'])}")),

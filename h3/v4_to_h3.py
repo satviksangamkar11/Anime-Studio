@@ -187,7 +187,7 @@ def _mouth(track, pf, sid, problems, ed=None, ti=0):
         states[str(s)] = v
     open_secs = [k for k, v in states.items() if v == "open_non_verbal_breath"]
     rule = ("The figure's mouth stays closed for the whole shot." if not open_secs else
-            "The figure's mouth stays closed except for non-verbal breaths at seconds " + ", ".join(open_secs) + ".")
+            "The figure's mouth stays closed except for non-verbal breaths at second" + ("s " if len(open_secs) > 1 else " ") + " and ".join(open_secs) + ".")
     return states, rule
 
 

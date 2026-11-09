@@ -269,6 +269,25 @@ def _break_word(word, width, max_w):
 
 
 def _wrap_para(para, width, max_w, entries):
+    """Balanced wrap: the greedy line count, then the narrowest width (no wider than any single word needs) that keeps
+    that count, so a 2-line card is split evenly instead of leaving one orphan word on line 2."""
+    lines = _greedy_para(para, width, max_w, entries)
+    if len(lines) < 2:
+        return lines
+    words = [w for w in para.split(" ") if w]
+    lo, hi = max(width(w) for w in words), max_w
+    if lo >= hi:
+        return lines
+    for _ in range(16):
+        mid = (lo + hi) / 2
+        if len(_greedy_para(para, width, mid, [])) <= len(lines):
+            hi = mid
+        else:
+            lo = mid
+    return _greedy_para(para, width, hi, [])
+
+
+def _greedy_para(para, width, max_w, entries):
     words = [w for w in para.split(" ") if w]
     if not words:
         return [""]

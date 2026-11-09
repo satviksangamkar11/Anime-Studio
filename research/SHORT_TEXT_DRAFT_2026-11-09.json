@@ -1,0 +1,326 @@
+[
+  {
+    "id": "SHOT-001-N",
+    "en": "Before the world began, she was already there.",
+    "hi": "दुनिया बनने से पहले भी, वो वहाँ थीं।",
+    "mr": "जग बनण्याच्या आधीसुद्धा, ती तिथे होती.",
+    "chars": {
+      "en": 46,
+      "hi": 36,
+      "mr": 38
+    },
+    "max": {
+      "en": 68,
+      "hi": 62,
+      "mr": 49
+    },
+    "changed": false,
+    "note": "All three already fit; copied unchanged."
+  },
+  {
+    "id": "SHOT-002-N",
+    "en": "Her sword cuts our chains. Her open hand sets us free.",
+    "hi": "उनकी तलवार हमारे बंधन काटे। खुला हाथ हमें आज़ाद करे।",
+    "mr": "तिची तलवार बेड्या तोडे. उघडा हात सोडवी.",
+    "chars": {
+      "en": 54,
+      "hi": 52,
+      "mr": 39
+    },
+    "max": {
+      "en": 59,
+      "hi": 54,
+      "mr": 42
+    },
+    "changed": true,
+    "note": "hi and mr shortened; en unchanged; mr drops 'her' from the open-hand clause and uses सोडवी (free) to fit."
+  },
+  {
+    "id": "SHOT-003-N",
+    "en": "At dawn, sages asked.",
+    "hi": "सुबह मुनि पूछने आए।",
+    "mr": "पहाटे ऋषी आले.",
+    "chars": {
+      "en": 21,
+      "hi": 19,
+      "mr": 14
+    },
+    "max": {
+      "en": 22,
+      "hi": 20,
+      "mr": 16
+    },
+    "changed": true,
+    "note": "en and hi shortened; mr keeps dawn and sages, 'asking' cut to fit."
+  },
+  {
+    "id": "SHOT-003-D1",
+    "en": "Sati's birth? Shiva's wed?",
+    "hi": "सती कैसे? शिवब्याह?",
+    "mr": "सती कशी? शिवलग्न?",
+    "chars": {
+      "en": 26,
+      "hi": 19,
+      "mr": 17
+    },
+    "max": {
+      "en": 26,
+      "hi": 19,
+      "mr": 19
+    },
+    "changed": true,
+    "note": "Both questions kept in short form; 'please tell' dropped."
+  },
+  {
+    "id": "SHOT-003-D2",
+    "en": "Brahma told it first.",
+    "hi": "सुनो। ब्रह्मा ने पहले सुनाई।",
+    "mr": "ब्रह्मदेव आधी सांगे.",
+    "chars": {
+      "en": 21,
+      "hi": 28,
+      "mr": 20
+    },
+    "max": {
+      "en": 25,
+      "hi": 29,
+      "mr": 20
+    },
+    "changed": true,
+    "note": "'Listen' cut in en and mr; 'first' kept; mr uses सांगे to fit."
+  },
+  {
+    "id": "SHOT-004-N",
+    "en": "Brahma made the gods, the sages and Daksha. Then, from his deep thought, a daughter was born.",
+    "hi": "ब्रह्मा जी ने देवता, ऋषि और दक्ष बनाए। फिर उनके ध्यान से एक बेटी जन्मी।",
+    "mr": "ब्रह्मदेवांनी देव, ऋषी आणि दक्ष घडवले. मग ध्यानातून एक मुलगी जन्मली.",
+    "chars": {
+      "en": 93,
+      "hi": 71,
+      "mr": 68
+    },
+    "max": {
+      "en": 100,
+      "hi": 91,
+      "mr": 71
+    },
+    "changed": true,
+    "note": "mr drops 'त्यांच्या' (his) to fit; en and hi unchanged."
+  },
+  {
+    "id": "SHOT-005-N",
+    "en": "Then another from his mind, yellow as gold.",
+    "hi": "उनके मन से एक और जन्मा, सोने-सा पीला।",
+    "mr": "मनातून दुसरा जन्मला, सोनेरी.",
+    "chars": {
+      "en": 43,
+      "hi": 37,
+      "mr": 28
+    },
+    "max": {
+      "en": 44,
+      "hi": 40,
+      "mr": 31
+    },
+    "changed": true,
+    "note": "en keeps 'another' and 'yellow as gold'; hi drops 'फिर'; mr drops 'his' and 'पिवळा', gold kept as सोनेरी."
+  },
+  {
+    "id": "SHOT-005-D1",
+    "en": "Lord, what's my work? Give me a home and wife.",
+    "hi": "प्रभु, काम क्या? घर, पत्नी दें।",
+    "mr": "प्रभू, काम काय? घर, बायको द्या.",
+    "chars": {
+      "en": 46,
+      "hi": 31,
+      "mr": 31
+    },
+    "max": {
+      "en": 47,
+      "hi": 32,
+      "mr": 32
+    },
+    "changed": true,
+    "note": "hi and mr keep work, home and wife; en unchanged."
+  },
+  {
+    "id": "SHOT-006-N",
+    "en": "Sages: Manmatha, Madana, Kandarpa.",
+    "hi": "मुनियों ने: मन्मथ, मदन, कंदर्प।",
+    "mr": "ऋषी: मन्मथ, मदन, कंदर्प.",
+    "chars": {
+      "en": 34,
+      "hi": 31,
+      "mr": 24
+    },
+    "max": {
+      "en": 38,
+      "hi": 35,
+      "mr": 27
+    },
+    "changed": true,
+    "note": "The verb 'named' is dropped to fit; the three names are kept as given."
+  },
+  {
+    "id": "SHOT-006-D1",
+    "en": "Flower arrows win hearts, even Shiva.",
+    "hi": "फूल-बाण मन जीतें शिव भी।",
+    "mr": "फुलबाण सर्व मन जिंकतील, शिवही.",
+    "chars": {
+      "en": 37,
+      "hi": 24,
+      "mr": 30
+    },
+    "max": {
+      "en": 37,
+      "hi": 24,
+      "mr": 31
+    },
+    "changed": true,
+    "note": "'every' dropped in en and hi to fit; flower arrows, winning hearts and even Shiva kept."
+  },
+  {
+    "id": "SHOT-007-N",
+    "en": "He aimed at Brahma's court. Every mind slipped.",
+    "hi": "उसने ब्रह्मा-सभा पर बाण मारा। सबका मन डोला।",
+    "mr": "ब्रह्मदेवांच्या सभेवर सर्व मन ढळे.",
+    "chars": {
+      "en": 47,
+      "hi": 43,
+      "mr": 34
+    },
+    "max": {
+      "en": 48,
+      "hi": 44,
+      "mr": 34
+    },
+    "changed": true,
+    "note": "en drops 'own'; hi writes 'ब्रह्मा-सभा'; mr drops the aim verb to fit."
+  },
+  {
+    "id": "SHOT-007-D1",
+    "en": "Let's see if true.",
+    "hi": "देखूँ, सच है?",
+    "mr": "बघू, खरं का?",
+    "chars": {
+      "en": 18,
+      "hi": 13,
+      "mr": 12
+    },
+    "max": {
+      "en": 20,
+      "hi": 14,
+      "mr": 14
+    },
+    "changed": true,
+    "note": "Short question kept in all three; 'it's' dropped."
+  },
+  {
+    "id": "SHOT-008-N",
+    "en": "Brahma and sages bowed in shame.",
+    "hi": "ब्रह्मा जी और मुनि शर्म से झुक गए।",
+    "mr": "ब्रह्मदेव आणि ऋषी लाजले.",
+    "chars": {
+      "en": 32,
+      "hi": 34,
+      "mr": 24
+    },
+    "max": {
+      "en": 38,
+      "hi": 35,
+      "mr": 27
+    },
+    "changed": true,
+    "note": "en and mr shortened; hi unchanged (already fits)."
+  },
+  {
+    "id": "SHOT-008-D1",
+    "en": "Brahma, she's your own daughter. Why?",
+    "hi": "ब्रह्मा जी, आपकी बेटी है। मन डोला?",
+    "mr": "ब्रह्मदेव ती तुमचीच मुलगी. का?",
+    "chars": {
+      "en": 37,
+      "hi": 34,
+      "mr": 30
+    },
+    "max": {
+      "en": 41,
+      "hi": 35,
+      "mr": 30
+    },
+    "changed": true,
+    "note": "Approved 'your own daughter' kept; second question cut to 'Why?' / 'मन डोला?' / 'का?'."
+  },
+  {
+    "id": "SHOT-009-N",
+    "en": "Kamadeva's hands trembled.",
+    "hi": "कामदेव के हाथ काँपने लगे।",
+    "mr": "कामदेवाचे हात कंपले.",
+    "chars": {
+      "en": 26,
+      "hi": 25,
+      "mr": 20
+    },
+    "max": {
+      "en": 28,
+      "hi": 25,
+      "mr": 20
+    },
+    "changed": true,
+    "note": "en uses 'trembled' for 'began to shake'; hi unchanged; mr uses कंपले to fit."
+  },
+  {
+    "id": "SHOT-009-D1",
+    "en": "You shot me? Mahadeva's eye-fire'll burn you.",
+    "hi": "बाण? महादेव की आँख-आग तुम्हें जलेगी।",
+    "mr": "बाण? महादेव-डोळ्याची आग तुला जाळेल.",
+    "chars": {
+      "en": 45,
+      "hi": 36,
+      "mr": 35
+    },
+    "max": {
+      "en": 46,
+      "hi": 30,
+      "mr": 38
+    },
+    "changed": true,
+    "note": "NOT FIT (hi over by 6): en contracts 'will' to 'll'; mr drops 'माझ्यावर'; hi cannot keep eye-fire and the question within 30."
+  },
+  {
+    "id": "SHOT-010-N",
+    "en": "Will Brahma take it back?",
+    "hi": "ब्रह्मा श्राप हटाएँगे?",
+    "mr": "ते शाप परत घेतील?",
+    "chars": {
+      "en": 25,
+      "hi": 22,
+      "mr": 17
+    },
+    "max": {
+      "en": 25,
+      "hi": 23,
+      "mr": 18
+    },
+    "changed": true,
+    "note": "en drops 'ever' to fit; hi uses 'हटाएँगे' (remove) for take back; mr uses 'ते' (he) for Brahma."
+  },
+  {
+    "id": "SHOT-010-D1",
+    "en": "You said aim at everyone. Blame me?",
+    "hi": "आपने कहा सब पर चलाओ। दोष?",
+    "mr": "म्हटलं, सर्वांवर सोड. चूक?",
+    "chars": {
+      "en": 35,
+      "hi": 25,
+      "mr": 26
+    },
+    "max": {
+      "en": 38,
+      "hi": 26,
+      "mr": 26
+    },
+    "changed": true,
+    "note": "'Why' dropped; 'you said aim at everyone' and the blame question kept."
+  }
+]

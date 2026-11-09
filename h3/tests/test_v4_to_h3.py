@@ -273,7 +273,7 @@ def test_mouth_fields_follow_performance_notes(pack):
     assert d["narrator_mouth_closed"] is True
     assert d["mouth_state"]["3"] == "open_non_verbal_breath"
     assert len(d["mouth_state"]) == 8                # seconds 0..7 for 175 frames
-    assert "non-verbal breaths at seconds 3" in d["mouth_state_rule"]
+    assert "non-verbal breaths at second 3" in d["mouth_state_rule"]
 
 
 def test_narration_and_dialogue_never_reach_the_prompt(pack):

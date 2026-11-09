@@ -1,0 +1,173 @@
+[
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-007A",
+  "scene": "SHOT-007",
+  "method": "edit",
+  "file_version": "v02",
+  "flow_title": "SHOT-007A__v02",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "DAKSHA",
+   "SAGE-1",
+   "SAGE-2"
+  ],
+  "people_count": 6,
+  "props": [],
+  "chips": [
+   "SHOT-007A__v01"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 6 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium on Kamadeva shot: Kamadeva draws the bow back; his eyes narrow on his aim. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo. ADDED FOR THE SCRIPTURE (Kalika Purana): three standing sages on the golden steps in the mid-distance, to the left of Brahma's dais between Sandhya and the dais, each clearly smaller than Kamadeva and Sandhya: in the middle Daksha, an elderly sage with a long white beard, ash marks on his forehead, a saffron dhoti and a saffron shawl over one shoulder, rudraksha beads; on his left a bearded sage in a plain white dhoti; on his right a younger sage with a topknot in an ochre dhoti. All three stand with their hands folded at the chest, tense, watching the archer.",
+  "prompt_sha256": "da7108bc105879c7ed07982f77feac211ab20236cb3de432facb1dadbcbc1f85",
+  "base_edit_id": "6e4996a2-a06e-414d-a034-b683bb165c05",
+  "edit_instruction": "Same picture, same style, same people, same poses, same set, same light. Make this exact change only: add three standing sages on the golden steps in the mid-distance, to the left of Brahma's dais between Sandhya and the dais, each clearly smaller than Kamadeva and Sandhya: in the middle Daksha, an elderly sage with a long white beard, ash marks on his forehead, a saffron dhoti and a saffron shawl over one shoulder, rudraksha beads; on his left a bearded sage in a plain white dhoti; on his right a younger sage with a topknot in an ochre dhoti. All three stand with their hands folded at the chest, tense, watching the archer. Do not move, redraw or change anyone or anything else. Exactly 6 people in the picture.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana Pro",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "9:16"
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-007B",
+  "scene": "SHOT-007",
+  "method": "edit",
+  "file_version": "v02",
+  "flow_title": "SHOT-007B__v02",
+  "characters": [
+   "CHAR-KAMADEVA",
+   "CHAR-BRAHMA",
+   "CHAR-SANDHYA",
+   "DAKSHA",
+   "SAGE-1",
+   "SAGE-2"
+  ],
+  "people_count": 6,
+  "props": [],
+  "chips": [
+   "SHOT-007B__v01",
+   "Archer aiming bow with sages"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-KAMADEVA__identity_master.png",
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-SANDHYA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 6 person: Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet; Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Sandhya (attached CHAR-SANDHYA): A dignified young woman with four arms, as told here, and peacock-dark hair. Her eyes are wide like blue lotuses, startled like a doe's. She wears a fully draped twilight-violet sari with the uttariya over both shoulders; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Pull back ends shot: Petals drift down; Kamadeva lowers the bow, pleased, with a small smile. Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth; Brahma on screen center, far depth; Sandhya on screen left, mid depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo. ADDED FOR THE SCRIPTURE (Kalika Purana): the same three standing sages in the same place (Daksha in the middle with the long white beard, saffron dhoti and shawl; a bearded sage in white on his left; a younger topknot sage in ochre on his right) now reacting to the arrow: Daksha flings both hands up to his chest with wide eyes, the other two shield their faces with one arm and lean back.",
+  "prompt_sha256": "875e8144299113739925ab6a6edc0dfa6b490fe12fab42342f10f9f21c26704d",
+  "base_edit_id": "6589de61-07f2-4a98-a765-d614f0b41368",
+  "edit_instruction": "Same picture, same style, same people, same poses, same set, same light as the FIRST picture. Make this exact change only: add the same three standing sages as in the SECOND picture, in exactly the same place, size and clothes (Daksha in the middle with the long white beard, saffron dhoti and shawl; a bearded sage in white on his left; a younger topknot sage in ochre on his right), now reacting to the arrow: Daksha flings both hands up to his chest with wide eyes, the other two shield their faces with one arm and lean back. Do not move, redraw or change anyone or anything else. Exactly 6 people in the picture.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana Pro",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "9:16"
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-009A",
+  "scene": "SHOT-009",
+  "method": "edit",
+  "file_version": "v02",
+  "flow_title": "SHOT-009A__v02",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-SHIVA"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "SHOT-009A__v01",
+   "CHAR-SHIVA"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Medium shot: Brahma's eyes snap onto Kamadeva; his brows draw down in anger. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo. ADDED FOR THE SCRIPTURE (Kalika Purana): Shiva standing calmly on the golden steps at the far left in the mid-distance in front of the left pillar, clearly smaller than Brahma, watching Brahma and Kamadeva: tall, blue-white ash-smeared body, matted hair in a topknot with a crescent moon, tiger-skin wrap, a serpent around his neck, a trident in his right hand, his third eye closed, face calm. Exactly as in the attached CHAR-SHIVA sheet.",
+  "prompt_sha256": "fbeed7dc3895fe322123f03bae4530835660442407da30c82fdaa9db38fd5465",
+  "base_edit_id": "259be38a-1d48-453a-a0dd-8d5c337472e2",
+  "edit_instruction": "Same picture, same style, same people, same poses, same set, same light. Make this exact change only: add Shiva standing calmly on the golden steps at the far left in the mid-distance in front of the left pillar, clearly smaller than Brahma, watching Brahma and Kamadeva: tall, blue-white ash-smeared body, matted hair in a topknot with a crescent moon, tiger-skin wrap, a serpent around his neck, a trident in his right hand, his third eye closed, face calm. Exactly as in the attached CHAR-SHIVA sheet. Do not move, redraw or change anyone or anything else. Exactly 3 people in the picture.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana Pro",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "9:16"
+  },
+  "status": "TODO"
+ },
+ {
+  "adhyay": 1,
+  "shot_id": "SHOT-009B",
+  "scene": "SHOT-009",
+  "method": "edit",
+  "file_version": "v02",
+  "flow_title": "SHOT-009B__v02",
+  "characters": [
+   "CHAR-BRAHMA",
+   "CHAR-KAMADEVA",
+   "CHAR-SHIVA"
+  ],
+  "people_count": 3,
+  "props": [],
+  "chips": [
+   "SHOT-009B__v01",
+   "SHOT-009A__v02"
+  ],
+  "unaccepted_sheets": [
+   "CHAR-BRAHMA__identity_master.png",
+   "CHAR-KAMADEVA__identity_master.png",
+   "ENV-BRAHMA-SABHA.png"
+  ],
+  "prompt": "2D hand-drawn cel-shaded anime, organic hand-drawn line weight with a frame-by-frame cel redraw feel, hard cel shadow planes, painted multi-plane depth, Indian classical Puranic proportions, deva_neon palette colours. Exactly 3 person: Brahma (attached CHAR-BRAHMA): The four-faced creator, with three faces visible from the front and the fourth implied. His skin is lotus-filament gold and each face has a white beard; exactly as in the attached character sheet; Kamadeva (Manmatha, Madana, Kandarpa) (attached CHAR-KAMADEVA): A handsome youth with a golden body and hands, face and feet only faintly tinged red (a blush on palms, soles and cheeks, never solid red). He has a broad chest, a slender waist and a conch-like neck; exactly as in the attached character sheet. Setting: the lotus assembly in the clouds set: Creation court for Episodes 1 and 2; light Surya White morning light from upper right. Push in ends shot: Brahma's arm drops slowly and his breath goes out; anger begins to cool in his eyes. Brahma on screen center, mid depth; Kamadeva (Manmatha, Madana, Kandarpa) on screen center-right, near depth. Show only these people and no others. Light: Surya White morning light from upper right; Molten Gold cloud bounce; rim Kavach Glow edge on the petal steps. Portrait 9:16 frame, vertical picture. Full-frame picture, edge to edge, no border, no inset. No text, no letters, no modern objects, no halo. ADDED FOR THE SCRIPTURE (Kalika Purana): Shiva standing calmly on the golden steps at the far left in the mid-distance in front of the left pillar, clearly smaller than Brahma, watching Brahma and Kamadeva: tall, blue-white ash-smeared body, matted hair in a topknot with a crescent moon, tiger-skin wrap, a serpent around his neck, a trident in his right hand, his third eye closed, face calm. Exactly as in the attached CHAR-SHIVA sheet. He stands in exactly the same place as in the start frame, still and calm.",
+  "prompt_sha256": "a676a236c11287e40c8208da17ef05ac1d4b1366c1372f7e844fd6bdf6bfad39",
+  "base_edit_id": "d18ea2c0-b497-42b9-a7b1-6ac8edb83b3f",
+  "edit_instruction": "Same picture, same style, same people, same poses, same set, same light as the FIRST picture. Make this exact change only: add Shiva standing calmly at the far left in the mid-distance, in front of the left pillar, exactly as he appears in the SECOND picture (same place, same size, same blue-white body, matted hair with crescent moon, tiger-skin wrap, trident, calm face). Do not move, redraw or change anyone or anything else. Exactly 3 people in the picture.",
+  "previous_shot": null,
+  "next_shot": null,
+  "sheets": [],
+  "attempt_cap": 8,
+  "neighbour_chips": [],
+  "neighbour_sentence": "Match the attached neighbouring shot for the house, road, props and positions.",
+  "model": {
+   "name": "Nano Banana Pro",
+   "fallback": null,
+   "count": "x2",
+   "aspect": "9:16"
+  },
+  "status": "TODO"
+ }
+]
