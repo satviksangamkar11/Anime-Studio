@@ -1,0 +1,7 @@
+- `director/keyframe_jobs.py`: `people_count = len(cast) or len(bible_names or [])` does not count on-screen cast. An off-screen cast member is counted, and an empty cast can silently report the bible’s full name count. Derive the count from the sheet’s on-screen cast using the pipeline’s visibility rule, and add tests for off-screen and empty-cast sheets.
+
+- `director/keyframe_jobs.py`: `plate_path = index[plate_id]["path"]` returns the registry path unchanged. The test fixture stores an absolute path, so A’s chip is absolute instead of the `<flow_root>/plates/...` path required by the card. Normalize the registry path to the actual plate path under `flow_root/plates` (while preserving the correct relative path for the job), and assert A’s chip in a test.
+
+- `director/test_keyframe_jobs.py`: the tests cover only five of the card’s listed cases; `test_job_keys_match_build_jobs` checks a hand-written set rather than equality against a `build_jobs` fixture job, and `test_b_instruction_from_change_list` stubs `change_list` instead of using the X-03 hand case. Add the required fixture-based schema comparison and hand-case coverage. `test_b_is_edit_of_a` also does not assert that B has exactly one chip beyond checking equality to a one-element list, but its current assertion does cover that condition.
+
+VERDICT: FIX-FIRST

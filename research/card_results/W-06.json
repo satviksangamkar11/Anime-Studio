@@ -1,0 +1,1 @@
+{"card":"W-06","ok":true,"plan":"research/OPUS_PLAN_P2_WIRING_2026-11-11.md","files":["h3/v4_to_h3.py"],"test_file":"h3/tests/test_v4_to_h3_lock.py","more_tests":["h3/tests/test_v4_to_h3.py"],"note":"coded by Haiku medium"}

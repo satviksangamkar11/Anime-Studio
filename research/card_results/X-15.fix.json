@@ -1,0 +1,20 @@
+{
+ "card": "X-15",
+ "fix_ok": true,
+ "fixed": [
+  "load_waivers now calls waivers.read_waivers and the gate loop uses waivers.split_waived (scoped + legacy records); refused entries listed in report waiver_problems; card signed_by schema NOT implemented (coordinator direction)",
+  "--story-id (default story json story_id, else pack folder name) and --render-version added for scoped waivers",
+  "clip gate uses clip_qa.clip_ok for every clip; missing or malformed verdict blocks even with owner_accept present (regression test)",
+  "dead-air test runs main(): blocks without waiver (rc 1), legacy waiver reaches mux, self-approved waiver refused and reported",
+  "offset test strengthened: lock offset_sec 7.5 must reach the mix as 7.5 (fails under float summing)",
+  "reel-name test checks the error text and accepts kalika_reel2",
+  "stale-lock test matches the real path: input hash mismatch"
+ ],
+ "rejected": [
+  "Dots 1: spy claim wrong (spy captures the sfx list mux_argv passes); offset test strengthened instead",
+  "Dots 2: mux_argv never reads vo_tracks_report.json, so the report is irrelevant to that test",
+  "Dots 4: tmp_path is per-test; file rewritten anyway",
+  "Dots 5: verify_lock runs first and raises on the changed input hash; test is correct",
+  "Dots 7: X-14 contract and clip_ok check only owner_accept presence; code matching not in the contract"
+ ]
+}

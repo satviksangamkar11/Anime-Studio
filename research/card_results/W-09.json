@@ -1,0 +1,14 @@
+{
+ "card": "W-09",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P2_WIRING_2026-11-11.md",
+ "files": [
+  "director/build_h3_batch.py"
+ ],
+ "test_file": "director/test_build_h3_batch_w09.py",
+ "more_tests": [
+  "director/test_build_h3_batch.py",
+  "director/test_wan2gp_pin_trace.py"
+ ],
+ "note": "Haiku coded; routes+lock required, soft end refused (D4 pending), settings_sha256 per shot and batch; W-08 test updated to pass routes/lock; W-11 reads render_manifest.json settings_sha256"
+}

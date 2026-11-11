@@ -48,9 +48,11 @@ def post(body: dict, key: str, timeout: int = 600) -> dict:
         return json.load(r)
 
 
-def review(prompt: str, files: list[Path], key: str | None = None, poster=post, sleep=time.sleep, tries: int = 5, raw: bool = False, max_tokens: int = 16000) -> dict:
+def review(prompt: str, files: list[Path], key: str | None = None, poster=post, sleep=time.sleep, tries: int = 5, raw: bool = False, max_tokens: int = 16000, reasoning: dict | None = None) -> dict:
     key = key or read_key()
     body = {"model": MODEL, "messages": build_messages(prompt, files, raw), "temperature": 0 if not raw else 0.2, "max_tokens": max_tokens}
+    if reasoning is not None:
+        body["reasoning"] = reasoning        # e.g. {"enabled": False}: no hidden thinking, the whole budget is the answer
     last = ""
     for attempt in range(1, tries + 1):
         try:

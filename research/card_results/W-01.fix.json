@@ -1,0 +1,17 @@
+{
+ "card": "W-01",
+ "fix_ok": false,
+ "fixed": [
+  "run_colab_batch.batch: start-proof loop stops at 180 s (was 195 s; Luna) + test_start_proof_stops_at_the_deadline",
+  "test_build_h3_batch: CRLF test adds a CR/tab case (strengthening only)",
+  "test_build_h3_batch: vendored-wheel test skipif when chumpy wheel absent (Dots 5)"
+ ],
+ "rejected": [
+  "Dots 1: raise path is unreachable today (regex collapses first); the test would fail on current code",
+  "Dots 2: SYN_A ids fail check_shot_id (ValueError), so the SHOT-01 override is required; verified",
+  "Dots 3: exec only runs our own generated harden() text in a test; refactor not needed",
+  "Dots 4: hf_ assertion is not tautological (verified False now, fails if a literal appears)",
+  "h3_director.py:350 already has prompt_override (no edit needed); no git checkout run (4 files already present)"
+ ],
+ "note": "card tests 27 pass; wider director/h3/tools/score gate NOT completed (disk full on C:, run stalled at 24%, 23 failures in an earlier run with names lost; not attributed)"
+}

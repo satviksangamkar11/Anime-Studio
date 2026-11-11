@@ -87,6 +87,27 @@ Rules:
 - `mode` is "fl2va" for start/end-frame shots; "ref2va" when identity must come from sheets.
 - The rich shot is compiled into the H3 prompt by the studio code; keep the fields exact.
 
+### (c2) BLOCKING SHEET (mandatory; one per shot, key `blocking` inside the rich shot object)
+The studio lints this sheet; it also steers the video model. Positions are fractions of the frame: x and y in -0.5..1.5 (0,0 top-left, 1,1 bottom-right), scale 0.05..1.2 (character height as a share of frame height).
+```json
+"blocking": {"schema": "blocking/1", "shot_id": "SHOT-07", "plate_id": "PLATE-kadamba-bank", "location_id": "LOC-kadamba-bank",
+ "kind": "acting", "camera": {"mode": "fixed", "framing": "medium", "move": null},
+ "light": {"key_dir": "left", "palette_id": "PAL-morning"},
+ "props": [{"id": "P1", "class": "branch", "x": 0.5, "y": 0.3, "visible": ["A", "B"]}],
+ "entries": [], "exits": [], "sound_cues": [{"t": 1.0, "text": "branch creak"}],
+ "arc_sec": 2.0, "writer_seconds": 5.2, "cut_to_next": "cut", "source_refs": ["L12"],
+ "cast": [{"id": "CHAR-KRISHNA", "speaks": false, "arms": "down", "pace": "slow", "source_refs": ["L12"],
+   "start": {"x": 0.5, "y": 0.6, "scale": 0.5, "facing": "right", "pose": "kneeling", "mouth_moves": false},
+   "end": {"x": 0.5, "y": 0.6, "scale": 0.5, "facing": "right", "pose": "standing", "mouth_moves": false}}]}
+```
+- `kind`: one of acting, body_action, camera_move, crowd, close_up, seam. `camera.mode`: fixed or move; `framing`: wide, medium, close, extreme_close. `light.key_dir`: left, right, top, back, front.
+- `facing`: left, right, camera, away. `pose`: standing, seated, kneeling, lying, walking, flying. `mouth_moves` is true only for a speaking character. `cut_to_next`: match or cut. `pace`: walk or slow. An optional `turn` {"deg": -360..360, "sec": seconds} on a cast member says how far the character turns; a change of `facing` between start and end needs a turn record.
+- `entries` and `exits` are lists of {"char": cast id, "side": left, right, top or bottom}. `writer_seconds` equals the shot `seconds`.
+- A pose may change only if the shot lasts long enough (at least 1 s for sit/stand; 2 s for lying/standing). Walking speed at most 0.5 frame-heights per second. At most 3 characters move at once. End pose of shot N matches the start pose of shot N+1 (same position within 0.05).
+
+### (c3) SOURCE REFERENCES (mandatory)
+The source text is given to you with line ids (L1, L2, ...). Every cast member of a blocking sheet, the sheet itself, and every item of `per_second_directives` (when you write them) carries `"source_refs": [line ids]` naming the source lines that justify it. An id that is not in the source is a hard fail; an empty list is a hard fail. Staging that is not in the source gets the closest line id plus the class VISUAL_STAGING in its label.
+
 ## (d) STAGED OUTPUT (each stage is one reply; the studio saves each before the next)
 Each stage ends with exactly one fenced block, tagged as below. Earlier fenced blocks are not allowed in the same stage; write Flow prompts as quoted text (lines starting with `>`), not as fences.
 

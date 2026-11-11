@@ -1,0 +1,11 @@
+{
+ "card": "X-20",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "score/stem_builder.py"
+ ],
+ "test_file": "score/tests/test_loudness_targets.py",
+ "more_tests": [],
+ "note": "Haiku coded; second test rewritten by lead to the card's wording (Gate D LOUDNESS == core.json lufs); -14 audition-only is the default pending owner confirmation"
+}

@@ -2,6 +2,7 @@
 import copy
 import inspect
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,8 @@ from score import cue_sheet as cs
 from score.cue_sheet import build_cue_sheet, cut_offsets, gaps_between, merge_windows, parse_range, solve_tempo
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from director.timeline_lock_io import write_lock  # noqa: E402  (X-19: the CLI needs a lock)
 KALIKA = ROOT / "stories" / "kalika_puran_bhag1" / "pack_opus_high_20261108_v4_deva" / "shots.json"
 FRAME_S = 1 / 24
 
@@ -239,9 +242,39 @@ def test_episode_selection(kalika_shots):
     assert sheet is None and report["errors"][-1]["code"] == "EPISODE_NOT_FOUND"
 
 
+def _kalika_lock(tmp_path, shots=None):
+    """X-19: a real timeline lock for the Kalika shots (frames = editorial seconds x 24), written with write_lock."""
+    shots = shots if shots is not None else json.loads(KALIKA.read_text(encoding="utf-8"))
+    rows, start = [], 0
+    for sh in shots:
+        n = round(sh["editorial_duration_sec"] * 24)
+        pixel = n + ((5 - n) % 17)                       # smallest pixel_frames >= n that the lock check accepts
+        rows.append({"id": sh["id"], "start_frame": start, "edit_frames": n, "pixel_frames": pixel,
+                     "trim_in_frame": 0, "trim_out_frame": n, "end_frame_position": n - 1, "error_ms": 0.0})
+        start += n
+    wav = tmp_path / "picture.wav"
+    wav.write_bytes(b"picture")
+    lock_path = tmp_path / "timeline_lock_v1.json"
+    write_lock(lock_path, rows, [str(wav)], {"reel": 1})
+    return lock_path
+
+
+def _vo_file(tmp_path, rows=None):
+    """X-19: a vo_tracks_report file; default one en row per Kalika shot with no speech lines."""
+    if rows is None:
+        shots = json.loads(KALIKA.read_text(encoding="utf-8"))
+        rows = [{"shot": sh["id"], "lang": "en", "editorial": sh["editorial_duration_sec"], "tempo": 1.0,
+                 "file": "", "lines": []} for sh in shots]
+    path = tmp_path / "vo_default.json"
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    return path
+
+
 def test_cli_writes_json(tmp_path):
     out = tmp_path / "score" / "ep1" / "cue_sheet.json"
-    rc = cs.main(["--shots", str(KALIKA), "--out", str(out)])
+    # X-19: CLI needs --lock
+    rc = cs.main(["--shots", str(KALIKA), "--lock", str(_kalika_lock(tmp_path)), "--vo-report", str(_vo_file(tmp_path)),
+                  "--out", str(out)])
     assert rc == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["checks"]["ok"] and doc["schema_version"] == 1 and doc["total_samples"] == 3_360_000
@@ -424,7 +457,8 @@ def test_cli_vo_report_flag(tmp_path):
     rep = tmp_path / "vo_en.json"
     rep.write_text(json.dumps([_vo_row("SHOT-001", "en", [("SHOT-001-N", 0.5, 3.434)])]), encoding="utf-8")
     out = tmp_path / "cue_sheet.json"
-    rc = cs.main(["--shots", str(KALIKA), "--vo-report", str(rep), "--out", str(out)])
+    # X-19: CLI needs --lock
+    rc = cs.main(["--shots", str(KALIKA), "--lock", str(_kalika_lock(tmp_path)), "--vo-report", str(rep), "--out", str(out)])
     assert rc == 0                                              # missing hi and mr rows are warnings
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["shots"][0]["voice"]["en"][0]["end"] == 3.434
@@ -449,109 +483,29 @@ def test_real_vo_reports_on_kalika(kalika_shots):
     assert imps[60.0] is False or imps[60.0] is True
 
 
-# ---------------------------------------------------------------- v4 shared timeline (editorial_by_lang.json)
-
-EDITORIAL_V4 = ROOT / "stories" / "kalika_puran_bhag1" / "pack_opus_high_20261108_v4_deva" / "editorial_by_lang.json"
-V4_STARTS = [0, 144, 273, 452, 644, 843, 1011, 1195, 1412, 1604]
-
-
-@pytest.fixture(scope="module")
-def editorial_v4():
-    return json.loads(EDITORIAL_V4.read_text(encoding="utf-8"))
-
-
-def test_editorial_sets_v4_lengths(kalika_shots, editorial_v4):
-    sheet, report = build_cue_sheet(kalika_shots, editorial=editorial_v4)
-    assert report["ok"], report["errors"]
-    assert sheet["total_frames"] == 1748 and sheet["total_s"] == 72.833
-    assert sheet["total_samples"] == 3_496_000
-    assert [s["start_frame"] for s in sheet["shots"]] == V4_STARTS
-    assert sum(s["frames"] for s in sheet["shots"]) == 1748
-
-
-def test_editorial_not_shared_is_an_error(kalika_shots, editorial_v4):
-    ed = copy.deepcopy(editorial_v4)
-    ed["shared_timeline"] = False
-    sheet, report = build_cue_sheet(kalika_shots, editorial=ed)
-    assert sheet is None and report["ok"] is False
-    assert report["errors"][0]["code"] == "EDITORIAL_NOT_SHARED"
-
-
-def test_editorial_per_language_difference_is_an_error(kalika_shots, editorial_v4):
-    ed = copy.deepcopy(editorial_v4)
-    ed["by_lang"]["hi"]["SHOT-002"]["extend_frames"] = 8          # shared plan says 9
-    sheet, report = build_cue_sheet(kalika_shots, editorial=ed)
-    assert sheet is None
-    assert any(e["code"] == "EDITORIAL_NOT_SHARED" and e["where"] == "SHOT-002" for e in report["errors"])
-
-
-def test_editorial_missing_shot_is_an_error(kalika_shots, editorial_v4):
-    ed = copy.deepcopy(editorial_v4)
-    ed["plan"] = [p for p in ed["plan"] if p["shot"] != "SHOT-005"]
-    sheet, report = build_cue_sheet(kalika_shots, editorial=ed)
-    assert sheet is None and any(e["code"] == "EDITORIAL_SHOT_MISSING" and e["where"] == "SHOT-005"
-                                 for e in report["errors"])
-
-
-def test_start_extension_moves_inner_times_end_does_not(kalika_shots, editorial_v4):
-    ed = copy.deepcopy(editorial_v4)                              # SHOT-007 gets its 16 extra frames at the START
-    for p in ed["plan"]:
-        if p["shot"] == "SHOT-007":
-            p["at"] = "start"
-    for per in ed["by_lang"].values():
-        per["SHOT-007"]["at"] = "start"
-    sheet, report = build_cue_sheet(kalika_shots, editorial=ed)
-    assert report["ok"], report["errors"]
-    s7 = sheet["shots"][6]
-    shift = 16 / 24
-    assert s7["start_frame"] == 1011
-    assert s7["sfx"][0]["start"] == pytest.approx(42.125 + 2.0 + shift, abs=1e-3)   # was 2.0 s into the shot
-    assert s7["beats"][0]["t0"] == pytest.approx(42.125 + shift, abs=1e-3)
-    impacts = [i for s in sheet["shots"] for i in s["impacts"]]
-    assert (impacts[0]["at_frame"], impacts[0]["at_s"]) == (1077, 44.875)         # 2.083 s + 0.667 s shift
-    # the same extension at the END (the real plan) leaves SHOT-007's own times alone
-    sheet_end, _ = build_cue_sheet(kalika_shots, editorial=editorial_v4)
-    assert sheet_end["shots"][6]["beats"][0]["t0"] == pytest.approx(42.125, abs=1e-3)
-    assert [i["at_frame"] for s in sheet_end["shots"] for i in s["impacts"]][0] == 1061
-
-
-def test_act_end_off_grid_warns_and_keeps_candidates(kalika_shots, editorial_v4):
-    sheet, report = build_cue_sheet(kalika_shots, editorial=editorial_v4)
-    assert report["ok"], report["errors"]
-    assert [w["code"] for w in report["warnings"]].count("ACT_END_OFF_GRID") == 4
-    by_act = {t["act"]: t["candidates"] for t in sheet["tempo_candidates"]}
-    assert 128.0 in [c["bpm"] for c in by_act["BUILD"]["melodic_techno"]]
-    assert 176.0 in [c["bpm"] for c in by_act["DROP"]["drum_and_bass"]]
-
-
-def test_interior_cuts_on_grid_for_every_candidate(kalika_shots, editorial_v4):
-    sheet, _ = build_cue_sheet(kalika_shots, editorial=editorial_v4)
-    for act, tempo in zip(sheet["acts"], sheet["tempo_candidates"]):
-        times = [c["at_frame"] / 24 for c in sheet["cuts"] if act["start_frame"] < c["at_frame"] < act["end_frame"]]
-        for cands in tempo["candidates"].values():
-            for c in cands:
-                assert max(cut_offsets(times, act["start_frame"] / 24, c["bpm"], 2), default=0.0) <= FRAME_S + 1e-9
-
-
-def test_cli_editorial_flag(tmp_path):
-    out = tmp_path / "cue_sheet.json"
-    assert cs.main(["--shots", str(KALIKA), "--editorial", str(EDITORIAL_V4), "--out", str(out)]) == 0
-    assert json.loads(out.read_text(encoding="utf-8"))["total_frames"] == 1748
-
 
 def test_cli_one_vo_file_with_three_languages(tmp_path):
     rows = [_vo_row("SHOT-001", lang, [("SHOT-001-N", 0.5, 3.434)]) for lang in ("en", "hi", "mr")]
     rep = tmp_path / "vo_tracks_report.json"
     rep.write_text(json.dumps(rows), encoding="utf-8")
     out = tmp_path / "cue_sheet.json"
-    assert cs.main(["--shots", str(KALIKA), "--vo-report", str(rep), "--out", str(out)]) == 0
+    assert cs.main(["--shots", str(KALIKA), "--lock", str(_kalika_lock(tmp_path)), "--vo-report", str(rep),
+                    "--out", str(out)]) == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["languages"] == ["en", "hi", "mr"]
     assert all(doc["shots"][0]["voice"][lang][0]["end"] == 3.434 for lang in ("en", "hi", "mr"))
 
 
-def test_candidates_uncapped_and_typical_tempo_kept(kalika_shots, editorial_v4):
-    sheet, _ = build_cue_sheet(kalika_shots, editorial=editorial_v4)
+def test_editorial_flag_is_removed_and_refused(tmp_path):
+    """W-12: the retired --editorial path is gone; argparse refuses the flag (exit 2)."""
+    with pytest.raises(SystemExit) as exc:
+        cs.main(["--shots", str(KALIKA), "--editorial", str(tmp_path / "editorial_by_lang.json"), "--out", str(tmp_path / "x.json")])
+    assert exc.value.code == 2
+    assert "editorial" not in inspect.signature(cs.build_cue_sheet).parameters
+
+
+def test_candidates_uncapped_and_typical_tempo_kept(kalika_shots):
+    sheet, _ = build_cue_sheet(kalika_shots)
     by_act = {t["act"]: t["candidates"] for t in sheet["tempo_candidates"]}
     outro_ambient = [c["bpm"] for c in by_act["OUTRO"]["ambient"]]   # OUTRO has no interior cut: every bpm fits
     assert 60.0 in outro_ambient and outro_ambient[0] == 60.0 and len(outro_ambient) > 5

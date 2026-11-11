@@ -61,7 +61,8 @@ DUCK_ATTACK_S = 0.02      # reduction edge smoothing
 DUCK_RELEASE_S = 0.25     # reduction release
 DUCK_WIN_FLOOR_DB = 6.0   # a frame's voice reference is floored at the window voice RMS minus this (no pumping in pauses)
 GAP_BUS_OFFSET_DB = 3.0   # gap frames over the voice average are pulled to the voice average minus this
-LUFS_TARGET = -16.0
+_CORE_JSON = Path(__file__).resolve().parent.parent / "core" / "core.json"
+LUFS_TARGET = json.loads(_CORE_JSON.read_text(encoding="utf-8"))["delivery"]["audio"]["lufs"]  # one target: core.json
 TP_MAX = -1.5             # true-peak ceiling for loudnorm and the final limiter
 LIMIT_START = 10 ** (-1.5 / 20)  # alimiter ceiling to start from
 

@@ -8,6 +8,8 @@ so it never blocks assembly.
 from h3.shot_table_spec import LOUDNESS
 
 STEP_ORDER = (
+    ("timeline", "Timeline lock matches its inputs and the selected shots"),
+    ("keyframes", "Gate B: every shot approved with a passing keyframe gate"),
     ("lint", "Lint the shot rows (linter, profile, paths)"),
     ("route", "Route each shot to an H3 mode (5-mode router)"),
     ("prompt", "Compile each shot prompt"),
@@ -19,7 +21,9 @@ STEP_ORDER = (
     ("assembly", "Assembly (one reel per language)"),
     ("loudness", f"Post-AAC loudness check ({LOUDNESS['target_lufs']:g} LUFS, TP <= {LOUDNESS['tp_ceiling_dbtp']:g} dBTP)"),
 )
-PRE_ASSEMBLY = ("lint", "route", "prompt", "manifest", "fallback", "render", "step9_qc", "gate_d")
+PRE_ASSEMBLY = ("timeline", "keyframes", "lint", "route", "prompt", "manifest", "fallback", "render", "step9_qc",
+                "gate_d")
+PRE_RENDER = tuple(s for s in PRE_ASSEMBLY if s not in ("render", "step9_qc"))
 POST_ASSEMBLY = ("loudness",)
 READY, BLOCKED, PENDING = "ready", "blocked", "pending"
 
@@ -68,3 +72,9 @@ def steps_reasons(steps, sid):
 def assembly_allowed(steps):
     """True only when the assembly step is ready (all PRE_ASSEMBLY gates passed)."""
     return any(s["id"] == "assembly" and s["status"] == READY for s in steps)
+
+
+def pre_render_ready(steps):
+    """True when every PRE_RENDER gate is ready. Render and Step 9 QC need the clips, so they cannot be ready yet."""
+    ready = {s["id"] for s in steps if s["status"] == READY}
+    return all(sid in ready for sid in PRE_RENDER)

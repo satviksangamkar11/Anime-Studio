@@ -1,0 +1,22 @@
+{
+ "card": "W-07",
+ "ok": false,
+ "plan": "research/OPUS_PLAN_P2_WIRING_2026-11-11.md",
+ "files": [
+  "h3/v4_to_h3.py",
+  "h3/compile_h3_sing8.py",
+  "h3/schema_and_linter.py"
+ ],
+ "test_file": "h3/tests/test_prompt_wiring.py",
+ "more_tests": [
+  "h3/tests/test_prompt_locks.py (fixture line 18 double newline -> single newline)",
+  "h3/tests/test_v4_to_h3_lock.py"
+ ],
+ "note": "coded by Haiku medium. PARTIAL: D1 (SX-01 glue, v4_to_h3.py:160, stage check) and duplicate-sentence guard are deferred; test_glue_gone and test_duplicate_sentence_refused are xfail(strict). load_blocking absent: convert_pack takes blocking={sid: sheet}. Gate: h3 732 pass; full card gate 3225 pass, 6 fail that pass alone (test_build_final_reel_lock, test_audio_plan), not mine.",
+ "partial": true,
+ "open": [
+  "D1 SX-01 glue amendment (owner)",
+  "duplicate-sentence guard deferred",
+  "mouth sentence / end_frame_position / input_video_strength not in this card"
+ ]
+}

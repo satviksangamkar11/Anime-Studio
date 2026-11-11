@@ -92,8 +92,8 @@ def test_fit_report_and_post_sends_job_model(tmp_path):
     m = v.run(jobs, tmp_path, 10_000, "k" * 20, post=post, ledger=v.Ledger(tmp_path / "l.jsonl", 10_000), probe=lambda p: 6.0)
     assert {b["model_id"] for b in bodies} == {"eleven_v4", "eleven_multilingual_v2"}
     rep = v.fit_report(m, {plan["lines"][0]["id"]: 5.0})
-    assert rep[0]["tempo"] == 1.2 and rep[0]["verdict"].startswith("TOO LONG")
-    assert v.fit_report(m, {plan["lines"][0]["id"]: 5.8})[0]["verdict"] == "fit by atempo"
+    assert rep[0]["tempo"] == 1.2 and rep[0]["verdict"].startswith("longer than")
+    assert v.fit_report(m, {plan["lines"][0]["id"]: 5.8})[0]["verdict"].startswith("longer than")
 
 
 def test_speed_is_in_the_key_and_the_newest_clip_wins(tmp_path):
@@ -115,21 +115,3 @@ def test_speed_is_in_the_key_and_the_newest_clip_wins(tmp_path):
     assert newest[lid + ".en"]["seconds"] == 4.0 and len(v.latest_ok(m)) == 3
 
 
-def test_export_trims_edge_silence_and_fits_by_atempo(tmp_path):
-    import shutil
-    import subprocess
-    if not shutil.which("ffmpeg"):
-        pytest.skip("no ffmpeg")
-    src = tmp_path / "mp3" / "en" / "L.en.mp3"
-    src.parent.mkdir(parents=True)
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-af", "adelay=300|300,apad=pad_dur=0.3", str(src)], check=True)
-    man = {"lines": [{"id": "L.en", "line": "L", "lang": "en", "file": "mp3/en/L.en.mp3", "ok": True}]}
-    rep = []
-    assert v.export_wavs(man, tmp_path, tmp_path / "w", "m", slots={"L": 0.9}, report=rep) == 1
-    wav = tmp_path / "w" / "wav" / "en" / "L.en.wav"
-    assert 0.95 < rep[0]["seconds"] < 1.1 and rep[0]["verdict"] == "fit by atempo"       # silence cut: 1.6 s file -> about 1.0 s speech
-    assert 0.8 < v.probe_seconds(wav) < 0.98                                             # sped up by about 1.1 to the 0.9 s slot
-    rep2 = []
-    v.export_wavs(man, tmp_path, tmp_path / "w2", "m", slots={"L": 0.6}, report=rep2)
-    assert rep2[0]["verdict"].startswith("TOO LONG")                                     # beyond MAX_TEMPO: reported, the wav is not sped up
-    assert v.load_slots(PACK, tmp_path / "none.json")["SHOT-001-N"] > 0

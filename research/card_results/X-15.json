@@ -1,0 +1,13 @@
+{
+ "card": "X-15",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "director/build_final_reel.py"
+ ],
+ "test_file": "director/test_build_final_reel_lock.py",
+ "more_tests": [
+  "director/test_build_final_reel.py"
+ ],
+ "note": "Haiku coded; 12 new + 16 old tests pass; two old tests changed on purpose (rows carry offset_sec; WAIVED removed). Owner check: waivers.py format wins (owner, int reel), clip_qa.json sits next to each clip"
+}

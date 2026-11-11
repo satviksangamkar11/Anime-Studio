@@ -1,0 +1,8 @@
+{"card": "X-12", "fix_ok": true,
+ "fixed": [
+  "moved the three X-12 tests (test_lock_rows_hand, test_start_frame_mismatch_raises, test_missing_trim_keys_raises, names kept) into director/test_timeline_lock_io.py, the card's acceptance file",
+  "deleted director/test_lock_rows_x12.py (its tests are now in the card file; nothing lost)"
+ ],
+ "rejected": [
+  "no module defect: timeline_lock_io.lock_rows already matches the card (running integer start, ValueError on mismatch, KeyError naming the shot)"
+ ]}

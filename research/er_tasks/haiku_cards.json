@@ -1,0 +1,56 @@
+[
+ [
+  "X-11",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "director/approval_sheet.py",
+  "director/test_approval_sheet.py"
+ ],
+ [
+  "X-13",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "h3/render_controller.py, h3/pipeline_contract.py",
+  "h3/tests/test_render_controller_wiring_x13.py (a Super-written test exists but 5 of its tests fail on plan_pipeline(out_dir=...): decide from the card and the real plan_pipeline signature whether the test or the module is wrong)"
+ ],
+ [
+  "X-14",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "director/clip_qa.py (currently has a stray '=======' merge-marker line: replace the whole file)",
+  "director/test_clip_qa.py (exists, written by Super; verify it is a real test)"
+ ],
+ [
+  "X-15",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "director/build_final_reel.py",
+  "director/test_build_final_reel_lock.py (exists, written by Super; verify)"
+ ],
+ [
+  "X-20",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "score/stem_builder.py (the module must still IMPORT in a bare checkout: no file reads at import time; core.json does not exist here)",
+  "score/tests/test_loudness_targets.py (exists; uses source/AST scans)"
+ ],
+ [
+  "W-02",
+  "research/OPUS_PLAN_P2_WIRING_2026-11-11.md",
+  "director/voice_cast.py",
+  "director/test_voice_cast_w02.py (stub: write it; keep the old director/test_voice_cast.py passing)"
+ ],
+ [
+  "X-04",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  "director/shot_router.py",
+  "director/test_shot_router_x04.py (NEW; do not edit the old director/test_shot_router.py)"
+ ],
+ [
+  "X-22",
+  "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+  ".githooks/pre-commit (NEW), .githooks/pre-push (edit/create)",
+  "tools/test_git_hooks.py (NEW); do NOT set core.hooksPath or run git config (owner's step)"
+ ],
+ [
+  "W-01",
+  "research/OPUS_PLAN_P2_WIRING_2026-11-11.md",
+  "director/build_h3_batch.py and director/run_colab_batch.py with their test files, ported from git branch v4-architecture-2026-11-07 using git show v4-architecture-2026-11-07:<path> (read-only git use is allowed for this card only; never checkout)",
+  "the ported tests director/test_build_h3_batch.py and director/test_run_colab_batch.py (they come from the branch)"
+ ]
+]

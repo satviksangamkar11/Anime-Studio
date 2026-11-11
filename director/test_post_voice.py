@@ -32,7 +32,7 @@ def test_hindi_reel_mixes_the_elevenlabs_voice_under_the_one_graph(tmp_path):
     assert report["written"] is True and report["voice"]["engine"] == "elevenlabs"
     assert [Path(p).name for p in report["voice"]["vo_files"]] == ["SHOT_A.wav"]
     g = _graph(build)
-    assert "[vo_full]" in g and "sidechaincompress" in g and "loudnorm=I=-16:TP=-1.3" in g and "[aout]" in g
+    assert "[vo_full]" in g and "sidechaincompress" in g and "loudnorm=I=-14:TP=-1.3" in g and "[aout]" in g
     argv = report["commands"][-1]
     assert argv.count("-i") == 3                                   # two clips and the one voice file
     assert any(s["codec_type"] == "audio" for s in tp._probe_streams(Path(report["output"])))
@@ -91,7 +91,7 @@ def test_the_voice_is_planned_before_the_captions_and_the_reel_meets_the_loudnes
     r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", report["output"], "-af", "ebur128=peak=true", "-f", "null", "-"],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
     lufs = float(re.findall(r"I:\s+(-?\d+\.\d+) LUFS", r.stderr)[-1])
-    assert -19.0 <= lufs <= -13.0, lufs                            # delivery target -16 LUFS, short synthetic clip: +-3 LU
+    assert -17.0 <= lufs <= -11.0, lufs                            # delivery target -14 LUFS, short synthetic clip: +-3 LU
 
 
 def test_ungraded_act_is_a_loud_warning_and_the_manifest_says_graded_false(tmp_path):

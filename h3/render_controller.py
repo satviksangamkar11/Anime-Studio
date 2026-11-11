@@ -13,6 +13,7 @@ Outputs per episode: <out>/<episode_id>/<shot_id>/{prompt.txt, workflow.json}, <
 assemble.cmd (only when every selected shot is ready), <episode>/readiness.json. Default out: <story folder>/build.
 """
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -24,7 +25,8 @@ from h3.asset_manifest import H3_MODEL_ID, blocking_problems, hash_bible, hash_f
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
 from h3.fallback_policy import attempts_for, load_history
 from h3.gate_d_audio import plan_language_outputs
-from h3.pipeline_contract import assembly_allowed, build_plan
+from director.timeline_lock_io import load_lock, lock_rows, verify_lock
+from h3.pipeline_contract import PRE_RENDER, READY, assembly_allowed, build_plan, pre_render_ready
 from h3.router import ref2va_limit_problems, route_shot
 from h3.schema_and_linter import (ID_PATTERN, lint_profile, lint_story, picture_path_problem,
                                   read_png_dimensions_on_disk, resolve_keyframes)
@@ -534,12 +536,69 @@ def _qc_result(groups, measurers):
     return {"ok": not problems, "reasons": problems, "details": {"episodes": len(groups)}}
 
 
-def _gate_d_result(story, groups, out_root, languages):
+def _timeline_result(lock_path, groups):
+    """The timeline lock must load, match its recorded inputs and params, and cover exactly the selected shots."""
+    if not lock_path:
+        return {"ok": False, "reasons": ["no timeline lock"], "details": {}}
+    try:
+        lock = load_lock(lock_path)
+        verify_lock(lock_path, lock["inputs"], lock["params"])
+    except (OSError, ValueError, KeyError) as e:  # StaleLockError is a ValueError
+        return {"ok": False, "reasons": [f"timeline lock not usable: {e}"], "details": {}}
+    lock_ids = {row["id"] for row in lock["shots"]}
+    selected = {shot["shot_id"] for g in groups for shot in g["shots"]}
+    problems = []
+    if lock_ids != selected:
+        problems.append(f"timeline lock shots {sorted(lock_ids)} differ from selected shots {sorted(selected)}")
+    return {"ok": not problems, "reasons": problems, "details": {"lock_sha256": lock["lock_sha256"]}}
+
+
+def _approval_sheet():
+    """director/approval_sheet.py imports its neighbours by bare name, so its folder goes on sys.path first."""
+    director = str(Path(__file__).resolve().parents[1] / "director")
+    if director not in sys.path:
+        sys.path.insert(0, director)
+    import approval_sheet
+    return approval_sheet
+
+
+def _keyframe_result(gate_b_path, keyframe_gate_dir, groups):
+    """Gate B: every selected shot has an approval whose keyframe gate still matches (director/approval_sheet.py)."""
+    if not gate_b_path or not keyframe_gate_dir:
+        return {"ok": False, "reasons": ["no Gate B record or keyframe gate folder"], "details": {}}
+    try:
+        gate_b_ok = _approval_sheet().gate_b_ok
+    except (ImportError, AttributeError):
+        return {"ok": False, "reasons": ["Gate B check not built: approval_sheet.gate_b_ok is missing (card X-11)"],
+                "details": {}}
+    shot_ids = sorted({shot["shot_id"] for g in groups for shot in g["shots"]})
+    problems = list(gate_b_ok(Path(gate_b_path), Path(keyframe_gate_dir), shot_ids))
+    return {"ok": not problems, "reasons": problems, "details": {"shots": len(shot_ids)}}
+
+
+def _gate_d_result(story, groups, out_root, languages, lock_path=None):
     reg, problems, ok_by_episode = story["registry"], [], {}
+    lock_seconds = None
+    if lock_path:  # the lock's clock is the one build_final_reel uses; the story's values are never used with a lock
+        try:
+            lock_seconds = {row["id"]: row["editorial_duration_sec"] for row in lock_rows(load_lock(lock_path))}
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            return {"ok": False, "reasons": [f"timeline lock seconds not readable: {e}"], "details": {}}
     for g in groups:
         ep = g["episode"]
         ep_id = ep["episode_id"]
         ep_dir = os.path.join(out_root, ep_id)
+        shots = ep["shots"]
+        if lock_seconds is not None:
+            try:
+                missing = [s["shot_id"] for s in shots if s["shot_id"] not in lock_seconds]
+                if missing:
+                    problems.append(f"{ep_id}: shots missing from the timeline lock: {missing}")
+                    continue
+                shots = [dict(s, editorial_duration_sec=lock_seconds[s["shot_id"]]) for s in shots]
+            except (KeyError, TypeError) as e:  # a shot row without shot_id
+                problems.append(f"{ep_id}: shot rows not readable for the timeline lock: {type(e).__name__}: {e}")
+                continue
         video = {"shared_foley": os.path.join(ep_dir, "render", f"{ep_id}_shared_foley.mp4"),
                  "en_h3": os.path.join(ep_dir, "render", f"{ep_id}_en_h3.mp4")}
         # Story Gate 4 checks: story-level, then registry, then episode. Absent = closing gate fails closed (below).
@@ -549,7 +608,7 @@ def _gate_d_result(story, groups, out_root, languages):
                             "registry['story_gate_checks'] (v4_to_h3 copies it from stage_1); closing VO stays blocked")
         try:
             res = plan_language_outputs(ep_id, languages, os.path.join(ep_dir, "audio", "vo"), None,
-                                        shots=ep["shots"], video_path=video, video_has_audio=True,
+                                        shots=shots, video_path=video, video_has_audio=True,
                                         captions_dir=os.path.join(ep_dir, "captions"),
                                         export_dir=os.path.join(ep_dir, "export"),
                                         story_gate_checks=gate, payoff_end_sec=ep.get("payoff_end_sec"),
@@ -557,35 +616,52 @@ def _gate_d_result(story, groups, out_root, languages):
         except (KeyError, TypeError, ValueError, AttributeError) as e:  # e.g. a shot row without editorial_duration_sec
             problems.append(f"{ep_id}: Gate D not planned: {type(e).__name__}: {e}")
             continue
-        ok_by_episode[ep_id] = {lang: rep["ok"] for lang, rep in res["reports"].items()}
+        # one verdict per language: rep["ok"] is False whenever rep["errors"] is non-empty (gate_d_audio._report)
+        ok_by_episode[ep_id] = {lang: bool(rep["ok"]) for lang, rep in res["reports"].items()}
         for lang, rep in res["reports"].items():
             problems += [f"{ep_id} {lang}: {e['code']} {e['where']}: {e['message']}" for e in rep["errors"]]
     return {"ok": not problems, "reasons": problems,
             "details": {"languages": list(languages), "ok_by_episode": ok_by_episode}}
 
 
-def plan_pipeline(story, groups, out_root, *, languages=None, render_results=None, qc_measurers=None):
+def plan_pipeline(story, groups, out_root, *, languages=None, render_results=None, qc_measurers=None,
+                  lock_path=None, gate_b_path=None, keyframe_gate_dir=None):
     """Ordered H3 pipeline plan for the selected groups (steps and reasons: h3/pipeline_contract.py). Dry run only:
     never renders, never calls a backend, writes nothing. render_results: None (default, nothing rendered yet) or
     {shot_id: "ok" | "failed"}. qc_measurers: Step 9 measurers (missing ones make QC fail closed). languages: default
     the story's output_languages, else ["hi"] (the writer default). BGM is not passed (default none). Loudness stays pending: it needs
-    the exported mp4."""
+    the exported mp4. lock_path: timeline lock (required for assembly; Gate D uses its seconds). gate_b_path and
+    keyframe_gate_dir: the Gate B record and the keyframe gate folder."""
     langs = list(languages or story.get("output_languages") or story["registry"].get("output_languages") or ["hi"])   # hi = the writer's default
     lint = prepare(story, groups, out_root, write=False, mode="dry-run")
     manifest = load_manifest(os.path.join(out_root, MANIFEST_FILE))
     history = load_history(os.path.join(out_root, HISTORY_FILE))
-    results = {"lint": _lint_result(lint), "route": _route_result(groups),
+    results = {"timeline": _timeline_result(lock_path, groups),
+               "keyframes": _keyframe_result(gate_b_path, keyframe_gate_dir, groups),
+               "lint": _lint_result(lint), "route": _route_result(groups),
                "prompt": _prompt_result(story, groups), "manifest": _manifest_result(manifest, story, groups),
                "fallback": _fallback_result(history, groups), "render": _render_result(render_results, groups)}
     if render_results is not None:
         results["step9_qc"] = _qc_result(groups, qc_measurers or {})
-    results["gate_d"] = _gate_d_result(story, groups, out_root, langs)
+    results["gate_d"] = _gate_d_result(story, groups, out_root, langs, lock_path)
     results = {k: v for k, v in results.items() if v is not None}
     steps = build_plan(results)
     return {"mode": "dry-run", "languages": langs, "steps": steps, "assembly_allowed": assembly_allowed(steps)}
 
 
 # ---------- CLI ----------
+
+def _sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _write_render_ready(out_root, lock_path, gate_b_path, story_file):
+    """Written only after every pre-render gate passed: the runner's --go refuses without a matching record."""
+    record = {"lock_input_sha256": load_lock(lock_path)["input_sha256"], "gate_b_sha256": _sha256(gate_b_path),
+              "story_sha256": _sha256(story_file), "ok": True}
+    Path(out_root).mkdir(parents=True, exist_ok=True)
+    Path(out_root, "render_ready.json").write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+
 
 def build_parser():
     ap = argparse.ArgumentParser(prog="python -m h3.render_controller",
@@ -603,6 +679,9 @@ def build_parser():
     ap.add_argument("--dry-run", action="store_true", help="prepare-only that writes nothing")
     ap.add_argument("--allow-partial", action="store_true", help="also write the shots that pass when others fail")
     ap.add_argument("--backend", default="none", help="render backend name (default: none)")
+    ap.add_argument("--lock", help="timeline lock JSON (required for --mode execute)")
+    ap.add_argument("--gate-b", help="Gate B approval record JSON (director/approval_sheet.py)")
+    ap.add_argument("--keyframe-gates", help="folder of per-shot keyframe gate JSON files")
     return ap
 
 
@@ -618,6 +697,9 @@ def main(argv=None):
         if args.dry_run:
             print("REFUSED: --dry-run writes nothing and cannot be combined with execute.")
             return 2
+        if not args.lock:
+            print("REFUSED: execute needs --lock (the timeline lock); nothing was started.")
+            return 2
     try:
         story = load_story(args.story_file)
         source = "story registry"
@@ -631,6 +713,15 @@ def main(argv=None):
         return 1
     story_file = os.path.abspath(args.story_file)
     out_root = os.path.abspath(args.out_dir) if args.out_dir else os.path.join(os.path.dirname(story_file), "build")
+    if args.mode == "execute":
+        gates = plan_pipeline(story, groups, out_root, lock_path=args.lock, gate_b_path=args.gate_b,
+                              keyframe_gate_dir=args.keyframe_gates)
+        if not pre_render_ready(gates["steps"]):
+            for s in gates["steps"]:
+                if s["status"] != READY and s["id"] in PRE_RENDER:
+                    print(f"BLOCKED {s['id']}: {'; '.join(s['reasons']) or s['status']}")
+            print("execute not started: the pre-render gates are not all ready (exit 1).")
+            return 1
     mode = "dry-run" if args.dry_run else args.mode
     try:
         res = prepare(story, groups, out_root, second_pass=args.second_pass, allow_partial=args.allow_partial,
@@ -644,6 +735,7 @@ def main(argv=None):
     if res["exit_code"] != 0:
         print("execute not started: the prepare-only gates failed (exit 1).")
         return 1
+    _write_render_ready(out_root, args.lock, args.gate_b, story_file)
     request = {"episodes": [{
         "episode_id": e["episode_id"], "out_dir": e["ep_dir"], "assembly": e["assembly"],
         "shots": [{"shot_id": r["shot_id"], "prompt": os.path.join(e["ep_dir"], r["shot_id"], "prompt.txt"),

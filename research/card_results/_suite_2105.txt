@@ -1,0 +1,346 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+......................................................FF.F.............. [ 57%]
+.......................F................................................ [ 60%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+.................FFF.................................................... [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+................s....................................................... [ 87%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+......................                                                   [100%]
+================================== FAILURES ===================================
+__________ test_a_validator_failure_triggers_exactly_one_repair_call __________
+
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_validator_failure_trigg0')
+story = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_validator_failure_trigg0/stories/kaliya_v4/SOURCE.md')
+fake_claude = {'calls': [{'name': '1', 'prompt': '# OPUS MASTER PROMPT v2.3 — ANIME STUDIO STORY-TO-PRODUCTION-PACK\n\n(Built from v...ptions\n[{"shot_id": "SHOT-001", "cards": ["one short card"], "narration_text": null, "dialogue_texts": []}]\n```\n'}}}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B4F869B00>
+
+    def test_a_validator_failure_triggers_exactly_one_repair_call(tmp_path, story, fake_claude, monkeypatch):
+        failed_once = {"done": False}
+    
+        def check(stage, data, bible):
+            if stage == "1" and not failed_once["done"]:
+                failed_once["done"] = True
+                return ["STORY-01 missing story_gate_checks"]
+            return []
+        seen = fake_validator(monkeypatch, check)
+>       run(story, tmp_path / "pack_v1")
+
+director\test_writer_v4.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+director\test_writer_v4.py:101: in run
+    return write_pack.main([str(story), str(out), "--staged", "--via", "claude", *extra])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+director\write_pack.py:1502: in main
+    run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,
+director\write_pack.py:1311: in run_staged
+    text1, plan = stage("1", story_parse, lambda d: with_language(gate("1", d, None), plan_errors(d)))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+director\write_pack.py:1292: in stage
+    return run_stage(name, out, prompt_for=prompt_for, call=lambda prompt, path: call_for(name, prompt, path),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = '1'
+out = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_validator_failure_trigg0/pack_v1')
+prompt_for = <function run_staged.<locals>.stage.<locals>.prompt_for at 0x0000025B4FE3EA30>
+call = <function run_staged.<locals>.stage.<locals>.<lambda> at 0x0000025B4FE3E820>
+parse_fn = <function run_staged.<locals>.story_parse at 0x0000025B4FE3E770>
+check_fn = <function run_staged.<locals>.<lambda> at 0x0000025B4FE3E980>
+rec = <run_registry.Recorder object at 0x0000025B4F1EF410>
+
+    def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
+        """One stage: a saved answer is reused (no call), else one call; the answer is parsed and checked. A failed check gets ONE repair
+        retry (spec.MAX_REPAIR_RETRIES) with the error list appended to the prompt. Still failing: stage_<name>_validation.json is saved
+        next to stage_<name>_raw.json and StageFailed is raised. A stage with both files is never called again (delete them to redo it).
+        prompt_for(errors) -> prompt; call(prompt, raw_path) -> makes the model call and saves the answer to raw_path;
+        parse_fn(raw) -> (text, data), ValueError on a parse problem; check_fn(data) -> error lines or None (no validator).
+        Returns (text, data)."""
+        raw_path = out / f"stage_{name}_raw.json"
+        val_path = out / f"stage_{name}_validation.json"
+        if raw_path.exists() and val_path.exists():
+            raise stage_failed(name, run_registry.read_json(val_path, {}).get("errors") or ["see the validation file"], out)
+    
+        def judge(raw):
+            try:
+                text, data = parse_fn(raw)
+            except ValueError as exc:
+                errors = [f"PARSE at stage {name}: {exc}"]
+                record_check(rec, name, errors)
+                return None, None, errors
+            errors = check_fn(data)
+            record_check(rec, name, errors)
+            return text, data, errors
+    
+        if raw_path.exists():
+            info = run_registry.envelope_file(raw_path)
+            with rec.step("analysis_stage", name, via=info.get("via"), model=info.get("model"), files=[f"{out.name}/{raw_path.name}"],
+                          note="saved answer reused: no model call"):
+                pass
+        else:
+            checked_call(name, call, prompt_for([]), raw_path)
+        print(f"stage {name}: {raw_path}")
+        text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
+        retries = 0
+        while errors and retries < spec.MAX_REPAIR_RETRIES:
+            # no whole-stage rewrite: only a list of rows whose errors all name a SHOT id is repaired, and only those rows are sent
+            ids = write_pack_glue.error_shot_ids(errors)
+            if not isinstance(data, list) or ids is None or ids == []:
+                break
+            retries += 1
+            rep_path = write_pack_glue.repair_file(out, name, retries)
+            checked_call(name, call, write_pack_glue.repair_prompt(prompt_for([]), data, ids, errors), rep_path)
+            print(f"stage {name}: repair {retries}: {rep_path}")
+            try:
+                data = write_pack_glue.merge_repair(data, write_pack_glue.parse_repair(rep_path.read_text(encoding="utf-8")))
+            except ValueError as exc:
+                errors = [f"PARSE repair: {exc}"]
+                record_check(rec, name, errors)
+                continue
+            errors = check_fn(data)
+            record_check(rec, name, errors)
+        if errors:
+            val_path.write_text(json.dumps({"stage": name, "errors": errors, "repair_retries": retries, "answer": raw_path.name},
+                                           indent=1, ensure_ascii=False), encoding="utf-8")
+>           raise stage_failed(name, errors, out)
+E           write_pack.StageFailed: stage 1 fails its checks after the repair retry: V-1 at 1: STORY-01 missing story_gate_checks (answer: pack_v1/stage_1_raw.json, errors: pack_v1/stage_1_validation.json; delete both files to redo this stage)
+
+director\write_pack.py:887: StageFailed
+---------------------------- Captured stdout call -----------------------------
+stage 1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_validator_failure_trigg0\pack_v1\stage_1_raw.json
+__________ test_a_second_failure_fails_the_run_and_saves_the_errors ___________
+
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_second_failure_fails_th0')
+story = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_second_failure_fails_th0/stories/kaliya_v4/SOURCE.md')
+fake_claude = {'calls': [{'name': '1', 'prompt': '# OPUS MASTER PROMPT v2.3 — ANIME STUDIO STORY-TO-PRODUCTION-PACK\n\n(Built from v...ptions\n[{"shot_id": "SHOT-001", "cards": ["one short card"], "narration_text": null, "dialogue_texts": []}]\n```\n'}}}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B4FEC2AC0>
+
+    def test_a_second_failure_fails_the_run_and_saves_the_errors(tmp_path, story, fake_claude, monkeypatch):
+        fake_validator(monkeypatch, lambda stage, data, bible: ["SHOT-00 bad lattice"] if stage == "2" else [])
+        out = tmp_path / "pack_v1"
+        with pytest.raises(write_pack.StageFailed, match="stage 2 fails its checks after the repair retry"):
+            run(story, out)
+>       assert [c["name"] for c in fake_claude["calls"]] == ["1", "2", "2"]          # one call, one repair, then stop
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert ['1', '2'] == ['1', '2', '2']
+E         
+E         Right contains one more item: '2'
+E         Use -v to get more diff
+
+director\test_writer_v4.py:170: AssertionError
+---------------------------- Captured stdout call -----------------------------
+stage 1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_second_failure_fails_th0\pack_v1\stage_1_raw.json
+stage 2: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_second_failure_fails_th0\pack_v1\stage_2_raw.json
+____________ test_each_validation_is_recorded_in_the_run_registry _____________
+
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_each_validation_is_record0')
+story = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_each_validation_is_record0/stories/kaliya_v4/SOURCE.md')
+fake_claude = {'calls': [{'name': '1', 'prompt': '# OPUS MASTER PROMPT v2.3 — ANIME STUDIO STORY-TO-PRODUCTION-PACK\n\n(Built from v...ptions\n[{"shot_id": "SHOT-001", "cards": ["one short card"], "narration_text": null, "dialogue_texts": []}]\n```\n'}}}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B50097150>
+
+    def test_each_validation_is_recorded_in_the_run_registry(tmp_path, story, fake_claude, monkeypatch):
+        fails = {"n": 0}
+    
+        def check(stage, data, bible):
+            if stage == "1" and fails["n"] == 0:
+                fails["n"] += 1
+                return ["STORY-01 once"]
+            return []
+        fake_validator(monkeypatch, check)
+>       run(story, tmp_path / "pack_v1")
+
+director\test_writer_v4.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+director\test_writer_v4.py:101: in run
+    return write_pack.main([str(story), str(out), "--staged", "--via", "claude", *extra])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+director\write_pack.py:1502: in main
+    run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,
+director\write_pack.py:1311: in run_staged
+    text1, plan = stage("1", story_parse, lambda d: with_language(gate("1", d, None), plan_errors(d)))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+director\write_pack.py:1292: in stage
+    return run_stage(name, out, prompt_for=prompt_for, call=lambda prompt, path: call_for(name, prompt, path),
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = '1'
+out = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_each_validation_is_record0/pack_v1')
+prompt_for = <function run_staged.<locals>.stage.<locals>.prompt_for at 0x0000025B500935E0>
+call = <function run_staged.<locals>.stage.<locals>.<lambda> at 0x0000025B500933D0>
+parse_fn = <function run_staged.<locals>.story_parse at 0x0000025B50093320>
+check_fn = <function run_staged.<locals>.<lambda> at 0x0000025B50093530>
+rec = <run_registry.Recorder object at 0x0000025B5029A3D0>
+
+    def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
+        """One stage: a saved answer is reused (no call), else one call; the answer is parsed and checked. A failed check gets ONE repair
+        retry (spec.MAX_REPAIR_RETRIES) with the error list appended to the prompt. Still failing: stage_<name>_validation.json is saved
+        next to stage_<name>_raw.json and StageFailed is raised. A stage with both files is never called again (delete them to redo it).
+        prompt_for(errors) -> prompt; call(prompt, raw_path) -> makes the model call and saves the answer to raw_path;
+        parse_fn(raw) -> (text, data), ValueError on a parse problem; check_fn(data) -> error lines or None (no validator).
+        Returns (text, data)."""
+        raw_path = out / f"stage_{name}_raw.json"
+        val_path = out / f"stage_{name}_validation.json"
+        if raw_path.exists() and val_path.exists():
+            raise stage_failed(name, run_registry.read_json(val_path, {}).get("errors") or ["see the validation file"], out)
+    
+        def judge(raw):
+            try:
+                text, data = parse_fn(raw)
+            except ValueError as exc:
+                errors = [f"PARSE at stage {name}: {exc}"]
+                record_check(rec, name, errors)
+                return None, None, errors
+            errors = check_fn(data)
+            record_check(rec, name, errors)
+            return text, data, errors
+    
+        if raw_path.exists():
+            info = run_registry.envelope_file(raw_path)
+            with rec.step("analysis_stage", name, via=info.get("via"), model=info.get("model"), files=[f"{out.name}/{raw_path.name}"],
+                          note="saved answer reused: no model call"):
+                pass
+        else:
+            checked_call(name, call, prompt_for([]), raw_path)
+        print(f"stage {name}: {raw_path}")
+        text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
+        retries = 0
+        while errors and retries < spec.MAX_REPAIR_RETRIES:
+            # no whole-stage rewrite: only a list of rows whose errors all name a SHOT id is repaired, and only those rows are sent
+            ids = write_pack_glue.error_shot_ids(errors)
+            if not isinstance(data, list) or ids is None or ids == []:
+                break
+            retries += 1
+            rep_path = write_pack_glue.repair_file(out, name, retries)
+            checked_call(name, call, write_pack_glue.repair_prompt(prompt_for([]), data, ids, errors), rep_path)
+            print(f"stage {name}: repair {retries}: {rep_path}")
+            try:
+                data = write_pack_glue.merge_repair(data, write_pack_glue.parse_repair(rep_path.read_text(encoding="utf-8")))
+            except ValueError as exc:
+                errors = [f"PARSE repair: {exc}"]
+                record_check(rec, name, errors)
+                continue
+            errors = check_fn(data)
+            record_check(rec, name, errors)
+        if errors:
+            val_path.write_text(json.dumps({"stage": name, "errors": errors, "repair_retries": retries, "answer": raw_path.name},
+                                           indent=1, ensure_ascii=False), encoding="utf-8")
+>           raise stage_failed(name, errors, out)
+E           write_pack.StageFailed: stage 1 fails its checks after the repair retry: V-1 at 1: STORY-01 once (answer: pack_v1/stage_1_raw.json, errors: pack_v1/stage_1_validation.json; delete both files to redo this stage)
+
+director\write_pack.py:887: StageFailed
+---------------------------- Captured stdout call -----------------------------
+stage 1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_each_validation_is_record0\pack_v1\stage_1_raw.json
+_ test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_validator _
+
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_multi_language_shot_mis0')
+story = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_a_multi_language_shot_mis0/stories/kaliya_v4/SOURCE.md')
+fake_claude = {'calls': [{'name': '1', 'prompt': '# OPUS MASTER PROMPT v2.3 — ANIME STUDIO STORY-TO-PRODUCTION-PACK\n\n(Built from v...ne short card"], "hi": ["one short card"]}, "narration_text_by_lang": null, "dialogue_texts_by_lang": null}]\n```\n'}}}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B500957F0>
+
+    def test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_validator(tmp_path, story, fake_claude, monkeypatch):
+        monkeypatch.setitem(sys.modules, "pack_validator", None)           # the writer's own language checks are the fallback
+        answers = canned(["en", "hi"])
+        rows = [wp.example_row(1, 1, ["en", "hi"])]
+        del rows[0]["audio_and_dialogue_track"]["narration_by_lang"]["hi"]
+        answers["3e1"] = "# Episode 1\n\n```json shots\n" + json.dumps(rows, ensure_ascii=False) + "\n```\n"
+        fake_claude["state"]["answers"] = answers
+>       with pytest.raises(write_pack.StageFailed, match="LANG-03"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'LANG-03'
+E         Actual message: 'stage 3e1 fails its checks after the repair retry: PARSE repair: no JSON list found (answer: pack_v1/stage_3e1_raw.json, errors: pack_v1/stage_3e1_validation.json; delete both files to redo this stage)'
+
+director\test_writer_v4.py:465: AssertionError
+---------------------------- Captured stdout call -----------------------------
+stage 1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_multi_language_shot_mis0\pack_v1\stage_1_raw.json
+stage 2: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_multi_language_shot_mis0\pack_v1\stage_2_raw.json
+stage 3e1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_multi_language_shot_mis0\pack_v1\stage_3e1_raw.json
+stage 3e1: repair 1: C:\Users\Satvik\AppData\Local\Temp\pytest-of-Satvik\pytest-858\test_a_multi_language_shot_mis0\pack_v1\stage_3e1_repair1.json
+---------------------------- Captured stderr call -----------------------------
+write_pack: pack_validator unavailable (import of pack_validator halted; None in sys.modules): the stage checks are skipped
+____________ test_execute_with_both_flags_reaches_the_none_backend ____________
+
+story = {'registry': {'execution_profile': {'route_id': 'route_c_sing8', 'checkpoint_name': 'minimax_h3_singularity_v2_int8.sa...P1', 'sequence_order': 3, 'story_beat': 'Synthetic beat 3.', ...}], 'episode_plan': {'target_editorial_frames': 453}}]}
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_execute_with_both_flags_r0')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000025B50105350>
+
+    kf = story["episodes"][0]["shots"][1]["fl2va_keyframes"]
+    kf["picture_1_path"], kf["reuse_upstream_b_id"] = "missing_own.png", "SYN_A"
+    path, out = _write(tmp_path, story), str(tmp_path / "out")
+>   code, text = _run(_argv(path, out), capsys)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert (2 == 3)
+
+h3\tests\test_render_controller.py:216: AssertionError
+______ test_registered_backend_receives_request_and_its_code_is_returned ______
+
+story = {'registry': {'execution_profile': {'route_id': 'route_c_sing8', 'checkpoint_name': 'minimax_h3_singularity_v2_int8.sa...P1', 'sequence_order': 3, 'story_beat': 'Synthetic beat 3.', ...}], 'episode_plan': {'target_editorial_frames': 453}}]}
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_registered_backend_receiv0')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000025B4FF58250>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B4FF7B5B0>
+
+>   ???
+E   assert (2 == 0)
+
+h3\tests\test_render_controller.py:230: AssertionError
+___________________ test_backend_not_called_when_gates_fail ___________________
+
+story = {'registry': {'execution_profile': {'route_id': 'route_c_sing8', 'checkpoint_name': 'minimax_h3_singularity_v2_int8.sa...P1', 'sequence_order': 3, 'story_beat': 'Synthetic beat 3.', ...}], 'episode_plan': {'target_editorial_frames': 453}}]}
+tmp_path = WindowsPath('C:/Users/Satvik/AppData/Local/Temp/pytest-of-Satvik/pytest-858/test_backend_not_called_when_g0')
+capsys = <_pytest.capture.CaptureFixture object at 0x0000025B4FFA4C50>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025B4FF7B850>
+
+        code, text = _run(_argv(path, out, *extra), capsys)
+        assert code == 2 and "BOTH --mode execute AND --execute-render" in text
+        assert not os.path.exists(out)
+    
+    
+    # X-13: execute needs --lock
+    def test_execute_with_both_flags_reaches_the_none_backend(story, tmp_path, capsys, monkeypatch):
+>       path, out = _write(tmp_path, story), str(tmp_path / "out")
+E       assert (2 == 1)
+
+h3\tests\test_render_controller.py:243: AssertionError
+=========================== short test summary info ===========================
+FAILED director/test_writer_v4.py::test_a_validator_failure_triggers_exactly_one_repair_call
+FAILED director/test_writer_v4.py::test_a_second_failure_fails_the_run_and_saves_the_errors
+FAILED director/test_writer_v4.py::test_each_validation_is_recorded_in_the_run_registry
+FAILED director/test_writer_v4.py::test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_validator
+FAILED h3/tests/test_render_controller.py::test_execute_with_both_flags_reaches_the_none_backend
+FAILED h3/tests/test_render_controller.py::test_registered_backend_receives_request_and_its_code_is_returned
+FAILED h3/tests/test_render_controller.py::test_backend_not_called_when_gates_fail
+7 failed, 3110 passed, 1 skipped in 197.21s (0:03:17)

@@ -1,4 +1,5 @@
 # PROJECT LOG - Anime Studio (append only; rules in blot.md)
+STALE COPY, never written: the one log is D:\aai work\anime_studio\PROJECT_LOG.md (rule 10).
 
 ## NOW (overwrite after every agent finish or checklist tick; max 8 lines)
 - State 11-07 23:30: merge HEAD c79cfba (rule 18 nothing hidden: top story chooser, all reachable steps open; step 3 full picture chain incl. watermark removal + pick per picture); ui 563 pass, director 789 pass; NOT pushed.

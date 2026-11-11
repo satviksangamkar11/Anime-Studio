@@ -9,6 +9,7 @@ import json
 import traceback
 import os
 
+from h3.prompt_hygiene import cast_line, check_sound_cue
 from h3.router import REF2VA, ref_inventory, route_shot, video_shift_for, workflow_mode
 from h3.schema_and_linter import (MOUTH_LOCK_SENTENCE, STAGES, clean_text, compiled_soundscape, lint_story,
                                   lint_workflow, refuse_speech_in_source, resolve_keyframes, sanitize_single_line as san,
@@ -27,6 +28,32 @@ def _tail(st):
 def _mouth_lock(dlg, silent=True):
     """The mouth-state rule, plus the positive lock sentence when nobody on screen speaks (English voice mode)."""
     return f"{clean_text(dlg['mouth_state_rule'])} {MOUTH_LOCK_SENTENCE}" if silent else clean_text(dlg["mouth_state_rule"])
+
+
+def _cast_sentence(shot, registry):
+    """'Only A and B appear in this shot...' from the blocking cast (registry.cast_names, set by convert_pack from the
+    blocking sheet). Empty when the shot has no subject. Without stored names the short disambiguators are used."""
+    cont = shot["continuity_and_seam_lock"]
+    if not cont.get("subjects_present"):
+        return ""
+    names = (registry.get("cast_names") or {}).get(shot["shot_id"])
+    if not names:
+        # registry lookup by id, ignoring case; a subject the registry does not hold (no blocking sheet, short
+        # character list) gives no cast line, the previous behaviour, never a KeyError
+        by_low = {str(k).lower(): v for k, v in (registry.get("characters") or {}).items()}
+        found = [by_low.get(str(cid).lower()) for cid in cont["subjects_present"]]
+        if not all(isinstance(ch, dict) and ch.get("short_disambiguator") for ch in found):
+            return ""
+        names = [ch["short_disambiguator"] for ch in found]
+    return cast_line([clean_text(n) for n in names])
+
+
+def _sound_check(shot, registry, snd):
+    """Banned sound nouns are refused unless the subject or prop is on screen (PromptError -> ValueError -> PR-00)."""
+    cont = shot["continuity_and_seam_lock"]
+    chars = registry["characters"]
+    visible = [(chars.get(cid) or {}).get("short_disambiguator", "") for cid in cont["subjects_present"]]
+    check_sound_cue(snd, visible=visible + list(cont.get("props_present") or []))
 
 
 def _speaker(registry, cid):
@@ -73,14 +100,16 @@ def _fl2va(shot, registry):
         "color palette, lighting, and environment in Picture 1 and Picture 2.",
         stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
         stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
+        *([_cast_sentence(shot, registry)] if shot["continuity_and_seam_lock"].get("subjects_present") else []),
         _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
         *_tail(stage)]))
     snd = compiled_soundscape(shot, registry)  # shared with the linter (SD-03)
+    _sound_check(shot, registry, snd)
     music = clean_text(shot["sound_plan"]["non_diegetic_music"])
     header = (f"How the reference pictures align with the target video — Picture 1 (from Shot 1) "
               f"aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns "
               f"with the {pf / fps:.2f}-second mark of the target video.")
-    prompt = (f"{header}\n\nintegrated_multimodal_description: {body}\n"
+    prompt = (f"{header}\nintegrated_multimodal_description: {body}\n"
               f"overall_soundscape: {snd}\nnon_diegetic_music: {music}")
     return prompt, body
 
@@ -109,8 +138,10 @@ def _ref2va(shot, registry):
     cam = clean_text(shot["camera"]["compiled_clause"])
     body = san(" ".join([stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
                          stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
+                         *([_cast_sentence(shot, registry)] if cont.get("subjects_present") else []),
                          _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
                          *_tail(stage)]))
+    _sound_check(shot, registry, compiled_soundscape(shot, registry))
     sections = [
         ("subject_definitions", san(" ".join(subj)) or "No named subject is in frame."),
         ("summary", san(f"{clean_text(shot['story_beat'])} {clean_text(shot['emotional_objective'])}")),
@@ -135,6 +166,8 @@ def compile_fl2va_prompt(shot, registry):
         prompt, body = _ref2va(shot, registry)
     else:
         prompt, body = _fl2va(shot, registry)
+    if "\n\n" in prompt:
+        raise ValueError(f"{shot['shot_id']}: blank line in compiled prompt")
     return {"shot_id": shot["shot_id"], "compiled_prompt": prompt,
             "char_counts": {"imd_body": len(body), "total": len(prompt)},
             "stripped_tags": stripped_tags_of(shot)}

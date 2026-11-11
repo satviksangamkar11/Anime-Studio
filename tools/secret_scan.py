@@ -39,6 +39,8 @@ RULES = [
     ("K-NVIDIA", "NVIDIA API key", re.compile(r"nvapi-[A-Za-z0-9_\-]{8,}"), None),
     ("K-OPENROUTER", "OpenRouter key", re.compile(r"sk-or-v1-[A-Za-z0-9_\-]{16,}"), None),
     ("K-OPENAI", "sk- style API key", re.compile(r"\bsk-[A-Za-z0-9_\-]{20,}"), None),
+    ("K-ANTHROPIC", "Anthropic API key", re.compile(r"\bsk-ant-[A-Za-z0-9_\-]{20,}"), None),
+    ("K-ELEVEN", "ElevenLabs key", re.compile(r"\bsk_[0-9a-f]{40,}\b"), None),
     ("K-HF", "Hugging Face token", re.compile(r"\bhf_[A-Za-z0-9]{20,}"), None),
     ("K-GOOGLE", "Google API key", re.compile(r"AIza[0-9A-Za-z_\-]{35}"), None),
     ("K-GROQ", "Groq key", re.compile(r"\bgsk_[A-Za-z0-9]{20,}"), None),
@@ -73,7 +75,7 @@ def path_findings(rel: str, size: int, upstream: frozenset) -> list[tuple[str, s
 
 def content_findings(data: bytes):
     """Yield (line number, rule, description, line text). The line text is for the allowlist only; never print it."""
-    for n, line in enumerate(data.decode("utf-8", "replace").splitlines(), 1):
+    for n, line in enumerate(data.decode("utf-8", "replace").split("\n"), 1):
         for rule, what, rx, check in RULES:
             for m in rx.finditer(line):
                 if check is None or check(m.group(1)):

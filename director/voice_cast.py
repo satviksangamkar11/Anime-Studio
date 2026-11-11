@@ -22,6 +22,12 @@ import urllib.request
 from pathlib import Path
 
 import re
+import shutil
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import audio_edge  # noqa: E402
+import voice_manifest  # noqa: E402  (D-VOICE: voice_manifest.<lang>.json written by export_wavs)
+from wav_contract import require_wav, wav_name  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 LANGS = ("en", "hi", "mr")
@@ -233,13 +239,22 @@ def run(jobs: list, out: Path, cap: int, key: str, post=http, ledger: Ledger | N
     return man
 
 
-def measured(man: dict, plan: dict, script_sha256: str, model: str) -> dict:
-    """The measured-durations file in the shape a1_audio.py expects, from the accepted clips of a run: every line of the plan needs a clip in both languages."""
+def measured(man: dict, plan: dict, script_sha256: str, model: str, hard_names: dict | None = None,
+             pilot: dict | None = None) -> dict:
+    """The measured-durations file in the shape a1_audio.py expects, from the accepted clips of a run:
+    every line of the plan needs a clip in both languages.
+    hard_names = {lang: [names]} (pack/hard_names.json); a clip whose text has one of them needs
+    hard_names_ok for its voice in pilot.json, else a problem."""
     clips = {}
     for r in latest_ok(man):
-        if True:
-            clips[r["id"]] = {"lang": r["lang"], "voice": r["voice"], "speaker": r["voice_id"], "seconds": r["seconds"], "mp3_sha256": r["mp3_sha256"], "text": r["text"], "key": r["key"]}
+        clips[r["id"]] = {"lang": r["lang"], "voice": r["voice"], "speaker": r["voice_id"], "seconds": r["seconds"],
+                          "mp3_sha256": r["mp3_sha256"], "text": r["text"], "key": r["key"]}
+    approved = (pilot or {}).get("voices", {})
     lines, problems = {}, []
+    for cid, c in clips.items():
+        for name in (hard_names or {}).get(c["lang"], []):
+            if name in c["text"] and not (approved.get(f"{c['lang']}/{c['voice']}") or {}).get("hard_names_ok"):
+                problems.append(f"{cid}: hard name {name} not owner-approved")
     for l in plan["lines"]:
         for lang in LANGS:
             c = clips.get(f"{l['id']}.{lang}")
@@ -262,7 +277,100 @@ def latest_ok(man: dict) -> list:
     return list(d.values())
 
 
-MAX_TEMPO = 1.15                                                                            # local speed-up limit (owner 2026-11-09: up to about 20 pct is acceptable; texts are sized for 1.08); the accepted mp3 is never modified
+# fields read from VOICE_DOC: verified_languages[].language/model_id, sharing.rate
+VOICE_DOC = "https://elevenlabs.io/docs/api-reference/voices/get"
+
+
+def voice_model(cast: dict, lang: str, speaker: str, model: str) -> str:
+    return ((cast.get("_models") or {}).get(lang) or {}).get(speaker) or model
+
+
+def preflight(cast: dict, script_sha: str, cast_sha: str, key: str, get=http, model: str = "eleven_v4") -> dict:
+    """Read-only check of the cast against the account before any paid call (one GET per voice, see VOICE_DOC).
+    ok needs every voice present and verified for its language on the model the job will use.
+    An empty verified_languages list is a warning, not a failure."""
+    rows = []
+    for lang in cast:
+        if lang.startswith("_"):
+            continue
+        for speaker, vid in cast[lang].items():
+            mdl = voice_model(cast, lang, speaker, model)
+            row = {"lang": lang, "speaker": speaker, "voice_id": vid, "model": mdl,
+                   "present": True, "verified": False, "rate": None, "warnings": []}
+            rows.append(row)
+            try:
+                data, _ = get("GET", f"/v1/voices/{vid}", key)
+            except RuntimeError:
+                row["present"] = False
+                continue
+            info = json.loads(data)
+            langs = info.get("verified_languages") or []
+            if langs:
+                row["verified"] = any(e.get("language") == lang and e.get("model_id") == mdl for e in langs)
+            else:
+                row["verified"] = True
+                row["warnings"].append("no verified_languages")
+            row["rate"] = (info.get("sharing") or {}).get("rate")
+            if row["rate"] is not None and row["rate"] > 1:
+                row["warnings"].append(f"rate x{row['rate']}")
+    ok = bool(rows) and all(r["present"] and r["verified"] for r in rows)
+    return {"script_sha256": script_sha, "cast_sha256": cast_sha, "voices": rows, "ok": ok}
+
+
+def require_records(out, script_sha: str, cast_sha: str, jobs: list, pilot_mode: bool) -> None:
+    """Gate before any paid call. preflight.json must be ok for this script and cast and cover every job voice.
+    A full run also needs pilot.json with the owner having heard every (lang, voice).
+    --pilot allows one line per (lang, voice) and needs no pilot.json."""
+    out = Path(out)
+    pf_path = out / "preflight.json"
+    if not pf_path.exists():
+        raise SystemExit("NOT_RUN: no preflight.json: run the preflight command first")
+    pf = json.loads(pf_path.read_text(encoding="utf-8"))
+    if not pf.get("ok"):
+        raise SystemExit("NOT_RUN: preflight.json is not ok: fix the voices first")
+    if pf.get("script_sha256") != script_sha or pf.get("cast_sha256") != cast_sha:
+        raise SystemExit("NOT_RUN: preflight.json is for another script or cast: run preflight again")
+    present = {r["voice_id"] for r in pf["voices"] if r.get("present")}
+    gone = sorted({j["voice_id"] for j in jobs} - present)
+    if gone:
+        raise SystemExit(f"NOT_RUN: voices not in the account: {gone}")
+    pairs = [(j["lang"], j["voice"]) for j in jobs]
+    if pilot_mode:
+        repeated = sorted({f"{lg}/{vc}" for lg, vc in pairs if pairs.count((lg, vc)) > 1})
+        if repeated:
+            raise SystemExit(f"NOT_RUN: a pilot takes one line per voice; repeated: {repeated}")
+        return
+    pl_path = out / "pilot.json"
+    if not pl_path.exists():
+        raise SystemExit("NOT_RUN: no pilot.json: the owner must hear the pilot first (pilot-record)")
+    pl = json.loads(pl_path.read_text(encoding="utf-8"))
+    if pl.get("script_sha256") != script_sha or pl.get("cast_sha256") != cast_sha:
+        raise SystemExit("NOT_RUN: pilot.json is for another script or cast: record the pilot again")
+    heard = {k for k, v in pl.get("voices", {}).items() if v.get("owner_heard") is True}
+    missing = sorted({f"{lg}/{vc}" for lg, vc in pairs} - heard)
+    if missing:
+        raise SystemExit(f"NOT_RUN: the owner has not heard: {missing}")
+
+
+def pilot_record(man: dict, script_sha: str, cast_sha: str, heard: list, names_ok: list) -> dict:
+    """pilot.json from the accepted clips: one entry per (lang, voice), the first accepted clip of that voice.
+    heard and names_ok are lists of 'lang/VOICE' keys the owner has approved (owner_heard, hard_names_ok).
+    A key that is not in the manifest is an error."""
+    voices_out = {}
+    for r in latest_ok(man):
+        key = f"{r['lang']}/{r['voice']}"
+        if key in voices_out:
+            continue
+        chars = len(r["text"])
+        voices_out[key] = {"line": r["line"], "seconds": r["seconds"], "chars": chars,
+                           "s_per_char": round(r["seconds"] / max(1, chars), 4),
+                           "owner_heard": key in heard, "hard_names_ok": key in names_ok}
+    unknown = sorted((set(heard) | set(names_ok)) - set(voices_out))
+    if unknown:
+        raise SystemExit(f"NOT_RUN: not in the manifest: {unknown}")
+    return {"script_sha256": script_sha, "cast_sha256": cast_sha, "voices": voices_out}
+
+
 TRIM = "silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse"      # cuts only the silence at both ends of the wav copy
 
 
@@ -283,37 +391,68 @@ def load_slots(pack: Path, windows: Path | None = None) -> dict:
     return out
 
 
+LONG = "longer than scripted slot (the timeline lock sizes the shot)"
+
+
 def fit_report(man: dict, slots: dict) -> list:
-    """One row per accepted clip: measured seconds, slot, tempo needed (>1 = too long), verdict. A too-long clip is fitted locally up to MAX_TEMPO; beyond that it is reported, never regenerated."""
+    """One row per accepted clip: measured seconds, slot, tempo (>1 = longer than the slot), verdict.
+    Nothing is sped up: the timeline lock sizes the shot."""
     rows = []
     for r in latest_ok(man):
-        if True:
-            slot = slots[r["line"]]
-            tempo = max(1.0, r["seconds"] / slot)
-            rows.append({"id": r["id"], "seconds": r["seconds"], "slot": round(slot, 2), "tempo": round(tempo, 3), "verdict": "fits" if tempo == 1.0 else ("fit by atempo" if tempo <= MAX_TEMPO else "TOO LONG: owner decision")})
+        slot = slots[r["line"]]
+        tempo = max(1.0, r["seconds"] / slot)
+        verdict = "fits" if r["seconds"] <= slot else LONG
+        rows.append({"id": r["id"], "seconds": r["seconds"], "slot": round(slot, 2), "tempo": round(tempo, 3),
+                     "verdict": verdict})
     return rows
 
 
-def export_wavs(man: dict, out: Path, wav_dir: Path, model: str, rate: int = 44100, slots: dict | None = None, report: list | None = None) -> int:
-    """Decode every accepted clip to mono 16-bit wav named <line>.<lang>.wav (the layout a1_voice.py mix reads), edge silence cut (TRIM); with slots, a clip longer than its slot
-    (measured on the trimmed wav) is sped up by at most MAX_TEMPO in the wav copy. report (a list) receives one row per clip: trimmed seconds, slot, tempo, verdict."""
+def export_wavs(man: dict, out: Path, wav_dir: Path, model: str, rate: int = 44100, slots: dict | None = None,
+                report: list | None = None, manifest_dir: Path | None = None) -> int:
+    """Decode every accepted clip to mono 16-bit wav named <line>.<lang>.wav (the layout the mix reads).
+    ffmpeg TRIM cuts the silence at both ends; the file must really be WAV; audio_edge then adds the lead and
+    tail padding and the fades. Nothing is sped up. With slots, report receives one row per clip:
+    trimmed and final seconds, slot, verdict (final length against the slot).
+    With manifest_dir, writes <manifest_dir>/voice_manifest.<lang>.json (D-VOICE): the text that was voiced, bound to
+    each exported wav by sha256, so the captions are built from the same text."""
     n = 0
+    made = []
     for r in latest_ok(man):
-        dst = wav_dir / "wav" / r["lang"] / f"{r['id']}.wav"
+        dst = Path(wav_dir) / "wav" / r["lang"] / wav_name(r["line"], r["lang"])
         dst.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(out / r["file"]), "-ac", "1", "-ar", str(rate), "-sample_fmt", "s16", "-af", TRIM, str(dst)], check=True)
+        require_wav(dst)
+        samples, sr = audio_edge.read_wav_mono(dst)
+        trimmed = len(samples) / sr
+        edged = audio_edge.apply_edges(samples, sr)
+        tmp = dst.with_suffix(".tmp.wav")
+        audio_edge.write_wav_mono(tmp, edged, sr)
+        require_wav(tmp)
+        os.replace(tmp, dst)
+        final = len(edged) / sr
+        if manifest_dir is not None:
+            made.append({"id": r["id"], "lang": r["lang"], "text": r["text"], "wav": dst, "seconds": final, "speaker": r["voice"]})
         if slots:
-            secs, slot = probe_seconds(dst), slots[r["line"]]
-            tempo = max(1.0, secs / slot)
-            if 1.0 < tempo <= MAX_TEMPO:
-                tmp = dst.with_name(dst.stem + ".fit.wav")
-                subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(dst), "-af", f"atempo={tempo:.4f}", str(tmp)], check=True)
-                os.replace(tmp, dst)
+            slot = slots[r["line"]]
             if report is not None:
-                report.append({"id": r["id"], "seconds": round(secs, 2), "slot": round(slot, 2), "tempo": round(tempo, 3),
-                               "verdict": "fits" if tempo == 1.0 else ("fit by atempo" if tempo <= MAX_TEMPO else "TOO LONG: owner decision")})
+                verdict = "fits" if final <= slot else LONG
+                report.append({"id": r["id"], "seconds_trimmed": round(trimmed, 2),
+                               "seconds_final": round(final, 2), "slot": round(slot, 2), "verdict": verdict})
         n += 1
+    if manifest_dir is not None:
+        for lg in sorted({m["lang"] for m in made}):
+            voice_manifest.write_manifest(manifest_dir, lg, [m for m in made if m["lang"] == lg])
     return n
+
+
+def check_disk(path: Path, min_free: int = 1 << 30) -> None:
+    """Refuses to export when the disk holding the wavs has less than min_free bytes (default 1 GiB)."""
+    p = Path(path)
+    while not p.exists() and p.parent != p:
+        p = p.parent
+    free = shutil.disk_usage(p).free
+    if free < min_free:
+        raise SystemExit(f"NOT_RUN: {free / 2**30:.2f} GiB free on {p}; the export needs 1 GiB")
 
 
 def main() -> int:
@@ -335,10 +474,18 @@ def main() -> int:
             p.add_argument("--out")
         if n == "run":
             p.add_argument("--allow-paid", action="store_true")
+            p.add_argument("--pilot", action="store_true",
+                           help="one line per voice; needs preflight.json only (no owner-heard pilot.json yet)")
             p.add_argument("--cap", type=int, default=DEFAULT_CAP)
             p.add_argument("--only-voices", help="comma list of voice ids: only their clips (used while the voice slots are rotated)")
         if n == "measured":
             p.add_argument("--to")
+    pre = sub.add_parser("preflight", help="read-only GET per voice: writes <out>/preflight.json")
+    pre.add_argument("--pack", required=True)
+    rec = sub.add_parser("pilot-record", help="offline: writes <out>/pilot.json from the manifest")
+    rec.add_argument("--pack", required=True)
+    rec.add_argument("--heard", default="", help="comma list, e.g. en/NARRATOR,hi/BRAHMA")
+    rec.add_argument("--names-ok", default="", help="comma list of lang/VOICE whose hard names the owner approved")
     a = ap.parse_args()
     cast, out = paths(Path(a.pack))
     a.out = getattr(a, "out", None) or str(out)
@@ -354,18 +501,42 @@ def main() -> int:
         return 0
     if a.cmd == "export":
         man = json.loads((Path(a.out) / "eleven_manifest.json").read_text(encoding="utf-8"))
-        slots = load_slots(Path(a.pack), Path(a.out) / "FINAL_TEXT_v2.json")
+        slots = load_slots(Path(a.pack))
         rep = []
-        print(export_wavs(man, Path(a.out), Path(a.wav_dir), a.model, slots=slots, report=rep), "wavs ->", a.wav_dir)
+        check_disk(Path(a.wav_dir))
+        print(export_wavs(man, Path(a.out), Path(a.wav_dir), a.model, slots=slots, report=rep, manifest_dir=Path(a.out)), "wavs ->", a.wav_dir)
         Path(a.out, "fit_report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
         for r in rep:
             if r["verdict"] != "fits":
                 print(r)
         return 0
+    script_sha = sha256_file(Path(a.pack) / "shots.json")
+    cast_sha = sha256_file(Path(a.voices))
+    if a.cmd == "preflight":
+        cast_now = json.loads(Path(a.voices).read_text(encoding="utf-8"))
+        pf = preflight(cast_now, script_sha, cast_sha, api_key(), model=getattr(a, "model", "eleven_v4"))
+        Path(a.out).mkdir(parents=True, exist_ok=True)
+        Path(a.out, "preflight.json").write_text(json.dumps(pf, ensure_ascii=False, indent=1), encoding="utf-8")
+        for r in pf["voices"]:
+            if not r["present"] or not r["verified"] or r["warnings"]:
+                print(r)
+        print("preflight ok" if pf["ok"] else "preflight NOT ok", "->", Path(a.out, "preflight.json"))
+        return 0 if pf["ok"] else 1
+    if a.cmd == "pilot-record":
+        man = json.loads((Path(a.out) / "eleven_manifest.json").read_text(encoding="utf-8"))
+        split = (lambda s: [x for x in s.split(",") if x])
+        pl = pilot_record(man, script_sha, cast_sha, split(a.heard), split(a.names_ok))
+        Path(a.out).mkdir(parents=True, exist_ok=True)
+        Path(a.out, "pilot.json").write_text(json.dumps(pl, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(len(pl["voices"]), "voices ->", Path(a.out, "pilot.json"))
+        return 0
     plan = load_plan(Path(a.pack))
     if a.cmd == "measured":
         man = json.loads((Path(a.out) / "eleven_manifest.json").read_text(encoding="utf-8"))
-        res = measured(man, plan, hashlib.sha256((Path(a.pack) / "shots.json").read_bytes()).hexdigest(), a.model)
+        hn_path, pl_path = Path(a.pack) / "hard_names.json", Path(a.out) / "pilot.json"
+        hard = json.loads(hn_path.read_text(encoding="utf-8")) if hn_path.exists() else {}
+        pilot = json.loads(pl_path.read_text(encoding="utf-8")) if pl_path.exists() else None
+        res = measured(man, plan, script_sha, a.model, hard, pilot)
         Path(a.to).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"{len(res['clips'])} clips, {len(res['problems'])} problems -> {a.to}")
         return 0 if not res["problems"] else 1
@@ -380,6 +551,8 @@ def main() -> int:
         return 0
     if not a.allow_paid:
         raise SystemExit("this spends ElevenLabs credits: add --allow-paid")
+    # before the ledger is touched and before any call
+    require_records(Path(a.out), script_sha, cast_sha, jobs, a.pilot)
     man = run(jobs, Path(a.out), a.cap, api_key())
     print(json.dumps({k: man[k] for k in ("ok", "reused", "credits_committed", "credits_unconfirmed_clips")}), "all ok" if man["ok"] >= len(jobs) else "STOPPED: see the manifest")
     return 0 if man["ok"] >= len(jobs) else 1

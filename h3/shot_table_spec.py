@@ -40,7 +40,7 @@ FALLBACK_RUNGS = 4
 HUMAN_CHOICES = ("switch_models", "relax_requirements", "skip_with_placeholder_missing_clip", "supply_reference_video")
 
 def _loudness_from_core():
-    """The one loudness standard of the pipeline (owner 2026-11-07): -16 LUFS integrated, max true peak -1 dBTP. It lives in
+    """The one loudness standard of the pipeline (owner 2026-11-07): -14 LUFS integrated, max true peak -1 dBTP. It lives in
     core/core.json delivery.audio; post.py, the voice mix and Gate D's post-render check all read it from there."""
     from core.style_pack import load_core
     a = load_core()["delivery"]["audio"]

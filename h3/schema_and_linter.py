@@ -76,7 +76,7 @@ PROFILE_KEYS = {"route_id", "checkpoint_name", "mode_to_lora_map", "checkpoint_a
                 "ref_image_size_policy", "min_imd_body_chars", "max_imd_body_chars",
                 "max_total_prompt_chars", "valid_lattice_n_range"}
 PROMPT_RE = re.compile(
-    r"""\AHow the reference pictures align with the target video — Picture 1 \(from Shot 1\) aligns with the 0\.00-second mark of the target video; Picture 2 \(from Shot 1\) aligns with the (?P<sec>\d+\.\d{2})-second mark of the target video\.\n\nintegrated_multimodal_description: (?P<imd>[^\n]+)\noverall_soundscape: (?P<snd>[^\n]*)\nnon_diegetic_music: (?P<music>[^\n]*)\Z""")
+    r"""\AHow the reference pictures align with the target video — Picture 1 \(from Shot 1\) aligns with the 0\.00-second mark of the target video; Picture 2 \(from Shot 1\) aligns with the (?P<sec>\d+\.\d{2})-second mark of the target video\.\nintegrated_multimodal_description: (?P<imd>[^\n]+)\noverall_soundscape: (?P<snd>[^\n]*)\nnon_diegetic_music: (?P<music>[^\n]*)\Z""")
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
 # ID safety pattern: alphanumeric start, then alphanumeric/underscore/hyphen up to 64 chars total

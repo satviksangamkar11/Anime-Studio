@@ -47,12 +47,16 @@ from h3_director import settings_for
 import retry_policy
 import run_registry
 import writer_prompts as wp
+import writer_guard
+import write_pack_glue
 
 spec = wp.spec                                            # h3/shot_table_spec.py: the V4 numbers (never copied here)
 HERE = Path(__file__).resolve().parent
 WORK = HERE.parents[1]                                    # D:\aai work
 BRIEF = HERE / "MASTER_PROMPT_v2.1.md"
 BRIEF_V22 = HERE / "MASTER_PROMPT_v2.2.md"                # staged mode reads this when it exists
+LEDGERS = Path(__file__).resolve().parent.parent / "ledgers"   # writer_spend.jsonl and writer_usage.jsonl (the claude guard)
+GUARD = False   # True only in a real run, set by main() for the claude route: call_claude then goes through the writer guard
 BRIEF_V23 = HERE / "MASTER_PROMPT_v2.3.md"                # --prompt-version v2.3
 STYLES_DIR = HERE.parent / "styles"                       # style pack JSON files, read as plain JSON
 PACK_ID = re.compile(r"[A-Za-z0-9_-]+")
@@ -356,8 +360,8 @@ def make_web_notes(story_path):
     return notes.read_text(encoding="utf-8").strip()
 
 
-def call_claude(prompt, model, effort, web=False, rule=True):
-    """web=True only for the research-notes call (make_web_notes); writer stages always run with no tools."""
+def call_claude_raw(prompt, model, effort, web=False, rule=True, max_budget_usd=None):
+    """One claude call; returns the raw stream-json text (join_stream reads the whole answer). max_budget_usd: adds --max-budget-usd."""
     tools = ["--tools", WEB_TOOLS, "--allowedTools", WEB_TOOLS] if web else ["--tools", ""]
     prompt = WEB_RULE + prompt if web and rule else prompt
     with tempfile.TemporaryDirectory() as empty:
@@ -369,12 +373,23 @@ def call_claude(prompt, model, effort, web=False, rule=True):
         # its `result` keeps only that last turn (stage 2 lost its first 90%, 2.62 USD); join_stream rebuilds the whole answer
         fmt = ["--output-format", "stream-json", "--verbose"]
         r = subprocess.run([shutil.which("claude") or "claude", "-p", "--model", model, "--effort", effort, *fmt,
-                            *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence"],
+                            *tools, "--mcp-config", str(mcp), "--strict-mcp-config", "--no-session-persistence",
+                            *write_pack_glue.claude_budget_args(max_budget_usd)],
                            input=prompt, capture_output=True, text=True, encoding="utf-8", cwd=empty, env=env, timeout=TIMEOUT_S)
     if r.returncode != 0:
         # stream-json puts the CLI's error in stdout (its last `result` event), so stderr alone is often empty
         raise RuntimeError(f"claude exited {r.returncode}: {r.stderr[-400:]} | stdout tail: {r.stdout[-400:]}")
-    return join_stream(r.stdout)
+    return r.stdout
+
+
+def call_claude(prompt, model, effort, web=False, rule=True):
+    """web=True only for the research-notes call (make_web_notes); writer stages always run with no tools.
+    GUARD (module switch, False in tests): a real claude run goes through the writer guard (cap, ledgers, budget per call)."""
+    if GUARD:
+        return join_stream(write_pack_glue.guarded_claude_call(
+            "writer", prompt, lambda p, b: call_claude_raw(p, model, effort, web=web, rule=rule, max_budget_usd=b),
+            LEDGERS / "writer_spend.jsonl", LEDGERS / "writer_usage.jsonl"))
+    return join_stream(call_claude_raw(prompt, model, effort, web=web, rule=rule))
 
 
 def join_stream(stdout):
@@ -752,7 +767,7 @@ def checked_call(name, call, *args):
     ModelGaveUp, network) becomes StageFailed, so the run stops with a message and the registry step is marked failed."""
     try:
         return call(*args)
-    except (ValueError, StageFailed):
+    except (ValueError, StageFailed, writer_guard.WriterLimit, writer_guard.WriterUnavailable):
         raise
     except Exception as exc:
         raise StageFailed(f"stage {name}: the model call failed ({type(exc).__name__}: {str(exc)[:300]}); nothing was saved for it, "
@@ -850,10 +865,22 @@ def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
     text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
     retries = 0
     while errors and retries < spec.MAX_REPAIR_RETRIES:
+        # no whole-stage rewrite: only a list of rows whose errors all name a SHOT id is repaired, and only those rows are sent
+        ids = write_pack_glue.error_shot_ids(errors)
+        if not isinstance(data, list) or ids is None or ids == []:
+            break
         retries += 1
-        checked_call(name, call, prompt_for(errors), raw_path)
-        print(f"stage {name}: repair retry {retries}: {raw_path}")
-        text, data, errors = judge(raw_path.read_text(encoding="utf-8"))
+        rep_path = write_pack_glue.repair_file(out, name, retries)
+        checked_call(name, call, write_pack_glue.repair_prompt(prompt_for([]), data, ids, errors), rep_path)
+        print(f"stage {name}: repair {retries}: {rep_path}")
+        try:
+            data = write_pack_glue.merge_repair(data, write_pack_glue.parse_repair(rep_path.read_text(encoding="utf-8")))
+        except ValueError as exc:
+            errors = [f"PARSE repair: {exc}"]
+            record_check(rec, name, errors)
+            continue
+        errors = check_fn(data)
+        record_check(rec, name, errors)
     if errors:
         val_path.write_text(json.dumps({"stage": name, "errors": errors, "repair_retries": retries, "answer": raw_path.name},
                                        indent=1, ensure_ascii=False), encoding="utf-8")
@@ -1332,6 +1359,13 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
             run.note += f"; check_pack: {len(fails)} FAIL, {len(report.get('issues', [])) - len(fails)} WARN"
             for line in fails:
                 print(f"CHECK_PACK {line}")
+        if any(isinstance(s.get("blocking"), dict) for s in shots):
+            write_pack_glue.write_blocking_files(out, shots)
+            gate = write_pack_glue.writer_gate(out, shots, story_text, lang=langs[0])
+            if not gate["ok"]:
+                raise StageFailed("writer gate failed: " + "; ".join(gate["problems"][:5]) + f" (see {out.name}/writer_gate.json)")
+        else:
+            run.note += "; writer gate skipped: no blocking sheets"
     print(f"{len(episodes)} episodes, {len(shots)} shots, output languages {','.join(langs)} -> {out}")
     return shots
 
@@ -1438,6 +1472,10 @@ def main(argv=None):
         stage_model = parse_stage_map(a.stage_model, str) if a.staged else {}
     except ValueError as exc:
         ap.error(str(exc))
+    global GUARD
+    if via == "claude" or "claude" in stage_via.values():
+        writer_guard.cli_ready()      # fail-closed: a claude run without the cap stops here
+        GUARD = True
     global WEB, WEB_NOTES
     WEB = a.web
     if WEB:

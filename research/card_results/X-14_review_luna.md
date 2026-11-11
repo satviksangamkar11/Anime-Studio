@@ -1,0 +1,7 @@
+`new_classes` accepts arbitrary JSON object values as per-frame class counts and silently assumes every value is a mapping. If `clip_review.json` is missing or malformed, QA crashes; more importantly, the test does not verify the required every-sixth-frame sampling rule. The card says the reviewer writes sampled-frame counts, so this module need not enforce sampling? But named test requirement only five. The supplied snake test uses frame IDs 0 and 6, checking class detection, not that sampling is enforced. Card explicitly says clip_review is written by reviewer like keyframe_review, so no requirement QA validates sample intervals. Thus no defect.
+
+Other meaningful: ACCEPT_CODES `NEW_OBJECT` legacy and clip gates code is NEW_CLASS; accept check not tied to actual verdict failure. Requirement "accept --code NEW_OBJECT" records; owner override doesn't state validation. fine.
+
+Question exact verdict. tests listed all present. test name test_owner... exact. Okay. Could point empty/short audio failure, acceptable ClipQAError. `features` with 1 frame ValueError but gate requires tail minimum anyway, crash path maybe malformed input. Not card.
+
+Maybe workflow runs tests? User says review, no. final one line verdict only terminal. Could say OK. Maybe exact one line end. No findings. Our final answer only VERDICT. Could better no issues. Exactly one line.

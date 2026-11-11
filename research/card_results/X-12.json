@@ -1,0 +1,13 @@
+{
+ "card": "X-12",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "director/timeline_lock_io.py"
+ ],
+ "test_file": "director/test_lock_rows_x12.py",
+ "more_tests": [
+  "director/test_timeline_lock_io.py"
+ ],
+ "note": "Super answer applied by hand after runner derailed; old tuple test updated"
+}

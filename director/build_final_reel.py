@@ -2,23 +2,32 @@
 
   1. cuts: h3.assemble_reel.build_ffmpeg_assembly_plan trims every clip to its editorial window (head/tail handles removed) and concatenates
      video and the clips' own H3 sound effects; ffmpeg runs it -> <out>/<reel>_video.mp4
-  2. gate: h3.gate_d_audio.plan_language_outputs checks every language (VO fit, captions, hook, closing). Findings whose code is in WAIVED are
-     the writer's script-level retention rules (narration density, dead air between scripted lines) and the closing-shot anchor/mouth rule;
-     the owner ordered the finished reel, so they are WRITTEN INTO THE REPORT (never hidden) and do not stop the build. Any other error stops it.
+  2. gate: h3.gate_d_audio.plan_language_outputs checks every language (VO fit, captions, hook, closing). Findings whose code the owner
+     waived in <pack>/waivers.json are WRITTEN INTO THE REPORT (never hidden) and do not stop the build. Any other error stops it.
   3. mix + captions: the same Gate D functions the planner uses (SFX stem ducked under the voice stem, loudnorm to core delivery loudness,
      burned .ass captions in the language's script) -> <out>/export/<reel>_<lang>.mp4, then the AAC loudness is measured and checked.
 No music is mixed (bgm_manifest None); the score is a later step. Never calls a model or ElevenLabs.
 
-  python build_final_reel.py --pack <pack dir> --story <h3_story.json> --clips <clips.json {SHOT-001: path}> --vo <vo root with <lang>/<SHOT>.wav> --out <dir> [--reel kalika_reel1] [--langs en,hi,mr]
+  python build_final_reel.py --pack <pack dir> --story <h3_story.json> --clips <clips.json {SHOT-001: path}>
+      --vo <vo root with <lang>/<SHOT>.wav> --lock <timeline_lock_vN.json> --out <dir> --reel <name> [--langs en,hi,mr]
+
+--reel is required (no default). The lock is the only timing source. Each clip's folder must hold a passing clip_qa.json (X-14).
+Findings are waived only by <pack>/waivers.json {reel, codes, signed_by: "owner", date}. No waivers file = nothing is waived.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 import re
+import shutil
 import subprocess
 import sys
+import wave
 from pathlib import Path
+
+import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -28,8 +37,16 @@ from core.captions import ass_time  # noqa: E402
 from core.style_pack import load_core  # noqa: E402
 from h3 import assemble_reel as ar  # noqa: E402
 from h3 import gate_d_audio as gd  # noqa: E402
+import caption_fields as cf  # noqa: E402
+import voice_manifest as vm  # noqa: E402
+import clip_qa  # noqa: E402
+import timeline_lock_io as tli  # noqa: E402
+import wav_contract as wc  # noqa: E402
+import waivers as wv  # noqa: E402
 
-WAIVED = {"NARRATION_COVERAGE_LOW", "NARRATION_WORDS_LOW", "DEAD_AIR_PAUSE", "CLOSING_NO_ANCHOR_PAYOFF", "CLOSING_MOUTH_OPEN"}
+REEL_CLOSED = {"kalika_reel1"}          # rule 53: reel 1 is closed; this module never rebuilds it
+REEL_NAME = re.compile(r"[a-z0-9_]+")
+LANG_NAME = {"en": "english", "hi": "hindi", "mr": "marathi"}     # waivers.py names the languages this way
 
 
 def probe_frames(path):
@@ -61,22 +78,34 @@ def assemble_video(h3_shots, clips, out_video, work):
     return plan
 
 
-def mux_argv(rows, lang, vo_dir, video, export, ass, fonts_dir):
-    """The planner's own mix and mux, built directly so a waived finding does not block it (same functions, same order)."""
-    inputs, vo_refs, offsets, t = [str(video)], [], [], 0.0
+def has_lines(row, lang):
+    """True when shots.json gives this shot a spoken line (narration or dialogue) in the language."""
+    a = row.get("audio_and_dialogue_track") or {}
+    narration = ((a.get("narration_by_lang") or {}).get(lang) or {}).get("text")
+    return bool(narration) or bool((a.get("dialogue_by_lang") or {}).get(lang))
+
+
+def mux_argv(rows, lang, vo_dir, video, export, ass, fonts_dir, pre_vf=None, sfx_policy=None):
+    """The planner's own mix and mux, built directly so a waived finding does not block it (same functions, same order).
+    Rows come from lock_rows (offset_sec is the lock's own clock). A shot with lines and no voice file stops the build.
+    pre_vf is the delivery crop/scale (delivery_vf) that runs before the ass burn."""
+    inputs, vo_refs, t = [str(video)], [], 0.0
     for r in rows:
         ed = float(r["editorial_duration_sec"])
-        offsets.append(t)
         t += ed
         p = Path(vo_dir) / lang / f"{r['id']}.wav"
         if p.is_file():
             inputs.append(str(p))
             vo_refs.append((len(inputs) - 1, ed))
+        elif has_lines(r, lang):
+            raise SystemExit(f"{r['id']}: {lang} voice file missing ({p}) for a shot that has lines")
         else:
             vo_refs.append((None, ed))
-    sfx = [{"input_index": f"h3s{k}", "trim_in_sec": o, "trim_out_sec": o + float(r["editorial_duration_sec"])} for k, (r, o) in enumerate(zip(rows, offsets))]
-    mix = ";".join([gd.build_sfx_split_filter(0, len(rows)), gd.build_vo_stem_filter(vo_refs), gd.build_mix_filter(sfx, "vo_full", None, t)])
-    return gd.build_final_mux_argv(video, inputs[1:], mix, export, burn_captions=True, ass_path=ass, fonts_dir=fonts_dir), t
+    sfx = [{"input_index": f"h3s{k}", "trim_in_sec": float(r["offset_sec"]),
+            "trim_out_sec": float(r["offset_sec"]) + float(r["editorial_duration_sec"])} for k, r in enumerate(rows)]
+    mix = ";".join([gd.build_sfx_split_filter(0, len(rows)), gd.build_vo_stem_filter(vo_refs), gd.build_mix_filter(sfx, "vo_full", None, t, **({"sfx_policy": sfx_policy} if sfx_policy is not None else {}))])
+    return gd.build_final_mux_argv(video, inputs[1:], mix, export, burn_captions=True, ass_path=ass, fonts_dir=fonts_dir,
+                                   pre_vf=pre_vf), t
 
 
 # Caption spec v2 (research/CAPTION_SPEC_v2_REELS_SHORTS_2026-11-09.md). The family is the font file's own name (name ID 1):
@@ -91,8 +120,10 @@ CARD_WORDS = {"en": 4, "hi": 3, "mr": 3}
 CARD_CHARS = {"en": None, "hi": 18, "mr": 18}
 GREEN_BGR, WHITE_BGR = "&H004EFF3C&", "&H00FFFFFF&"   # ASS colours are BGR: active word green #3CFF4E, the rest white
 CAPTION_PACK = {"typography": {"subtitle_latin": CAPTION_FONT, "subtitle_devanagari": CAPTION_FONT, "min_px_at_1080w": 60}}
-# Owner spelling check 2026-11-09 (caption text only; the voice files and FINAL_TEXT_v2.json are NOT changed): (line id, lang) -> (old, new)
-CAPTION_FIXES = {("SHOT-003-D1", "hi"): ("ब्याही", "ब्याहीं"), ("SHOT-010-D1", "hi"): ("गलती", "ग़लती")}
+# Delivery frame (rule 51): the 768x1344 picture is scaled to 1098x1920 (lanczos) and centre-cropped to 1080x1920 BEFORE the ass burn,
+# so libass draws the captions on the frame the viewer sees. 768*1920/1344 = 1097.14, rounded to the even 1098; (1098-1080)/2 = 9.
+DELIVERY_VF = "scale=1098:1920:flags=lanczos,crop=1080:1920:9:0"
+DELIVERY_SOURCE_SIZE = {(768, 1344): DELIVERY_VF, (1080, 1920): None}
 
 
 def caption_fits(font_file, lang):
@@ -150,31 +181,83 @@ def word_cues(text, t0, t1, lang="en", fits=None):
     return cues
 
 
-def spoken_cues_real(rows, report, lang, font_file=None):
-    """Caption cues from the REAL packed voice timings (vo_tracks_report.json of the language) and the line text of shots.json.
-    CAPTION_FIXES change the caption text only (same word count, so the timing is unchanged)."""
+def probe_size(path):
+    """(width, height) of the first video stream, from ffprobe."""
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+                        "-of", "csv=p=0:s=x", str(path)], capture_output=True, text=True, check=True)
+    w, h = r.stdout.strip().split("x")
+    return int(w), int(h)
+
+
+def delivery_vf(size):
+    """The video filter that puts a picture on the 1080x1920 delivery frame before the captions. 768x1344 gets DELIVERY_VF,
+    1080x1920 needs none, any other size stops the build (rule 51 names only these two)."""
+    if tuple(size) not in DELIVERY_SOURCE_SIZE:
+        raise SystemExit(f"video is {size[0]}x{size[1]}; rule 51 allows only 768x1344 (cropped) or 1080x1920")
+    return DELIVERY_SOURCE_SIZE[tuple(size)]
+
+
+def load_manifest_rows(template, lang):
+    """Rows of the voice manifest of one language (voice_manifest.py: schema, language, text and wav hashes, row set).
+    '{lang}' in the path is filled in; a path without it is used for every language. Any refusal stops the build."""
+    try:
+        return vm.load_voice_manifest(Path(str(template).replace("{lang}", lang)), lang=lang)
+    except vm.VoiceManifestError as exc:
+        raise SystemExit(f"voice manifest: {exc}") from exc
+
+
+def manifest_by_id(manifest):
+    """Voice manifest rows {id: "<line>.<lang>", text, text_sha256} (voice_cast.py jobs) keyed by id. Duplicate ids stop the build."""
+    by_id = {}
+    for m in manifest:
+        if m["id"] in by_id:
+            raise SystemExit(f"voice manifest: duplicate id {m['id']}")
+        by_id[m["id"]] = m
+    return by_id
+
+
+def spoken_cues_real(rows, report, lang, manifest, font_file=None):
+    """Caption cues from the REAL packed voice timings (vo_tracks_report.json of the language). spoken_text is the voice manifest
+    text of "<line>.<lang>" (its sha256 must equal text_sha256). Caption text comes from the shots.json line keys caption_text and
+    caption_diff_approved, resolved by caption_fields (a caption difference needs the owner's approval and the same word count)."""
     offsets, t = {}, 0.0
     for r in rows:
         offsets[r["id"]] = t
         t += float(r["editorial_duration_sec"])
-    text = {}
+    src = {}
     for r in rows:
         a = r["audio_and_dialogue_track"]
         n = (a.get("narration_by_lang") or {}).get(lang) or {}
         if n.get("text"):
-            text[f"{r['id']}-N"] = n["text"]
+            src[f"{r['id']}-N"] = n
         for k, d in enumerate((a.get("dialogue_by_lang") or {}).get(lang) or [], 1):
-            text[f"{r['id']}-D{k}"] = d["text"]
-    for (line_id, lg), (old, new) in CAPTION_FIXES.items():
-        if lg == lang and line_id in text:
-            text[line_id] = text[line_id].replace(old, new)
+            src[f"{r['id']}-D{k}"] = d
+    by_id = manifest_by_id(manifest)
+    needed = [ln["id"] for sh in report if sh["lang"] == lang for ln in sh["lines"]]
+    lines = []
+    for line_id in dict.fromkeys(needed):
+        if line_id not in src:
+            raise SystemExit(f"{line_id}: report line has no {lang} line in shots.json")
+        key = f"{line_id}.{lang}"
+        if key not in by_id:
+            raise SystemExit(f"{key}: no row in the voice manifest")
+        m = by_id[key]
+        spoken = m.get("text")
+        if hashlib.sha256(str(spoken).encode("utf-8")).hexdigest() != m.get("text_sha256"):
+            raise SystemExit(f"{key}: manifest text_sha256 does not match its text")
+        lines.append({"id": line_id, "lang": lang, "spoken_text": spoken, "caption_text": src[line_id].get("caption_text"),
+                      "caption_diff_approved": src[line_id].get("caption_diff_approved", False)})
+    try:
+        captions = {c["id"]: c["text"] for c in cf.caption_lines(lines)}
+    except cf.CaptionError as exc:
+        raise SystemExit(f"{lang} captions: {exc}") from exc
     fits = caption_fits(font_file, lang) if font_file else None
     cues = []
     for sh in report:
         if sh["lang"] != lang:
             continue
         for ln in sh["lines"]:
-            cues += word_cues(text[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"], lang, fits)
+            cues += word_cues(captions[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"], lang, fits)
     return sorted(cues, key=lambda c: c["t0"])
 
 
@@ -243,41 +326,279 @@ def correct_loudness(export, loud, tries=2):
     return loud
 
 
-def main(argv=None):
+# X-17 mix intake (rules 48, 50): a full DAW mix of the reel plus its voice-only render, checked before it is used.
+MIX_RATE = 48000
+MIX_MIN_MEDIAN_DB, MIX_MAX_MEDIAN_DB, MIX_MIN_DB = 15.0, 21.5, 12.0     # voice over bus, rule 48 / 50
+MIN_FREE_GB_EXPORT = 2.0                                               # local disk check before export (rule 50)
+
+
+def lang_path(text):
+    lang, sep, path = text.partition("=")
+    if not sep or not lang or not path:
+        raise argparse.ArgumentTypeError(f"expected LANG=WAV, got {text!r}")
+    return lang, path
+
+
+def read_wav(path):
+    """(rate, float64 array (samples, channels) in -1..1) of a 16-bit PCM WAV."""
+    with wave.open(str(path), "rb") as w:
+        rate, ch, width, n = w.getframerate(), w.getnchannels(), w.getsampwidth(), w.getnframes()
+        raw = w.readframes(n)
+    if width != 2:
+        raise SystemExit(f"{path}: 16-bit PCM WAV needed, got {8 * width}-bit")
+    return rate, np.frombuffer(raw, dtype="<i2").reshape(-1, ch).astype(np.float64) / 32768.0
+
+
+def write_wav_pcm16(path, arr, rate):
+    pcm = np.clip(np.round(arr * 32768.0), -32768, 32767).astype("<i2")
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(arr.shape[1])
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(pcm.tobytes())
+
+
+def _rms_db_ratio(num, den):
+    rms = lambda x: max(float(np.sqrt(np.mean(np.square(x)))), 1e-9)
+    return 20.0 * math.log10(rms(num) / rms(den))
+
+
+def intake(mix, voice, total_frames, report_rows, work_dir=None):
+    """Check a DAW mix of the whole reel against its voice-only render (rules 48, 50(3)). Length: the mix must hold the lock's
+    total (total_frames x 2000 samples at 48 kHz / 24 fps); longer is trimmed to exactly that. Bus = mix - voice. Voice over bus
+    per speech window: median in [15, 21.5] dB and minimum >= 12 dB. report_rows: [{offset_sec, lines: [{start, end}]}] (the
+    lock's clock: offset_sec + the line's start/end inside the shot). Returns {trimmed_path, median_db, min_db, samples}."""
+    wc.require_wav(mix)
+    wc.require_wav(voice)
+    rate_m, m = read_wav(mix)
+    rate_v, v = read_wav(voice)
+    if rate_m != MIX_RATE or rate_v != MIX_RATE:
+        raise SystemExit(f"mix and voice must be {MIX_RATE} Hz, got {rate_m} and {rate_v}")
+    if m.shape[1] != v.shape[1]:
+        raise SystemExit(f"mix has {m.shape[1]} channels, voice has {v.shape[1]}")
+    need = int(total_frames) * (MIX_RATE // gd.FPS)
+    for name, arr in (("mix", m), ("voice", v)):
+        if arr.shape[0] < need - 1:
+            raise SystemExit(f"{name} {need - arr.shape[0]} samples short: the lock needs {need} ({total_frames} frames)")
+    fit = lambda arr: arr[:need] if arr.shape[0] >= need else np.vstack([arr, np.zeros((need - arr.shape[0], arr.shape[1]))])
+    m, v = fit(m), fit(v)
+    mono_m, mono_v = m.mean(axis=1), v.mean(axis=1)
+    bus = mono_m - mono_v
+    diffs = []
+    for row in report_rows:
+        for ln in row["lines"]:
+            t0 = int(round((row["offset_sec"] + ln["start"]) * MIX_RATE))
+            t1 = min(int(round((row["offset_sec"] + ln["end"]) * MIX_RATE)), need)
+            if t1 > t0:
+                diffs.append(_rms_db_ratio(mono_v[t0:t1], bus[t0:t1]))
+    if not diffs:
+        raise SystemExit("no speech windows in the voice report: voice over bus cannot be measured")
+    med, low = float(np.median(diffs)), float(min(diffs))
+    if not (MIX_MIN_MEDIAN_DB <= med <= MIX_MAX_MEDIAN_DB) or low < MIX_MIN_DB:
+        raise SystemExit(f"voice over bus: median {med:.2f} dB (need {MIX_MIN_MEDIAN_DB:g}-{MIX_MAX_MEDIAN_DB:g}), "
+                         f"min {low:.2f} dB (need >= {MIX_MIN_DB:g})")
+    work = Path(work_dir) if work_dir else Path(mix).parent
+    work.mkdir(parents=True, exist_ok=True)
+    trimmed = work / f"{Path(mix).stem}_trim{need}.wav"
+    write_wav_pcm16(trimmed, m, MIX_RATE)
+    return {"trimmed_path": str(trimmed), "median_db": round(med, 2), "min_db": round(low, 2), "samples": need}
+
+
+def mix_filter_text(need):
+    return f"[1:a]atrim=end_sample={need},asetpts=PTS-STARTPTS[{gd.MASTER_LABEL}]"
+
+
+def next_export(export_dir, reel, lang):
+    """<reel>_<lang>_rN.mp4 with N = 1 + the highest existing N. Existing exports are never overwritten (rule 50(2))."""
+    pat = re.compile(re.escape(f"{reel}_{lang}") + r"_r(\d+)\.mp4")
+    top, d = 0, Path(export_dir)
+    if d.is_dir():
+        for p in d.iterdir():
+            m = pat.fullmatch(p.name)
+            if m:
+                top = max(top, int(m.group(1)))
+    return d / f"{reel}_{lang}_r{top + 1}.mp4"
+
+
+def check_free_disk(path, min_gb=MIN_FREE_GB_EXPORT, disk_usage=shutil.disk_usage):
+    free = disk_usage(str(path)).free
+    if free < min_gb * 2**30:
+        raise SystemExit(f"{path}: {free / 2**30:.2f} GB free, the export needs {min_gb:g} GB")
+
+
+def voice_db_of(wav_path, line_windows):
+    """RMS (dB) of one shot's voice file over its spoken line windows [(start, end) s, shot-relative]. None when there is no file."""
+    if not Path(wav_path).is_file():
+        return None
+    rate, arr = read_wav(wav_path)
+    mono = arr.mean(axis=1)
+    segs = [mono[int(round(a * rate)):int(round(b * rate))] for a, b in line_windows]
+    segs = [s for s in segs if s.size]
+    if not segs:
+        return None
+    x = np.concatenate(segs)
+    return 20.0 * math.log10(max(float(np.sqrt(np.mean(np.square(x)))), 1e-9))
+
+
+def sfx_policy_for(rows, clips, vo_dir, lang, vo_report):
+    """X-18 (rule 50(6)): one entry per row for mux_argv (None = no voice in this shot, so no ducking) and the levels for
+    gd.check_sfx_beds. Keep windows and the bed level come from each clip's clip_qa.json (a missing file raises)."""
+    policy, levels = [], []
+    for r in rows:
+        qa = json.loads((Path(clips[r["id"]]).parent / "clip_qa.json").read_text(encoding="utf-8"))
+        wins = [(ln["start"], ln["end"]) for row in vo_report if row["shot"] == r["id"] and row["lang"] == lang for ln in row["lines"]]
+        voice_db = voice_db_of(Path(vo_dir) / lang / f"{r['id']}.wav", wins)
+        if voice_db is None:
+            policy.append(None)
+            continue
+        bed = float(qa["bed_db"])
+        policy.append({"keep": [tuple(w) for w in qa["sfx_keep"]], "bed_gain_db": gd.bed_gain_db(voice_db, bed)})
+        levels.append({"shot": r["id"], "voice_db": voice_db, "bed_db": bed})
+    return policy, levels
+
+
+def reel_name(text):
+    if not REEL_NAME.fullmatch(text):
+        raise argparse.ArgumentTypeError(f"--reel must match [a-z0-9_]+, got {text!r}")
+    return text
+
+
+def build_arg_parser():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--pack", required=True)
     ap.add_argument("--story", required=True)
     ap.add_argument("--clips", required=True)
     ap.add_argument("--vo", required=True)
+    ap.add_argument("--lock", required=True, help="timeline lock (timeline_lock_vN.json) the reel is cut from")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--reel", default="kalika_reel1")
+    ap.add_argument("--reel", required=True, type=reel_name)
     ap.add_argument("--langs", default="en,hi,mr")
     ap.add_argument("--fonts", default=str(HERE.parent / "styles" / "fonts"))
+    ap.add_argument("--manifest", help="voice manifest (voice_manifest/1, D-VOICE); '{lang}' in the path is filled per language; required unless --title-cards")
     ap.add_argument("--title-cards", action="store_true", help="burn the writer's title cards instead of the spoken words (old behaviour)")
-    a = ap.parse_args(argv)
+    ap.add_argument("--story-id", help="story id that scoped waivers name (default: the story json's story_id, else the pack folder name)")
+    ap.add_argument("--render-version", help="render version that version-scoped waivers name (default: none; only unversioned waivers match)")
+    ap.add_argument("--mix", action="append", type=lang_path, default=[], metavar="LANG=WAV",
+                    help="the DAW mix of the whole reel for LANG (X-17): trimmed to the lock length, used as the language's audio")
+    ap.add_argument("--mix-voice", action="append", type=lang_path, default=[], metavar="LANG=WAV",
+                    help="the voice-only render of the same session for LANG (needed with --mix: voice over bus check)")
+    return ap
+
+
+def reel_number(reel):
+    """waivers.py keys a waiver file by an int reel: the number at the end of the reel name (kalika_reel2 -> 2)."""
+    m = re.search(r"([0-9]+)$", reel)
+    if not m:
+        raise SystemExit(f"reel {reel!r} has no number at its end, so waivers.json cannot name it")
+    return int(m.group(1))
+
+
+def load_waivers(pack, reel):
+    """(records, problems) from <pack>/waivers.json via waivers.read_waivers. Missing file = no records. A malformed file, or a
+    legacy object for another reel, stops the build. Refused entries come back as problems (they waive nothing)."""
+    path = Path(pack) / "waivers.json"
+    try:
+        records, problems = wv.read_waivers(str(path))
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise SystemExit(f"waivers {path}: {exc}") from exc
+    want = reel_number(reel)
+    for rec in records:
+        if rec["legacy"] and rec["reel_no"] != want:
+            raise SystemExit(f"waivers {path}: waivers are for reel {rec['reel_no']!r}, not reel {want}")
+    return records, problems
+
+
+def split_findings(errors, waived_codes):
+    """(waived, blocking) for one language's gate errors. Only codes in waived_codes are waived."""
+    waived = [e for e in errors if e["code"] in waived_codes]
+    blocking = [e for e in errors if e["code"] not in waived_codes]
+    return waived, blocking
+
+
+def clip_qa_problems(clip):
+    """Problems with one clip: <shot folder>/clip_qa.json must exist, then clip_qa.clip_ok decides (clip sha256, a present
+    verdict that passes or is accepted by the owner)."""
+    clip = Path(clip)
+    if not clip.is_file():
+        return [f"{clip}: clip file missing"]
+    qa_path = clip.parent / "clip_qa.json"
+    if not qa_path.is_file():
+        return [f"{clip}: no clip_qa.json next to the clip"]
+    try:
+        return [f"{clip}: {p}" for p in clip_qa.clip_ok(str(qa_path), str(clip))]
+    except (ValueError, AttributeError):
+        return [f"{qa_path}: not a valid clip_qa.json"]
+
+
+def lock_rows_for_pack(lock_path, pack):
+    """Verified lock rows merged with the pack's shots.json (dialogue, line text) by shot id.
+    A stale or invalid lock stops the build."""
+    try:
+        lock = tli.load_lock(lock_path)
+        tli.verify_lock(lock_path, lock["inputs"], lock["params"])
+        rows = tli.lock_rows(lock)
+    except (OSError, ValueError, KeyError) as exc:
+        raise SystemExit(f"lock {lock_path}: {exc}") from exc
+    pack_rows = {r["id"]: r for r in json.loads((Path(pack) / "shots.json").read_text(encoding="utf-8"))}
+    if [r["id"] for r in rows] != list(pack_rows):
+        raise SystemExit("lock shots and pack shots.json differ in id or order")
+    return [{**pack_rows[r["id"]], **r} for r in rows]
+
+
+def check_story_trims(h3_shots, rows):
+    """The H3 story's trims must be the lock's trims: a shot cut from other timing is refused."""
+    if [s["shot_id"] for s in h3_shots] != [r["id"] for r in rows]:
+        raise SystemExit("lock shots and H3 story shots differ in id or order")
+    for s, r in zip(h3_shots, rows):
+        t = s["timing_and_lattice"]
+        if (t.get("trim_in_frame"), t.get("trim_out_frame")) != (r["trim_in_frame"], r["trim_out_frame"]):
+            raise SystemExit(f"{r['id']}: H3 story trims {t.get('trim_in_frame')}..{t.get('trim_out_frame')} "
+                             f"differ from the lock {r['trim_in_frame']}..{r['trim_out_frame']}")
+
+
+def main(argv=None):
+    a = build_arg_parser().parse_args(argv)
+    if a.reel in REEL_CLOSED:
+        raise SystemExit(f"{a.reel} is closed (rule 53): build_final_reel does not rebuild it")
+    pack = Path(a.pack)
+    rows = lock_rows_for_pack(a.lock, pack)
+    story = json.loads(Path(a.story).read_text(encoding="utf-8"))
+    h3_shots = story["episodes"][0]["shots"]
+    check_story_trims(h3_shots, rows)
+    clips = json.loads(Path(a.clips).read_text(encoding="utf-8"))
+    problems = [p for clip in clips.values() for p in clip_qa_problems(clip)]
+    if problems:
+        raise SystemExit("clip QA blocks the build:\n  " + "\n  ".join(problems))
+    waiver_records, waiver_problems = load_waivers(pack, a.reel)
+    story_id = a.story_id or story.get("story_id") or pack.name
+    if not a.title_cards and not (Path(a.vo) / "vo_tracks_report.json").is_file():
+        raise SystemExit(f"missing {Path(a.vo) / 'vo_tracks_report.json'} (build_vo_tracks --out <vo>); "
+                         "or pass --title-cards")
+    if not a.title_cards and not a.manifest:
+        raise SystemExit("--manifest is required (the voice manifest the spoken captions come from); or pass --title-cards")
     out = Path(a.out)
     (out / "export").mkdir(parents=True, exist_ok=True)
     (out / "captions").mkdir(parents=True, exist_ok=True)
-    from editorial_by_lang import apply_rows, apply_shots, load
-    ext = load(a.pack)                                  # <pack>/editorial_by_lang.json; missing = the v3 lengths
-    rows = apply_rows(json.loads((Path(a.pack) / "shots.json").read_text(encoding="utf-8")), ext)
-    story = json.loads(Path(a.story).read_text(encoding="utf-8"))
-    h3_shots = apply_shots(story["episodes"][0]["shots"], ext)
-    if [r["id"] for r in rows] != [s["shot_id"] for s in h3_shots]:
-        raise SystemExit("pack rows and H3 story shots differ in id or order")
-    clips = json.loads(Path(a.clips).read_text(encoding="utf-8"))
     video = out / f"{a.reel}_video.mp4"
     plan = assemble_video(h3_shots, clips, video, out / "assembly")
+    pre_vf = delivery_vf(probe_size(video))
     langs = a.langs.split(",")
+    mix, mix_voice = dict(a.mix), dict(a.mix_voice)
+    if set(mix) != set(mix_voice) or not set(mix) <= set(langs):
+        raise SystemExit("--mix and --mix-voice must name the same languages, each one listed in --langs")
     res = gd.plan_language_outputs(a.reel, langs, a.vo, None, shots=rows, video_path=str(video), video_has_audio=True, burn_captions=True,
                                    captions_dir=str(out / "captions"), export_dir=str(out / "export"), fonts_dir=a.fonts,
                                    voice_engines={lg: "elevenlabs" for lg in langs})
-    report = {"reel": a.reel, "video": str(video), "frames": plan["total_frames"], "seconds": plan["total_duration_sec"], "languages": {}}
+    report = {"reel": a.reel, "video": str(video), "frames": plan["total_frames"], "seconds": plan["total_duration_sec"],
+              "story_id": story_id, "render_version": a.render_version,
+              "waiver_problems": [{"waiver_id": wid, "reason": why} for wid, why in waiver_problems], "languages": {}}
     stop = False
     for lg in langs:
         rep, lp = res["reports"][lg], res["languages"][lg]
-        waived = [e for e in rep["errors"] if e["code"] in WAIVED]
-        blocking = [e for e in rep["errors"] if e["code"] not in WAIVED]
+        codes = [e["code"] for e in rep["errors"]]
+        waived_map, blocking_codes = wv.split_waived(codes, waiver_records, story_id, a.reel, LANG_NAME.get(lg, lg), a.render_version)
+        waived = [{**e, "waiver_ids": waived_map[e["code"]]} for e in rep["errors"] if e["code"] in waived_map]
+        blocking = [e for e in rep["errors"] if e["code"] in blocking_codes]
         entry = {"waived_findings": waived, "blocking_errors": blocking, "warnings": rep["warnings"]}
         report["languages"][lg] = entry
         if blocking:
@@ -285,12 +606,10 @@ def main(argv=None):
             continue
         ass = out / "captions" / f"{a.reel}_{lg}.ass"
         report_path = Path(a.vo) / "vo_tracks_report.json"      # one report for all languages (build_vo_tracks --out <vo>)
-        if not report_path.is_file():
-            report_path = Path(a.vo).parent / f"vo_{lg}" / "vo_tracks_report.json"
-        if a.title_cards or not report_path.is_file():
+        if a.title_cards:
             cues = lp["captions"]                       # the writer's title cards (old behaviour, only on request)
         else:
-            cues = spoken_cues_real(rows, json.loads(report_path.read_text(encoding="utf-8")), lg, Path(a.fonts) / CAPTION_FONT_FILE)   # captions = the spoken words
+            cues = spoken_cues_real(rows, json.loads(report_path.read_text(encoding="utf-8")), lg, load_manifest_rows(a.manifest, lg), Path(a.fonts) / CAPTION_FONT_FILE)   # captions = the spoken words, hash-checked (D-VOICE)
         for msg in gd.script_problems(cues, lg) if hasattr(gd, "script_problems") else []:
             raise SystemExit(f"{lg}: {msg}")
         ass_text, entries = gd.build_captions(cues, lang=lg, pack=CAPTION_PACK, fonts_dir=a.fonts)
@@ -302,8 +621,25 @@ def main(argv=None):
         entry["caption_warnings"] = sorted({e["message"] for e in entries if e["level"] == "WARN"})[:6]
         entry["captions"] = {"cues": len(cues), "mode": "title cards" if cues is lp["captions"] else "spoken words"}
         cx.write_sidecars({lg: cues}, str(out / "captions"), a.reel)
-        export = out / "export" / f"{a.reel}_{lg}.mp4"
-        argv_, total = mux_argv(rows, lg, a.vo, video, export, ass, a.fonts)
+        export = next_export(out / "export", a.reel, lg)
+        if lg in mix:
+            offs = {r["id"]: float(r["offset_sec"]) for r in rows}
+            vo_report = json.loads(report_path.read_text(encoding="utf-8"))
+            windows = [{"offset_sec": offs[r["shot"]], "lines": r["lines"]} for r in vo_report if r["lang"] == lg and r["shot"] in offs]
+            total_frames = round(sum(float(r["editorial_duration_sec"]) for r in rows) * gd.FPS)
+            info = intake(mix[lg], mix_voice[lg], total_frames, windows, work_dir=out / "mix")
+            entry["mix"] = info
+            total = info["samples"] / MIX_RATE
+            argv_ = gd.build_final_mux_argv(video, [info["trimmed_path"]], mix_filter_text(info["samples"]), export, burn_captions=True,
+                                            ass_path=ass, fonts_dir=a.fonts, pre_vf=pre_vf)
+        else:
+            vo_rep = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else []
+            policy, levels = sfx_policy_for(rows, clips, a.vo, lg, vo_rep)
+            bed_errors = gd.check_sfx_beds(levels)
+            if bed_errors:
+                raise SystemExit(f"{lg} SFX beds: " + "; ".join(e["message"] for e in bed_errors))
+            argv_, total = mux_argv(rows, lg, a.vo, video, export, ass, a.fonts, pre_vf=pre_vf, sfx_policy=policy)
+        check_free_disk(out / "export")
         subprocess.run(argv_, check=True, cwd=str(HERE.parent))
         loud = correct_loudness(export, measure(export))
         entry.update(export=str(export), seconds=round(total, 2), loudness=loud["stats"], loudness_ok=loud["ok"], loudness_errors=loud["errors"])

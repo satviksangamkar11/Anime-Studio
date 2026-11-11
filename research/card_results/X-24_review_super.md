@@ -1,0 +1,11 @@
+Defect 1 — Card-mandated tests are absent.
+- Quote: The card’s **Tests:** section lists `test_one_sheet_drives_router_prompt_gate_clip`, `test_cast_mismatch_anywhere_fails`, `test_same_gate_d_verdict`, and `test_stale_lock_blocks_all_three`. None of these names appear in the provided module.
+- Why it is wrong: Card requirement not met. `python -m pytest director/test_e2e_blocking_lock.py -q` cannot exercise the single-sheet router/prompt/gate/clip QA coupling, the cast-mismatch failure, the identical Gate D verdict, or the stale-lock blocking behavior.
+- Exact fix: Add the four tests with the exact names above and the assertions described in the card: one sheet drives `shot_router`, `cast_lock.cast`, `keyframe_gate.required_cast_count`, and `clip_qa` known classes, and removing one cast member changes all four; any cast mismatch fails; Gate D verdict is identical across consumers; a stale lock blocks all three consumers.
+
+Defect 2 — `test_three_consumers_same_offsets` never verifies Gate D output.
+- Quote: `rc._gate_d_result(story, [{"episode": ep, "shots": ep["shots"]}], str(tmp_path / "o"), list(LANGS), str(reel.lock_path))` followed by `gate_d_offsets.append(t)` / `t += s["editorial_duration_sec"]` built from `seen["shots"]`, and `assert final_offsets == gate_d_offsets == cue_starts == [0.0, 7.0, 12.0], lang`.
+- Why it is wrong: The test claims to verify render_controller Gate D seconds but discards `_gate_d_result`’s return value and never reads a Gate D artifact. It recomputes `gate_d_offsets` from `seen["shots"]`, which is populated only by the spy on `rc.plan_language_outputs` — a different function. If `_gate_d_result` does not call `plan_language_outputs`, `seen` is empty and the comparison fails on `[]`; if it does call it, Gate D can still emit wrong offsets/verdict and the test passes because it never inspects Gate D’s own offset output.
+- Exact fix: Replace the spy with direct observation of Gate D: `result = rc._gate_d_result(...)`, extract per-shot offsets from `result` (or the Gate D report/manifest written under `tmp_path / "o"`), assert those offsets equal `[0.0, 7.0, 12.0]`, then compare to `final_offsets` and `cue_starts`. Remove `monkeypatch.setattr(rc, "plan_language_outputs", spy)` and the `seen` accumulation.
+
+VERDICT: FIX-FIRST

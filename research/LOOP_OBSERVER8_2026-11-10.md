@@ -1,0 +1,13 @@
+# Loop observer 8 (round 9), 2026-11-10
+
+Repo: D:/aai work/loop_run_reel2. No module (non-test .py) and no job json edited. No model, API or network call. No reel 1 file touched.
+
+| job | REAL | NOISE | SPEC-GAP | tests added | pytest before -> after |
+|---|---|---|---|---|---|
+| J6_runner_safety | (1) r1 codex: injected-function test does not check the candidate path (test). (2) r1 codex: no test for a shot folder symlink resolving outside results_dir (test; module already refuses it). (3) r0 codex: C1 control characters 128-159 accepted by `_valid_shot_id` (CODE; spec section appended, item 1). | r0 codex DEL claim: DEL (127) is already refused. r0/r1 ultra: READY. Judge verdict missing (claude CLI call failed). | none | `test_clip_verified_injected_checks_exact_candidate_path`; `test_clip_verified_symlinked_shot_dir_outside_refused` (SKIPS on this machine: directory symlinks not permitted); `test_shot_id_control_characters_refused` (FAILS on the C1 cases until the module fix). Added `import pytest`. | 39 passed -> 40 passed, 1 failed (expected, C1 fix pending), 1 skipped |
+| J13_clip_gates | (1) r1 codex: no test that `scene_cut(start_index=0)` skips the reference sample (test; code already correct). (2) r1 codex and r0 codex: no tests that flicker rejects non-2-D frames, mismatched frame shapes, or a mask of the wrong shape (tests; code already raises ClipGateError). | r0 codex: "scene cut reasons omit brackets" is false (output is `scene cut at samples [3]`). r0 codex: frame/mask shape validation already implemented; checks on non-array inputs are not in spec. ultra: READY. Judge verdict missing. | none | `test_scene_cut_start_index_zero_never_reports_reference`; `test_flicker_non_2d_frames_raise`; `test_flicker_mismatched_frame_shape_raises`; `test_flicker_mask_shape_mismatch_raises` | 51 passed -> 55 passed |
+| J14_shot_router | (1) r1 codex and TEST_FINDINGS: rule 2 tests do not assert the exact two-entry reasons list (test). | r0 codex NaN claim: false, NaN duration and NaN arc_sec both raise RouterError (checked). ultra: READY. Judge verdict missing. | none | `test_rule2_crowd_reasons_exact_table_first_then_extra`; `test_rule2_cast_count_4_reasons_exact_table_first_then_extra` | 40 passed -> 42 passed |
+
+Spec appended: specs/J6_runner_safety.md, section "Review findings to fix (round 9, 2026-11-10; observer 8)". No spec append for J13 or J14 (no code or spec gaps).
+
+Note: the judge call failed for all three jobs with a CLI error (text fragment about a PowerShell wildcard). Judge verdicts are missing for all three; this is infrastructure, not a finding.

@@ -90,7 +90,7 @@ Replace `<slug>` with the story (kalika_puran_bhag1), `<pack>` with the pack fol
 - [ ] Run the cue sheet with the shared timeline and the REAL speech report:
 
 ```
-python -m score.cue_sheet --shots stories/<slug>/<pack>/shots.json --episode <n> --editorial stories/<slug>/<pack>/editorial_by_lang.json --vo-report <path to vo_tracks_report.json> --out stories/<slug>/<pack>/score/ep<n>/cue_sheet.json
+python -m score.cue_sheet --shots stories/<slug>/<pack>/shots.json --episode <n> --lock <timeline_lock_vN.json> (--editorial is retired, X-19) --vo-report <path to vo_tracks_report.json> --out stories/<slug>/<pack>/score/ep<n>/cue_sheet.json
 ```
 
 - [ ] `--vo-report` can repeat (it is "append"). Pass one per language if the report is split.

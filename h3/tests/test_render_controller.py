@@ -5,6 +5,8 @@ import re
 import pytest
 
 import h3.render_controller as rc
+from director.timeline_lock_io import write_lock
+from h3.pipeline_contract import PRE_RENDER, build_plan
 from h3.tests.synth import SHOT_IDS
 
 NO_BACKEND = "no GPU backend configured (ComfyUI endpoint or Colab/Wan2GP runner not wired); nothing was started"
@@ -25,6 +27,32 @@ def _run(argv, capsys):
 
 def _argv(story_path, out, *extra, scope=("all",)):
     return ["--story-file", story_path, "--scope", *scope, "--out-dir", out, *extra]
+
+
+# X-13: execute needs --lock. Real timeline lock (24 fps; pixel_frames 175 covers each edit length), a Gate B record
+# and a keyframe folder. The synthetic story cannot pass manifest and Gate D on its own, so the pre-render plan is
+# stubbed as all ready here; the real gates are covered in h3/tests/test_render_controller_wiring_x13.py.
+X13_FRAMES = {"SYN_A": 168, "SYN_B": 120, "SYN_C": 170}
+
+
+def _gated_argv(tmp_path, monkeypatch, story_path, out, *extra):
+    script = tmp_path / "input_script.txt"
+    script.write_text("line one\n", encoding="utf-8")
+    shots, cursor = [], 0
+    for sid, n in X13_FRAMES.items():
+        shots.append({"id": sid, "edit_frames": n, "start_frame": cursor, "pixel_frames": 175,
+                      "trim_in_frame": 0, "trim_out_frame": n, "end_frame_position": n - 1, "error_ms": 0.0})
+        cursor += n
+    lock = tmp_path / "timeline.lock.json"
+    write_lock(lock, shots, [str(script)], {"sing8": True})
+    gate_b = tmp_path / "gate_b.json"
+    gate_b.write_text("[]", encoding="utf-8")
+    keyframes = tmp_path / "keyframe_gates"
+    keyframes.mkdir(exist_ok=True)
+    ready = build_plan({sid: {"ok": True, "reasons": [], "details": {}} for sid in PRE_RENDER})
+    monkeypatch.setattr(rc, "plan_pipeline", lambda *a, **k: {"steps": ready})
+    return _argv(story_path, out, "--lock", str(lock), "--gate-b", str(gate_b),
+                 "--keyframe-gates", str(keyframes), *extra)
 
 
 def _readiness(out, ep="SYN_EP1"):
@@ -210,12 +238,15 @@ def test_execute_refused_without_both_flags(story, tmp_path, capsys, extra):
     assert not os.path.exists(out)
 
 
-def test_execute_with_both_flags_reaches_the_none_backend(story, tmp_path, capsys):
+# X-13: execute needs --lock
+def test_execute_with_both_flags_reaches_the_none_backend(story, tmp_path, capsys, monkeypatch):
     path, out = _write(tmp_path, story), str(tmp_path / "out")
-    code, text = _run(_argv(path, out, "--mode", "execute", "--execute-render"), capsys)
+    argv = _gated_argv(tmp_path, monkeypatch, path, out, "--mode", "execute", "--execute-render")
+    code, text = _run(argv, capsys)
     assert code == 3 and NO_BACKEND in text
 
 
+# X-13: execute needs --lock
 def test_registered_backend_receives_request_and_its_code_is_returned(story, tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(rc, "BACKENDS", dict(rc.BACKENDS))
     seen = []
@@ -226,20 +257,23 @@ def test_registered_backend_receives_request_and_its_code_is_returned(story, tmp
 
     rc.register_backend("fake", fake)
     path, out = _write(tmp_path, story), str(tmp_path / "out")
-    code, text = _run(_argv(path, out, "--mode", "execute", "--execute-render", "--backend", "fake"), capsys)
+    argv = _gated_argv(tmp_path, monkeypatch, path, out, "--mode", "execute", "--execute-render", "--backend", "fake")
+    code, text = _run(argv, capsys)
     assert code == 0 and len(seen) == 1 and NO_BACKEND not in text
     ep = seen[0]["episodes"][0]
     assert ep["episode_id"] == "SYN_EP1" and [s["shot_id"] for s in ep["shots"]] == list(SHOT_IDS)
     assert all(os.path.isfile(s["workflow"]) for s in ep["shots"])
 
 
+# X-13: execute needs --lock
 def test_backend_not_called_when_gates_fail(story, tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(rc, "BACKENDS", dict(rc.BACKENDS))
     called = []
     rc.register_backend("fake", lambda request: called.append(request))
     story["episodes"][0]["shots"][0]["timing_and_lattice"]["pixel_frames"] = 176
     path, out = _write(tmp_path, story), str(tmp_path / "out")
-    code, text = _run(_argv(path, out, "--mode", "execute", "--execute-render", "--backend", "fake"), capsys)
+    argv = _gated_argv(tmp_path, monkeypatch, path, out, "--mode", "execute", "--execute-render", "--backend", "fake")
+    code, text = _run(argv, capsys)
     assert code == 1 and called == [] and "execute not started" in text
 
 

@@ -1,0 +1,3 @@
+The test file is named `director/test_lock_rows_x12.py` instead of the card-specified `director/test_timeline_lock_io.py`. The card explicitly states the files to append: `director/test_timeline_lock_io.py`. Running `python -m pytest director/test_timeline_lock_io.py -q` would fail because that file does not exist (the tests are in a different file). The card's acceptance criterion cannot be met.
+
+VERDICT: FIX-FIRST

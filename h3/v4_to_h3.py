@@ -66,6 +66,10 @@ def _text(x):
     return x.strip() if isinstance(x, str) else ""
 
 
+def _id_set(ids):
+    return "{" + ", ".join(sorted(set(ids))) + "}"
+
+
 def _stage_spans(pf):
     """Seven contiguous inclusive frame spans from 0 to pf (the linter's MO-02 layout)."""
     bounds = [round(k * pf / 7) for k in range(8)]
@@ -571,7 +575,20 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
     cont = row.get("continuity_handoff") if isinstance(row.get("continuity_handoff"), dict) else {}
     positions = row.get("reference_anchors", {}).get("character_positions") if isinstance(row.get("reference_anchors"), dict) else []
     positions = positions if isinstance(positions, list) else []  # a scalar here (e.g. 42) must not abort the shot
+    cast_lock = None   # X-05: set from the blocking sheet only
     subjects = [c["id"] for c in positions or [] if isinstance(c, dict) and isinstance(c.get("id"), str)]
+    if ctx.get("blocking") is not None:   # W-07: the cast is the blocking sheet's cast; the anchors must agree
+        sheet = ctx["blocking"].get(sid)
+        if not isinstance(sheet, dict):
+            problems.append(f"{sid}: no blocking sheet for this shot")
+        else:
+            members = [m for m in sheet.get("cast") or [] if isinstance(m, dict) and isinstance(m.get("id"), str)]
+            blk_ids = [m["id"] for m in members]
+            if set(blk_ids) != set(subjects):
+                problems.append(f"{sid}: cast {_id_set(subjects)} != blocking {_id_set(blk_ids)}")
+            subjects = blk_ids
+            ctx["cast_names"][sid] = [_text(m.get("name")) or m["id"] for m in members]
+            cast_lock = _blocking_module().prompt_args(sheet)   # X-05: the cast, mouth and sound inputs of the prompt
     for cid in subjects:
         if cid not in ctx["characters"]:
             problems.append(f"{sid}: character {cid} is not in the bible characters")
@@ -584,6 +601,8 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
               "editorial_frames": ed, "editorial_duration_sec": SEC(ed),
               "master_reel_frame_window": [running, running + ed],
               "master_reel_window_sec": [SEC(running), SEC(running + ed)]}
+    if "end_frame_position" in derived:          # set only from a timeline lock; nothing reads it until W-10
+        timing["end_frame_position"] = derived["end_frame_position"]
     camera = _camera(directives, sid, problems, notes)
     return {
         "shot_id": sid, "episode_id": ctx["episode_id"], "sequence_order": seq,
@@ -610,14 +629,116 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
         "dialogue_and_lip_lock": {"has_dialogue": False, "utterances": [], "mouth_state_rule": mouth_rule,
                                   "narrator_mouth_closed": True, "mouth_state": mouth},
         "sound_plan": {"overall_soundscape": _soundscape(track, sid, problems), "non_diegetic_music": "N/A"},
+        **({"cast_lock": cast_lock} if cast_lock is not None else {}),
         **({"metadata": {"look": copy.deepcopy(row["look"]), "purpose": _text(row.get("purpose")), "captions": []}}
            if isinstance(row.get("look"), dict) else {}),   # audit C 11-08: post.py and assemble_reel read metadata.look (palette, act, hook, impacts)
     }
 
 
-def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536", authored=None):
+def _apply_lock(shots, lock, problems):
+    """Rows copied from the timeline lock: lattice_n, pixel_frames, latent_slots, editorial_duration_sec and the seam
+    types (h3_fields, which win over the row's own). Returns
+    (rows, want); want maps shot id -> the lock's trims, pixel frames and end_frame_position. A row whose id is not in
+    the lock is dropped with a problem. The input rows are never changed."""
+    from director.timeline_lock_io import lock_rows   # the lock is read in one place: director/timeline_lock_io.py
+    from h3.shot_table_spec import LATTICE_N_MAX, LATTICE_N_MIN
+    by_lock = {r["id"]: r for r in lock_rows(lock)}
+    by_shot = {s["id"]: s for s in lock.get("shots", [])}
+    out, want = [], {}
+    for row in copy.deepcopy(shots):
+        sid = row.get("id") if isinstance(row, dict) else None
+        if not isinstance(sid, str) or not sid:
+            out.append(row)   # no id: convert_pack reports it
+            continue
+        if sid not in by_lock:
+            problems.append(f"{sid}: not in the timeline lock")
+            continue
+        pixel = by_shot[sid]["pixel_frames"]
+        n = next((k for k in range(LATTICE_N_MIN, LATTICE_N_MAX + 1) if lattice(k)["pixel_frames"] == pixel), None)
+        if n is None:
+            problems.append(f"{sid}: lock pixel_frames {pixel} is not on the H3 lattice; shot skipped")
+            continue
+        lock_row = by_lock[sid]
+        row["lattice_n"], row["pixel_frames"], row["latent_slots"] = n, pixel, lattice(n)["latent_slots"]
+        row["editorial_duration_sec"] = lock_row["editorial_duration_sec"]
+        if "incoming_seam_type" in by_shot[sid] and "outgoing_seam_type" in by_shot[sid]:   # plan_lock writes both
+            h3 = row.get("h3_fields") if isinstance(row.get("h3_fields"), dict) else {}
+            row["h3_fields"] = dict(h3, incoming_seam_type=by_shot[sid]["incoming_seam_type"],
+                                    outgoing_seam_type=by_shot[sid]["outgoing_seam_type"])
+        want[sid] ={"trim_in_frame": lock_row["trim_in_frame"], "trim_out_frame": lock_row["trim_out_frame"],
+                     "pixel_frames": pixel, "end_frame_position": by_shot[sid].get("end_frame_position")}
+        out.append(row)
+    return out, want
+
+
+def _blocking_module():
+    """X-05: director/blocking.py. It is imported by its bare name (it does `import shot_router`), so director/ goes on
+    sys.path first. The sheets are read in one place: that module."""
+    d = str(Path(__file__).resolve().parents[1] / "director")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    import blocking as blk
+    return blk
+
+
+def _lint_module():
+    """director/blocking_lint.py (rules L01..L10). It imports its neighbours by bare name, so director/ goes on sys.path."""
+    d = str(Path(__file__).resolve().parents[1] / "director")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    import blocking_lint as bl
+    return bl
+
+
+def _lint_sheets(blocking, shots, lock, problems):
+    """Gap haiku-gap2 (test_e2e_blocking_lock: convert_pack ran blocking.validate only): every sheet in use also goes
+    through blocking_lint. Shot seconds come from the lock (lint reads its edit_frames) or else the row's
+    editorial_duration_sec. Lint problems already read 'SHOT-nnn: Lnn ...'. No sheet, no lint."""
+    if not blocking:
+        return
+    bl = _lint_module()
+    secs = {r.get("id"): r.get("editorial_duration_sec") for r in shots if isinstance(r, dict)}
+    for sid, sheet in blocking.items():
+        if not isinstance(sheet, dict):
+            problems.append(f"{sid}: L01 sheet is not a dict")
+            continue
+        checked = dict(sheet)
+        sec = secs.get(sid)
+        if isinstance(sec, (int, float)) and not isinstance(sec, bool) and sec > 0:
+            checked["writer_seconds"] = sec
+        problems.extend(bl.lint([checked], lock=lock))
+
+
+def _load_blocking_dir(directory, shots, problems):
+    """X-05: {shot_id: sheet} read from <directory>/<shot_id>.json by director/blocking.load_sheet. A sheet that fails
+    validation is a problem; a shot with no file gets no entry, so _shot reports 'no blocking sheet for this shot'."""
+    blk = _blocking_module()
+    sheets = {}
+    for row in shots:
+        sid = row.get("id") if isinstance(row, dict) else None
+        if not isinstance(sid, str) or not sid or sid in sheets:
+            continue
+        path = os.path.join(directory, sid + ".json")
+        if not os.path.exists(path):
+            continue
+        try:
+            sheets[sid] = blk.load_sheet(path)
+        except blk.BlockingError as exc:
+            problems.extend(exc.args[0])
+        except (OSError, ValueError) as exc:   # bad JSON or unreadable file
+            problems.append(f"{sid}: blocking sheet unreadable: {exc}")
+    return sheets
+
+
+def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536", authored=None, lock=None,
+                 blocking=None, blocking_dir=None):
     """Returns {"story": {...}, "problems": [...], "notes": [...]}. Problems are data the H3 story cannot take as is;
     lint_story(story) reports the same gaps as rule codes. The input is never changed.
+
+    blocking: optional {shot_id: blocking sheet} (director/blocking.load_sheet). Its cast ids become subjects_present
+    and its names go to registry.cast_names; a mismatch with the V4 character positions is a problem.
+    blocking_dir: optional folder of <shot_id>.json sheets, read into blocking when blocking is None (X-05).
+    With a sheet, the shot also gets cast_lock (blocking.prompt_args) for the prompt compiler.
 
     authored: optional {shot_id: {H3 author fields}} taken as fresh by the caller. When None and the input is a folder,
     <pack>/h3_authored/<shot_id>.json is used only while its hash matches (otherwise the field stays a problem)."""
@@ -626,6 +747,12 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
     if not isinstance(shots, list) or not isinstance(bible, dict):
         problems.append("shots.json and bible.json are required (a list of rows and a bible object)")
         return {"story": None, "problems": problems, "notes": notes}
+    lock_want = None
+    if lock is not None:
+        shots, lock_want = _apply_lock(shots, lock, problems)
+    if blocking is None and blocking_dir is not None:
+        blocking = _load_blocking_dir(blocking_dir, shots, problems)
+    _lint_sheets(blocking, shots, lock, problems)
     from_folder = isinstance(pack_dir_or_dicts, (str, os.PathLike))
     langs = _languages(languages, stage, problems)
     prof = load_default_profile(profile)
@@ -646,7 +773,7 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
                 "characters": characters,
                 "environments": bible.get("environments") or {}, "props": bible.get("props") or {}, "v4_rows": {}}
     ctx = {"root": root, "profile": prof, "characters": characters, "environments": registry["environments"],
-           "running": 0, "episode_id": None}
+           "running": 0, "episode_id": None, "blocking": blocking, "cast_names": {}}
     keyframes_dir = os.path.join(root, "keyframes") if root else None
     items, group_problems = group_rows(shots)
     problems.extend(group_problems)
@@ -672,6 +799,16 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
         derived, dnotes = derive_fields(row, it["prev"], it["next"], bible, it["first"], it["last"], keyframes_dir)
         for n in dnotes:
             (problems.append(n[len("PROBLEM: "):]) if n.startswith("PROBLEM: ") else notes.append(n))
+        if lock_want is not None and sid in lock_want:
+            w = lock_want[sid]
+            g_in, g_out, g_pf = derived.get("trim_in_frame"), derived.get("trim_out_frame"), derived.get("pixel_frames")
+            if (g_in, g_out, g_pf) != (w["trim_in_frame"], w["trim_out_frame"], w["pixel_frames"]):
+                problems.append(f"{sid}: lock trims {w['trim_in_frame']}..{w['trim_out_frame']} in {w['pixel_frames']} "
+                                f"pixel frames != derived {g_in}..{g_out} in {g_pf} pixel frames")
+            derived.update(trim_in_frame=w["trim_in_frame"], trim_out_frame=w["trim_out_frame"],
+                           head_handle_frames=w["trim_in_frame"],
+                           tail_handle_frames=w["pixel_frames"] - w["trim_out_frame"],
+                           end_frame_position=w["end_frame_position"])
         prev = last.get(ep)
         cut = cut_out_of(prev["h3"]) if prev else None
         bp = build_blueprint(derived, cut)
@@ -711,6 +848,8 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
         total = sum(s["timing_and_lattice"]["editorial_frames"] for s in ep_data["shots"])
         ep_data["episode_plan"] = {"target_editorial_frames": total}
     notes.append("narration and dialogue are not in the H3 prompt (pure Foley); they stay in registry.v4_rows")
+    if blocking is not None:   # W-07: names of the blocking cast, read by the compiler's cast line
+        registry["cast_names"] = ctx["cast_names"]
     story = {"output_languages": langs, "output_language": langs[0] if langs else None,
              "registry": registry, "episodes": [episodes[ep] for ep in order]}
     if isinstance(stage.get("voice_engine"), dict):
@@ -727,10 +866,20 @@ def main(argv=None):
     ap.add_argument("pack_dir")
     ap.add_argument("--out", help="write the H3 story JSON here")
     ap.add_argument("--lang", help="output languages, e.g. en,hi,mr (default: stage_1 file)")
+    ap.add_argument("--lock", help="timeline lock JSON: its lattice and trims are used; a stale lock exits 2")
     args = ap.parse_args(argv)
     if not os.path.isfile(os.path.join(args.pack_dir, "shots.json")):
         print(f"no shots.json in {args.pack_dir}", file=sys.stderr)
         return 2
+    lock = None
+    if args.lock:
+        from director.timeline_lock_io import StaleLockError, load_lock, verify_lock
+        try:
+            lock = load_lock(args.lock)
+            verify_lock(args.lock, lock["inputs"], lock["params"])
+        except (OSError, ValueError, KeyError, StaleLockError) as exc:
+            print(f"timeline lock not usable: {exc}", file=sys.stderr)
+            return 2
     languages = None
     if args.lang:
         languages = [c.strip() for c in args.lang.split(",") if c.strip()]
@@ -738,7 +887,7 @@ def main(argv=None):
             print(f"--lang must be a list of {','.join(LANGS)}", file=sys.stderr)
             return 2
     try:
-        res = convert_pack(args.pack_dir, languages=languages)
+        res = convert_pack(args.pack_dir, languages=languages, lock=lock)
     except (OSError, ValueError, KeyError) as exc:
         print(f"pack could not be read: {exc!r}", file=sys.stderr)
         return 2

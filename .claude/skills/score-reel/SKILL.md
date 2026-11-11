@@ -89,7 +89,7 @@ Build status (2026-11-09): step 1 is built and tested (`score/cue_sheet.py`). No
 (step 2, written once per story with the owner), `score/plan_check.py` (step 4, next build step), the note writer
 (step 5) and `check_score` (step 8). Until a step's tool exists, stop at that step and tell the owner.
 
-1. **Cue sheet.** `python -m score.cue_sheet --shots stories/<slug>/<pack>/shots.json --episode <n> --out stories/<slug>/<pack>/score/ep<n>/cue_sheet.json`.
+1. **Cue sheet.** `python -m score.cue_sheet --shots stories/<slug>/<pack>/shots.json --episode <n> --lock <timeline_lock_vN.json> --vo-report <vo_tracks_report.json> --out stories/<slug>/<pack>/score/ep<n>/cue_sheet.json`. The lock is required (X-19); `--editorial` and `--voice-windows` are retired and the CLI refuses `--editorial`.
    Stop on any error. Read every warning; report them to the owner.
 2. **Bible.** Read `stories/<slug>/music_bible.json` (create it once per story at gate M0: home key, sonic logo,
    main theme, character themes and signature sounds, track roles, presets, style, emotion templates).

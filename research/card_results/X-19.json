@@ -1,0 +1,1 @@
+{"card":"X-19","ok":true,"plan":"P3","files":["score/cue_sheet.py"],"test_file":"score/tests/test_cue_sheet_requires_lock.py","more_tests":["score/tests/test_cue_sheet.py","score/tests/test_cue_sheet_lock.py"],"note":"coded by Haiku medium"}

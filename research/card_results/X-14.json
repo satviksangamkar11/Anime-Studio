@@ -1,0 +1,11 @@
+{
+ "card": "X-14",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "director/clip_qa.py"
+ ],
+ "test_file": "director/test_clip_qa.py",
+ "more_tests": [],
+ "note": "Haiku coded, 8 tests; FLICKER_LIMIT 0.1 placeholder, accept not checked against reasons; wider suite to re-run when tree is quiet"
+}

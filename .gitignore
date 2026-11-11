@@ -52,3 +52,7 @@ stories/*/links.json
 !ui/static/tokens.css
 research/assay_out/
 research/assay_run*.log
+# writer spend ledger and usage log (card X-06): local only
+ledgers/
+.edit_runner_backup/
+.edit_runner_backup*/

@@ -1,5 +1,6 @@
 """Offline tests for build_final_reel: mux argv, waived findings, caption spec v2 (card limits, colour and scale tags, PlayRes and
 position, the burn filter) and the owner's two Hindi caption fixes. No ffmpeg."""
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -13,8 +14,10 @@ FONTS = Path(__file__).resolve().parents[1] / "styles" / "fonts"
 
 
 def rows():
-    return [{"id": "SHOT-001", "editorial_duration_sec": 6.0}, {"id": "SHOT-002", "editorial_duration_sec": 5.0},
-            {"id": "SHOT-003", "editorial_duration_sec": 7.0}]
+    # offset_sec comes from the timeline lock (lock_rows), as build_final_reel.mux_argv now requires
+    return [{"id": "SHOT-001", "editorial_duration_sec": 6.0, "offset_sec": 0.0},
+            {"id": "SHOT-002", "editorial_duration_sec": 5.0, "offset_sec": 6.0},
+            {"id": "SHOT-003", "editorial_duration_sec": 7.0, "offset_sec": 11.0}]
 
 
 def test_mux_argv_uses_one_voice_file_per_shot_that_has_one(tmp_path):
@@ -30,10 +33,12 @@ def test_mux_argv_uses_one_voice_file_per_shot_that_has_one(tmp_path):
     assert argv[-1] == str(tmp_path / "out.mp4") and "-ac" in argv
 
 
-def test_only_script_level_findings_are_waived():
-    assert b.WAIVED == {"NARRATION_COVERAGE_LOW", "NARRATION_WORDS_LOW", "DEAD_AIR_PAUSE", "CLOSING_NO_ANCHOR_PAYOFF", "CLOSING_MOUTH_OPEN"}
-    for must_block in ("VO_OVERFLOW_ERROR", "VO_MISSING", "FONT_MISSING", "GLYPH_MISSING", "TIME-01", "NO_CAPTIONS"):
-        assert must_block not in b.WAIVED
+def test_nothing_is_waived_without_a_waivers_file():
+    # WAIVED was removed (X-15): only the owner's waivers.json waives a code, and every other code blocks
+    assert not hasattr(b, "WAIVED")
+    errors = [{"code": c} for c in ("DEAD_AIR_PAUSE", "VO_OVERFLOW_ERROR", "FONT_MISSING", "TIME-01")]
+    waived, blocking = b.split_findings(errors, frozenset())
+    assert waived == [] and len(blocking) == 4
 
 
 def test_cards_are_at_most_four_words_for_english_and_cut_at_sentence_ends():
@@ -133,16 +138,19 @@ def test_burn_filter_is_ass_with_complex_shaping():
     ("SHOT-003-D1", "सती कैसे जन्मीं और ब्याही?", "ब्याही", "ब्याहीं"),
     ("SHOT-010-D1", "आपने कहा, सब पर चलाओ। मेरी गलती क्या?", "गलती", "ग़लती"),
 ])
-def test_owner_hindi_caption_fixes_apply_and_keep_the_word_timing(line_id, lang_text, old, new):
-    assert b.CAPTION_FIXES[(line_id, "hi")] == (old, new)
+def test_approved_caption_diff_applies_and_keeps_the_word_timing(line_id, lang_text, old, new):
+    # the spelling fix now comes from shots.json caption_text + caption_diff_approved (CAPTION_FIXES is gone, see test_captions)
+    assert not hasattr(b, "CAPTION_FIXES")
     shot = line_id.rsplit("-D", 1)[0]
+    spoken, caption = lang_text, lang_text.replace(old, new)
     rw = [{"id": shot, "editorial_duration_sec": 6.0,
-           "audio_and_dialogue_track": {"narration_by_lang": {}, "dialogue_by_lang": {"hi": [{"text": lang_text}]}}}]
+           "audio_and_dialogue_track": {"narration_by_lang": {}, "dialogue_by_lang": {"hi": [
+               {"text": spoken, "caption_text": caption, "caption_diff_approved": True}]}}}]
     rep = [{"shot": shot, "lang": "hi", "lines": [{"id": line_id, "start": 0.5, "end": 5.5}]}]
-    cues = b.spoken_cues_real(rw, rep, "hi")
+    man = [{"id": f"{line_id}.hi", "text": spoken, "text_sha256": hashlib.sha256(spoken.encode("utf-8")).hexdigest()}]
+    cues = b.spoken_cues_real(rw, rep, "hi", man)
     words = [w["text"] for c in cues for w in c["words"]]
     assert new in " ".join(words) and old not in " ".join(words).replace(new, "")
-    assert len(words) == len(lang_text.split())                       # same word count, so the timing is unchanged
+    assert len(words) == len(spoken.split())                          # same word count, so the timing is unchanged
     assert cues[0]["t0"] == 0.5 and abs(cues[-1]["t1"] - 5.5) < 0.01
-    plain = b.spoken_cues_real(rw, rep, "en")
-    assert plain == []                                                # the fix is for hi only
+    assert b.spoken_cues_real(rw, rep, "en", man) == []                # the line is for hi only

@@ -1,0 +1,11 @@
+{
+ "card": "X-10",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "director/keyframe_gate.py"
+ ],
+ "test_file": "director/test_keyframe_gate.py",
+ "more_tests": [],
+ "note": "redone by Haiku medium (tests 11 + 3 real bugs fixed in Super version); closed by lead after the 16 keyframe tests passed"
+}

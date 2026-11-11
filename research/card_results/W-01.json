@@ -1,0 +1,14 @@
+{
+ "card": "W-01",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P2_WIRING_2026-11-11.md",
+ "files": [
+  "director/build_h3_batch.py",
+  "director/run_colab_batch.py"
+ ],
+ "test_file": "director/test_build_h3_batch.py",
+ "more_tests": [
+  "director/test_run_colab_batch.py"
+ ],
+ "note": "J8 port done (34 tests + 157 dependents pass, offline). runner_safety use and settings hash are W-09/W-11, not W-01"
+}

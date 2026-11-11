@@ -52,6 +52,7 @@ DIP_HZ, DIP_DB, DIP_Q = 2500.0, -2.5, 0.9  # gentle 1-4 kHz dip on beds
 SIDECHAIN_DEPTH = 0.25    # bass and pads drop up to 25 % in groove peaks
 AUDIBLE_DB = -50.0        # a stem counts as audible in a section above this RMS
 MEASURE_HEADING = ss.MEASURE_HEADING
+AUDITION_NODUCK_LUFS = -14.0  # music-only audition file, not a deliverable (log 11-09 17:23)
 
 
 # ---------------------------------------------------------------- pure helpers
@@ -500,7 +501,7 @@ def load_voice_mono(path, total):
     return np.pad(mono, (0, max(0, total - len(mono))))[:total]
 
 
-def write_noduck(stems, total, version, target_lufs=-14.0):
+def write_noduck(stems, total, version, target_lufs=AUDITION_NODUCK_LUFS):
     """Un-ducked listening copy: no voice gate, no riding (the caller applies the v5 global gain).
     Gain set so the mp3 measures target_lufs, with a limiter at -1 dBTP; up to 3 passes because the
     limiter moves the loudness. Returns (mp3 path, measured before, measured after, gain dB)."""
@@ -509,7 +510,7 @@ def write_noduck(stems, total, version, target_lufs=-14.0):
     sf.write(pre, mix, SR, subtype="PCM_24")
     before = ebur(pre)
     gain = target_lufs - before["integrated_lufs"]
-    mp3 = os.path.join(SOUND, f"score_full_noduck_{version}.mp3")
+    mp3 = os.path.join(SOUND, f"score_full_noduck_{version}_audition.mp3")
     for _ in range(3):
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af",
                         f"volume={gain:.3f}dB,alimiter=limit=0.89:attack=5:release=50",
@@ -641,7 +642,7 @@ def main(argv=None):
     mp4, mp3 = preview(bus, v, cue["total_s"])
     for layer in noduck:  # the same musical level as v5, without the gate and the riding
         noduck[layer] *= 10 ** (level["global_gain_db"] / 20.0)
-    nd_mp3, nd_before, nd_after, nd_gain = write_noduck(noduck, total, v)
+    nd_mp3, nd_before, nd_after, nd_gain = write_noduck(noduck, total, v, target_lufs=AUDITION_NODUCK_LUFS)
     loud, voice_loud = ebur(bus), ebur(VOICE_ONLY_WAV)
     level["table_from_file"] = bus_table
     report = {"version": v, "reference": VOICE_ONLY_WAV, "cuts": cuts, "perc_clash_sections": [i + 1 for i in perc_clash],

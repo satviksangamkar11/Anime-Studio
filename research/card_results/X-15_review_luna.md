@@ -1,0 +1,5 @@
+- **Waivers use the wrong file format.** The card requires `{"reel": ..., "codes": [...], "signed_by": "owner", "date": ...}`, but `load_waivers` delegates to `waivers.py` at `build_final_reel.py:296`, which requires integer `reel`, nonempty `owner` and `reason`, and rejects `signed_by`. A valid card-format waiver therefore blocks the build; the test at `test_build_final_reel_lock.py:158` uses the legacy `owner`/`reason` format and even expects a reel 1 waiver to load. Implement the card’s schema in `load_waivers`, require `signed_by == "owner"`, and update the tests to use that schema and assert the closed reel cannot be built.
+
+- **The clip gate can accept malformed QA.** At `build_final_reel.py:323–325`, a non-dict `verdict` becomes `{}`, then a non-null `owner_accept` prevents the failure check. `clip_qa.clip_ok` explicitly reports a missing verdict as a problem. Use `clip_qa.clip_ok` for each clip as the card requires, and add a regression test for a missing or malformed verdict with `owner_accept` present.
+
+VERDICT: FIX-FIRST

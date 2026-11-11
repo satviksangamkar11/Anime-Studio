@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit guard: runs tools/precommit_check.py on the staged blobs (secrets, Python syntax, control characters, size, media).
+# Install once (the owner runs this; the hook never changes git config):  git config core.hooksPath .githooks
+# Python: $ANIME_PY if set, else C:/Python314/python.exe, else python. Any failure blocks the commit.
+ROOT="$(git rev-parse --show-toplevel)" || { echo "pre-commit: not in a git repo"; exit 1; }
+PY="${ANIME_PY:-C:/Python314/python.exe}"
+[ -f "$PY" ] || PY=python
+"$PY" "$ROOT/tools/precommit_check.py"
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "pre-commit: commit blocked (precommit_check exit $rc). Fix the findings above, then commit again."
+  exit 1
+fi
+exit 0

@@ -1,0 +1,15 @@
+{
+ "card": "X-13",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "h3/render_controller.py",
+  "h3/pipeline_contract.py"
+ ],
+ "test_file": "h3/tests/test_render_controller_wiring_x13.py",
+ "more_tests": [
+  "h3/tests/test_render_controller.py",
+  "h3/tests/test_render_controller_wiring.py"
+ ],
+ "note": "coded by Haiku medium; h3/ suite 721 passed; 3 legacy execute tests updated to pass a real lock per lead decision; x13 test file rewritten (old one called non-existent signatures); Gate B uses real director/approval_sheet.gate_b_ok"
+}

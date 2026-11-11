@@ -1,0 +1,84 @@
+```edit director/build_vo_tracks.py
+<<<<<<< OLD
+import argparse
+import json
+import math
+import subprocess
+import sys
+import wave
+from pathlib import Path
+=======
+import argparse
+import json
+import math
+import subprocess
+import sys
+import wave
+from pathlib import Path
+
+import timeline_lock_io
+>>>>>>> NEW
+```
+
+```edit director/build_vo_tracks.py
+<<<<<<< OLD
+def build(pack, raw_dir, out_dir, langs):
+    from editorial_by_lang import apply_rows, load   # lazy: that module imports this one
+    rows = apply_rows(json.loads((Path(pack) / "shots.json").read_text(encoding="utf-8")), load(pack))   # no file = v3 lengths
+    report, problems = [], []
+    root = raw_dir
+    for lang in langs:
+        raw_dir = Path(root) / lang if (Path(root) / lang).is_dir() else root    # <raw>/<lang>/ or one flat folder
+        for row in rows:
+            sl = scripted_lines(row, lang)
+            if not sl:
+                continue
+            ed = float(row["editorial_duration_sec"])
+=======
+def editorial_from_lock(lock, shot_id, lang):
+    fps = lock.get("fps", 24)
+    frames = timeline_lock_io.frames_for(lock, shot_id)
+    retime = timeline_lock_io.retime_for(lock, shot_id, lang)
+    return frames / fps * retime
+
+
+def apply_lock(rows, lock, lang):
+    out = []
+    for row in rows:
+        r = dict(row)
+        r["editorial_duration_sec"] = editorial_from_lock(lock, r["id"], lang)
+        out.append(r)
+    return out
+
+
+def build(pack, raw_dir, out_dir, langs, lock=None):
+    from editorial_by_lang import apply_rows, load   # lazy: that module imports this one
+    rows = apply_rows(json.loads((Path(pack) / "shots.json").read_text(encoding="utf-8")), load(pack))   # no file = v3 lengths
+    lock_data = timeline_lock_io.load_lock(lock) if lock is not None else None
+    report, problems = [], []
+    root = raw_dir
+    for lang in langs:
+        raw_dir = Path(root) / lang if (Path(root) / lang).is_dir() else root    # <raw>/<lang>/ or one flat folder
+        lang_rows = apply_lock(rows, lock_data, lang) if lock_data is not None else rows
+        for row in lang_rows:
+            sl = scripted_lines(row, lang)
+            if not sl:
+                continue
+            ed = float(row["editorial_duration_sec"])
+>>>>>>> NEW
+```
+
+```edit director/build_vo_tracks.py
+<<<<<<< OLD
+    ap.add_argument("--langs", default="en,hi,mr")
+    a = ap.parse_args(argv)
+    report, problems = build(a.pack, a.raw, a.out, a.langs.split(","))
+=======
+    ap.add_argument("--langs", default="en,hi,mr")
+    ap.add_argument("--lock", default=None)
+    a = ap.parse_args(argv)
+    report, problems = build(a.pack, a.raw, a.out, a.langs.split(","), lock=a.lock)
+>>>>>>> NEW
+```
+
+FINAL:

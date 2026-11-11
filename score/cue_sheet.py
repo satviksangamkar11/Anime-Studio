@@ -21,7 +21,6 @@ Report shape matches h3/gate_d_audio.py: {"ok", "errors": [{"code", "where", "me
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import math
 import re
@@ -34,6 +33,7 @@ if str(_ROOT) not in sys.path:
 
 from core.style_pack import load_core  # noqa: E402
 from core.timeline import FPS, build_episodes  # noqa: E402
+from director.timeline_lock_io import StaleLockError, load_lock, verify_lock  # noqa: E402
 
 SCHEMA_VERSION = 1
 SAMPLE_RATE = 48000
@@ -288,115 +288,53 @@ def _vo_row_lines(row, raw, lang, sid, length_s, fps, errors, warnings):
     return sorted(lines, key=lambda x: x["start"])
 
 
-# ---------------------------------------------------------------- editorial lengths (v4 shared timeline)
-
-def _shift_time_range(item, s):
-    rng = parse_range(item.get("time_range")) if isinstance(item, dict) else None
-    if rng is not None:
-        item["time_range"] = [_r(rng[0] + s), _r(rng[1] + s)]
-
-
-def _shift_shot(raw, s):
-    """Copy of a pack row with every shot-relative time moved by s seconds (an extension at the start of the shot)."""
-    raw = copy.deepcopy(raw)
-    look = raw.get("look")
-    if isinstance(look, dict):
-        for imp in _list(look.get("impact_frames")):
-            if isinstance(imp, dict) and _is_num(imp.get("at_s")):
-                imp["at_s"] = _r(imp["at_s"] + s)
-    for d in _list(raw.get("per_second_directives")):
-        if isinstance(d, dict) and _is_num(d.get("t0")) and _is_num(d.get("t1")):
-            d["t0"], d["t1"] = _r(d["t0"] + s), _r(d["t1"] + s)
-    trk = raw.get("audio_and_dialogue_track")
-    if isinstance(trk, dict):
-        for c in _list(trk.get("sfx_cues")):
-            _shift_time_range(c, s)
-        for key in ("narration", "dialogue", "narration_by_lang", "dialogue_by_lang"):
-            val = trk.get(key)
-            if isinstance(val, dict) and key.endswith("_by_lang"):
-                items = [x for v in val.values() for x in (v if isinstance(v, list) else [v])]
-            elif isinstance(val, dict):
-                items = [val]
-            else:
-                items = _list(val)
-            for it in items:
-                _shift_time_range(it, s)
-    return raw
-
-
-def _shift_row(row, s):
-    """A VO report row with its line times moved by s seconds (same shift as the shot)."""
-    if not s:
-        return row
-    lines = []
-    for ln in row["lines"]:
-        if isinstance(ln, dict) and _is_num(ln.get("start")) and _is_num(ln.get("end")):
-            ln = {**ln, "start": _r(ln["start"] + s), "end": _r(ln["end"] + s)}
-        lines.append(ln)
-    return {**row, "lines": lines}
-
-
-def apply_editorial(shots, editorial, fps=FPS):
-    """Apply editorial_by_lang.json (v4 shared timeline). Returns (shots, shifts, errors, warnings), shifts = {shot id: s}.
-    plan[].new_editorial_sec becomes the shot's editorial_duration_sec. An extension with at "start" moves the shot's own
-    internal times (impacts, beats, sfx, scripted voice) by the extended seconds; at "end" changes nothing inside the shot."""
-    errors, warnings, shifts = [], [], {}
-    if not isinstance(editorial, dict) or not isinstance(editorial.get("plan"), list):
-        return shots, shifts, [_err("EDITORIAL_SHAPE", "editorial", "expected editorial_by_lang.json with a plan list")], warnings
-    if editorial.get("shared_timeline") is not True:
-        errors.append(_err("EDITORIAL_NOT_SHARED", "editorial", "shared_timeline is not true; the music needs one timeline "
-                           "for every language"))
-    plan = {str(p["shot"]): p for p in editorial["plan"] if isinstance(p, dict) and _str(p.get("shot"))}
-    by_lang = editorial.get("by_lang") if isinstance(editorial.get("by_lang"), dict) else {}
-    for sid, p in plan.items():  # every language must carry the same extension as the shared plan
-        seen = {(v.get("extend_frames"), v.get("at")) for per in by_lang.values()
-                if isinstance(per, dict) and isinstance(per.get(sid), dict) for v in [per[sid]]}
-        if seen and seen != {(p.get("extend_frames"), p.get("at"))}:
-            errors.append(_err("EDITORIAL_NOT_SHARED", sid, f"per-language extensions {sorted(map(str, seen))} differ "
-                               f"from the shared plan {(p.get('extend_frames'), p.get('at'))}"))
-    out, present = [], set()
-    for sh in shots:
-        sid = sh.get("id") if isinstance(sh, dict) else None
-        p = plan.get(sid)
-        if p is None:
-            if isinstance(sh, dict):
-                errors.append(_err("EDITORIAL_SHOT_MISSING", str(sid), "shot has no entry in the editorial plan"))
+def apply_lock(shots, lock):
+    """Apply a timeline lock: shot lengths = edit_frames / fps. Returns (new_shots, errors); the input shots are not changed."""
+    if not isinstance(lock, dict) or not isinstance(lock.get("shots"), list):
+        return shots, [_err("LOCK_SHAPE", "lock", "expected a timeline lock with a shots list")]
+    fps = lock.get("fps", 24)
+    frames = {}
+    for row in lock["shots"]:
+        if not isinstance(row, dict):
+            continue
+        sid = row.get("id")
+        ef = row.get("edit_frames")
+        if isinstance(sid, str) and isinstance(ef, int) and not isinstance(ef, bool):
+            frames[sid] = ef
+    errors = []
+    out = []
+    pack_ids = {sh["id"] for sh in _list(shots) if isinstance(sh, dict) and isinstance(sh.get("id"), str)}
+    for sh in _list(shots):
+        if not (isinstance(sh, dict) and isinstance(sh.get("id"), str)):
             out.append(sh)
             continue
-        present.add(sid)
-        new, at, ext = p.get("new_editorial_sec"), p.get("at"), p.get("extend_frames")
-        if not _is_num(new) or new <= 0 or at not in ("start", "end") or not isinstance(ext, int) or ext < 0:
-            errors.append(_err("EDITORIAL_BAD_VALUE", sid, f"plan row unreadable: new_editorial_sec={new!r}, at={at!r}, "
-                               f"extend_frames={ext!r}"))
+        sid = sh["id"]
+        if sid not in frames:
+            errors.append(_err("LOCK_SHOT_MISSING", sid, "shot has no entry in the timeline lock"))
             out.append(sh)
-            continue
-        sh = copy.deepcopy(sh)
-        sh["editorial_duration_sec"] = new
-        if at == "start" and ext:
-            shifts[sid] = ext / fps
-            sh = _shift_shot(sh, ext / fps)
-        out.append(sh)
-    for sid in plan:
-        if sid not in present:
-            warnings.append(_err("EDITORIAL_SHOT_EXTRA", sid, "plan row has no shot in this pack; ignored"))
-    return out, shifts, errors, warnings
+        else:
+            new = dict(sh)
+            new["editorial_duration_sec"] = frames[sid] / fps
+            out.append(new)
+    for sid in frames:
+        if sid not in pack_ids:
+            errors.append(_err("LOCK_SHOT_EXTRA", sid, "lock shot has no shot in this pack; ignored"))
+    return out, errors
 
 
 # ---------------------------------------------------------------- the cue sheet
 
-def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=None, vo_reports=None, editorial=None):
+def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=None, vo_reports=None, timeline_lock=None):
     """Return (sheet, report). sheet is None when the reel cannot be built. Never raises.
     voice_windows: optional FINAL_TEXT_v2.json dict; its start_s/window_s replace the scripted time_range.
     vo_reports: optional {lang: [rows]} from vo_tracks_report.json; the real speech lines replace both the scripted
     range and the voice_windows for that shot and language (precedence: vo_reports > voice_windows > scripted)."""
     voice_windows = voice_windows if isinstance(voice_windows, dict) else None
     errors, warnings = [], []
-    shifts = {}
-    if editorial is not None and isinstance(shots, list):
-        shots, shifts, ed_errors, ed_warnings = apply_editorial(shots, editorial, fps)
-        errors += ed_errors
-        warnings += ed_warnings
-        if ed_errors:
+    if timeline_lock is not None and isinstance(shots, list):
+        shots, lock_errors = apply_lock(shots, timeline_lock)
+        errors += lock_errors
+        if lock_errors:
             return None, _report(errors, warnings)
     vo_index = None
     if isinstance(vo_reports, dict):
@@ -426,6 +364,14 @@ def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=No
         if not match:
             return None, _report(errors + [_err("EPISODE_NOT_FOUND", str(episode), f"episodes present: {[e['key'] for e in episodes]}")], warnings)
         ep = match[0]
+    if timeline_lock is not None:  # core.timeline must reproduce the lock's frame count for every shot, or the sheet is refused
+        lock_frames = {r["id"]: r["edit_frames"] for r in timeline_lock["shots"] if isinstance(r, dict) and isinstance(r.get("id"), str)}
+        for view in ep["shots"]:
+            if view["frames"] != lock_frames.get(view["id"]):
+                errors.append(_err("LOCK_FRAMES_MISMATCH", view["id"], f"timeline gives {view['frames']} frames, lock says "
+                                   f"{lock_frames.get(view['id'])}"))
+        if errors:
+            return None, _report(errors, warnings)
 
     total_frames = ep["total_frames"]
     total_s = total_frames / fps
@@ -444,8 +390,7 @@ def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=No
                     warnings.append(_err("VO_REPORT_MISSING", sid, f"no {lang} row in the VO report; "
                                          "scripted or audio-window range kept"))
                     continue
-                voice[lang] = _vo_row_lines(_shift_row(row, shifts.get(sid, 0)), raw, lang, sid, length_s, fps,
-                                            errors, warnings)
+                voice[lang] = _vo_row_lines(row, raw, lang, sid, length_s, fps, errors, warnings)
         langs_seen |= set(voice)
         flip = _str(raw.get("deliberate_flip_marker"))
         handoff = raw.get("continuity_handoff") if isinstance(raw.get("continuity_handoff"), dict) else {}
@@ -579,6 +524,34 @@ def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=No
     return sheet, _report(errors, warnings, stats)
 
 
+def build_locked_cue_sheet(shots, lock, vo_reports, episode=None, fps=FPS):
+    """The reel path (X-19): shot lengths, bpm and snap come from the timeline lock, speech from the VO reports.
+    Returns (sheet, report); sheet is None on any error. Never raises. The caller verifies the lock file first."""
+    if not vo_reports:  # None or an empty list: the speech positions are required
+        return None, _report([_err("NO_VO_REPORT", "vo_reports", "give at least one vo_tracks_report (one per language)")])
+    if not isinstance(lock, dict) or not isinstance(lock.get("shots"), list):
+        return None, _report([_err("LOCK_SHAPE", "lock", "expected a timeline lock with a shots list")])
+    sheet, report = build_cue_sheet(shots, episode=episode, fps=fps, vo_reports=vo_reports, timeline_lock=lock)
+    if sheet is None:
+        return None, report
+    rows = {r["id"]: r for r in lock["shots"] if isinstance(r, dict) and isinstance(r.get("id"), str)}
+    errors = []
+    if sheet["total_frames"] != lock.get("total_frames"):
+        errors.append(_err("LOCK_MISMATCH", "lock", f"sheet has {sheet['total_frames']} frames, lock says {lock.get('total_frames')}"))
+    if {s["id"] for s in sheet["shots"]} != set(rows):
+        errors.append(_err("LOCK_MISMATCH", "lock", "shot ids of the sheet and the lock differ"))
+    for s in sheet["shots"]:
+        lr = rows.get(s["id"], {})
+        if "act" in lr and lr["act"] != s["act"]:  # the act segments were cut from the pack; a lock act must agree
+            errors.append(_err("ACT_MISMATCH", s["id"], f"lock act {lr['act']!r} differs from pack act {s['act']!r}"))
+        for key in ("bpm", "snap", "act", "cue", "act_start_frame"):
+            if key in lr:
+                s[key] = lr[key]
+    if errors:
+        return None, _report(errors, report["warnings"], report["stats"])
+    return sheet, report
+
+
 def write_cue_sheet(sheet, report, path):
     """Write cue_sheet.json (the sheet plus its report under "checks"). Returns the path."""
     path = Path(path)
@@ -594,36 +567,32 @@ def main(argv=None):
                                 description="Build the score cue sheet of one reel from a pack's shots.json. Writes one JSON file.")
     p.add_argument("--shots", required=True, help="stories/<slug>/<pack>/shots.json")
     p.add_argument("--episode", help="episode number or id (needed when the pack has several)")
-    p.add_argument("--voice-windows", help="voices/<pack>/FINAL_TEXT_v2.json: real audio windows replace the scripted time_range")
     p.add_argument("--vo-report", action="append", default=[],
                    help="voices/<pack>/vo_<lang>/vo_tracks_report.json; repeat once per language (lang is read from the rows). "
-                        "Real speech positions: they replace --voice-windows and the scripted ranges")
-    p.add_argument("--editorial", help="stories/<slug>/<pack>/editorial_by_lang.json: shot lengths of the v4 shared timeline")
+                        "Real speech positions; required (at least one)")
+    p.add_argument("--lock", help="timeline_lock_vN.json (required): shot lengths, bpm and snap come from it; "
+                                  "its input files are checked on every run")
     p.add_argument("--out", required=True, help="output path, e.g. stories/<slug>/<pack>/score/ep1/cue_sheet.json")
     a = p.parse_args(argv)
+    if not a.lock:
+        print("--lock is required: the cue sheet reads shot lengths from the timeline lock", file=sys.stderr)
+        return 2
+    if not a.vo_report:
+        print("--vo-report is required (at least one vo_tracks_report.json)", file=sys.stderr)
+        return 2
     try:
         shots = json.loads(Path(a.shots).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         print(f"cannot read {a.shots}: {exc}", file=sys.stderr)
         return 2
-    ed = None
-    if a.editorial:
-        try:
-            ed = json.loads(Path(a.editorial).read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            print(f"cannot read {a.editorial}: {exc}", file=sys.stderr)
-            return 2
-    vw = None
-    if a.voice_windows:
-        try:
-            vw = json.loads(Path(a.voice_windows).read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            print(f"cannot read {a.voice_windows}: {exc}", file=sys.stderr)
-            return 2
-    vo = None
-    if a.vo_report:
-        vo = {}
-        for path in a.vo_report:
+    try:
+        lock = load_lock(a.lock)
+        verify_lock(a.lock, lock["inputs"], lock["params"])  # StaleLockError: an input changed after the lock
+    except (OSError, ValueError) as exc:
+        print(f"{a.lock}: {exc}", file=sys.stderr)
+        return 2
+    vo = {}
+    for path in a.vo_report:
             try:
                 rows = json.loads(Path(path).read_text(encoding="utf-8"))
             except (OSError, ValueError) as exc:
@@ -638,7 +607,7 @@ def main(argv=None):
                     print(f"{path}: a row has no lang", file=sys.stderr)
                     return 2
                 vo.setdefault(lang, []).append(row)
-    sheet, report = build_cue_sheet(shots, episode=a.episode, voice_windows=vw, vo_reports=vo, editorial=ed)
+    sheet, report = build_locked_cue_sheet(shots, lock, vo, episode=a.episode)
     for e in report["errors"]:
         print(f"ERROR {e['code']} {e['where']}: {e['message']}", file=sys.stderr)
     for w in report["warnings"]:

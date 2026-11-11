@@ -1,0 +1,5 @@
+- **The card’s Anthropic pattern is missing.** The implementation delegates to `secret_scan.content_findings`, whose `RULES` include a generic `sk-` rule but no `sk-ant-` rule. The supplied Anthropic test uses a token that the generic rule catches, so it does not verify the required pattern. Add a dedicated `sk-ant-[A-Za-z0-9_-]{20,}` rule to the shared scanner and assert its rule ID in the test.
+
+- **Several required tests are absent from the acceptance target.** The card names `test_elevenlabs_key_found`, `test_google_key_found`, `test_nul_byte_found`, `test_del_found`, and `test_staged_blob_scanned_after_worktree_cleaned`. Those exact tests are in `tools/test_precommit_cards.py`, not the specified `tools/test_precommit_check.py`; that file has no Google test, and its staged test calls `check_staged`, not `check_file(..., staged=True)`. Move or add the required tests to `tools/test_precommit_check.py`, using the named tests and the staged `check_file` path.
+
+VERDICT: FIX-FIRST

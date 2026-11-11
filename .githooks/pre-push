@@ -6,6 +6,14 @@ remote="${1:-origin}"
 ROOT="$(git rev-parse --show-toplevel)" || { echo "pre-push: not in a git repo"; exit 1; }
 PY="${ANIME_PY:-C:/Python314/python.exe}"
 [ -f "$PY" ] || PY=python
+cd "$ROOT" || { echo "pre-push: cannot cd to $ROOT"; exit 1; }
+# Tests first. The exit code is used directly (any non-zero blocks). PUSH_TEST_PATHS overrides the default scope (used by tests).
+"$PY" -m pytest ${PUSH_TEST_PATHS:-director h3 score tools} -q -p no:cacheprovider
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "pre-push: push blocked (tests exit $rc). Fix the failing tests, then push again."
+  exit 1
+fi
 "$PY" "$ROOT/tools/secret_scan.py" --remote "$remote"
 rc=$?
 if [ "$rc" -ne 0 ]; then

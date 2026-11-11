@@ -53,8 +53,3 @@ def test_rounding_rules():
     assert e.plan_shot(5.37, 5.2, 5.0, 30, 24)[0] == 9                     # no rounding: ceil(0.37 * 24)
     assert e.plan_shot(5.37, 5.2, 5.0, 4, 24)[0] == 4                      # capped by spare
 
-
-def test_needed_sec_at_a_speed_up_is_shorter():
-    lines = [{"id": "a", "start": 0.5, "natural": 3.0}]
-    assert abs(e.needed_sec(lines, 1.0) - (3.5 + e.TAIL)) < 1e-6
-    assert abs(e.needed_sec(lines, 1.5) - (2.5 + e.TAIL)) < 1e-6

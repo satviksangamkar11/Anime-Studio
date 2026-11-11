@@ -178,7 +178,7 @@ def test_mix_filter_exact_text():
         f"[4:a]{FMT}[bgm]",
         "[bgm][sc_bgm]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=500[bgm_ducked]",
         "[sfx_ducked][vo_out][bgm_ducked]amix=inputs=3:duration=longest:normalize=0,atrim=0:4.500,"
-        "loudnorm=I=-16:TP=-1.3:LRA=11[master]",
+        "loudnorm=I=-14:TP=-1.3:LRA=11[master]",
     ])
     assert text == expected
 
@@ -224,7 +224,7 @@ EBUR_TEXT = """[Parsed_ebur128_0 @ 0000]
 Summary:
 
   Integrated loudness:
-    I:         -16.2 LUFS
+    I:         -14.2 LUFS
     Threshold: -24.4 LUFS
 
   Loudness range:
@@ -233,24 +233,24 @@ Summary:
   True peak:
     Peak:       -1.7 dBFS
 """
-LOUDNORM_TEXT = "Input Integrated:    -16.02 LUFS\nInput True Peak:    -1.00 dBTP\n"
+LOUDNORM_TEXT = "Input Integrated:    -14.02 LUFS\nInput True Peak:    -1.00 dBTP\n"
 
 
 def test_loudness_parse_both_formats():
-    assert gd.parse_loudness_text(EBUR_TEXT) == {"integrated_lufs": -16.2, "true_peak_dbtp": -1.7}
-    assert gd.parse_loudness_text(LOUDNORM_TEXT) == {"integrated_lufs": -16.02, "true_peak_dbtp": -1.0}
+    assert gd.parse_loudness_text(EBUR_TEXT) == {"integrated_lufs": -14.2, "true_peak_dbtp": -1.7}
+    assert gd.parse_loudness_text(LOUDNORM_TEXT) == {"integrated_lufs": -14.02, "true_peak_dbtp": -1.0}
 
 
 def test_post_aac_loudness_gate():
     assert gd.check_post_aac_loudness(EBUR_TEXT)["ok"]
     assert gd.check_post_aac_loudness(LOUDNORM_TEXT)["ok"]                     # TP exactly -1.0 is allowed
-    too_loud = EBUR_TEXT.replace("-16.2 LUFS", "-15.2 LUFS")
+    too_loud = EBUR_TEXT.replace("-14.2 LUFS", "-13.2 LUFS")
     assert _codes(gd.check_post_aac_loudness(too_loud)) == ["LOUDNESS_OUT_OF_TARGET"]
     hot_peak = EBUR_TEXT.replace("-1.7 dBFS", "-0.8 dBFS")
     assert _codes(gd.check_post_aac_loudness(hot_peak)) == ["TRUE_PEAK_OVER"]
     assert _codes(gd.check_post_aac_loudness("nothing here")) == ["LOUDNESS_UNREADABLE"]
     argv = gd.build_loudness_verify_argv("final.mp4")
-    assert "ebur128=peak=true" in argv and LOUDNESS["target_lufs"] == -16.0
+    assert "ebur128=peak=true" in argv and LOUDNESS["target_lufs"] == -14.0
 
 
 # ---------------------------------------------------------------- .ass captions
@@ -384,7 +384,7 @@ def test_missing_font_fails_only_that_language(tmp_path):
 
 
 def test_loudness_is_checked_per_language_and_does_not_block_the_mux(tmp_path):
-    hot = EBUR_TEXT.replace("-16.2 LUFS", "-12.0 LUFS")
+    hot = EBUR_TEXT.replace("-14.2 LUFS", "-12.0 LUFS")
     out = _run(tmp_path, ["en", "hi"], measured_text={"en": EBUR_TEXT, "hi": hot})
     assert _codes(out["reports"]["hi"]) == ["LOUDNESS_OUT_OF_TARGET"]
     assert out["reports"]["en"]["ok"] and not out["ok"]

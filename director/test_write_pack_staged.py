@@ -8,6 +8,13 @@ import pytest
 
 import write_pack
 
+@pytest.fixture(autouse=True)
+def _reset_guard():
+    saved = write_pack.GUARD
+    yield
+    write_pack.GUARD = saved
+
+
 SHOT = {"id": "SHOT-01", "episode": 1, "mode": "fl2va", "seconds": 4, "aspect": "9:16", "start": "keyframes/SHOT-01-FRAME-A.png",
         "end": "keyframes/SHOT-01-FRAME-B.png", "refs": [], "subjects": [], "style": "Flat 2D cel anime.", "world": "River at dawn.",
         "action": "0-2s a bird falls.", "camera": "tilt down", "sound": "boiling water hiss"}

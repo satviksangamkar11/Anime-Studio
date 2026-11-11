@@ -22,3 +22,22 @@ def _no_style_pack_in_fake_runs(request, monkeypatch):
     except ImportError:
         return
     monkeypatch.setattr(write_pack, "load_style_pack", lambda *a, **k: None)
+
+
+@pytest.fixture(autouse=True)
+def _writer_guard_test_env(request, monkeypatch, tmp_path):
+    """Test-only (card X-06/X-07): write_pack.main() switches the claude guard on for the rest of the process.
+    Keep that switch from leaking between tests, give fake claude runs a cap and a throwaway ledger folder, and make
+    the real `claude --version` probe a no-op. Guard tests that need no cap delete the variable themselves."""
+    if request.node.fspath.basename.startswith("test_writer_guard"):
+        return
+    try:
+        import write_pack
+        import writer_guard
+    except ImportError:
+        return
+    monkeypatch.setattr(write_pack, "GUARD", write_pack.GUARD)
+    monkeypatch.setattr(write_pack, "LEDGERS", tmp_path / "ledgers")
+    monkeypatch.setattr(writer_guard, "cli_ready", lambda *a, **k: None)
+    if "WRITER_CAP_CENTS" not in __import__("os").environ:
+        monkeypatch.setenv("WRITER_CAP_CENTS", "100000")

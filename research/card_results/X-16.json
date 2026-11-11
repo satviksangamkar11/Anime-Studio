@@ -1,0 +1,16 @@
+{
+ "card": "X-16",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "director/build_final_reel.py",
+  "h3/gate_d_audio.py"
+ ],
+ "test_file": "director/test_build_final_reel_captions.py",
+ "more_tests": [
+  "director/test_build_final_reel_lock.py",
+  "director/test_build_final_reel.py",
+  "h3/tests/test_gate_d_audio.py"
+ ],
+ "note": "coded by Haiku medium; CAPTION_FIXES test in test_build_final_reel.py rewritten to the manifest contract; rule 51 amendment (X-23) and voice manifest (D-VOICE) not built"
+}

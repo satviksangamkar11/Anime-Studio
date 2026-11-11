@@ -147,19 +147,29 @@ def test_a_validator_failure_triggers_exactly_one_repair_call(tmp_path, story, f
     failed_once = {"done": False}
 
     def check(stage, data, bible):
-        if stage == "1" and not failed_once["done"]:
+        if stage == "3" and not failed_once["done"]:
             failed_once["done"] = True
-            return ["STORY-01 missing story_gate_checks"]
+            return ["SHOT-001 bad lattice"]
         return []
     seen = fake_validator(monkeypatch, check)
+    answer_fake = write_pack.call_claude
+    repaired = "```json\n" + json.dumps([wp.example_row(1, 1, ["hi"])], ensure_ascii=False) + "\n```\n"
+
+    def fake(prompt, model, effort):
+        if "Return ONLY a JSON list" in prompt:      # the repair call: a fenced list of the corrected row (plain text, as parse_repair reads it)
+            fake_claude["calls"].append({"name": stage_of(prompt), "prompt": prompt})
+            return repaired
+        return answer_fake(prompt, model, effort)
+    monkeypatch.setattr(write_pack, "call_claude", fake)
     run(story, tmp_path / "pack_v1")
     names = [c["name"] for c in fake_claude["calls"]]
-    assert names == ["1", "1", "2", "3e1", "5e1"]                 # stage 1 twice: the answer, then ONE repair
-    repair = fake_claude["calls"][1]["prompt"]
-    assert "VALIDATION ERRORS IN YOUR LAST ANSWER" in repair and "STORY-01 missing story_gate_checks" in repair
-    assert "VALIDATION ERRORS" not in fake_claude["calls"][0]["prompt"]
-    assert seen == ["1", "1", "2", "3", "5"]
-    assert not (tmp_path / "pack_v1" / "stage_1_validation.json").exists()
+    assert names == ["1", "2", "3e1", "3e1", "5e1"]               # stage 3e1 twice: the answer, then ONE repair of SHOT-001
+    repair = fake_claude["calls"][3]["prompt"]
+    assert "SHOT-001 bad lattice" in repair and "Return ONLY a JSON list" in repair
+    assert "VALIDATION ERRORS" not in fake_claude["calls"][2]["prompt"]
+    assert seen == ["1", "2", "3", "3", "5"]
+    assert (tmp_path / "pack_v1" / "stage_3e1_repair1.json").exists()
+    assert not (tmp_path / "pack_v1" / "stage_3e1_validation.json").exists()
 
 
 def test_a_second_failure_fails_the_run_and_saves_the_errors(tmp_path, story, fake_claude, monkeypatch):
@@ -167,10 +177,10 @@ def test_a_second_failure_fails_the_run_and_saves_the_errors(tmp_path, story, fa
     out = tmp_path / "pack_v1"
     with pytest.raises(write_pack.StageFailed, match="stage 2 fails its checks after the repair retry"):
         run(story, out)
-    assert [c["name"] for c in fake_claude["calls"]] == ["1", "2", "2"]          # one call, one repair, then stop
+    assert [c["name"] for c in fake_claude["calls"]] == ["1", "2"]              # stage 2 is a bible, not a list of rows: no repair, stop
     assert (out / "stage_2_raw.json").exists()
     saved = json.loads((out / "stage_2_validation.json").read_text(encoding="utf-8"))
-    assert saved["errors"] == ["V-1 at 2: SHOT-00 bad lattice"] and saved["repair_retries"] == 1
+    assert saved["errors"] == ["V-1 at 2: SHOT-00 bad lattice"] and saved["repair_retries"] == 0
     assert not (out / "PACK.md").exists() and not (out / "shots.json").exists()
     fake_claude["calls"].clear()
     with pytest.raises(write_pack.StageFailed, match="delete both files"):   # a second run makes no call until the files go
@@ -187,19 +197,14 @@ def test_a_missing_validator_module_is_a_warning_not_a_crash(tmp_path, story, fa
 
 
 def test_each_validation_is_recorded_in_the_run_registry(tmp_path, story, fake_claude, monkeypatch):
-    fails = {"n": 0}
-
     def check(stage, data, bible):
-        if stage == "1" and fails["n"] == 0:
-            fails["n"] += 1
-            return ["STORY-01 once"]
-        return []
+        return ["STORY-01 once"] if stage == "1" else []     # a stage 1 failure names no shot id: no repair, the run stops
     fake_validator(monkeypatch, check)
-    run(story, tmp_path / "pack_v1")
+    with pytest.raises(write_pack.StageFailed, match="stage 1 fails its checks"):
+        run(story, tmp_path / "pack_v1")
     checks = [e for e in run_registry.read_events(story.parent) if e["kind"] == "pack_check"]
-    stage1 = [(e["status"], e.get("stage")) for e in checks if e.get("stage") == "1"]
-    assert ("failed", "1") in stage1 and ("ok", "1") in stage1
-    assert {e.get("stage") for e in checks} >= {"1", "2", "3e1", "5e1"}
+    assert [(e["status"], e.get("stage")) for e in checks if e["status"] != "started"] == [("failed", "1")]
+    assert [c["name"] for c in fake_claude["calls"]] == ["1"]
 
 
 def test_the_stage_checks_get_the_bible_of_stage_2(tmp_path, story, fake_claude, monkeypatch):
@@ -462,8 +467,9 @@ def test_a_multi_language_shot_missing_a_language_fails_the_stage_without_a_vali
     del rows[0]["audio_and_dialogue_track"]["narration_by_lang"]["hi"]
     answers["3e1"] = "# Episode 1\n\n```json shots\n" + json.dumps(rows, ensure_ascii=False) + "\n```\n"
     fake_claude["state"]["answers"] = answers
-    with pytest.raises(write_pack.StageFailed, match="LANG-03"):
+    with pytest.raises(write_pack.StageFailed, match="stage 3e1 fails its checks"):
         run(story, tmp_path / "pack_v1", "--out-lang", "en,hi")
+    assert [c["name"] for c in fake_claude["calls"]].count("3e1") == 2     # LANG-03 names SHOT-001: one repair call, its answer has no list
 
 
 def test_writer_stages_never_get_tools_only_the_notes_call_does(monkeypatch):

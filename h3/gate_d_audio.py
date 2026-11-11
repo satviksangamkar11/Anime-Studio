@@ -304,7 +304,36 @@ def shot_has_speech(shot, lang):
     return bool(_speech_items(_lang_view_track(shot, lang)))
 
 
-def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
+SFX_TARGET_BELOW_VOICE_DB = 22.0      # rule 50(6): the model SFX bed sits at voice - 22 dB outside its keep windows
+SFX_BED_TOLERANCE_DB = 0.5
+
+
+def bed_gain_db(voice_db, bed_db):
+    """Gain (dB, <= 0) that brings a shot's SFX bed down to voice - 22 dB. A bed already quieter than that gets 0 dB."""
+    return min(0.0, (voice_db - SFX_TARGET_BELOW_VOICE_DB) - bed_db)
+
+
+def sfx_policy_filter(label_in, label_out, keep, bed_gain_db_value):
+    """Volume filter for one SFX clip (clip-relative keep windows [(t0, t1)] in seconds): gain 1 inside a keep window, the bed gain
+    G = 10^(dB/20) everywhere else."""
+    g = 10 ** (bed_gain_db_value / 20.0)
+    if not keep:
+        return f"[{label_in}]volume={g:.4f}[{label_out}]"
+    cond = "+".join(f"between(t,{a:.3f},{b:.3f})" for a, b in keep)
+    return f"[{label_in}]volume='if({cond},1,{g:.4f})':eval=frame[{label_out}]"
+
+
+def check_sfx_beds(levels):
+    """levels: [{shot, voice_db, bed_db}]. SFX_BED_LOUD when the bed is louder than voice - 22 dB (+0.5 dB tolerance)."""
+    errors = []
+    for lv in levels:
+        if lv["bed_db"] > lv["voice_db"] - SFX_TARGET_BELOW_VOICE_DB + SFX_BED_TOLERANCE_DB:
+            errors.append(_err("SFX_BED_LOUD", lv["shot"], f"SFX bed {lv['bed_db']:.2f} dB is louder than voice "
+                                                          f"{lv['voice_db']:.2f} dB - 22 dB"))
+    return errors
+
+
+def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec, sfx_policy=None):
     """Exact 3-stem filtergraph text ending in [master]. Input numbers are ffmpeg input indexes.
 
     sfx_clips: [{"input_index", "trim_in_sec", "trim_out_sec"}] in reel order (concatenated into [h3_sfx_full]).
@@ -314,6 +343,8 @@ def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
     total = float(total_reel_duration_sec)
     if not sfx_clips or total <= 0:
         raise ValueError("need at least one SFX clip and a positive total_reel_duration_sec")
+    if sfx_policy is not None and len(sfx_policy) != len(sfx_clips):
+        raise ValueError(f"sfx_policy has {len(sfx_policy)} entries for {len(sfx_clips)} SFX clips")
     chains, labels, sfx_sum = [], [], 0.0
     for n, c in enumerate(sfx_clips):
         dur = c["trim_out_sec"] - c["trim_in_sec"]
@@ -321,9 +352,13 @@ def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
             raise ValueError(f"SFX clip {n} has no duration")
         sfx_sum += dur
         labels.append(f"sfx{n}")
+        pol = sfx_policy[n] if sfx_policy is not None else None
+        raw = f"sfx{n}raw" if pol else labels[-1]
         chains.append(f"{_src(c['input_index'])}atrim=start={c['trim_in_sec']:.3f}:end={c['trim_out_sec']:.3f},"
                       f"asetpts=PTS-STARTPTS,{MIX_FORMAT},afade=t=in:st=0:d={FADE_SEC:.3f},"
-                      f"afade=t=out:st={dur - FADE_SEC:.3f}:d={FADE_SEC:.3f}[{labels[-1]}]")
+                      f"afade=t=out:st={dur - FADE_SEC:.3f}:d={FADE_SEC:.3f}[{raw}]")
+        if pol:
+            chains.append(sfx_policy_filter(raw, labels[-1], pol["keep"], pol["bed_gain_db"]))
     if sfx_sum > total + 1e-3:
         raise ValueError(f"SFX stem {sfx_sum:.3f}s is longer than the reel {total:.3f}s; atrim would cut it")
     chains.append("".join(f"[{l}]" for l in labels) + f"concat=n={len(labels)}:v=0:a=1[h3_sfx_full]")
@@ -345,23 +380,26 @@ def build_mix_filter(sfx_clips, vo_input, bgm_input, total_reel_duration_sec):
 
 
 def build_final_mux_argv(video_path, audio_paths, mix_filter, out_mp4, *, burn_captions=True, ass_path=None,
-                         fonts_dir=None):
+                         fonts_dir=None, pre_vf=None):
     """argv for the final mp4 (no execution). Input 0 is the video; audio_paths are inputs 1..N, the numbering
     build_mix_filter expects.
 
     burn_captions=True burns the .ass captions in with the bundled font and re-encodes the video (libx264, crf 14,
     preset slow, yuv420p, 24 fps). burn_captions=False copies the video (draft and tests only). The audio is always
     AAC. No -shortest, so the audio tail is never cut. Run ffmpeg from the repo root so relative caption and font
-    paths resolve."""
+    paths resolve. pre_vf (default None) is a video filter run before the ass burn (build_final_reel's 768x1344 crop)."""
     if f"[{MASTER_LABEL}]" not in mix_filter:
         raise ValueError(f"mix filter must end in [{MASTER_LABEL}]")
     argv = ["ffmpeg", "-y", "-i", str(video_path)]
     for p in audio_paths:
         argv += ["-i", str(p)]
+    if pre_vf and not burn_captions:
+        raise ValueError("pre_vf (the delivery crop/scale) runs before the captions, so it needs burn_captions=True")
     if burn_captions:
         if not ass_path:
             raise ValueError("burn_captions=True needs ass_path, the .ass file to burn in")
-        graph = f"{mix_filter};[0:v]{build_subtitles_filter(ass_path, fonts_dir)}[vsub]"
+        pre =f"{pre_vf}," if pre_vf else ""                  # pre_vf runs before the ass burn, so captions land on the delivery frame
+        graph = f"{mix_filter};[0:v]{pre}{build_subtitles_filter(ass_path, fonts_dir)}[vsub]"
         video_map = "[vsub]"
         video_args = ["-c:v", "libx264", "-crf", "14", "-preset", "slow", "-pix_fmt", "yuv420p", "-r", str(FPS)]
     else:
@@ -390,7 +428,7 @@ def parse_loudness_text(text):
 
 
 def check_post_aac_loudness(ffmpeg_text):
-    """Gate D final audio: integrated loudness within LOUDNESS (core.json delivery.audio: -16 LUFS +-0.5) and true peak at
+    """Gate D final audio: integrated loudness within LOUDNESS (core.json delivery.audio: -14 LUFS +-0.5) and true peak at
     most the ceiling (-1 dBTP), measured on the AAC mp4."""
     m = parse_loudness_text(ffmpeg_text)
     errors = []

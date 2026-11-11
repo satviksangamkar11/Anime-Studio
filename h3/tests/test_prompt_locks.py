@@ -15,7 +15,7 @@ SOUND = "overall_soundscape: Sound effects only: Rain on wet stone, a distant be
 def _prompt(extra="", snd=SOUND):
     """A minimal emitted prompt: header, one description line with the mouth lock, soundscape, music N/A."""
     return ("How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the "
-            "0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the 7.29-second mark of the target video.\n\n"
+            "0.00-second mark of the target video; Picture 2 (from Shot 1) aligns with the 7.29-second mark of the target video.\n"
             "integrated_multimodal_description: [Shot 1] Hand-drawn anime cel animation, flat colour. The figure holds "
             f"still, {MOUTH_LOCK_PHRASE}.{extra}\n{snd}\nnon_diegetic_music: N/A")
 

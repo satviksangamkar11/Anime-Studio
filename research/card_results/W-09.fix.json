@@ -1,0 +1,12 @@
+{"card": "W-09", "fix_ok": true,
+ "fixed": [
+  "soft-end check now reads frame['input_video_strength'] after shot_mode.frame_row (card step 5); test_soft_strength_read_from_built_frame",
+  "main refuses routes that are not a JSON object with ValueError (was AttributeError); test_main_refuses_routes_that_are_not_an_object",
+  "test_settings_sha_from_real_runner_output: decodes real run_kaggle.build output with the module regex; proves settings_sha256 on real text"
+ ],
+ "rejected": [
+  "Super 1 SETTINGS_RE: wrong; the real runner line is 'for sid, settings in json.loads(base64.b64decode(\"...\")).items()' and the regex matches it (the runner also has an images blob first, which the test's own regex had caught)",
+  "Super 2 rename test_build_h3_batch_w09.py to test_build_h3_batch.py: rejected; director/test_build_h3_batch.py holds the W-08 tests and a rename would overwrite them; the gate runs both files",
+  "Super 4 / Dots 4 test_se_without_lock_end_position_refused cannot pass: wrong; it passes (shot_mode raises ShotModeError, a ValueError subclass)",
+  "Dots 1-3 and 5: no defect (test_se_route_has_end and the other listed tests match the card)"
+ ]}

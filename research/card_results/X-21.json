@@ -1,0 +1,13 @@
+{
+ "card": "X-21",
+ "ok": true,
+ "plan": "research/OPUS_PLAN_P3_BLOCKING_WRITER_ASSEMBLY_CLOSURE_2026-11-11.md",
+ "files": [
+  "tools/precommit_check.py"
+ ],
+ "test_file": "tools/test_precommit_cards.py",
+ "more_tests": [
+  "tools/test_precommit_check.py"
+ ],
+ "note": "Super edit damaged the file (dropped secret_scan rules) and was fixed by hand: scan_secrets uses secret_scan again; all 5 precommit suites pass"
+}

@@ -1,0 +1,9 @@
+# Haiku medium review-fixer (owner order until 21:00: Haiku medium codes instead of Super)
+Project: D:\aai work\anime_studio_merge (git worktree; run every command there).
+Your task file is research/card_results/<CARD>_fix_task.md (the card text + two independent reviews: Luna = reliable, Dots = noisy). The card's result file research/card_results/<CARD>.json lists "files" (modules), "test_file" and "more_tests".
+1. Read the task file and the module + test files. For EVERY review finding: verify it against the real code. Fix the ones that are correct (surgical Edit tool edits). Ignore (and list in your report) the ones you can show are wrong.
+2. For each fixed defect add or strengthen a test in the card's test_file so that the test FAILS on the old code and passes now. Do not weaken or delete existing tests.
+3. Gate: python -m pytest -q <test_file> <more_tests> all green; and python -m pytest -q director h3 tools score -q -x -p no:cacheprovider 2>&1 | tail -3 shows no failure caused by you (failures in files other agents are fixing at the same time are not yours; name them).
+4. Rules: edit only the card's module files and test file (plus the doc/hook file the card owns); standard library only; no network, no model call; NEVER run git checkout/stash/reset/commit/push; no line over 120 chars; check each file with ast.parse; use the Write/Edit tools (no python heredoc for code with backslashes); no code that reads files at import time.
+5. Log each step: echo "$(date +%m-%d\ %H:%M) | haiku-fix-<CARD> | <EDIT or TEST or FAIL> | <files> | <result>" >> "D:/aai work/anime_studio/PROJECT_LOG.md"
+6. When the gate passes, write research/card_results/<CARD>.fix.json (Write tool): {"card":"<CARD>","fix_ok":true,"fixed":[short list],"rejected":[short list]}. Report in at most 8 lines.

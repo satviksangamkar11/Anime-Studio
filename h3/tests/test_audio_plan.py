@@ -100,7 +100,7 @@ MEASURED = {"a": -23.7, "b": -10.2, "c": -21.1}
 
 def test_loudness_plan_gains_and_limit():
     plan = loudness_plan(MEASURED)
-    assert {k: v["gain_db"] for k, v in plan.items()} == {"a": 7.7, "b": -5.8, "c": 5.1}
+    assert {k: v["gain_db"] for k, v in plan.items()} == {"a": 9.7, "b": -3.8, "c": 7.1}
     assert all(v["limit"] == 0.8913 for v in plan.values())
 
 
@@ -114,7 +114,7 @@ def test_filter_order_volume_limiter_then_fades(story):
     loud = loudness_plan({"SYN_A": -23.7})
     fc = build_ffmpeg_assembly_plan(_shots(story), "out.mp4", loudness=loud)["filter_complex"]
     chain = next(c for c in fc.split(";") if c.startswith("[0:a]"))
-    assert chain == ("[0:a]atrim=start=0.00:end=6.04,asetpts=PTS-STARTPTS,volume=7.7dB,"
+    assert chain == ("[0:a]atrim=start=0.00:end=6.04,asetpts=PTS-STARTPTS,volume=9.7dB,"
                      "alimiter=limit=0.8913:level=disabled,afade=t=in:st=0:d=0.005,"
                      "afade=t=out:st=6.035:d=0.005[a0]")
 
@@ -137,7 +137,7 @@ def test_write_loudness_json_content(tmp_path):
     path = write_loudness_json(str(tmp_path / "loudness.json"), MEASURED, loudness_plan(MEASURED))
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
-    assert doc == {"target_lufs": -16.0, "true_peak_db": -1.0, "clips": {
-        "a": {"measured_lufs": -23.7, "gain_db": 7.7, "limit": 0.8913},
-        "b": {"measured_lufs": -10.2, "gain_db": -5.8, "limit": 0.8913},
-        "c": {"measured_lufs": -21.1, "gain_db": 5.1, "limit": 0.8913}}}
+    assert doc == {"target_lufs": -14.0, "true_peak_db": -1.0, "clips": {
+        "a": {"measured_lufs": -23.7, "gain_db": 9.7, "limit": 0.8913},
+        "b": {"measured_lufs": -10.2, "gain_db": -3.8, "limit": 0.8913},
+        "c": {"measured_lufs": -21.1, "gain_db": 7.1, "limit": 0.8913}}}
