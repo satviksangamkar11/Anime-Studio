@@ -1,0 +1,11 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-06",
+ "files": [
+  "director/keyframe_jobs.py"
+ ],
+ "test_file": "director/test_keyframe_jobs_m06.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-06*.md"
+ }
+}

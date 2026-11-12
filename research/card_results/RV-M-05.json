@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-05",
+ "files": [
+  "director/MASTER_PROMPT_v2.4.md",
+  "director/write_pack.py"
+ ],
+ "test_file": "director/test_master_prompt_v24.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-05*.md"
+ }
+}

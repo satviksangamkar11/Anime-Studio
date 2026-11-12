@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-07",
+ "files": [
+  "director/script_pacing.py",
+  "director/script_hook.py"
+ ],
+ "test_file": "director/test_script_pacing.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-07*.md"
+ }
+}

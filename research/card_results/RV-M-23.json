@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-23",
+ "files": [
+  "director/story_shape.py",
+  "director/write_pack_glue.py"
+ ],
+ "test_file": "director/test_story_shape.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-23*.md"
+ }
+}

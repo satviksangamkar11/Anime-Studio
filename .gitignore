@@ -56,3 +56,4 @@ research/assay_run*.log
 ledgers/
 .edit_runner_backup/
 .edit_runner_backup*/
+research/sample_index_reel_libs.json

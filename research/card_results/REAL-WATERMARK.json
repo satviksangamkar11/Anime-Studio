@@ -1,0 +1,11 @@
+{
+  "card": "REAL-WATERMARK",
+  "ok": true,
+  "scope": "4 real Flow 2K finals (Nano Banana 2.1, 9:16, 1536x2752), watermark_auto on copies",
+  "verified_all": true,
+  "stamps_before_after": "1/0 on each of 4",
+  "method": "remove_sparkle on all 4 (no LaMa fallback)",
+  "visual_caveat": "G3 (score 0.661) and G4 show visible smudge where the star was; G1 and G2 near clean. The verified flag checks the stamp only, not the fill quality. Not a final-quality pass without a visual check.",
+  "report": "research/FLOW_WM_TEST_2026-11-12.md",
+  "files": ["flow/generated/_flow_wm_test_2026-11-12/clean/"]
+}

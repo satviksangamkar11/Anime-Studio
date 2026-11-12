@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-04",
+ "files": [
+  "director/blocking.py",
+  "director/blocking_lint.py"
+ ],
+ "test_file": "director/test_blocking_11.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-04*.md"
+ }
+}

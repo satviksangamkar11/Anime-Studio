@@ -1,0 +1,7 @@
+# W2-A (G1, G2, G13, G14, G22) by sonnet-W2A
+- G1: new h3/silence_rule.py (numpy, E4 constants, check_wav/check_array/reel_windows); gate_d_audio.check_no_silence is now a thin wrapper (v2 errors, QUIET as warning strings); waivers.CRITICAL_CODES + DIGITAL_SILENCE, DROPOUT, CHANNEL_DROP.
+- G2: build_final_reel: intake runs the rule on the trimmed mix; main decodes each export (master_wav_argv) after correct_loudness, stores entry["silence"], a fail renames the export _REJECTED and blocks the language (DEAD_AIR waivable via waivers); master_audio_check/audio_gate_from_wav are CLIP_AUDIO_QUIET warnings only.
+- G13/G14: write_srt + srt_line_cues + line_captions (spoken_cues_real refactored onto line_captions, same output). SRT = <export stem>.srt, after loudness+silence ok; entry srt_path/srt_sha256; old cx.write_sidecars call removed (unversioned, pre-export). Title-card mode writes the cards as SRT.
+- G22: --ocr JSON -> text_card_qa.check_cards(cards, lang) -> TEXT_CARD_QA blocking error before the export; entry["text_card_qa"].
+- Tests: h3/tests/test_silence_rule.py (12), director/test_silence_srt_wiring.py (13), test_text_card_qa (+1); rewrote h3/tests/test_gate_d_no_silence.py NO_SILENCE cases and 2 in director/test_m26_wiring.py to the v2 behaviour.
+- Spec notes: a 40 ms zero gap inside a LOUD signal is also a DROPOUT per rule 2 (so test 40ms uses a -55 dBFS bed). voice_rest/silence_ok are read from lock row keys "voice_rest"/"silence_ok" (shot-relative lists) when G11 provides them; absent = no exemption.

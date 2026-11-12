@@ -1,0 +1,11 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-15",
+ "files": [
+  "score/cue_sheet.py"
+ ],
+ "test_file": "score/tests/test_cue_sheet_rows.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-15*.md"
+ }
+}

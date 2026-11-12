@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-03",
+ "files": [
+  "h3/v4_to_h3.py",
+  "h3/schema_and_linter.py"
+ ],
+ "test_file": "h3/tests/test_opus_examples.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-03*.md"
+ }
+}

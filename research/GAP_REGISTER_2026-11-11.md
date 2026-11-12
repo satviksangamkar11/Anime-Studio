@@ -164,3 +164,9 @@ PARTIAL: W-07 (D1 owner), X-16 (rule 51 + voice manifest not built).
 IN PROGRESS: W-12 (editorial_by_lang shim), X-24 (end-to-end offline test).
 CONDITIONAL / NOT BUILT: W-10 (soft-end handler patch; owner D4 + paid canary).
 REVIEWS: Dots + Luna done for 14 cards, findings fixed for X-09 X-10 X-11 X-13 X-14 X-15 X-20 X-21 X-22 W-01 W-02; running for W-03 W-09 X-04 X-12 X-19 X-26 W-11; still to start: X-05..X-18 re-check, W-12, X-24; then the final cross-review of this register.
+
+
+## 9. Status at 11-12 02:15
+Pushed (feb7355): 49 of 54 cards at tool level + 8 end-to-end gaps fixed. Suite 3860 pass at push time.
+Open: W-07 (D1), X-16 (rule 51; the voice manifest module exists, integration unverified), W-10 (D4, not built), real-data proofs (real ffmpeg: Super job; watermark: proven-system alignment in progress; Colab canary + ElevenLabs need the owner's go), second review pass, final cross-review of this register.
+New from real tests: watermark_auto order was wrong (alpha-first smudges; JPEG output); fix in progress. New from the reel analysis: 11 proposed system changes (gemini_results/SUMMARY_AND_PROPOSED_CHANGES.md) and an Opus calibration review (research/OPUS_CALIBRATION_REVIEW_2026-11-12.md, in progress).

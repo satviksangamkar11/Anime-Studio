@@ -1,0 +1,11 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-18",
+ "files": [
+  "tools/animatic.py"
+ ],
+ "test_file": "tools/test_animatic.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-18*.md"
+ }
+}

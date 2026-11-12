@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-19",
+ "files": [
+  "director/continuity_sheet.py",
+  "flow/scripts/bible_to_sheet_jobs.py"
+ ],
+ "test_file": "director/test_continuity_sheet.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-19*.md"
+ }
+}

@@ -1,0 +1,4 @@
+- [run_colab_batch.py:497](/D:/aai%20work/anime_studio_merge/director/run_colab_batch.py:497): `--qa-plan` is optional, so a completed fetch can return success without running the card’s required post-fetch QA. **Fix:** require `--qa-plan`, `--routes`, and `--pack` before starting the batch, then always call `run_from_files` after fetch.
+- [run_colab_batch.py:493](/D:/aai%20work/anime_studio_merge/director/run_colab_batch.py:493): when the batch stops with an error, `main` returns before QA, even though partial clips may have been fetched and recorded. **Fix:** run QA on fetched shots before returning for `stopped`, and return nonzero if either the batch or QA failed.
+
+VERDICT: FIX-FIRST

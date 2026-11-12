@@ -1,0 +1,5 @@
+- **`director/shot_router.py:124` — required continuation behavior is gated into an error.** `plan_from_blocking` raises when a `chain_from` shot is encountered while `allow_s` is false. The card says continuations use S; with the default flag off, this path stops instead of producing an S route. Return the S route for a continuation regardless of `allow_s`, and add a test for `chain_from` with the flag off.
+
+- **The card-listed S-route linter test is missing.** `h3/tests/test_m02_start_only.py:71` tests a shot with `picture_2_path` removed, so `route_shot` independently selects `I2VA`. It does not test S selected through `lint_story(..., routes=...)` while the story still has Picture 2—the route-file case the linter docstring describes. Add that case and assert the S prompt passes PR-01 while TG-01 and TX-01 still run. The current test at line 74 does not establish those requirements.
+
+VERDICT: FIX-FIRST

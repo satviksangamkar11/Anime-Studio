@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-26",
+ "files": [
+  "director/build_final_reel.py",
+  "director/run_colab_batch.py"
+ ],
+ "test_file": "director/test_m26_wiring.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-26*.md"
+ }
+}

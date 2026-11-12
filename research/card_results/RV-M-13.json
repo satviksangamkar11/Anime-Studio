@@ -1,0 +1,11 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-13",
+ "files": [
+  "director/chain_step.py"
+ ],
+ "test_file": "director/test_chain_step.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-13*.md"
+ }
+}

@@ -1,0 +1,5 @@
+- `make_animatic` calls `ffconcat_text(entries)`, which accesses `entries[-1]`. An empty entry list therefore crashes with an `IndexError` instead of a clear validation error. Reject empty entries at the start of `check_entries`, for example: `if not entries: raise ValueError("at least one still is required")`.
+
+- The card requires a guide track, but `make_animatic(..., guide=None)` and `make_all(..., guides=None)` permit generating an MP4 without one. Require a guide and validate that its path exists before invoking ffmpeg; reject missing or nonexistent guide paths.
+
+- `test_real_ffmpeg_output_is_24fps` checks only `r_frame_rate`. It does not verify that the MP4 contains the guide audio or that the rendered duration matches the stills, so those card requirements can fail without the test noticing. Add an integration test with a real guide track and probe the output for an audio stream and expected duration.

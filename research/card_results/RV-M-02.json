@@ -1,0 +1,14 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-02",
+ "files": [
+  "h3/compile_h3_sing8.py",
+  "h3/shot_mode.py",
+  "director/shot_router.py",
+  "director/build_h3_batch.py"
+ ],
+ "test_file": "h3/tests/test_m02_start_only.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-02*.md"
+ }
+}

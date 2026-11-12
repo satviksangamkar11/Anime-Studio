@@ -1,0 +1,1 @@
+{"card":"M-24","ok":true,"plan":"IMPLEMENTATION_CHECKLIST_2026-11-12","files":["director/keyframe_gate.py","director/build_h3_batch.py","h3/render_controller.py"],"test_file":"director/test_keyframe_gate_m24.py","more_tests":["director/test_build_h3_batch_m24.py","h3/tests/test_render_controller_m24.py"],"note":"coded by Haiku medium"}

@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-28",
+ "files": [
+  "director/post_fetch_qa.py",
+  "director/run_colab_batch.py"
+ ],
+ "test_file": "director/test_post_fetch_qa.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-28*.md"
+ }
+}

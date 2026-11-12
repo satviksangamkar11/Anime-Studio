@@ -1,0 +1,12 @@
+{
+ "plan": "research/IMPLEMENTATION_CHECKLIST_2026-11-12.md",
+ "card": "M-12",
+ "files": [
+  "director/write_timeline_lock.py",
+  "director/timeline_lock_core.py"
+ ],
+ "test_file": "director/test_timeline_lock_m12.py",
+ "edit_report": {
+  "note": "implemented by a Claude subagent; see research/card_results/M-12*.md"
+ }
+}

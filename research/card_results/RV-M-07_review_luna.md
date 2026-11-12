@@ -1,0 +1,3 @@
+The card names `test_rehook_uses_core_fraction` and `test_length_window_from_story`, but the test file defines neither. Rename or consolidate the relevant tests so those required test names exist: the re-hook coverage is currently split across `test_rehook_uses_core_fraction_default_file` and `test_rehook_uses_passed_core_fraction` ([test_script_pacing.py](/D:/aai%20work/anime_studio_merge/director/test_script_pacing.py)), and the story length coverage is split across `test_length_target_from_story_warns_outside_10_percent` and `test_length_target_from_story_no_warning_when_on_target` ([test_script_pacing.py](/D:/aai%20work/anime_studio_merge/director/test_script_pacing.py)).
+
+VERDICT: FIX-FIRST.
