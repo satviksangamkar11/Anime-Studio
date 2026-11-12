@@ -17,6 +17,12 @@ _VALID_FEATURES = {
 }
 
 
+
+@pytest.fixture(autouse=True)
+def _s_gate_off(monkeypatch):
+    # M-32: S is the default route now; this file pins the SE-family behaviour, so it switches the S gate off
+    monkeypatch.setenv("SHOT_MODE_S_ALLOW", "0")
+
 def test_list_id_raises_router_error():
     shots = [{"id": [1, 2], "features": _VALID_FEATURES}]
     with pytest.raises(shot_router.RouterError):

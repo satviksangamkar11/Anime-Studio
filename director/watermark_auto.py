@@ -1,8 +1,8 @@
-"""Automatic Flow-watermark (corner sparkle) removal for 2K images: remove_sparkle first, LaMa second, a measured check.
+"""Automatic Flow-watermark (corner sparkle) removal for 2K images: LaMa from the original first, lama_on_clean second, a measured check.
 
-process(image) never touches the original file. A cleaned copy is written as <name>_clean<ext> into out_dir, and one
-JSON line goes to watermark_log.jsonl. status "clean" = the check passed; "needs_manual" = it did not (no _clean file,
-no success claimed). The LaMa model and torch are loaded only when the fallback runs, never at import time.
+process(image) never touches the original file. A PNG master <name>__final.png is written into out_dir (variants in _sparkle_check/), and one
+JSON line goes to watermark_log.jsonl. status "clean" = the check passed; "needs_manual" = it did not (no __final file,
+no success claimed). Alpha-only removal runs only with allow_alpha_only. The LaMa model and torch load lazily.
 
 Check (sparkle_left): the same stamp detector that remove_sparkle uses (template match, THR 0.7, tuned on real Flow
 finals) must find NO stamp in the corner window after cleaning. Image too small for the window: unverified.
@@ -13,9 +13,9 @@ CLI: python director/watermark_auto.py PATH [--out DIR] [--record FILE]   (PATH 
      python director/watermark_auto.py --calibrate CLEAN_DIR DIRTY_DIR   (reports stamp counts only, sets nothing)
 """
 import argparse
+import datetime
 import hashlib
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -25,11 +25,17 @@ import numpy as np
 FLOW_SCRIPTS = Path(__file__).resolve().parents[1] / "flow" / "scripts"
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
 RECORD_NAME = "watermark_log.jsonl"
+MARGINAL_SCORE = 0.8                 # stamp match below this = marginal: a human looks at the crop
+WEIGHTS_NAME = "big-lama.pt"
 _LAMA = {}                            # cached LaMa model, filled on first fallback only
 
 
 class WatermarkInputError(ValueError):
     """Empty, unreadable or non-image input: refused before any work."""
+
+
+class WeightsMissingError(RuntimeError):
+    """LaMa weights missing: refused, never a silent fall back to the smudging alpha-only method."""
 
 
 def sha256_file(path):
@@ -72,66 +78,112 @@ def _remove_sparkle_method(rgb):
     return clean
 
 
+def _lama_model():
+    lama = _flow_module("lama_inpaint")
+    if not Path(lama.WEIGHTS).is_file():
+        raise WeightsMissingError(f"LaMa weights not found: {lama.WEIGHTS} (use --allow-alpha-only to accept the smudging method)")
+    if "model" not in _LAMA:
+        _LAMA["model"] = lama.load_model()
+    return lama, _LAMA["model"]
+
+
 def _lama_method(rgb):
+    """Proven default: LaMa fills the stamp window of the ORIGINAL."""
     lama = _flow_module("lama_inpaint")
     rs = _flow_module("remove_sparkle")
     if not lama.stamps_of(rgb, rs.THR):
         return rgb.copy()
-    if "model" not in _LAMA:
-        _LAMA["model"] = lama.load_model()
-    return lama.lama_blend(rgb, lama.sparkle_mask(rgb, rs.THR), _LAMA["model"])
+    lama, model = _lama_model()
+    return lama.lama_blend(rgb, lama.sparkle_mask(rgb, rs.THR), model)
+
+
+def _lama_on_clean_method(rgb):
+    """Hybrid: LaMa on the alpha-cleaned image with the small residue mask (for faint alpha residue)."""
+    lama = _flow_module("lama_inpaint")
+    rs = _flow_module("remove_sparkle")
+    if not lama.stamps_of(rgb, rs.THR):
+        return rgb.copy()
+    lama, model = _lama_model()
+    return lama.lama_blend(_remove_sparkle_method(rgb), lama.sparkle_mask(rgb, rs.THR, lama.RESIDUE_DILATE), model)
+
+
+def _min_score(rgb):
+    rs = _flow_module("remove_sparkle")
+    scores = [st[0] for st in rs.find_stars(rgb, rs.THR)]
+    return min(scores) if scores else None
 
 
 def _append_record(record_path, rec):
     record_path.parent.mkdir(parents=True, exist_ok=True)
     with open(record_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        f.write(json.dumps(rec, ensure_ascii=False) + chr(10))
 
 
-def process(image_path, out_dir, *, first=None, fallback=None, record_path=None):
-    """Clean one image. first/fallback: rgb -> rgb callables (default remove_sparkle, then LaMa). Returns the record."""
+def _write_png(path, rgb):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    assert cv2.imwrite(str(path), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)), f"write failed: {path}"
+
+
+def process(image_path, out_dir, *, lama=None, lama_on_clean=None, alpha_only=None, allow_alpha_only=False,
+            record_path=None):
+    """Clean one image (proven system, IMAGE_SYSTEM_FULL.md section 13). Candidates, each verified by sparkle_left == 0:
+    lama (from the ORIGINAL) -> lama_on_clean -> alpha_only (only with allow_alpha_only). The master is a PNG
+    <name>__final.png in out_dir; every verified variant is kept in out_dir/_sparkle_check/. The original is never touched.
+    needs_review is true when the method was not plain lama or the stamp match was marginal (score < MARGINAL_SCORE)."""
     src = Path(image_path)
     rgb = load_rgb(src)                                   # refuses before any work
     out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    dst = out_dir / f"{src.stem}_clean{src.suffix}"
+    dst = out_dir / f"{src.stem}__final.png"
     if dst.resolve() == src.resolve():
         raise WatermarkInputError(f"output would overwrite the original: {src}")
+    steps = [("lama", lama or _lama_method), ("lama_on_clean", lama_on_clean or _lama_on_clean_method)]
+    if allow_alpha_only:
+        steps.append(("alpha_only", alpha_only or _remove_sparkle_method))
     before = sha256_file(src)
-    steps = [("remove_sparkle", first or _remove_sparkle_method), ("lama", fallback or _lama_method)]
+    stamps_before = sparkle_left(rgb)
+    score = _min_score(rgb)
     method, cand, stamps_left, errors = None, None, None, []
     for name, fn in steps:
         try:
             out = fn(rgb)
+        except WeightsMissingError:
+            if not allow_alpha_only:
+                raise                                     # never a silent fall back to the smudging method
+            errors.append(f"{name}: LaMa weights missing")
+            continue
         except Exception as exc:                          # a failing method is a failed check, not a crash
             errors.append(f"{name}: {exc}")
             continue
         left = sparkle_left(out)
         if left == 0:
+            _write_png(out_dir / "_sparkle_check" / f"{src.stem}__{name}.png", out)
             method, cand, stamps_left = name, out, 0
             break
-        stamps_left = left
-        errors.append(f"{name}: stamps left {left}")
+        else:
+            stamps_left = left
+            errors.append(f"{name}: stamps left {left}")
     verified = cand is not None
     after = None
     if verified:
-        if np.array_equal(cand, rgb):
-            shutil.copyfile(src, dst)                     # already clean: keep the bytes, not a re-encode
-        else:
-            assert cv2.imwrite(str(dst), cv2.cvtColor(cand, cv2.COLOR_RGB2BGR)), f"write failed: {dst}"
+        _write_png(dst, cand)
         after = sha256_file(dst)
-    rec = {"path": str(src), "clean_path": str(dst) if verified else None, "sha256_before": before,
-           "sha256_after": after, "method": method, "verified": verified,
-           "status": "clean" if verified else "needs_manual", "stamps_left": stamps_left, "errors": errors}
+    marginal = score is not None and score < MARGINAL_SCORE
+    rec = {"time": datetime.datetime.now().astimezone().isoformat(), "title": src.stem, "method": method,
+           "verdict": "auto_verified" if verified else "needs_manual", "final_sha256": after,
+           "weights": Path(WEIGHTS_NAME).name, "backfilled": False,
+           "path": str(src), "clean_path": str(dst) if verified else None, "sha256_before": before, "sha256_after": after,
+           "verified": verified, "status": "clean" if verified else "needs_manual",
+           "stamps_before": stamps_before, "stamps_after": stamps_left, "stamps_left": stamps_left, "min_stamp_score": score,
+           "needs_review": (not verified) or method != "lama" or marginal, "errors": errors}
     _append_record(Path(record_path) if record_path else out_dir / RECORD_NAME, rec)
     return rec
 
 
 def process_folder(folder, out_dir, *, record_path=None, **kw):
-    """Clean every image in folder (skips *_clean.* files). Returns counts; refused inputs are counted, not raised."""
+    """Clean every image in folder (skips *__final.* files). Returns counts; refused inputs are counted, not raised."""
     counts = {"total": 0, "clean": 0, "needs_manual": 0, "refused": 0}
     for p in sorted(Path(folder).iterdir()):
-        if not p.is_file() or p.suffix.lower() not in IMAGE_SUFFIXES or p.stem.endswith("_clean"):
+        if not p.is_file() or p.suffix.lower() not in IMAGE_SUFFIXES or p.stem.endswith("__final"):
             continue
         counts["total"] += 1
         try:
@@ -169,6 +221,8 @@ def main(argv=None):
     ap.add_argument("path", type=Path, nargs="?", help="one image, or a folder of images")
     ap.add_argument("--out", type=Path, default=None, help="output folder (default: the input folder)")
     ap.add_argument("--record", type=Path, default=None, help=f"record file (default: <out>/{RECORD_NAME})")
+    ap.add_argument("--allow-alpha-only", action="store_true",
+                    help="allow plain alpha inversion as a last resort (leaves smudges; default off)")
     ap.add_argument("--calibrate", nargs=2, metavar=("CLEAN_DIR", "DIRTY_DIR"),
                     help="report stamp counts for known-clean and known-dirty folders; changes nothing")
     a = ap.parse_args(argv)
@@ -178,9 +232,10 @@ def main(argv=None):
     if a.path is None:
         ap.error("give PATH, or --calibrate CLEAN_DIR DIRTY_DIR")
     if a.path.is_dir():
-        print(process_folder(a.path, a.out or a.path, record_path=a.record))
+        print(process_folder(a.path, a.out or a.path, record_path=a.record, allow_alpha_only=a.allow_alpha_only))
     else:
-        print(json.dumps(process(a.path, a.out or a.path.parent, record_path=a.record), ensure_ascii=False))
+        print(json.dumps(process(a.path, a.out or a.path.parent, record_path=a.record,
+                                     allow_alpha_only=a.allow_alpha_only), ensure_ascii=False))
 
 
 if __name__ == "__main__":

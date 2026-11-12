@@ -6,6 +6,9 @@ import re
 import shot_router
 
 SCHEMA = "blocking/1"
+SCHEMA_11 = "blocking/1.1"
+SCHEMAS = (SCHEMA, SCHEMA_11)
+CAPTION_SAFE_Y = 0.62
 
 KINDS = shot_router._VALID_KINDS
 
@@ -16,6 +19,18 @@ _CAMERA_FRAMINGS = ("wide", "medium", "close", "extreme_close")
 _LIGHT_DIRS = ("left", "right", "top", "back", "front")
 _SIDES = ("left", "right", "top", "bottom")
 _CUT_TO_NEXT = ("match", "cut")
+_PACES = ("walk", "slow", "fast")
+# blocking/1.1 enums (additive, optional; 1.0 sheets never carry these keys)
+_EMOTIONS = ("awe", "dread", "intimacy", "grief", "resolve", "triumph", "calm")
+_COMPOSITIONS = ("thirds_left", "thirds_right", "centred", "negative_space", "foreground_frame", "leading_lines")
+_CAMERA_ANGLES = ("eye_level", "low", "high", "ground", "overhead")
+_CAMERA_LENSES = ("wide", "normal", "tele")
+_CAMERA_11_MOVES = ("locked", "push_in", "pull_back", "pan_left", "pan_right", "tilt_up", "tilt_down",
+                    "track_left", "track_right", "orbit_left", "orbit_right", "crane_up", "crane_down",
+                    "handheld_drift")
+_HOOKS = ("kinetic", "scale_tableau", "voice_call", "none")
+_SOUND_KINDS = ("hit", "bed")
+SILENCE_OK_MAX_S = 2.0  # G11: owner-tagged dramatic silence, shot-relative seconds
 
 
 class BlockingError(ValueError):
@@ -60,7 +75,7 @@ def _validate_pose(pose, shot_id, problems):
 def _validate_pace(member, shot_id, problems):
     if "pace" in member:
         pace = member.get("pace")
-        if pace not in ("walk", "slow"):
+        if pace not in _PACES:
             problems.append("%s: BLK-S19 bad pace %s" % (shot_id, pace))
 
 
@@ -91,9 +106,108 @@ def pace_of(cast_member):
     if not isinstance(cast_member, dict):
         return "walk"
     pace = cast_member.get("pace")
-    if pace in ("walk", "slow"):
+    if pace in _PACES:
         return pace
     return "walk"
+
+
+def caption_safe(sheet):
+    """True when every speaking cast member's face is at or above the caption-safe line at start and end."""
+    cast = sheet.get("cast")
+    if not isinstance(cast, list):
+        return True
+    for member in cast:
+        if isinstance(member, dict) and member.get("speaks"):
+            for key in ("start", "end"):
+                pose = member.get(key)
+                y = pose.get("y") if isinstance(pose, dict) else None
+                if _is_number(y) and y > CAPTION_SAFE_Y:
+                    return False
+    return True
+
+
+def _opt_in(value, allowed):
+    return value is None or (_is_str(value) and value in allowed)
+
+
+def _valid_beat(beat):
+    return (isinstance(beat, dict)
+            and _is_number(beat.get("t"))
+            and _is_str(beat.get("label")) and re.match(r"^[A-Z]+(?: [A-Z]+){0,2}$", beat["label"]) is not None
+            and _is_str(beat.get("action"))
+            and _is_str(beat.get("physics"))
+            and isinstance(beat.get("primary"), bool))
+
+
+def _validate_11(sheet, shot_id, problems):
+    """blocking/1.1 optional fields: enums and shapes only. Timing and pairing rules live in blocking_lint."""
+    if not _opt_in(sheet.get("emotion"), _EMOTIONS):
+        problems.append("%s: BLK-S21 bad emotion" % shot_id)
+    if not _opt_in(sheet.get("composition"), _COMPOSITIONS):
+        problems.append("%s: BLK-S20 bad composition" % shot_id)
+    if not _opt_in(sheet.get("route"), shot_router.ROUTES):
+        problems.append("%s: BLK-S21 bad route" % shot_id)
+    if not _opt_in(sheet.get("hook_type"), _HOOKS):
+        problems.append("%s: BLK-S21 bad hook_type" % shot_id)
+    chain = sheet.get("chain_from")
+    if chain is not None and not (_is_str(chain) and re.match(r"^SHOT-\d{3}$", chain)):
+        problems.append("%s: BLK-S21 bad chain_from" % shot_id)
+    state = sheet.get("chain_state")
+    if state is not None and not (_is_str(state) and state.strip() and chain is not None):
+        problems.append("%s: BLK-S21 chain_state must be a non-empty string and needs chain_from" % shot_id)
+    pcs = sheet.get("prop_changes")
+    if pcs is not None:
+        ok = isinstance(pcs, list) and all(
+            isinstance(p, dict) and _is_str(p.get("prop")) and p["prop"].strip()
+            and _is_str(p.get("change")) and p["change"].strip() for p in pcs)
+        if not ok:
+            problems.append("%s: BLK-S21 bad prop_changes" % shot_id)
+    rest = sheet.get("voice_rest")
+    if rest is not None:
+        writer = sheet.get("writer_seconds")
+        ok = (isinstance(rest, list) and len(rest) == 2 and all(_is_number(v) for v in rest)
+              and _is_number(writer) and 0 <= rest[0] < rest[1] <= writer)
+        if not ok:
+            problems.append("%s: BLK-S21 bad voice_rest" % shot_id)
+    silence_ok = sheet.get("silence_ok")
+    if silence_ok is not None:
+        writer = sheet.get("writer_seconds")
+        ok = (isinstance(silence_ok, list) and len(silence_ok) == 2 and all(_is_number(v) for v in silence_ok)
+              and _is_number(writer) and 0 <= silence_ok[0] < silence_ok[1] <= writer
+              and silence_ok[1] - silence_ok[0] <= SILENCE_OK_MAX_S)
+        if not ok:
+            problems.append("%s: BLK-S21 bad silence_ok (shot-relative [t0, t1], max %.1f s)"
+                            % (shot_id, SILENCE_OK_MAX_S))
+    beats = sheet.get("beats")
+    if beats is not None and not (isinstance(beats, list) and all(_valid_beat(b) for b in beats)):
+        problems.append("%s: BLK-S21 bad beats" % shot_id)
+    camera = sheet.get("camera")
+    if isinstance(camera, dict):
+        if camera.get("move") is not None and camera.get("move") not in _CAMERA_11_MOVES:
+            problems.append("%s: BLK-S06 bad camera move enum" % shot_id)
+        if not _opt_in(camera.get("angle"), _CAMERA_ANGLES):
+            problems.append("%s: BLK-S06 bad camera angle" % shot_id)
+        if not _opt_in(camera.get("lens"), _CAMERA_LENSES):
+            problems.append("%s: BLK-S06 bad camera lens" % shot_id)
+        if camera.get("motivation") is not None and not _is_str(camera.get("motivation")):
+            problems.append("%s: BLK-S06 bad camera motivation" % shot_id)
+        shake = camera.get("shake")
+        if shake is not None:
+            ok = (isinstance(shake, dict) and _is_number(shake.get("t")) and shake["t"] >= 0
+                  and _is_number(shake.get("dur")) and 0.3 <= shake["dur"] <= 1.5)
+            if not ok:
+                problems.append("%s: BLK-S06 bad camera shake" % shot_id)
+    cast = sheet.get("cast")
+    for member in cast if isinstance(cast, list) else []:
+        if isinstance(member, dict):
+            if "hold" in member and not isinstance(member["hold"], bool):
+                problems.append("%s: BLK-S16 cast hold must be bool" % shot_id)
+            if "expression" in member and not _is_str(member["expression"]):
+                problems.append("%s: BLK-S16 cast expression must be str" % shot_id)
+    cues = sheet.get("sound_cues")
+    for cue in cues if isinstance(cues, list) else []:
+        if isinstance(cue, dict) and "kind" in cue and cue["kind"] not in _SOUND_KINDS:
+            problems.append("%s: BLK-S21 bad sound cue kind" % shot_id)
 
 
 def validate(sheet):
@@ -107,8 +221,8 @@ def validate(sheet):
         if not isinstance(shot_id, str) or not re.match(r"^SHOT-\d{3}$", shot_id):
             shot_id = "UNKNOWN"
             problems.append("UNKNOWN: BLK-S01 bad shot_id")
-        if sheet.get("schema") != SCHEMA:
-            problems.append("%s: BLK-S02 schema must be %s" % (shot_id, SCHEMA))
+        if sheet.get("schema") not in SCHEMAS:
+            problems.append("%s: BLK-S02 schema must be %s" % (shot_id, " or ".join(SCHEMAS)))
         if "plate_id" not in sheet:
             problems.append("%s: BLK-S03 missing plate_id" % shot_id)
         elif not isinstance(sheet["plate_id"], str) or not re.match(r"^PLATE-[A-Za-z0-9_-]+$", sheet["plate_id"]):
@@ -230,6 +344,8 @@ def validate(sheet):
                 _validate_pose(member.get("end"), shot_id, problems)
                 _validate_pace(member, shot_id, problems)
                 _validate_turn(member, shot_id, problems)
+        if sheet.get("schema") == SCHEMA_11:
+            _validate_11(sheet, shot_id, problems)
     except Exception:
         problems.append("%s: BLK-S99 internal validation error" % shot_id)
     return problems
@@ -354,10 +470,16 @@ def change_list(sheet):
         name = c.get("name")
         start = c.get("start", {})
         end = c.get("end", {})
-        if distance(c) > 0.02:
+        dx = (end.get("x", 0) - start.get("x", 0)) * 9 / 16
+        dy = end.get("y", 0) - start.get("y", 0)
+        if math.hypot(dx, dy) > 0.02:
             changes.append(
                 "%s: move from (%.2f,%.2f) to (%.2f,%.2f)"
                 % (name, start.get("x", 0), start.get("y", 0), end.get("x", 0), end.get("y", 0))
+            )
+        if abs(end.get("scale", 0) - start.get("scale", 0)) > 0.02:
+            changes.append(
+                "%s: scale %.2f to %.2f" % (name, start.get("scale", 0), end.get("scale", 0))
             )
         if start.get("pose") != end.get("pose"):
             changes.append("%s: %s -> %s" % (name, start.get("pose"), end.get("pose")))
@@ -395,5 +517,7 @@ def change_list(sheet):
             changes.append("%s: disappears" % prop.get("class"))
         elif "B" in visible and "A" not in visible:
             changes.append("%s: appears" % prop.get("class"))
+    for pc in sheet.get("prop_changes") or []:
+        changes.append("prop %s: %s" % (pc.get("prop"), pc.get("change")))
     changes.append("keep everything else exactly the same")
     return changes

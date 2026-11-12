@@ -42,7 +42,7 @@ def test_each_language_burns_its_hook_then_its_own_spoken_script(tmp_path):
     for lang in ("en", "hi", "mr"):
         build, story, styles = tp._setup(tmp_path / lang, shots=_shots_with_script())
         _vo(build, lang)
-        report = tp._run(build, story, styles, language=lang)
+        report = tp._run(build, story, styles, language=lang, sidecars=True)
         ass = _ass(build)
         assert HOOK[lang] in ass and TEXT[lang].rstrip(".।") in ass, lang
         assert ass.index(HOOK[lang]) < ass.index(TEXT[lang].rstrip(".।"))            # the hook is on frame 1, then the script
@@ -58,7 +58,7 @@ def test_hook_equal_to_the_first_spoken_line_is_burned_once(tmp_path):
     shots[0]["audio_and_dialogue_track"]["narration_by_lang"]["en"]["text"] = HOOK["en"]
     build, story, styles = tp._setup(tmp_path, shots=shots)
     _vo(build, "en")
-    report = tp._run(build, story, styles, language="en")
+    report = tp._run(build, story, styles, language="en", sidecars=True)
     assert report["written"] is True and _ass(build).count(HOOK["en"]) == 1
     assert next(build.glob("EP1_final_en.en.srt")).read_text(encoding="utf-8").count(HOOK["en"]) == 1
 

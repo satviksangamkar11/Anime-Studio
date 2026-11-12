@@ -80,6 +80,102 @@ def _moving(member):
     return blocking.distance(member) > 0.02
 
 
+SHAKE_KINDS = ("body_action", "seam")
+BEATS_MIN = 2
+BEATS_MAX = 4
+BEAT_GAP_MIN_SEC = 1.5
+CHAIN_MAX_DEPTH = 2
+SHORT_SHOT_SEC = 4.4
+CENTRE_SHOT_SEC = 10.0
+REEL_MIN_SEC = 25.0
+METRONOME_SEC = 0.5
+
+
+def _is_11(sheet):
+    return isinstance(sheet, dict) and sheet.get("schema") == blocking.SCHEMA_11
+
+
+def _words(text):
+    return len(text.split()) if isinstance(text, str) else 0
+
+
+def _chain_depth(sheets, idx):
+    depth = 0
+    for i in range(idx + 1):
+        chained = isinstance(sheets[i], dict) and sheets[i].get("chain_from") is not None
+        depth = depth + 1 if chained else 0
+    return depth
+
+
+def _lint_11(sheet, idx, sheets, lock, fps):
+    """Per-shot rules L11-L17. blocking/1.1 sheets only, so 1.0 sheets lint exactly as before."""
+    if not _is_11(sheet):
+        return []
+    problems = []
+    shot_id = _shot_id(sheet)
+    seconds = _seconds(sheet, lock, fps)
+    cast = sheet.get("cast") if isinstance(sheet.get("cast"), list) else []
+    camera = sheet.get("camera") if isinstance(sheet.get("camera"), dict) else {}
+    move = camera.get("move")
+    moving_camera = move not in (None, "locked")
+    if (camera.get("mode") == "fixed") == moving_camera:
+        problems.append("%s: L11 camera mode %s does not match move %s" % (shot_id, camera.get("mode"), move))
+    if moving_camera and _words(camera.get("motivation")) < 3:
+        problems.append("%s: L11 camera move %s needs a motivation of 3 words or more" % (shot_id, move))
+    if move in ("orbit_left", "orbit_right"):
+        for member in cast:
+            if _moving(member) and not member.get("hold"):
+                problems.append("%s: L12 orbit needs every moving cast on hold, %s is not"
+                                % (shot_id, member.get("id")))
+                break
+    shake = camera.get("shake")
+    if isinstance(shake, dict) and _is_number(shake.get("t")) and _is_number(shake.get("dur")):
+        if shake["t"] + shake["dur"] > seconds:
+            problems.append("%s: L13 shake ends after the shot" % shot_id)
+        if sheet.get("kind") not in SHAKE_KINDS:
+            problems.append("%s: L13 shake only on body_action or seam shots" % shot_id)
+    beats = sheet.get("beats")
+    if isinstance(beats, list):
+        times = [b.get("t") for b in beats if isinstance(b, dict) and _is_number(b.get("t"))]
+        primaries = sum(1 for b in beats if isinstance(b, dict) and b.get("primary") is True)
+        order_ok = (bool(times) and len(times) == len(beats) and times[0] == 0
+                    and all(b - a >= BEAT_GAP_MIN_SEC for a, b in zip(times, times[1:])))
+        if not (BEATS_MIN <= len(beats) <= BEATS_MAX and order_ok and primaries == 1
+                and all(t < seconds for t in times)):
+            problems.append("%s: L14 beats need 2-4 entries from 0 s, gaps of 1.5 s, one primary, inside the shot"
+                            % shot_id)
+    if not blocking.caption_safe(sheet):
+        problems.append("%s: L15 speaking face below the caption-safe line (y 0.62)" % shot_id)
+    if idx == 0 and sheet.get("hook_type") in (None, "none"):
+        problems.append("%s: L16 shot 1 needs a hook_type (kinetic, scale_tableau or voice_call)" % shot_id)
+    chain = sheet.get("chain_from")
+    if chain is not None:
+        prev = sheets[idx - 1] if idx > 0 else None
+        if not (isinstance(prev, dict) and prev.get("shot_id") == chain and prev.get("cut_to_next") == "match"):
+            problems.append("%s: L17 chain_from %s needs the previous shot to be that id with cut_to_next match"
+                            % (shot_id, chain))
+    if _chain_depth(sheets, idx) > CHAIN_MAX_DEPTH:
+        problems.append("%s: L17 chain deeper than %d; re-anchor to a fresh keyframe"
+                        % (shot_id, CHAIN_MAX_DEPTH))
+    return problems
+
+
+def _lint_reel_11(sheets, lock, fps):
+    """Reel-level rules L18-L19 (P-02). Only when every sheet is blocking/1.1."""
+    if not sheets or not all(_is_11(s) for s in sheets):
+        return []
+    problems = []
+    lengths = [_seconds(s, lock, fps) for s in sheets]
+    for i in range(len(lengths) - 1):
+        if abs(lengths[i] - lengths[i + 1]) <= METRONOME_SEC:
+            problems.append("LINT: L18 %s and %s are within 0.5 s of each other in length"
+                            % (_shot_id(sheets[i]), _shot_id(sheets[i + 1])))
+    if sum(lengths) >= REEL_MIN_SEC and not (
+            any(n <= SHORT_SHOT_SEC for n in lengths) and any(n >= CENTRE_SHOT_SEC for n in lengths)):
+        problems.append("LINT: L19 a reel of 25 s or more needs one shot of 4.4 s or less and one of 10 s or more")
+    return problems
+
+
 def lint(sheets, lock=None, fps=24):
     problems = []
     if not isinstance(sheets, list):
@@ -224,6 +320,10 @@ def lint(sheets, lock=None, fps=24):
                                     % (shot_id, turn['deg'], min_sec, member.get("id")))
                 if turn['sec'] > seconds:
                     problems.append("%s: L10 turn longer than the shot for %s" % (shot_id, member.get("id")))
+
+    for idx, sheet in enumerate(sheets):
+        problems.extend(_lint_11(sheet, idx, sheets, lock, fps))
+    problems.extend(_lint_reel_11(sheets, lock, fps))
 
     for i in range(len(sheets) - 1):
         a = sheets[i]

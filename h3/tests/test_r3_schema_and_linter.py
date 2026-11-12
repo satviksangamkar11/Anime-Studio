@@ -41,11 +41,12 @@ def test_invalid_banned_negative_regex_is_pr08_not_a_crash(story):
 
 
 def test_malformed_mouth_block_does_not_hide_the_sound_cue_rule(story):
-    """A non-object dialogue block used to abort the whole pure-Foley rule group, so SX-01 went unreported."""
+    """A non-object dialogue block used to abort the whole pure-Foley rule group. M-01b: SX-01 is retired
+    (stage sound words are gone), so the check is that the malformed block is still reported by SC-02."""
     shot = copy.deepcopy(story["episodes"][0]["shots"][0])
     for k in list(shot["motion_7_stage"])[:7]:  # the seven action stages only
         shot["motion_7_stage"][k] = "The figure turns slowly."  # no sound word anywhere
     shot["dialogue_and_lip_lock"] = "x"
     out = lint_shot(shot, story["registry"]["execution_profile"], story["registry"],
                     story["episodes"][0]["asset_root"])
-    assert "SX-01" in codes(out["errors"])
+    assert "SC-02" in codes(out["errors"])

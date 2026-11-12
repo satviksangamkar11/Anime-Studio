@@ -53,20 +53,20 @@ def test_good_hook_passes_en():
     assert result["rewrites"] == []
 
 
-def test_no_event_before_1_0_fails_h1():
-    # Event moved to t=1.5 (> 1.0): H1 hard -40 -> score 60. Line still at 0.3 and a question: no other fail.
+def test_no_event_before_2_0_fails_h1():
+    # Event moved to t=2.5 (> 2.0 = HOOK_WINDOW_S): H1 hard -40 -> score 60. Line still at 0.3 and a question.
     shots = _good_hook("en")
-    shots[0]["events"] = [{"t": 1.5, "what": "flash"}]
+    shots[0]["events"] = [{"t": 2.5, "what": "flash"}]
     result = script_hook.inspect_hook(shots, "en")
     assert result["pass"] is False
     assert _has(result["hard_fails"], "H1")
     assert result["score"] == 60
 
 
-def test_first_line_at_0_9_fails_h2():
-    # First line start moved to 0.9 (> 0.6): H2 hard -40 -> score 60. Event at 0.4 still ok (H1 ok).
+def test_first_line_at_1_2_fails_h2():
+    # First voiced word moved to 1.2 (> 1.0): H2 hard -40 -> score 60. Event at 0.4 still ok (H1 ok).
     shots = _good_hook("en")
-    shots[0]["lines"][0]["start_s"] = 0.9
+    shots[0]["lines"][0]["start_s"] = 1.2
     result = script_hook.inspect_hook(shots, "en")
     assert result["pass"] is False
     assert _has(result["hard_fails"], "H2")
@@ -193,7 +193,7 @@ def test_unsupported_language_raises_value_error():
 
 
 def test_public_constants_match_spec():
-    assert script_hook.HOOK_WINDOW_S == 3.0
+    assert script_hook.HOOK_WINDOW_S == 2.0
     assert script_hook.MAX_FIRST_LINE_WORDS == {"en": 8, "hi": 6, "mr": 6}
 
 
@@ -257,9 +257,9 @@ def test_each_rule_failure_has_coded_reason_and_rewrite(code):
     # observer 7 (TEST_FINDINGS codex): every rule, not only H4, gives its coded reason and a rewrite
     shots = _good_hook("en")
     if code == "H1":
-        shots[0]["events"] = [{"t": 1.5, "what": "flash"}]
+        shots[0]["events"] = [{"t": 2.5, "what": "flash"}]
     elif code == "H2":
-        shots[0]["lines"][0]["start_s"] = 0.9
+        shots[0]["lines"][0]["start_s"] = 1.2
     elif code == "H3":
         shots[0]["lines"][0]["text"] = "The sun rises over the hills"
     elif code == "H4":
@@ -319,3 +319,64 @@ def test_once_upon_a_time_is_opener():
     result = script_hook.inspect_hook(shots, "en")
     assert _has(result["hard_fails"], "H5")
     assert result["score"] == 45
+
+
+# M-08 (CHANGE_PLAN D-06 / T-03): 2.0 s visual hook window, scale_tableau exemption, narrated shot 1 must not be none.
+
+def test_hook_window_2s_event_at_1_9_passes_h1():
+    shots = _good_hook("en")
+    shots[0]["events"] = [{"t": 1.9, "what": "flash"}]
+    result = script_hook.inspect_hook(shots, "en")
+    assert not _has(result["hard_fails"], "H1")
+
+
+def test_hook_window_2s_event_at_2_1_fails_h1():
+    shots = _good_hook("en")
+    shots[0]["events"] = [{"t": 2.1, "what": "flash"}]
+    result = script_hook.inspect_hook(shots, "en")
+    assert _has(result["hard_fails"], "H1")
+
+
+def test_scale_tableau_exempt_from_h1():
+    # Frame 0 extreme scale contrast is the visual hook itself: no event needed within 2.0 s.
+    shots = _good_hook("en")
+    shots[0]["hook_type"] = "scale_tableau"
+    shots[0]["events"] = []
+    result = script_hook.inspect_hook(shots, "en")
+    assert not _has(result["hard_fails"], "H1")
+    assert not _has(result["reasons"], "H1")
+    assert result["pass"] is True
+
+
+def test_other_hook_types_are_not_exempt_from_h1():
+    shots = _good_hook("en")
+    shots[0]["hook_type"] = "kinetic"
+    shots[0]["events"] = []
+    result = script_hook.inspect_hook(shots, "en")
+    assert _has(result["hard_fails"], "H1")
+
+
+def test_hook_type_none_refused_for_narrated_shot1():
+    shots = _good_hook("en")
+    shots[0]["hook_type"] = "none"
+    result = script_hook.inspect_hook(shots, "en")
+    assert result["pass"] is False
+    assert _has(result["hard_fails"], "H0")
+
+
+def test_hook_type_none_allowed_for_showcase_reel():
+    # Showcase use (narrated=False): the hook rule is optional, so none is not refused and H1 is skipped.
+    shots = _good_hook("en")
+    shots[0]["hook_type"] = "none"
+    shots[0]["events"] = []
+    result = script_hook.inspect_hook(shots, "en", narrated=False)
+    assert not _has(result["hard_fails"], "H0")
+    assert not _has(result["hard_fails"], "H1")
+
+
+def test_first_voiced_word_band_0_3_to_1_0():
+    for start, expect_fail in ((0.2, True), (0.3, False), (1.0, False), (1.2, True)):
+        shots = _good_hook("en")
+        shots[0]["lines"][0]["start_s"] = start
+        result = script_hook.inspect_hook(shots, "en")
+        assert _has(result["hard_fails"], "H2") is expect_fail, start

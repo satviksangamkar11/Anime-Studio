@@ -18,6 +18,15 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "t0_pack"))
 import run_t0_colab as t0  # noqa: E402
 import runner_safety as rs  # noqa: E402
+sys.path.insert(0, str(HERE.parent))     # repo root: the h3 package (render_controller, fallback_policy)
+import chain_step  # noqa: E402
+import post_fetch_qa  # noqa: E402
+from h3 import fallback_policy as fp  # noqa: E402
+from h3.asset_manifest import atomic_write_json  # noqa: E402
+from h3.render_controller import DRIFT_ORDER, record_drift_step, render_allowed  # noqa: E402
+
+# clip_qa knows route S (no end keyframe) and SE only; the start-only and reference variants map onto them
+QA_ROUTE = {"S": "S", "REF_S": "S", "SE": "SE", "REF_SE": "SE", "SOFT_SE": "SE"}
 
 ENV = {**os.environ, "MSYS_NO_PATHCONV": "1"}     # Git Bash would turn /content into C:/Program Files/Git/content
 EXEC_TIMEOUT = 6 * 3600    # exec --timeout is an IDLE limit (seconds)
@@ -322,6 +331,72 @@ def write_canary_proof(manifest, results, out_path, owner_ok, probe_frames=None)
     return proof
 
 
+def qa_inputs(shot_id, sheet, routes, pack):
+    """clip_qa.qa_shot inputs for one shot: route from the shot router's routes map, and chain_prev = the saved last kept PNG
+    of the previous shot when the blocking sheet has chain_from (a missing PNG is refused, never skipped silently)."""
+    entry = (routes.get("routes") or {}).get(shot_id)
+    if not entry:
+        raise ValueError(f"{shot_id}: no route in the routes file")
+    route = QA_ROUTE.get(entry.get("route"))
+    if route is None:
+        raise ValueError(f"{shot_id}: route {entry.get('route')!r} has no clip QA")
+    chain_prev = None
+    prev = sheet.get("chain_from")
+    if prev:
+        png = chain_step.chain_png_path(pack, prev)
+        if not Path(png).is_file():
+            raise ValueError(f"{shot_id}: chain from {prev} but {png} is missing")
+        chain_prev = png
+    return {"route": route, "chain_prev": chain_prev}
+
+
+def render_gate(history, shot_ids, owner_flag=False, drift_log=None, drift_step=None):
+    """Render discipline before a live run (M-24/M-26): render_allowed per shot (3 renders, a 4th needs the owner flag);
+    a re-render (renders already recorded) needs a drift step in DRIFT_ORDER. Returns (problems, new drift log); writes nothing."""
+    log = {k: list(v) for k, v in (drift_log or {}).items()}
+    problems = []
+    for sid in shot_ids:
+        ok, reason = render_allowed(history, sid, owner_flag)
+        if not ok:
+            problems.append(reason)
+            continue
+        if fp.attempts_for(history, sid):
+            if drift_step is None:
+                problems.append(f"{sid}: re-render needs a drift step (--drift-step, one of {list(DRIFT_ORDER)})")
+                continue
+            try:
+                log[sid] = record_drift_step(log.get(sid, []), drift_step)
+            except ValueError as e:
+                problems.append(f"{sid}: {e}")
+    return problems, log
+
+
+def record_render(history_path, shot, drift_step=None, qa_skipped=False):
+    """Append one render of a shot (a manifest shot dict) to fallback_history.json: render_version, settings sha, seed, drift step.
+    render_allowed counts these records, so the 3-render stop sees every fetched render."""
+    doc = fp.load_history(str(history_path))
+    recs = doc["shots"].setdefault(shot["id"], [])
+    rec = {"n": len(recs) + 1, "kind": "render", "render_version": shot.get("render_version"),
+           "settings_sha256": shot.get("settings_sha256"), "seed": shot.get("seed"), "drift_step": drift_step}
+    if qa_skipped:      # G8: the owner ran --no-qa; the history says so
+        rec["qa_skipped"] = True
+        doc["qa_skipped"] = True
+    recs.append(rec)
+    atomic_write_json(str(history_path), doc)
+    return rec
+
+
+def record_fetched(history_path, results, shots, drift_log=None, qa_skipped=False):
+    """Record a render for every manifest shot whose clip is on this PC (an mp4 of a plausible size). Returns the shot ids recorded."""
+    done = []
+    for sh in shots:
+        sid = sh.get("id")
+        if sid and any(f.stat().st_size >= MIN_CLIP_BYTES for f in (Path(results) / sid).glob("*.mp4")):
+            record_render(history_path, sh, ((drift_log or {}).get(sid) or [None])[-1], qa_skipped)
+            done.append(sid)
+    return done
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("batch")
@@ -332,6 +407,13 @@ def main(argv=None):
     ap.add_argument("--canary-proof", default=None, help="proof of a one-shot canary (required with --go for a batch of more than one shot)")
     ap.add_argument("--write-canary-proof", action="store_true", help="offline: write --canary-proof from a one-shot batch whose clip is verified")
     ap.add_argument("--owner-ok", action="store_true", help="with --write-canary-proof: the owner has watched the clip")
+    ap.add_argument("--fallback-history", default=None, help="fallback_history.json of the batch (renders per shot); none = no renders recorded")
+    ap.add_argument("--drift-step", default=None, choices=DRIFT_ORDER, help="the one variable this re-render changes (required for a re-render)")
+    ap.add_argument("--owner-render-flag", action="store_true", help="the owner allows a 4th render of a shot")
+    ap.add_argument("--qa-plan", default=None, help="post-fetch clip QA plan (post_fetch_qa.py); needs --routes and --pack")
+    ap.add_argument("--no-qa", action="store_true", help="owner only: --go without post-fetch clip QA; recorded in the history")
+    ap.add_argument("--routes", default=None, help="routes.json of the shot router (route per shot, for the QA)")
+    ap.add_argument("--pack", default=None, help="blocking pack folder (chain PNGs, for the QA)")
     a = ap.parse_args(argv)
     run_py = HERE / "colab_batches" / a.batch / "run.py"
     if not run_py.exists():
@@ -358,6 +440,15 @@ def main(argv=None):
         return 1
     manifest = json.loads((folder / "render_manifest.json").read_text(encoding="utf-8"))
     shots = manifest.get("shots", [])
+    history_path = a.fallback_history or str(Path(a.results) / "fallback_history.json")
+    history = fp.load_history(history_path)
+    drift_path = Path(a.results) / "drift_log.json"
+    drift_log = json.loads(drift_path.read_text(encoding="utf-8")) if drift_path.is_file() else {}
+    problems, new_log = render_gate(history, [s["id"] for s in shots if "id" in s], a.owner_render_flag, drift_log, a.drift_step)
+    if problems:
+        for p in problems:
+            print("REFUSED:", p)
+        return 1
     if not a.go:
         for line in (["usage"], ["new", "-s", name, "--gpu", a.gpu], ["exec", "-s", name, "-f", "upload_NN.py (each part, 300 s limit)"],
                      ["exec", "-s", name, "-f", str(run_py), "(background)"],
@@ -389,14 +480,37 @@ def main(argv=None):
     except KeyError as e:
         print("REFUSED: a manifest shot has no frame count:", e)
         return 1
+    if a.qa_plan and not (a.routes and a.pack):
+        print("REFUSED: --qa-plan needs --routes and --pack")
+        return 1
+    if a.no_qa and a.qa_plan:
+        print("REFUSED: --no-qa and --qa-plan together")
+        return 1
+    if not a.qa_plan and not a.no_qa:      # G8: fail closed, before any compute is spent
+        print("REFUSED: --go needs --qa-plan (post-fetch clip QA); pass --no-qa to skip it on purpose")
+        return 1
+    if new_log != drift_log:
+        Path(a.results).mkdir(parents=True, exist_ok=True)
+        drift_path.write_text(json.dumps(new_log, indent=1), encoding="utf-8")
     print("LIVE RUN: this spends compute units", flush=True)
+    stopped = None
     try:
         batch(name, a.gpu, run_py, a.results, expected=expected)
     except (RunError, OSError) as e:
-        print("STOPPED:", e)
+        stopped = e
+    recorded = record_fetched(history_path, a.results, shots, new_log, a.no_qa)      # a fetched clip is a spent render, even when the run stopped
+    print("renders recorded in", history_path, ":", recorded, flush=True)
+    if stopped:
+        print("STOPPED:", stopped)
         return 1
     print(f"done: clips and logs in {a.results}")
-    return 0
+    if not a.qa_plan:
+        print("POST-FETCH QA NOT RUN: no --qa-plan given (each clip still needs clip_qa)")
+        return 0
+    qa = post_fetch_qa.run_from_files(a.qa_plan, a.results, a.routes, a.pack, [s["id"] for s in shots])
+    for sid, v in qa.items():
+        print(("QA PASS " if v["ok"] else "QA FAIL ") + sid + ": " + v["reason"] if "reason" in v else sid)
+    return post_fetch_qa.exit_code(qa)
 
 
 if __name__ == "__main__":

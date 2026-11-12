@@ -48,6 +48,7 @@ import retry_policy
 import run_registry
 import writer_prompts as wp
 import writer_guard
+import story_shape
 import write_pack_glue
 
 spec = wp.spec                                            # h3/shot_table_spec.py: the V4 numbers (never copied here)
@@ -58,6 +59,7 @@ BRIEF_V22 = HERE / "MASTER_PROMPT_v2.2.md"                # staged mode reads th
 LEDGERS = Path(__file__).resolve().parent.parent / "ledgers"   # writer_spend.jsonl and writer_usage.jsonl (the claude guard)
 GUARD = False   # True only in a real run, set by main() for the claude route: call_claude then goes through the writer guard
 BRIEF_V23 = HERE / "MASTER_PROMPT_v2.3.md"                # --prompt-version v2.3
+BRIEF_V24 = HERE / "MASTER_PROMPT_v2.4.md"                # --prompt-version v2.4 (card M-05: blocking/1.1 writer brief)
 STYLES_DIR = HERE.parent / "styles"                       # style pack JSON files, read as plain JSON
 PACK_ID = re.compile(r"[A-Za-z0-9_-]+")
 SHOTS_BLOCK = re.compile(r"```json shots\s*\n(.*?)\s*```", re.DOTALL)
@@ -98,7 +100,11 @@ def staged_brief(version=DEFAULT_PROMPT_VERSION):
         if not BRIEF_V23.exists():
             raise ValueError(f"{BRIEF_V23.name} is missing")
         return BRIEF_V23
-    raise ValueError(f"unknown prompt version {version!r}: use v2.2 or v2.3")
+    if version == "v2.4":
+        if not BRIEF_V24.exists():
+            raise ValueError(f"{BRIEF_V24.name} is missing")
+        return BRIEF_V24
+    raise ValueError(f"unknown prompt version {version!r}: use v2.2, v2.3 or v2.4")
 
 
 def _strings(value):
@@ -649,9 +655,15 @@ def parse_captions(raw):
     """(text, data) from a stage 5 answer: data = {"text", "captions": [items]}. The ```json captions block is optional."""
     text = answer_text(raw)
     blocks = CAPTIONS_BLOCK.findall(text)
+    if not blocks:                              # no tagged block: accept an untagged list of caption items (as stages 2 and 3 do)
+        fallback = untagged_last(text, lambda v: isinstance(v, list) and bool(v)
+                                 and all(isinstance(i, dict) and "shot_id" in i for i in v))
+        blocks = [fallback] if fallback else []
     if len(blocks) > 1:
         raise ValueError(f"expected at most one ```json captions block, found {len(blocks)}")
     items = json.loads(blocks[0]) if blocks else []
+    if isinstance(items, dict) and set(items) == {"captions"}:     # {"captions": [...]}: a free model's wrapper, same list
+        items = items["captions"]
     if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
         raise ValueError("the captions block must be a JSON list of objects")
     return text, {"text": text, "captions": items}
@@ -759,7 +771,39 @@ def fit_lattice_rows(shots):
         row.update({k: new[k] for k in ("lattice_n", "pixel_frames", "latent_slots") if k in new})
     for line in changes:
         print(f"lattice fitted for H3 cuts: {line}")
-    return [f"H3-TIME {p}" for p in problems] or None
+    return [f"H3-TIME {p}" + cut_hint(shots, p, v4_to_h3.fit_lattice) for p in problems] or None
+
+
+ROW_INDEX = re.compile(r"\bshots\[(\d+)\]")
+
+
+def name_rows(errors, rows):
+    """'... at shots[1].x' -> '... at shots[1] (SHOT-002).x' for an error line that names no SHOT id, so the one row repair
+    (write_pack_glue.error_shot_ids) can target that row too."""
+    def named(line):
+        m = ROW_INDEX.search(line)
+        if SHOT_MENTION.search(line) or not m or int(m.group(1)) >= len(rows) or not isinstance(rows[int(m.group(1))], dict):
+            return line
+        sid = rows[int(m.group(1))].get("id")
+        return line[:m.end()] + f" ({sid})" + line[m.end():] if isinstance(sid, str) else line
+    return [named(e) for e in errors]
+
+
+def cut_hint(shots, problem, fit, span=1.5, step=0.1):
+    """For a row H3 cannot cut: the editorial lengths within +-span s of its own that do cut in this reel (the neighbours' seams
+    count), so the one repair knows the number to write. Empty when the problem names no row or nothing near cuts."""
+    m = re.match(r"(SHOT-\d{3}[A-Z]?)\b", problem)
+    idx = next((i for i, s in enumerate(shots) if m and s.get("id") == m.group(1)), None)
+    if idx is None or not isinstance(shots[idx].get("editorial_duration_sec"), (int, float)):
+        return ""
+    base, good = shots[idx]["editorial_duration_sec"], []
+    for k in range(-round(span / step), round(span / step) + 1):
+        d = round(base + k * step, 1)
+        trial = [dict(s) for s in shots]
+        trial[idx]["editorial_duration_sec"] = d
+        if d > 0 and not any(p.startswith(m.group(1)) for p in fit(trial)[2]):
+            good.append(d)
+    return f"; lengths H3 can cut for {m.group(1)} here: {min(good)}-{max(good)} s" if good else ""
 
 
 def checked_call(name, call, *args):
@@ -871,10 +915,15 @@ def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
             break
         retries += 1
         rep_path = write_pack_glue.repair_file(out, name, retries)
-        checked_call(name, call, write_pack_glue.repair_prompt(prompt_for([]), data, ids, errors), rep_path)
+        if not rep_path.exists():                               # a saved repair answer is reused (resume), like the raw answer
+            checked_call(name, call, write_pack_glue.repair_prompt(prompt_for([]), data, ids, errors), rep_path)
         print(f"stage {name}: repair {retries}: {rep_path}")
         try:
-            data = write_pack_glue.merge_repair(data, write_pack_glue.parse_repair(rep_path.read_text(encoding="utf-8")))
+            old = {r.get("id"): r for r in data if isinstance(r, dict)}
+            repaired = [dict(old.get(r["id"], {}), **r)                       # a key the repair left out keeps its old value
+                        for r in write_pack_glue.parse_repair(rep_path.read_text(encoding="utf-8"))
+                        if isinstance(r, dict) and r.get("id") in ids]       # rows not asked for stay as they were
+            data = write_pack_glue.merge_repair(data, repaired)
         except ValueError as exc:
             errors = [f"PARSE repair: {exc}"]
             record_check(rec, name, errors)
@@ -886,6 +935,9 @@ def run_stage(name, out, *, prompt_for, call, parse_fn, check_fn, rec):
                                        indent=1, ensure_ascii=False), encoding="utf-8")
         raise stage_failed(name, errors, out)
     val_path.unlink(missing_ok=True)
+    if retries:                                                 # later stages and PACK.md must see the rows as repaired
+        text += ("\n\n## ROWS AFTER THE REPAIR (they replace the rows of the same id above)\n\n```json\n"
+                 + json.dumps([r for r in data if r.get("id") in ids], ensure_ascii=False, indent=1) + "\n```\n")
     return text, data
 
 
@@ -927,6 +979,125 @@ def plan_errors(plan):
 
 
 PLAN_SECONDS = (20, 180)        # a reel episode is a short clip run: outside this window the plan is a slip, not a story
+REEL_PLAN = None                # --plan/--reel: the stage-1-shaped plan dict of that reel (set by main)
+BASE_BIBLE = None               # --bible: a bible dict used instead of a stage 2 call (set by main)
+PLAN_KEYS = ("premise", "arc", "hook_type", "voice_rest", "source_span")
+SPAN = re.compile(r"P(\d+) chars ~?(\d+(?:\.\d+)?)k-(\d+(?:\.\d+)?)k")
+SPAN_MARGIN = 1500              # characters kept on each side of the reel's source span
+CARD_ID = re.compile(r"\b(?:CHAR|ENV|PROP)-[A-Z0-9]+(?:-[A-Z0-9]+)*")
+
+
+def load_reel_plan(plan_path, reel, ledger_path=None):
+    """--plan/--reel (REPLAN 2026-11-12 D step 3): (text, plan) for reel `reel` of a story_plan/2 file; stage 1 is not called.
+    text: the reel plan with its context packet and the LAST continuity ledger entry of an earlier reel (default ledger:
+    continuity_ledger.json next to the plan); every later stage sees it. plan: the stage 1 shape (episodes = this reel only)
+    plus premise, arc, hook_type, voice_rest and reel_target_s for the gates."""
+    plan_path = Path(plan_path)
+    data = json.loads(plan_path.read_text(encoding="utf-8"))
+    rows = [r for r in data.get("reels") or [] if isinstance(r, dict) and r.get("number") == reel]
+    if len(rows) != 1:
+        raise ValueError(f"{plan_path.name} has no single reel {reel}")
+    row = rows[0]
+    ledger_path = Path(ledger_path) if ledger_path else plan_path.with_name("continuity_ledger.json")
+    entries = json.loads(ledger_path.read_text(encoding="utf-8")).get("entries") or [] if ledger_path.exists() else []
+    earlier = [e for e in entries if isinstance(e, dict) and isinstance(e.get("reel"), int) and e["reel"] < reel]
+    plan = {"episodes": [{"episode": reel, "title": row.get("title"), "seconds": float(row["target_seconds"])}],
+            "reel_target_s": row["target_seconds"], **{k: row[k] for k in PLAN_KEYS if k in row}}
+    text = (f"# Stage 1 (not called): the owner-approved plan of reel {reel} \"{row.get('title')}\" from {plan_path.name}\n\n"
+            f"Write ONLY this reel; it is Episode {reel} in the stage names. Keep its premise, the arc beats in order, its hook_type as "
+            "shape_hook_type on shot 1, its voice_rest, its length (target_seconds), its restraint_note as a hard limit and its canon "
+            "flags. shot_shape is an estimate: counts and lengths may change inside the shape rules. Do not repeat what must_not_repeat "
+            "lists. Use the bible ids of the context packet.\n\n```json reel_plan\n" + json.dumps(row, ensure_ascii=False, indent=1)
+            + "\n```\n")
+    if earlier:
+        text += (f"\n## LAST CONTINUITY LEDGER ENTRY (reel {earlier[-1]['reel']}): its end_state overrides "
+                 "context.previous_reel_end_state where they differ\n\n```json ledger\n"
+                 + json.dumps(earlier[-1], ensure_ascii=False, indent=1) + "\n```\n")
+    return text, plan
+
+
+def reel_source(story_text, span):
+    """--plan: the source with only the reel's span ('P<part> chars ~a-bk', +-SPAN_MARGIN) left on that transcript line; other
+    transcript lines are replaced by a one-line note. The line count stays the same, so source_refs line ids stay valid.
+    No readable span or transcript line: the whole text."""
+    m = SPAN.search(span or "")
+    if not m:
+        return story_text
+    part, lo, hi = int(m.group(1)), int(float(m.group(2)) * 1000), int(float(m.group(3)) * 1000)
+    lines = story_text.split("\n")
+    heads = [i for i, line in enumerate(lines) if re.match(r"## TRANSCRIPT\b.*\bPART (\d+)\s*$", line) and i + 1 < len(lines)]
+    if not any(int(re.search(r"PART (\d+)\s*$", lines[i]).group(1)) == part for i in heads):
+        return story_text
+    for i in heads:
+        n = int(re.search(r"PART (\d+)\s*$", lines[i]).group(1))
+        a, b = max(0, lo - SPAN_MARGIN), hi + SPAN_MARGIN
+        lines[i + 1] = (f"[only chars {a}-{b} of part {n}: the source span of this reel] " + lines[i + 1][a:b] if n == part
+                        else f"[part {n} is not used by this reel]")
+    return "\n".join(lines)
+
+
+def bible_for_prompt(bible, reel_row):
+    """--bible: the cards the reel plan names (CHAR-/ENV-/PROP- ids anywhere in it), the style lock and the bans: a short stage 2
+    text for the prompt. The full bible is still the one every check and bible.json use."""
+    ids = {i.rstrip("-") for i in CARD_ID.findall(json.dumps(reel_row, ensure_ascii=False))}
+    small = {k: v for k, v in bible.items() if k not in ("characters", "environments", "props", "voice_map")}
+    for key in ("characters", "environments", "props"):
+        small[key] = {k: v for k, v in (bible.get(key) or {}).items() if k in ids}
+    if isinstance(bible.get("voice_map"), dict):
+        small["voice_map"] = {k: v for k, v in bible["voice_map"].items() if k in ids or k == "NARRATOR"}
+    return small
+
+
+def with_route(reel_plan, route):
+    """--route R (owner steer 2026-11-12: one picture per shot): every blocking sheet of the reel sets "route": R; the global
+    default is not touched. Returns the (text, plan) pair with the rule added."""
+    text, plan = reel_plan
+    text += (f"\n## ROUTE OF THIS REEL\n\nEvery blocking sheet sets \"route\": \"{route}\". With S that is ONE start picture (keyframe A) "
+             "per shot and no B end frame: write each shot so its action can start from one picture; a continuation of the previous "
+             "clip uses chain_from (the previous shot ends with cut_to_next \"match\") and stays route S.\n")
+    return text, dict(plan, route=route)
+
+
+def plan_reel_errors(shots, plan):
+    """--plan: shot 1 carries the plan's hook_type as shape_hook_type, and a planned voice rest exists on some shot.
+    Each line names a SHOT id so the one row repair can fix it."""
+    rows = shape_rows(shots)
+    if not rows:
+        return []
+    errs = []
+    want = plan.get("hook_type")
+    if want and rows[0].get("shape_hook_type") != want:
+        errs.append(f"PLAN-HOOK at {rows[0].get('id')}: shape_hook_type is {rows[0].get('shape_hook_type')!r}, the reel plan says {want!r}")
+    route = plan.get("route")
+    for r in rows:
+        sheet = r.get("blocking")
+        if route and not isinstance(sheet, dict):
+            errs.append(f"PLAN-ROUTE at {r.get('id')}: no blocking sheet; every shot needs its blocking/1.1 sheet with route {route!r}")
+        elif route and sheet.get("route") != route:
+            errs.append(f"PLAN-ROUTE at {r.get('id')}: blocking route is {sheet.get('route')!r}, this reel is written with route {route!r} only")
+    import blocking                                              # the writer gate's sheet checks, here so the row repair sees them
+    for r in rows:
+        if isinstance(r.get("blocking"), dict):
+            errs += [f"PLAN-BLK at {p}" for p in blocking.validate(dict(r["blocking"], shot_id=r.get("id")))]
+        for d in r.get("per_second_directives") or []:
+            refs = d.get("source_refs") if isinstance(d, dict) else None
+            if not (isinstance(refs, list) and refs and all(isinstance(x, str) for x in refs)):
+                errs.append(f"PLAN-REFS at {r.get('id')}: every per_second_directives item needs source_refs [line ids, e.g. \"L23\"]")
+                break
+    if plan.get("output_language"):
+        try:
+            import script_hook, script_inspect
+            hook = script_hook.inspect_hook(script_inspect.from_pack(rows, plan["output_language"]), plan["output_language"])
+            errs += [f"PLAN-HOOK-LINE at {rows[0].get('id')}: {x}" for x in hook.get("reasons") or []] if not hook.get("pass") else []
+        except ImportError:                                      # no pack_validator (only in tests): the writer gate checks it later
+            pass
+        except (ValueError, KeyError, TypeError) as exc:
+            errs.append(f"PLAN-HOOK-LINE at {rows[0].get('id')}: the hook check cannot read the rows ({exc})")
+    rest = plan.get("voice_rest")
+    if rest and not any(r.get("voice_rest") for r in rows):
+        where = rest.get("shot") if isinstance(rest, dict) else None
+        errs.append(f"PLAN-REST at {where or rows[-1].get('id')}: the reel plan asks for a voice rest {rest!r}; no shot has voice_rest")
+    return errs
 
 
 def is_card_group(value):
@@ -1253,8 +1424,14 @@ def apply_captions(shots, items, langs):
     return shots
 
 
+def shape_rows(shots):
+    """Copies of the rows for story_shape.lint (G24): story_shape.shape_view. hook_type stays the H3 word (reveal ...);
+    the shape pattern the v2.4 writer gives shot 1 is read from shape_hook_type. A null voice_rest is no rest."""
+    return story_shape.shape_view(shots)
+
+
 def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage_model, rec=None, out_langs=wp.DEFAULT_OUT_LANG,
-               voice=None, prompt_version=DEFAULT_PROMPT_VERSION, style_rules=""):
+               voice=None, prompt_version=DEFAULT_PROMPT_VERSION, style_rules="", story_meta=None):
     """Stages 1, 2, 3e<N> per episode, 5, each checked (see run_stage). Writes PACK.md, bible.json, shots.json and story_plan.json;
     returns the merged shots. rec: the run registry Recorder of this run (default: records nothing). out_langs: the story's output
     languages (a code or a list, primary first): narration, dialogue and captions are written in each and checked against them. prompt_version: which staged brief to send; style_rules: text appended
@@ -1288,7 +1465,8 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         # neighbour, so the prompt does not grow with the story (audit A #1, 2026-11-08: ep 13 would have been ~950k chars)
         def prompt_for(errors):
             return build_stage_prompt(brief, story_text, done if earlier is None else earlier,
-                                      wp.stage_instruction(name, seconds, first, langs, voice=engines), errors, langs=langs)
+                                      wp.stage_instruction(name, seconds, first, langs, voice=engines,
+                                                                     v24=prompt_version == "v2.4"), errors, langs=langs)
         return run_stage(name, out, prompt_for=prompt_for, call=lambda prompt, path: call_for(name, prompt, path),
                          parse_fn=parse_fn, check_fn=check_fn, rec=rec)
 
@@ -1308,12 +1486,28 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         return text, dict(data, output_languages=list(langs), output_language=langs[0], **extra)   # the selection, for the validator
 
     with rec.step("analysis_done", None, via=via, model=model, effort=effort) as run:
-        text1, plan = stage("1", story_parse, lambda d: with_language(gate("1", d, None), plan_errors(d)))
+        if REEL_PLAN:                                           # --plan/--reel: the reel plan stands in for stage 1 (no call)
+            text1, plan = REEL_PLAN
+            plan = dict(plan, output_languages=list(langs), output_language=langs[0],
+                        **({"voice_engine": dict(engines)} if engines is not None else {}))
+            with rec.step("analysis_stage", "1", note="reel plan from --plan: no model call"):
+                pass
+        else:
+            text1, plan = stage("1", story_parse, lambda d: with_language(gate("1", d, None), plan_errors(d)))
         done.append(("1", text1))
-        text2, bible = stage("2", parse_bible, lambda d: with_language(gate("2", d, None), style_pack_errors(d, STYLE_PACK)))
+        if BASE_BIBLE is not None:                              # --bible: checked like a stage 2 answer, no call
+            bible = BASE_BIBLE
+            errors = with_language(gate("2", bible, None), style_pack_errors(bible, STYLE_PACK))
+            record_check(rec, "2", errors)
+            if errors:
+                raise StageFailed("the --bible file fails the stage 2 checks: " + "; ".join(errors[:5]))
+            text2 = ("# Stage 2 (not called): the bible from --bible; only the cards this reel names are shown here\n\n```json bible\n"
+                     + json.dumps(bible_for_prompt(bible, text1), ensure_ascii=False, indent=1) + "\n```")
+        else:
+            text2, bible = stage("2", parse_bible, lambda d: with_language(gate("2", d, None), style_pack_errors(d, STYLE_PACK)))
         done.append(("2", text2))
         try:
-            episodes = episodes_from(text1)
+            episodes = [e["episode"] for e in plan["episodes"]] if REEL_PLAN else episodes_from(text1)
         except ValueError as exc:       # stage 1 passed its checks but names no usable episodes: a failed stage, not a traceback
             raise StageFailed(f"stage 1 answer is unusable: {exc}; delete {out.name}/stage_1_raw.json to redo it") from exc
         if ONLY_EPISODES:                                       # --episodes: write only these reels (owner 11-08: reel 1 first)
@@ -1324,8 +1518,13 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         base = list(done)                                       # stages 1 and 2: every later call sees them
         for ep in episodes:
             first = 1 + sum(len(s) for s in per_episode)
-            check = (lambda shots, ep=ep: (fit_lattice_rows(shots) or gate("3", {"episode": ep, "shots": shots}, bible,
-                                               lambda: shot_language_errors(shots, langs) + episode_id_errors(shots, ep))))
+            def check(shots, ep=ep):
+                lattice = fit_lattice_rows(shots) or []         # first: it re-picks the lattice in place; it hides no other error
+                errors = with_language(
+                    gate("3", {"episode": ep, "shots": shots, **({"reel_target_s": plan["reel_target_s"]} if REEL_PLAN else {})},
+                         bible, lambda: shot_language_errors(shots, langs) + episode_id_errors(shots, ep)),
+                    lattice + (plan_reel_errors(shots, plan) if REEL_PLAN else []))
+                return name_rows(errors, shots) if errors else errors
             prev = [(f"3e{p}", ep_texts[p]) for p in [episodes[episodes.index(ep) - 1]] if episodes.index(ep) > 0]
             text, ep_shots = stage(f"3e{ep}", parse, check, first=first, seconds=seconds.get(ep), earlier=base + prev)
             done.append((f"3e{ep}", text))
@@ -1350,6 +1549,14 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
         (out / "story_plan.json").write_text(json.dumps({k: v for k, v in plan.items() if k != "text"}, indent=1, ensure_ascii=False),
                                              encoding="utf-8")
         run.files = [f"{out.name}/{n}" for n in ("PACK.md", "bible.json", "shots.json", "story_plan.json")]
+        if prompt_version == "v2.4":                            # G24: premise, arc_beat, hook, voice_rest must pass story_shape
+            shape_errors, shape_warnings = story_shape.lint(
+                shape_rows(shots), {k: plan[k] for k in ("premise", "reel_target_s") if k in plan})
+            (out / "story_shape.json").write_text(json.dumps({"errors": shape_errors, "warnings": shape_warnings}, indent=1,
+                                                             ensure_ascii=False), encoding="utf-8")
+            run.files.append(f"{out.name}/story_shape.json")
+            if shape_errors:
+                raise StageFailed("story shape failed: " + "; ".join(shape_errors[:5]) + f" (see {out.name}/story_shape.json)")
         run.note = f"{len(episodes)} episodes, {len(shots)} shots, output languages {','.join(langs)}"
         report = pack_check_report(out)                           # audit A 11-08: Gate A reads this report (look block, retention rules R1-R10)
         if report is not None:
@@ -1361,7 +1568,7 @@ def run_staged(story_text, out, via, model, effort, allow_paid, stage_via, stage
                 print(f"CHECK_PACK {line}")
         if any(isinstance(s.get("blocking"), dict) for s in shots):
             write_pack_glue.write_blocking_files(out, shots)
-            gate = write_pack_glue.writer_gate(out, shots, story_text, lang=langs[0])
+            gate = write_pack_glue.writer_gate(out, shots, story_text, lang=langs[0], story=story_meta)
             if not gate["ok"]:
                 raise StageFailed("writer gate failed: " + "; ".join(gate["problems"][:5]) + f" (see {out.name}/writer_gate.json)")
         else:
@@ -1437,13 +1644,41 @@ def main(argv=None):
     ap.add_argument("--out-lang", default=None, type=out_langs_arg, metavar="LANGS",
                     help=f"staged only: output languages of narration, dialogue and captions: en, hi, mr, a comma list in priority order "
                          f"(en,hi) or all (default {wp.DEFAULT_OUT_LANG})")
-    ap.add_argument("--prompt-version", default=None, choices=("v2.2", "v2.3"),
-                    help="staged only: the brief. v2.3 (default: look and hook rules, plus the style pack rules) or v2.2 (the old brief)")
+    ap.add_argument("--prompt-version", default=None, choices=("v2.2", "v2.3", "v2.4"),
+                    help="staged only: the brief. v2.3 (default: look and hook rules, plus the style pack rules), v2.4 "
+                         "(blocking/1.1 writer brief, same style pack rules) or v2.2 (the old brief)")
     ap.add_argument("--style-pack", default=None,
                     help="staged + v2.3 only: style pack id (styles/<id>.json). Default: style_pack in the story.json next to the story")
     ap.add_argument("--episodes", default=None, metavar="N,N",
                     help="staged only: write only these episode numbers, e.g. 1 (default: every episode of the plan)")
+    ap.add_argument("--plan", default=None, metavar="story_plan_v2.json",
+                    help="staged only, with --reel: write reel N of this plan; stage 1 is not called (its premise, arc, hook_type, "
+                         "voice_rest, length and context packet + the last continuity_ledger.json entry go to every stage and gate)")
+    ap.add_argument("--reel", default=None, type=int, metavar="N", help="with --plan: the reel number")
+    ap.add_argument("--route", default=None, choices=("S", "SE"),
+                    help="with --plan: every blocking sheet of the reel uses this route (S = one start picture per shot, no B)")
+    ap.add_argument("--bible", default=None, metavar="bible.json",
+                    help="staged only: use this bible instead of a stage 2 call (checked like a stage 2 answer)")
     a = ap.parse_args(argv)
+    if (a.plan is None) != (a.reel is None):
+        ap.error("--plan and --reel go together")
+    if (a.plan or a.bible) and not a.staged:
+        ap.error("--plan and --bible need --staged")
+    if a.route and not a.plan:
+        ap.error("--route needs --plan")
+    if a.plan and a.episodes:
+        ap.error("--plan writes one reel: do not add --episodes")
+    global REEL_PLAN, BASE_BIBLE
+    REEL_PLAN = BASE_BIBLE = None
+    try:
+        if a.plan:
+            REEL_PLAN = load_reel_plan(a.plan, a.reel)
+            if a.route:
+                REEL_PLAN = with_route(REEL_PLAN, a.route)
+        if a.bible:
+            BASE_BIBLE = json.loads(Path(a.bible).read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        ap.error(f"--plan/--bible: {exc}")
     if not a.staged and (a.stage_via or a.stage_model or a.prompt_version or a.style_pack):
         ap.error("--stage-via, --stage-model, --prompt-version and --style-pack need --staged")
     if a.episodes is not None and not a.staged:
@@ -1485,7 +1720,7 @@ def main(argv=None):
         print(f"web check: on (WEB_NOTES.md, {len(WEB_NOTES)} chars, given to every stage; stages run without tools)")
     prompt_version = a.prompt_version or DEFAULT_PROMPT_VERSION   # Q5 (2026-11-07): the staged default is v2.3
     style = ""
-    if a.staged and prompt_version == "v2.3":
+    if a.staged and prompt_version in ("v2.3", "v2.4"):
         pack_id = a.style_pack or story_pack_id(Path(a.story))
         style = style_rules(pack_id) if pack_id else ""
         global STYLE_PACK
@@ -1499,8 +1734,14 @@ def main(argv=None):
             voice = voice_mod().parse_overrides(a.voice) if a.voice else (meta_story.get("voice_engine") if isinstance(meta_story.get("voice_engine"), dict) else None)
         except (ValueError, AttributeError) as exc:
             ap.error(str(exc))
-        run_staged(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,
-                   out_langs=out_langs, voice=voice, prompt_version=prompt_version, style_rules=style)
+        story_text = Path(a.story).read_text(encoding="utf-8")
+        if REEL_PLAN:                                           # the gates read the reel's premise and length, not the story's
+            reel = REEL_PLAN[1]
+            story_text = reel_source(story_text, reel.get("source_span"))
+            meta_story = dict(meta_story, reel_target_s=reel["reel_target_s"], **({"premise": reel["premise"]} if "premise" in reel else {}))
+        run_staged(story_text, out, via, model, effort, a.allow_paid, stage_via, stage_model, rec,
+                   out_langs=out_langs, voice=voice, prompt_version=prompt_version, style_rules=style,
+                   story_meta=meta_story)
         return
     run_single(Path(a.story).read_text(encoding="utf-8"), out, via, model, effort, a.allow_paid, rec)
 

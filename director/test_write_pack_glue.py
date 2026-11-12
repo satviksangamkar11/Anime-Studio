@@ -77,11 +77,11 @@ def _good_row(i):
         "id": rid,
         "editorial_duration_sec": 4.0,
         "audio_and_dialogue_track": {
-            "narration_by_lang": {"en": {"text": "The king sits.", "time_range": [0.0, 3.5]}},
+            "narration_by_lang": {"en": {"text": "Who will rule the kingdom?", "time_range": [0.5, 3.5]}},
             "dialogue_by_lang": {"en": []},
         },
         "per_second_directives": [
-            {"t0": 0.0, "t1": 2.0, "text": "a man sits", "source_refs": refs, "action_pose_expression": "sits"},
+            {"t0": 0.0, "t1": 2.0, "text": "the king sits", "source_refs": refs, "action_pose_expression": "sits"},
             {"t0": 2.0, "t1": 4.0, "text": "he holds still", "source_refs": refs,
              "action_pose_expression": "holds"},
         ],

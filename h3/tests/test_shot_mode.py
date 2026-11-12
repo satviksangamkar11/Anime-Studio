@@ -18,12 +18,12 @@ def test_default_mode_is_SE():
     assert row["end"] == "b.png"
 
 
-def test_S_refused_without_env_flag():
+def test_S_refused_without_env_flag():   # M-32: refused only when switched off with SHOT_MODE_S_ALLOW=0
     shot = {"id": "s1", "image_prompt_type": "S", "start": "a.png", "pixel_frames": 158}
     try:
-        shot_mode.frame_row(shot, env={})
+        shot_mode.frame_row(shot, env={"SHOT_MODE_S_ALLOW": "0"})
     except shot_mode.ShotModeError as exc:
-        assert "SHOT_MODE_S_ALLOW=1" in str(exc)
+        assert "SHOT_MODE_S_ALLOW=0" in str(exc)
     else:
         raise AssertionError("expected ShotModeError")
 

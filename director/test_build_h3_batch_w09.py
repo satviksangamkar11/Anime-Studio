@@ -35,7 +35,7 @@ def _story(ids=("SHOT-001", "SHOT-002")):
 
 @pytest.fixture(autouse=True)
 def _prompt(monkeypatch):
-    monkeypatch.setattr(b, "compile_fl2va_prompt", lambda sh, reg: {"compiled_prompt": "line one\n\nline two"})
+    monkeypatch.setattr(b, "compile_fl2va_prompt", lambda sh, reg, **kw: {"compiled_prompt": "line one\n\nline two"})  # M-02: start_only kwarg for S rows
 
 
 def test_se_route_has_end():
@@ -51,8 +51,8 @@ def test_se_route_has_end():
 def test_s_route_needs_flag():
     routes = {"routes": {"SHOT-001": _route("S", "S")}}
     with pytest.raises(ShotModeError):
-        b.legacy_rows(_story(("SHOT-001",)), "EP1", routes=routes, lock=LOCK, env={})
-    rows, post_ids = b.legacy_rows(_story(("SHOT-001",)), "EP1", routes=routes, lock=LOCK, env={"SHOT_MODE_S_ALLOW": "1"})
+        b.legacy_rows(_story(("SHOT-001",)), "EP1", routes=routes, lock=LOCK, env={"SHOT_MODE_S_ALLOW": "0"})   # M-32
+    rows, post_ids = b.legacy_rows(_story(("SHOT-001",)), "EP1", routes=routes, lock=LOCK, env={})
     assert rows[0]["image_prompt_type"] == "S"
     assert "end" not in rows[0]
     assert post_ids == []
@@ -125,6 +125,11 @@ def _run_main(tmp_path, monkeypatch, routes_payload):
     monkeypatch.setattr(b, "write_wheel_upload", lambda folder, **kw: None)
     monkeypatch.setattr(b.run_kaggle, "png_b64", b.run_kaggle.png_b64)
     monkeypatch.setattr(b.run_kaggle, "embedder", b.run_kaggle.embedder)
+    kd = tmp_path / "pack" / "keyframes"   # M-33: render_version hashes the keyframe file bytes
+    kd.mkdir(parents=True, exist_ok=True)
+    for sid in ("SHOT-001", "SHOT-002", "SHOT-003"):
+        (kd / f"{sid}-A.png").write_bytes(b"a")
+        (kd / f"{sid}-B.png").write_bytes(b"b")
     code = b.main([str(story_p), str(tmp_path / "pack"), "B1", "--routes", str(routes_p), "--lock", str(lock_p)])
     return code, seen
 
@@ -183,3 +188,20 @@ def test_settings_sha_from_real_runner_output(tmp_path, monkeypatch):
     assert manifest["shots"][0]["settings_sha256"] == hashlib.sha256(
         json.dumps(settings["SHOT-001"], sort_keys=True).encode("utf-8")).hexdigest()
     assert manifest["settings_sha256"] == hashlib.sha256(json.dumps(settings, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _short(pf):
+    story = _story(("SHOT-001",))
+    story["episodes"][0]["shots"][0]["timing_and_lattice"]["pixel_frames"] = pf
+    lock = {"input_sha256": LOCK_SHA, "shots": [{"id": "SHOT-001", "pixel_frames": pf, "end_frame_position": 100}]}
+    return story, lock
+
+
+def test_pika6_refuses_107():
+    story, lock = _short(107)
+    with pytest.raises(ValueError, match="124"):
+        b.legacy_rows(story, "EP1", routes=ROUTES, lock=lock, env={})
+    rows, _ = b.legacy_rows(story, "EP1", routes=ROUTES, lock=lock, env={}, allow_107=True)
+    assert rows[0]["render_frames"] == 107
+    story, lock = _short(124)
+    assert b.legacy_rows(story, "EP1", routes=ROUTES, lock=lock, env={})[0][0]["render_frames"] == 124

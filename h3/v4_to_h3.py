@@ -29,8 +29,8 @@ if __package__ in (None, ""):  # run as `python h3/v4_to_h3.py`: the h3 package 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from h3.asset_manifest import canonical_json, hash_frame_file, sha256_text
-from h3.schema_and_linter import (CHAINED, DYN, ID_PATTERN, INTER, LATTICE_CUT_BOUNDS, OFFICIAL_CAMERA_MOTION_PHRASES,
-                                  SEAM_TYPES, SFX_CUE_RE, STATIC_SEAMS, lint_story, load_default_profile)
+from h3.schema_and_linter import (CAMERA_MOVE_CLAUSES, CHAINED, DYN, ID_PATTERN, INTER, LATTICE_CUT_BOUNDS, OFFICIAL_CAMERA_MOTION_PHRASES,
+                                  SEAM_TYPES, SFX_CUE_RE, STATIC_SEAMS, lint_story, load_default_profile, sx02_problems)
 from h3.shot_table_spec import FPS, lattice
 
 LANGS = ("en", "hi", "mr")
@@ -145,28 +145,79 @@ def _camera(directives, sid, problems, notes):
             "compiled_clause": f"The camera {OFFICIAL_CAMERA_MOTION_PHRASES[motion][0]}."}
 
 
-def _stages(directives, pf, sid, problems, ti=0):
-    """The 7 action sentences. A second belongs to the stage holding its midpoint; a stage with no second takes the
-    nearest one. Each sentence keeps the audio cues of the seconds it covers (SX-01 needs one in every stage)."""
+def _camera_from_sheet(sheet, ti=0):
+    """M-03: the one camera sentence of a blocking/1.1 sheet: the camera.move enum phrase plus ', because <motivation>',
+    or 'The camera stays locked'; a shake only as '; a short shake at second N' (clip second). ti = head handle frames."""
+    cam = sheet.get("camera") if isinstance(sheet.get("camera"), dict) else {}
+    motion, clause = CAMERA_MOVE_CLAUSES.get(cam.get("move"), CAMERA_MOVE_CLAUSES[None])
+    why = _text(cam.get("motivation")).rstrip(".")
+    if why:
+        clause += ", because " + why
+    shake = cam.get("shake")
+    if isinstance(shake, dict) and _is_num(shake.get("t")):
+        clause += f"; a short shake at second {round(shake['t'] + ti / FPS, 1):g}"
+    return {"motion_type": motion, "amplitude": "medium_omitted", "speed": "normal_omitted",
+            "compiled_clause": clause + "."}
+
+
+def _time_point(t):
+    """Seconds as a half-second tick: 0 -> '0', 2.4 -> '2.5'."""
+    return f"{round(t * 2) / 2:g}"
+
+
+def _lead(text):
+    """Lower-case a leading article so 'At second 3, the figure ...' reads right; names keep their capital."""
+    for art in ("The ", "A ", "An "):
+        if text.startswith(art):
+            return text[0].lower() + text[1:]
+    return text
+
+
+# M-32: time points are opt-in (profile time_points); off = natural sequencing words, no time number
+SEQ_LEADS = ("First, ", "Then, ", "As that settles, ", "While that continues, ", "Next, ", "Later, ",
+             "Toward the end, ")
+
+
+def _stages(directives, pf, sid, problems, ti=0, beats=None, hold_names=(), time_points=False):
+    """The 7 action sentences, each starting with ONE time point ('At second 2.5,'; stage 7 'By second N,'; never a range).
+    The point is the start of the stage span, or the clip time of a blocking beat that falls inside the span (beats[].t is
+    editorial time; ti = head handle frames). A second belongs to the stage holding its midpoint; a stage with no second
+    takes the nearest one. A stage with nothing new holds: '<name> does not move.' per hold_names (M-03).
+    Audio cues are NOT in these sentences (D1 = B, M-01): _stage_cues() sends them to overall_soundscape."""
     spans = _stage_spans(pf)
+    beat_t = sorted(float(b["t"]) + ti / FPS for b in beats or [] if isinstance(b, dict) and _is_num(b.get("t")))
+    points, prev_pt = [], 0.0
+    for k, (a, b) in enumerate(spans):
+        inside = [t for t in beat_t if a <= round(t * FPS) <= b]
+        pt = 0.0 if k == 0 else max(prev_pt + 0.5, float(_time_point(inside[0] if inside else a / FPS)))
+        points.append(pt)
+        prev_pt = pt
     rows = []
     for d in directives:
         a, b = round(float(d["t0"]) * FPS) + ti, round(float(d["t1"]) * FPS) + ti   # editorial time -> clip frames: the head handle comes first
         rows.append(((a + b) / 2, d))
-    out = {}
+    out, used = {}, set()   # M-01b: an action is emitted once in the whole description (duplicate guard)
     for k, (name, (a, b)) in enumerate(zip(STAGE_NAMES, spans)):
         picked = [d for mid, d in rows if a <= mid <= b]
         if not picked and rows:
             centre = (a + b) / 2
             picked = [min(rows, key=lambda r: abs(r[0] - centre))[1]]
-        actions = list(dict.fromkeys(_text(d.get("action_pose_expression")).rstrip(".") for d in picked))
-        cues = list(dict.fromkeys(_text(d.get("audio_cue")).rstrip(".") for d in picked))
-        sentence = "; ".join(x for x in actions if x) + (", with " + " and ".join(x for x in cues if x) if any(cues) else "")
-        if not sentence:
-            problems.append(f"{sid}: stage {name} has no action or audio_cue in per_second_directives")
-        elif not SFX_CUE_RE.search(sentence):
-            problems.append(f"{sid}: stage {name} has no sound word H3 recognises (SX-01 vocabulary): {cues}")
-        out[name] = sentence.rstrip(".") + "." if sentence else ""
+        texts = [_text(d.get("action_pose_expression")).rstrip(".") for d in picked]
+        if not any(texts):
+            problems.append(f"{sid}: stage {name} has no action in per_second_directives")
+        fresh = [t for t in dict.fromkeys(texts) if t and t.lower() not in used]
+        if not fresh and rows:
+            centre = (a + b) / 2
+            spare = [(abs(mid - centre), _text(d.get("action_pose_expression")).rstrip(".")) for mid, d in rows]
+            spare = [t for _, t in sorted(spare) if t and t.lower() not in used]
+            fresh = spare[:1]
+        lead = (("By" if k == 6 else "At") + f" second {points[k]:g}, ") if time_points else SEQ_LEADS[k]
+        if fresh:
+            used.update(t.lower() for t in fresh)
+            out[name] = lead + _lead("; ".join(fresh).rstrip(".")) + "."
+        else:   # nothing new left for this stage: each held person names their stillness (unique by its time point)
+            who = "; ".join(f"{n} does not move" for n in hold_names) or "the scene holds still"
+            out[name] = lead + who + "."
     return out, [list(s) for s in spans]
 
 
@@ -189,22 +240,49 @@ def _mouth(track, pf, sid, problems, ed=None, ti=0):
         if v is None:
             problems.append(f"{sid}: no mouth_state for second {e} in performance_notes")
         states[str(s)] = v
-    open_secs = [k for k, v in states.items() if v == "open_non_verbal_breath"]
-    rule = ("The figure's mouth stays closed for the whole shot." if not open_secs else
-            "The figure's mouth stays closed except for non-verbal breaths at second" + ("s " if len(open_secs) > 1 else " ") + " and ".join(open_secs) + ".")
-    return states, rule
+    # M-01: the breath exception is gone. The prompt's mouth sentence is per person (prompt_hygiene.mouth_sentence, from
+    # the blocking speaks flags), so this rule text is only kept for the record and is not emitted.
+    return states, "The figure's mouth stays closed for the whole shot."
 
 
-def _soundscape(track, sid, problems):
-    cues = [c for c in (track.get("sfx_cues") or []) if isinstance(c, dict) and _text(c.get("description"))]
-    if not cues:
+def _stage_cues(directives):
+    """[(t, text)] of the per-second audio_cue values (D1 = B: they leave the action sentences for the soundscape)."""
+    out = []
+    for d in directives:
+        text = _text(d.get("audio_cue")).rstrip(".")
+        if text:
+            out.append((float(d["t0"]), text))
+    return out
+
+
+def _time_of(cue):
+    """Start second of a V4 sfx cue from its time_range ('1.0-1.5s' -> 1.0); 0 when there is none."""
+    m = re.search(r"\d+(?:\.\d+)?", _text(cue.get("time_range")))
+    return float(m.group(0)) if m else 0.0
+
+
+def _soundscape(track, sid, problems, extra=()):
+    """overall_soundscape: the V4 sfx cues plus the stage cues (extra = [(t, text)]), in t order, duplicates dropped.
+    Packed into 1-4 sentences: 'First <cue>; then <cue>; finally <cue>.' (SX-01: 1 to 4 sentences)."""
+    cues = [(_time_of(c), _text(c.get("description")).rstrip(".")) for c in (track.get("sfx_cues") or [])
+            if isinstance(c, dict) and _text(c.get("description"))]
+    cues += [(float(t), text) for t, text in extra if text]
+    items, seen = [], set()
+    for _, text in sorted(cues, key=lambda c: c[0]):
+        if text.lower() not in seen:
+            seen.add(text.lower())
+            items.append(text)
+    if not items:
         problems.append(f"{sid}: no sfx_cues with a description; overall_soundscape is empty")
         return ""
-    n = min(4, len(cues))     # SX-01: 1 to 4 sentences; every cue lands in exactly one sentence
+    n = len(items)
+    labelled = [items[0] if n == 1 else
+                (f"First {items[0]}" if i == 0 else f"finally {text}" if i == n - 1 else f"then {text}")
+                for i, text in enumerate(items)]
+    size = math.ceil(n / 4)   # at most 4 sentences
     sentences = []
-    for j in range(n):
-        chunk = [_text(c["description"]).rstrip(".") for c in cues[j * len(cues) // n:(j + 1) * len(cues) // n]]
-        text = "; ".join(chunk)
+    for j in range(0, n, size):
+        text = "; ".join(labelled[j:j + size])
         sentences.append(text[:1].upper() + text[1:] + ".")
     return " ".join(sentences)
 
@@ -225,7 +303,7 @@ def _timing_inputs(row, sid):
 
 
 def group_rows(shots):
-    """(items, problems). One item per row that has an episode, in row order, with its neighbours inside the episode:
+    """(items, problems). One item per row that has an episode, in row order, its neighbours inside the episode:
     {idx, row, ep, prev, next, first, last}. first/last = first/last row of the episode (the reel)."""
     problems, valid, by_ep = [], [], {}
     for idx, row in enumerate(shots, 1):
@@ -566,7 +644,12 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
             problems.append(f"{sid}: per_second_directives[{j}] needs numeric t0 and t1")
             directives = []
             break
-    stage_text, spans = _stages(directives, pf, sid, problems, ti) if directives else ({k: "" for k in STAGE_NAMES}, _stage_spans(pf))
+    sheet0 = (ctx.get("blocking") or {}).get(sid) if ctx.get("blocking") is not None else None
+    sheet0 = sheet0 if isinstance(sheet0, dict) else None
+    members0 = [m for m in (sheet0 or {}).get("cast") or [] if isinstance(m, dict) and isinstance(m.get("id"), str)]
+    held = [_text(m.get("name")) or m["id"] for m in members0 if m.get("hold") is True]
+    hold_names = held or [_text(m.get("name")) or m["id"] for m in members0]   # M-03: no hold flags = all stand still
+    stage_text, spans = _stages(directives, pf, sid, problems, ti, (sheet0 or {}).get("beats"), hold_names, bool(ctx["profile"].get("time_points", False))) if directives else ({k: "" for k in STAGE_NAMES}, _stage_spans(pf))
     for name in STAGE_NAMES:
         if not stage_text[name]:
             problems.append(f"{sid}: motion stage {name} has no text")
@@ -589,6 +672,9 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
             subjects = blk_ids
             ctx["cast_names"][sid] = [_text(m.get("name")) or m["id"] for m in members]
             cast_lock = _blocking_module().prompt_args(sheet)   # X-05: the cast, mouth and sound inputs of the prompt
+            header = _chain_header(sid, sheet, ctx["blocking"], problems)   # M-03: chained clip, CURRENT CHARACTER STATE
+            if header:
+                cast_lock["chain_header"] = header
     for cid in subjects:
         if cid not in ctx["characters"]:
             problems.append(f"{sid}: character {cid} is not in the bible characters")
@@ -603,7 +689,14 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
               "master_reel_window_sec": [SEC(running), SEC(running + ed)]}
     if "end_frame_position" in derived:          # set only from a timeline lock; nothing reads it until W-10
         timing["end_frame_position"] = derived["end_frame_position"]
-    camera = _camera(directives, sid, problems, notes)
+    if sheet0 is not None and sheet0.get("schema") == "blocking/1.1":   # M-03: the camera sentence from the blocking enum
+        camera = _camera_from_sheet(sheet0, ti)
+    else:
+        camera = _camera(directives, sid, problems, notes)
+    soundscape = _soundscape(track, sid, problems, extra=_stage_cues(directives))
+    sheet_cues = (ctx["blocking"] or {}).get(sid) if ctx.get("blocking") is not None else None
+    if isinstance(sheet_cues, dict):   # SX-02: every blocking cue's head noun is in the soundscape, in t order
+        problems.extend(f"{sid}: {p}" for p in sx02_problems(soundscape, sheet_cues.get("sound_cues") or []))
     return {
         "shot_id": sid, "episode_id": ctx["episode_id"], "sequence_order": seq,
         "story_beat": h3.get("story_beat"), "emotional_objective": h3.get("emotional_objective"),
@@ -628,11 +721,30 @@ def _shot(row, seq, ctx, h3, derived, p1, p2, notes, problems):
         "camera": camera,
         "dialogue_and_lip_lock": {"has_dialogue": False, "utterances": [], "mouth_state_rule": mouth_rule,
                                   "narrator_mouth_closed": True, "mouth_state": mouth},
-        "sound_plan": {"overall_soundscape": _soundscape(track, sid, problems), "non_diegetic_music": "N/A"},
+        "sound_plan": {"overall_soundscape": soundscape, "non_diegetic_music": "N/A"},
         **({"cast_lock": cast_lock} if cast_lock is not None else {}),
         **({"metadata": {"look": copy.deepcopy(row["look"]), "purpose": _text(row.get("purpose")), "captions": []}}
            if isinstance(row.get("look"), dict) else {}),   # audit C 11-08: post.py and assemble_reel read metadata.look (palette, act, hook, impacts)
     }
+
+
+def _chain_header(sid, sheet, blocking, problems):
+    """M-03: 'CURRENT CHARACTER STATE: <state>. Continue directly from this exact frame with no reset.' for a clip that
+    continues the last kept frame of sheet.chain_from (director/chain_step.chain_header). The state is the sheet's
+    chain_state, else the last beat action of the chained-from sheet; neither = a problem. '' when the sheet is not chained."""
+    src = sheet.get("chain_from")
+    if not src:
+        return ""
+    state = _text(sheet.get("chain_state"))
+    prev = blocking.get(src) if isinstance(blocking, dict) else None
+    beats = [b for b in (prev or {}).get("beats") or [] if isinstance(b, dict) and _text(b.get("action"))]
+    if not state and beats:
+        state = _text(max(beats, key=lambda b: b.get("t") or 0)["action"])
+    if not state:
+        problems.append(f"{sid}: chain_from {src} needs chain_state (the CURRENT CHARACTER STATE sentence) or a beat of {src}")
+        return ""
+    from director.chain_step import chain_header   # lazy: it needs numpy and PIL, which the other converters do not
+    return chain_header(state.rstrip("."))
 
 
 def _apply_lock(shots, lock, problems):
@@ -706,7 +818,10 @@ def _lint_sheets(blocking, shots, lock, problems):
         sec = secs.get(sid)
         if isinstance(sec, (int, float)) and not isinstance(sec, bool) and sec > 0:
             checked["writer_seconds"] = sec
-        problems.extend(bl.lint([checked], lock=lock))
+        pack = [checked]
+        if checked.get("chain_from") and isinstance(blocking.get(checked["chain_from"]), dict):   # L17 needs the previous shot
+            pack = [blocking[checked["chain_from"]], checked]
+        problems.extend(p for p in bl.lint(pack, lock=lock) if len(pack) == 1 or p.startswith(f"{sid}:"))
 
 
 def _load_blocking_dir(directory, shots, problems):
@@ -718,11 +833,10 @@ def _load_blocking_dir(directory, shots, problems):
         sid = row.get("id") if isinstance(row, dict) else None
         if not isinstance(sid, str) or not sid or sid in sheets:
             continue
-        path = os.path.join(directory, sid + ".json")
-        if not os.path.exists(path):
+        if not os.path.exists(os.path.join(directory, sid + ".json")):
             continue
         try:
-            sheets[sid] = blk.load_sheet(path)
+            sheets.update(blk.load_reel(directory, [sid]))   # M-01: the pack's blocking files, read by blocking.load_reel
         except blk.BlockingError as exc:
             problems.extend(exc.args[0])
         except (OSError, ValueError) as exc:   # bad JSON or unreadable file
@@ -750,10 +864,13 @@ def convert_pack(pack_dir_or_dicts, *, languages=None, profile="sing8_864x1536",
     lock_want = None
     if lock is not None:
         shots, lock_want = _apply_lock(shots, lock, problems)
+    from_folder = isinstance(pack_dir_or_dicts, (str, os.PathLike))
+    if blocking is None and blocking_dir is None and from_folder and root:   # M-01: <pack>/blocking/SHOT-NNN.json by default
+        if os.path.isdir(os.path.join(root, "blocking")):
+            blocking_dir = os.path.join(root, "blocking")
     if blocking is None and blocking_dir is not None:
         blocking = _load_blocking_dir(blocking_dir, shots, problems)
     _lint_sheets(blocking, shots, lock, problems)
-    from_folder = isinstance(pack_dir_or_dicts, (str, os.PathLike))
     langs = _languages(languages, stage, problems)
     prof = load_default_profile(profile)
     chars_in = bible.get("characters") if isinstance(bible.get("characters"), dict) else {}

@@ -188,3 +188,24 @@ def test_export_writes_manifest_bound_to_the_wav(tmp_path, monkeypatch):
     (out / rows[0]["wav"]).write_bytes(b"changed")
     with pytest.raises(vm.VoiceManifestError, match="wav_sha256"):
         vm.load_voice_manifest(path, lang="hi")
+
+
+def test_load_manifest_rows_refuses_tampered_text(tmp_path):
+    """build_final_reel's manifest gate (load_manifest_rows) refuses a voiced-text change with a clear error."""
+    import build_final_reel as b
+    path = make(tmp_path)
+    b.load_manifest_rows(str(path), "hi")
+    man = read(path)
+    man["rows"][0]["text"] = "तामpered पंक्ति।"
+    write(path, man)
+    with pytest.raises(SystemExit, match="voice manifest"):
+        b.load_manifest_rows(str(path), "hi")
+
+
+def test_load_manifest_rows_refuses_tampered_wav(tmp_path):
+    """build_final_reel's manifest gate refuses a wav changed after voicing with a clear error."""
+    import build_final_reel as b
+    path = make(tmp_path)
+    (tmp_path / "voices" / "wav_export" / "wav" / "hi" / "a.wav").write_bytes(b"changed after voicing")
+    with pytest.raises(SystemExit, match="voice manifest"):
+        b.load_manifest_rows(str(path), "hi")

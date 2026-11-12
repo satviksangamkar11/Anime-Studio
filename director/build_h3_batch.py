@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
+import h3_director  # noqa: E402
 import run_kaggle  # noqa: E402
 from h3 import shot_mode  # noqa: E402
 from h3.compile_h3_sing8 import compile_fl2va_prompt  # noqa: E402
@@ -124,7 +125,16 @@ def split_blobs(script, folder, chunk=3_000_000):
     return script
 
 
-def legacy_rows(story, episode_id, resolution="768x1344", ids=None, routes=None, lock=None, env=None):
+def shot_seed(shot_id, seed_version="1"):
+    """M-29 (C-06): one fixed seed per shot, from the shot id and a seed version (bump it for a re-render with a new seed)."""
+    return int(hashlib.sha256(f"{shot_id}:{seed_version}".encode("utf-8")).hexdigest()[:8], 16) % 2**31
+
+
+PIKA_MIN_FRAMES = 124
+
+
+def legacy_rows(story, episode_id, resolution="768x1344", ids=None, routes=None, lock=None, env=None, seed_version="1",
+                allow_107=False):
     """(rows, post_ids) for run_kaggle.build: fl2va + pika6, prompt_override = the compiled H3 prompt. routes: the shot_router output
     (a dict with a "routes" map by shot id; required). A POST route is left out and its id returned. The mode and strength come from
     the route; every row passes shot_mode.frame_row. A soft end (input_video_strength other than None or 1.0) is refused: Wan2GP
@@ -151,8 +161,11 @@ def legacy_rows(story, episode_id, resolution="768x1344", ids=None, routes=None,
             post_ids.append(sid)
             continue
         frames = sh["timing_and_lattice"]["pixel_frames"]
+        if frames < PIKA_MIN_FRAMES and not allow_107:   # B-13: the Pika preset recommends 124-362 frames at 24 fps
+            raise ValueError(f"{sid}: {frames} pixel frames < {PIKA_MIN_FRAMES}, the Pika preset floor (5.17 s); "
+                             "re-lock with --preset pika6 or pass --allow-107")
         strength = route.get("input_video_strength")
-        shot = {"id": sid, "image_prompt_type": route.get("image_prompt_type"), "pixel_frames": frames,
+        shot = {"id": sid, "image_prompt_type": route.get("image_prompt_type") or "S", "pixel_frames": frames,
                 "start": f"keyframes/{sid}-A.png", "end": f"keyframes/{sid}-B.png", "input_video_strength": strength}
         if lock is not None:
             if sid not in locked:
@@ -165,14 +178,16 @@ def legacy_rows(story, episode_id, resolution="768x1344", ids=None, routes=None,
         if frame.get("input_video_strength") not in (None, 1.0):
             raise ValueError(f"{sid}: route {route.get('route')} needs input_video_strength {frame['input_video_strength']}, "
                              "which Wan2GP bd1ff59 drops (research/WAN2GP_SOFT_END_TRACE_2026-11-11.md); owner decision D4")
-        prompt = compile_fl2va_prompt(sh, story["registry"])["compiled_prompt"]
+        kw = {"start_only": True} if frame["image_prompt_type"] == "S" else {}   # M-02: S rows get the start-only prompt
+        prompt = compile_fl2va_prompt(sh, story["registry"], **kw)["compiled_prompt"]
         # Wan2GP (multi_prompts_gen_type PG) reads a BLANK line as a second generation request and refuses (render attempt 5: every
         # shot rc=1); the proven T0 prompts had single line breaks only
         prompt = re.sub(r"\n[ \t]*\n+", "\n", prompt.replace("\r\n", "\n").replace("\r", "\n"))
         if "\n\n" in prompt:
             raise ValueError(f"{sid}: blank line left in the prompt")
         row = {"id": sid, "mode": "fl2va", "route": "pika6", "aspect": "9:16", "resolution": resolution, "render_frames": frame["pixel_frames"],
-               "start": shot["start"], "image_prompt_type": frame["image_prompt_type"], "prompt_override": prompt}
+               "start": shot["start"], "image_prompt_type": frame["image_prompt_type"], "prompt_override": prompt,
+               "seed": sh["seed"] if "seed" in sh else shot_seed(sid, seed_version)}
         if frame["image_prompt_type"] == "SE":          # S has no end picture
             row["end"] = shot["end"]
         rows.append(row)
@@ -188,18 +203,35 @@ def _sha(obj):
 SETTINGS_RE = re.compile(r'for sid, settings in json\.loads\(base64\.b64decode\("([A-Za-z0-9+/=]+)"\)\)')
 
 
-def add_settings_sha(manifest, script):
+WAN2GP_PIN = run_kaggle.WAN2GP_COMMIT
+
+
+def add_settings_sha(manifest, script, pin=WAN2GP_PIN, rows=None, pack=None):
     """settings_sha256 for each manifest shot and for the batch: sha256 of json.dumps(settings, sort_keys=True) of the effective
-    Wan2GP settings (the blob in the runner). W-11 checks it before a canary."""
+    Wan2GP settings (the blob in the runner). W-11 checks it before a canary.
+    M-24: render_version per shot = sha256 over {Wan2GP pin, profile presets, that shot's settings (steps, cfg, sampler, seed,
+    resolution, prompt and the A/B image paths)}. Any change gives a new render_version. The batch gets one too.
+    M-33: with rows and pack, the A (and, for SE rows only, B) keyframe FILE BYTES are hashed too; a missing file raises."""
     m = SETTINGS_RE.search(script)
     if not m:
         raise ValueError("settings blob not found in the runner: no settings_sha256 can be written")
     settings = json.loads(base64.b64decode(m.group(1)))
+    profile_sha = _sha(h3_director.PRESET)
+    row_of = {r["id"]: r for r in rows or []}
     for sh in manifest.get("shots", []):
         if sh["id"] not in settings:
             raise ValueError(f"{sh['id']}: no settings in the runner")
         sh["settings_sha256"] = _sha(settings[sh["id"]])
+        sh["seed"] = settings[sh["id"]].get("seed", 42)          # M-29: the seed that renders (h3_director default 42)
+        parts = {"pin": pin, "profile": profile_sha, "settings": sh["settings_sha256"]}
+        row = row_of.get(sh["id"])
+        if row is not None and pack is not None:
+            keys = ["start"] + (["end"] if row.get("image_prompt_type") == "SE" else [])
+            parts["keys"] = [hashlib.sha256((Path(pack) / row[k]).read_bytes()).hexdigest() for k in keys]
+        sh["render_version"] = _sha(parts)
     manifest["settings_sha256"] = _sha(settings)
+    manifest["render_version"] = _sha({"pin": pin, "profile": profile_sha, "settings": manifest["settings_sha256"],
+                                       "shots": [sh["render_version"] for sh in manifest.get("shots", [])]})
 
 
 WHEEL = Path("D:/aai work/vendor/chumpy_0.71/chumpy-0.71-py3-none-any.whl")        # supplied by the owner, verified 2026-11-09 (vendor/chumpy_0.71/VENDOR.md)
@@ -227,6 +259,8 @@ def main(argv=None):
     ap.add_argument("--episode", default="EP1"); ap.add_argument("--ids", default="")
     ap.add_argument("--profile", type=int, default=5); ap.add_argument("--resolution", default="768x1344")
     ap.add_argument("--routes", required=True, help="routes.json from shot_router.py --out (its lock_sha256 must match --lock)")
+    ap.add_argument("--seed-version", default="1", help="seed = f(shot id, this); change it only for a new-seed re-render")
+    ap.add_argument("--allow-107", action="store_true", help="render a shot below the Pika 124-frame floor anyway")
     ap.add_argument("--lock", required=True, help="the timeline lock the routes were made from")
     a = ap.parse_args(argv)
     story = json.loads(Path(a.story).read_text(encoding="utf-8"))
@@ -236,7 +270,8 @@ def main(argv=None):
         raise ValueError("routes must be a JSON object with a 'routes' map")
     if routes.get("lock_sha256") != lock.get("input_sha256"):
         raise ValueError("stale routes: the routes file was made from another lock; rerun shot_router.py")
-    rows, post_ids = legacy_rows(story, a.episode, a.resolution, set(filter(None, a.ids.split(","))), routes=routes, lock=lock)
+    rows, post_ids = legacy_rows(story, a.episode, a.resolution, set(filter(None, a.ids.split(","))), routes=routes, lock=lock,
+                                seed_version=a.seed_version, allow_107=a.allow_107)
     if post_ids:
         print("POST (no render, not in the batch):", ", ".join(post_ids))
     manifest = {}
@@ -244,7 +279,7 @@ def main(argv=None):
     run_kaggle.png_b64 = lambda path: jpeg_b64(path, (w, h))
     run_kaggle.embedder = jpg_embedder
     script, _ = run_kaggle.build(rows, a.pack, a.batch, None, None, False, "colab", a.profile, manifest)
-    add_settings_sha(manifest, script)
+    add_settings_sha(manifest, script, rows=rows, pack=a.pack)
     folder = HERE / "colab_batches" / a.batch
     folder.mkdir(parents=True, exist_ok=True)
     script = split_blobs(harden(script), folder)

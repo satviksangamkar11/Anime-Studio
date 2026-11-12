@@ -154,6 +154,32 @@ def test_silent_shot_needs_min_seconds(tmp_path):
     assert lock[2]["method"] == "free"
 
 
+# M-16: per shot max(en, hi, mr) voice seconds at tempo 1.0 must fit the writer's edit seconds (the sheet's writer_seconds).
+# Hand-computed: a 4.00 s hi line starting at 0.5 s needs 0.5 + 4.0 + 0.1 = 4.6 s; a 2.00 s hi line needs 2.6 s.
+
+
+def test_long_hi_line_longer_than_edit_is_refused(tmp_path):
+    rows = [_row("S1", narr={"en": (0.5, 2.40), "hi": (0.5, 4.00)}), _row("S2")]
+    _wavs(tmp_path / "wav", {"S1": {"en": 2.40, "hi": 4.00}, "S2": {"en": 2.40, "hi": 2.00}})
+    with pytest.raises(SystemExit, match=r"S1.*hi.*4\.60 s.*3\.00 s"):
+        wtl.plan_lock(rows, _secs(tmp_path / "wav"), LANGS, None, {}, edit_seconds={"S1": 3.0})
+
+
+def test_long_hi_line_within_edit_passes(tmp_path):
+    _wavs(tmp_path / "wav", FREE_NATURAL)
+    lock = wtl.plan_lock(_free_rows(), _secs(tmp_path / "wav"), LANGS, None, {}, edit_seconds={"S1": 3.0})
+    assert [r["edit_frames"] for r in lock] == [80, 72, 72]
+
+
+def test_voice_exactly_at_edit_passes(tmp_path):
+    rows = [_row("S0", {"en": (0.5, 2.70), "hi": (0.5, 2.00)}), _row("S1", narr={"en": (0.5, 2.40), "hi": (0.5, 2.50)}),
+            _row("S2")]
+    _wavs(tmp_path / "wav", {"S0": {"en": 2.70, "hi": 2.00}, "S1": {"en": 2.40, "hi": 2.50},
+                             "S2": {"en": 2.40, "hi": 2.00}})
+    lock = wtl.plan_lock(rows, _secs(tmp_path / "wav"), LANGS, None, {}, edit_seconds={"S1": 3.1})
+    assert lock[1]["edit_frames"] == 75
+
+
 def test_wav_byte_change_is_stale(tmp_path):
     pack, root, manifest = _pack(tmp_path, _free_rows(), FREE_NATURAL)
     out = tmp_path / "lock"

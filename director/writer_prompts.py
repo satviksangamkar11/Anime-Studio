@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]               # the anime_studio fold
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from h3 import shot_table_spec as spec  # noqa: E402
+import blocking  # noqa: E402  (pose and camera words of the blocking sheet, named in the v2.4 stage 3 text)
 
 STAGES = ("1", "2", "3", "5")                            # gate numbers; stage 3 runs once per episode ("3e1", "3e2" ...)
 
@@ -150,12 +151,22 @@ def _bible_example():
     }
 
 
-def stage1_text():
+PREMISE_KEYS = ("character", "goal", "obstacle", "stakes", "payoff")      # mirrors story_shape.PREMISE_KEYS (a test uses both)
+SHAPE_HOOKS = ("kinetic", "scale_tableau", "voice_call")                   # mirrors story_shape.HOOK_TYPES without "none"
+
+
+def stage1_text(v24=False):
     checks = "\n".join(f"   - {name}: {CHECK_TEXT[name]}" for name in spec.STORY_GATE_CHECKS)
     example = {"story_gate_checks": {name: {"pass": True, "evidence": "one sentence quoting the spine line"}
                                      for name in spec.STORY_GATE_CHECKS},
                "duration_bucket": "60-90", "reel_seconds": 68.0,
                "episodes": [{"episode": 1, "title": "...", "seconds": 68.0}]}
+    shape = ""
+    if v24:   # G24: story-level fields of the v2.4 brief (story_shape SHAPE-01, SHAPE-02)
+        example["premise"] = {k: "one short sentence" for k in PREMISE_KEYS}
+        example["reel_target_s"] = 68.0
+        shape = ("e) The premise: an object with the five keys " + ", ".join(PREMISE_KEYS) + ", each one short non-empty sentence. "
+                 "Add reel_target_s, the reel length in seconds (25 to 75), when the story fixes one.\n")
     return f"""Stage 1 only: write the story spine, the six gate checks and the reel plan. Markdown first, then one block.
 a) The story spine: the protagonist, the want, the flaw, the crisis, three to five turning points, and the ending anchor (the earlier
    image or feeling that the ending reuses).
@@ -165,7 +176,7 @@ b) Gate checks: judge the spine against each of the six checks below. Each check
 c) The reel plan: the duration bucket and reel_seconds. The studio preset is {spec.STUDIO_REEL_RANGE[0]:.1f} to {spec.STUDIO_REEL_RANGE[1]:.1f} seconds
    per episode; use it unless the owner asked for another length.
 d) The episode split: one line per episode, 'Episode N: title'.
-End with exactly one ```json story block holding one JSON object of this shape (all six checks, every episode):
+{shape}End with exactly one ```json story block holding one JSON object of this shape (all six checks, every episode):
 ```json story
 {json.dumps(example, ensure_ascii=False, indent=1)}
 ```"""
@@ -233,7 +244,7 @@ def _col6_text(langs):
             "EVERY language uses the SAME time_range as the primary, so one video track serves all languages. Text per language: " + per_lang + ". ")
 
 
-def stage3_text(episode, seconds=None, first=1, langs=DEFAULT_OUT_LANG):
+def stage3_text(episode, seconds=None, first=1, langs=DEFAULT_OUT_LANG, v24=False):
     """Stage 3 for one episode. first: the number of the episode's first shot (SHOT-NNN, continuing the earlier episodes).
     langs: the story's output languages (primary first); narration and dialogue are written in each of them."""
     langs = lang_list(langs)
@@ -241,6 +252,23 @@ def stage3_text(episode, seconds=None, first=1, langs=DEFAULT_OUT_LANG):
     length = f"about {float(seconds):.1f} seconds" if seconds else "the length planned in stage 1"
     hooks = ", ".join(spec.HOOKS)
     strong = ", ".join(spec.STRONG_HOOKS)
+    col8 = ""
+    if v24:   # G24: story shape on every row (story_shape SHAPE-03..10)
+        col8 = ("Col 8 story shape (v2.4): arc_beat on EVERY row: hook, setup, escalation or payoff, never out of order; the first row is the hook "
+                "and the last row is payoff, and the payoff rows add up to at least 5 s. shape_hook_type on the FIRST row only: one of "
+                + ", ".join(SHAPE_HOOKS) + " (it is separate from hook_type above, which keeps its own words). voice_rest is optional "
+                "on any row: [t0, t1] in shot-relative seconds (0 is the start of THIS shot), 2 to 4 s long, inside the shot, with no voice "
+                "line inside it; leave the key out when the shot has no voice-free window.\n"
+                "Col 9 blocking (v2.4, mandatory on EVERY row): key blocking holds the blocking/1.1 sheet of brief sections c2 and c4 "
+                "(shot_id = the row id, integer arms 2 or more, source_refs line ids); it must pass blocking validate and lint like the "
+                "worked example-blocking sheet. In audio_and_dialogue_track every dialogue item names its voice with the key \"speaker\" "
+                "(a CHAR id of the bible voice_map), never \"who\" (who belongs to the blocking sheet only). Use at most 3 decimals and "
+                "round editorial_duration_sec down, so it never exceeds pixel_frames / 24.\n"
+                "Blocking words (checked): cast start/end pose is one of " + ", ".join(blocking._POSES) + " (the POSE-xxx atlas names "
+                "go in the rich shot's start_pose/end_pose, never in the blocking pose); camera move is one of "
+                + ", ".join(blocking._CAMERA_11_MOVES) + "; every per_second_directives item carries source_refs [line ids]. The "
+                "first spoken line of the reel states the stakes or a question; narration and dialogue never overlap in time; a hold "
+                "beat starts at 3.0 s or later.\n")
     return f"""Stage 3e{episode} only: write the V4 shot table for Episode {episode} only ({length}). Use only the ids of the Stage 2 bible
 (CHAR-*, ENV-*, PROP-*). Shot ids are unique across the whole reel: the first shot of this episode is SHOT-{first:03d}, and the numbers
 continue upward from the earlier episodes' shots. Every row fills all six columns:
@@ -262,8 +290,8 @@ Col 4 hook_type: one of {hooks}. The opening shot (is_opening_0_2s_hook true) an
    from the previous shot, the LATER shot must carry a non-empty deliberate_flip_marker. This includes every change of place: a cut
    to a new environment whose key light comes from the other side is a flip, so mark it (for example "HARD CUT — new place: dawn
    sun left to cloud-court light right"). Check the key side of each shot against the shot before it before you answer. When the episode runs {REHOOK_REEL_MIN_SEC:.0f} s or longer, a shot that
-   STARTS between {REHOOK_WINDOW[0]:.0f} s and {REHOOK_WINDOW[1]:.0f} s of the episode must use one of {strong} (the re-hook; the checker counts the
-   start time of each shot from the sum of the shot lengths before it).
+   STARTS between {REHOOK_WINDOW_FRAC[0]:.0%} and {REHOOK_WINDOW_FRAC[1]:.0%} of the way through the episode's total length must use one of
+   {strong} (the re-hook; the checker counts the start time of each shot from the sum of the shot lengths before it).
 Col 5 per_second_directives: contiguous brackets from 0.0 with no gap and no overlap, up to editorial_duration_sec. One-second
    brackets, plus a sub-second bracket such as 2.0 to 2.5 for a fast burst. Every bracket has t0, t1, action_pose_expression, camera,
    spatial_position, audio_cue (the synchronized birth or impact sound) and handoff_to_next_second. Name the camera move with one of the
@@ -277,18 +305,18 @@ Col 6 audio_and_dialogue_track: {_col6_text(langs)}performance_notes {{text, nar
 Col 7 look (audit A 11-08: the checker needs it on EVERY shot): an object with palette_id, act, phase (all three from the STYLE PACK RULES section),
    focal (a character of this shot), focal_value, impact_frames, vfx (colour names of that palette), accent_use and hold_purpose; the FIRST shot of
    the episode also carries look.hook {{type, caption}}. It is a top-level key of the row, never inside a style text.
-Answer with exactly one ```json shots block: a JSON list of this episode's rows, each row in the shape below (the values are an example):
+{col8}Answer with exactly one ```json shots block: a JSON list of this episode's rows, each row in the shape below (the values are an example):
 ```json shots
-{json.dumps([example_row(episode, first, langs)], ensure_ascii=False, indent=1)}
+{json.dumps([example_row(episode, first, langs, v24)], ensure_ascii=False, indent=1)}
 ```"""
 
 
-REHOOK_REEL_MIN_SEC = 45.0      # mirrors pack_validator.REHOOK_REEL_MIN_SEC (a test keeps them equal)
-REHOOK_WINDOW = (25.0, 35.0)    # mirrors pack_validator.REHOOK_WINDOW_SEC
+REHOOK_REEL_MIN_SEC = 36.0      # mirrors pack_validator.REHOOK_REEL_MIN_SEC (a test keeps them equal)
+REHOOK_WINDOW_FRAC = (0.45, 0.60)  # mirrors pack_validator.REHOOK_WINDOW_FRAC = core.json retention.rehook_window_frac
 LOOK_EXAMPLE = None   # set by write_pack from the chosen style pack
 
 
-def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG):
+def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG, v24=False):
     """One complete V4 row: the shape the stage 3 answer must follow. Length 7 s, lattice n 10. With several output languages the
     row carries narration_by_lang and dialogue_by_lang with the same time ranges in every language."""
     langs = lang_list(langs)
@@ -338,6 +366,8 @@ def example_row(episode=1, first=1, langs=DEFAULT_OUT_LANG):
         "per_second_directives": directives,
         "audio_and_dialogue_track": track,
     }
+    if v24:   # G24: the voice-free window starts after the narration window [0.5, 5.0] and ends inside the 7 s shot
+        row.update({"arc_beat": "hook", "shape_hook_type": "kinetic", "voice_rest": [5.0, 7.0]})
     if LOOK_EXAMPLE:
         row["look"] = json.loads(json.dumps(LOOK_EXAMPLE))
     return row
@@ -386,13 +416,13 @@ End with one optional ```json captions block: a JSON list, one object per shot t
 (narration text null when the shot has no narration; the dialogue lists in the same order as the dialogue, [] when none)."""
 
 
-def stage_instruction(name, seconds=None, first=1, langs=DEFAULT_OUT_LANG, voice=None):
+def stage_instruction(name, seconds=None, first=1, langs=DEFAULT_OUT_LANG, voice=None, v24=False):
     """The THIS STAGE text for stage name ('1', '2', '3e<N>', '5'). langs: the story's output languages (stages 2, 3 and 5).
     voice: the voice_engine dict (stage 2 adds the speaker map and anchors only when en = h3)."""
     if name.startswith("3e"):
-        return stage3_text(int(name[2:]), seconds, first, langs)
+        return stage3_text(int(name[2:]), seconds, first, langs, v24)
     if name == "1":
-        return stage1_text()
+        return stage1_text(v24)
     if name == "2":
         return stage2_text(langs, voice)
     if name == "5":

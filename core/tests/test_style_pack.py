@@ -63,7 +63,7 @@ def test_core_json_has_spec_keys_and_version():
     assert core["version"] == "1.2"
     assert core["fps"] == 24
     assert set(core) == {
-        "version", "default_style_pack", "fps", "delivery", "safe_zone_frac", "safe_zone_templates", "captions", "retention",
+        "version", "_caption_note", "default_style_pack", "fps", "delivery", "safe_zone_frac", "safe_zone_templates", "captions", "retention",
         "impact", "flash", "gates", "sound_sync",
     }
     assert core["gates"]["sat_avg_ceiling"] is None

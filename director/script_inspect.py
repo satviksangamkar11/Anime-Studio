@@ -68,12 +68,13 @@ def from_pack(rows, lang):
             "action": action,
             "events": events,
             "lines": lines,
+            **({"voice_rest": row["voice_rest"]} if row.get("voice_rest") is not None else {}),   # pacing exempts it
         })
     return shots
 
 
-def inspect_script(shots, lang, seconds_override=None):
-    """Run hook and pacing checks on a reel script.
+def inspect_script(shots, lang, seconds_override=None, story=None):
+    """Run hook and pacing checks on a reel script. story: optional dict; its reel_target_s sets the pacing length window.
 
     Returns {"pass": bool, "hook": dict, "pacing": dict}.
     seconds_override ({id: seconds}, from a timeline lock) replaces the script seconds in pacing.
@@ -89,7 +90,8 @@ def inspect_script(shots, lang, seconds_override=None):
     import script_pacing
 
     hook_result = script_hook.inspect_hook(shots, lang)
-    pacing_result = script_pacing.inspect_pacing(shots, lang, seconds_override=seconds_override)
+    extra = {"story": story} if story is not None else {}       # the old call shape stays when no story is given
+    pacing_result = script_pacing.inspect_pacing(shots, lang, seconds_override=seconds_override, **extra)
 
     return {
         "pass": bool(hook_result["pass"] and pacing_result["pass"]),

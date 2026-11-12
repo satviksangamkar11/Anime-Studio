@@ -5,7 +5,7 @@ import pytest
 
 from h3 import voice_engine as ve
 from h3.compile_h3_sing8 import compile_fl2va_prompt
-from h3.schema_and_linter import MOUTH_LOCK_PHRASE, lint_story, voice_mode
+from h3.schema_and_linter import MOUTH_LOCK_PHRASE, MOUTH_PERSON_RE, lint_story, voice_mode
 from h3.tests.synth import build_story, codes
 
 ANCHOR = {"audio": "voice/alpha.wav", "duration_sec": 6.0, "voice_description": "a low, calm adult male voice"}
@@ -138,9 +138,10 @@ def test_english_line_is_emitted_in_the_official_form(tmp_path):
 
 
 def test_silent_shot_keeps_the_mouth_lock_in_voice_mode(tmp_path):
+    # M-01b: was "MOUTH_LOCK_PHRASE in text". MO-01 is per person now: a cast member gets a mouth sentence.
     story = voice_story(str(tmp_path))
     text = compile_fl2va_prompt(story["episodes"][0]["shots"][1], story["registry"])["compiled_prompt"]
-    assert MOUTH_LOCK_PHRASE in text and "<d>" not in text
+    assert MOUTH_PERSON_RE.search(text) and "<d>" not in text
 
 
 def test_offscreen_voiceover_says_so_and_states_lips_closed(tmp_path):

@@ -28,6 +28,8 @@ import re
 import sys
 from pathlib import Path
 
+import script_pacing  # M-25: the re-hook window comes from core.json via script_pacing
+
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -66,8 +68,8 @@ from h3.voice_engine import (  # noqa: E402
 )
 
 DENSITY_WINDOW = 3                    # "at least 1 of every 3 consecutive shots" (contract; not in shot_table_spec)
-REHOOK_REEL_MIN_SEC = 45.0            # a re-hook is required on reels this long or longer
-REHOOK_WINDOW_SEC = (25.0, 35.0)      # reading of "~30 s": a strong hook must start inside this window
+REHOOK_REEL_MIN_SEC = 36.0            # a re-hook is required on reels this long or longer (= script_pacing.REHOOK_MIN_TOTAL_S)
+REHOOK_WINDOW_FRAC = (0.45, 0.60)     # mirrors core.json retention.rehook_window_frac; a test keeps them equal
 TIME_TOL = 0.05                       # seconds, for per-second contiguity and the end of coverage
 MOUTH_STATES = ("closed", "open_non_verbal_breath")
 BIBLE_SECTIONS = ("characters", "environments", "props")
@@ -474,7 +476,7 @@ def _check_languages(rows, output_languages, lang_check, errs):
                     _e(errs, "ML-02", f"{w}.{k}.{lang}", f"unknown language code {lang!r}; use one of {SPEECH_LANGS}")
         if found:
             for k in BY_LANG_KEYS:
-                if k not in found:
+                if k not in found and not (k == "narration_by_lang" and track.get("narration") is None):   # no narration here
                     _e(errs, "ML-03", f"{w}.{k}", "multilingual row is missing this key")
             if output_languages is not None:
                 for k, by in found.items():
@@ -519,6 +521,12 @@ def _check_languages(rows, output_languages, lang_check, errs):
 
 # ---------- Step 5.5 self-check (S55-1..S55-6) ----------
 
+def rehook_window_s(total, core=None):
+    """Re-hook window in seconds for a reel of `total` seconds: core retention.rehook_window_frac x total (inclusive)."""
+    lo, hi = script_pacing._rehook_frac(core)
+    return lo * total, hi * total
+
+
 def _s55_1(eps, errs):
     for ep, items in eps.items():
         rows = [r for _, r in items]
@@ -538,7 +546,7 @@ def _s55_1(eps, errs):
                    f"episode {ep}: closing shot must set is_closing_hook and use one of {STRONG_HOOKS}")
         total = sum(_dur(r) or 0.0 for r in rows)
         if total >= REHOOK_REEL_MIN_SEC:
-            lo, hi = REHOOK_WINDOW_SEC
+            lo, hi = rehook_window_s(total)
             t, found = 0.0, False
             for r in rows:
                 if lo <= t <= hi and r.get("hook_type") in STRONG_HOOKS:
@@ -546,7 +554,8 @@ def _s55_1(eps, errs):
                 t += _dur(r) or 0.0
             if not found:
                 _e(errs, "S55-1", f"episode {ep}",
-                   f"reel of {round(total, 1)} s needs a strong re-hook starting {lo}-{hi} s in")
+                   f"reel of {round(total, 1)} s needs a strong re-hook starting {round(lo, 1)}-{round(hi, 1)} s in "
+                   f"({REHOOK_WINDOW_FRAC[0]:.0%}-{REHOOK_WINDOW_FRAC[1]:.0%} of the reel)")
 
 
 def _s55_2(shots, errs):
@@ -932,6 +941,16 @@ def _check_voice(rows, bible, engines, output_languages, errs, warns):
                         _e(errs, "VA-02", where, "voice_description must equal the character's anchor sentence verbatim (same in every shot)")
 
 
+def reel_range_for(data):
+    """REEL-01 window: the reel's own reel_target_s +-10 % (RULE 59(3): length follows the story; the writer's --plan passes it in
+    the stage 3 data), else the studio preset STUDIO_REEL_RANGE."""
+    target = data.get("reel_target_s") if isinstance(data, dict) else None
+    if not _is_num(target) or target <= 0:
+        return STUDIO_REEL_RANGE
+    band = script_pacing.LENGTH_TOLERANCE_FRAC * target
+    return (target - band, target + band)
+
+
 def validate_stage(stage, data, bible=None, *, output_languages=None, lang_check=None, voice_engines=None):
     """output_languages: the story's selected languages (None = do not check the language set).
     lang_check(text, lang) -> None | list of flags | {"ok", "flags"}: optional hook for the language-quality validator.
@@ -954,7 +973,7 @@ def validate_stage(stage, data, bible=None, *, output_languages=None, lang_check
     _check_rows(rows, errs)
     _check_languages(rows, output_languages, lang_check, errs)
     _check_voice(rows, bible, voice_engines, output_languages, errs, warns)
-    sc = self_check(rows, bible)
+    sc = self_check(rows, bible, reel_range_for(data))
     _absorb(errs, warns, stats, sc)
     return _rep(errs, warns, stats)
 

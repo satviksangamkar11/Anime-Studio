@@ -512,6 +512,28 @@ def _fallback_result(history, groups):
     return {"ok": not problems, "reasons": problems, "details": {"next_rung": next_rung}}
 
 
+MAX_RENDERS_PER_SHOT = 3  # M-24: after 3 renders of one shot, stop and escalate; a 4th needs an owner flag
+DRIFT_ORDER = ("simplify", "remove_camera_move", "move_b_closer", "split_or_chain", "new_seed", "route_change")
+
+
+def render_allowed(history, shot_id, owner_flag=False):
+    """(ok, reason). Refuses the next render of a shot once MAX_RENDERS_PER_SHOT renders are recorded, unless owner_flag."""
+    done = len(attempts_for(history, shot_id))
+    if done < MAX_RENDERS_PER_SHOT or owner_flag:
+        return True, f"{shot_id}: {done} renders recorded"
+    return False, (f"{shot_id}: {done} renders already recorded (limit {MAX_RENDERS_PER_SHOT}): "
+                   "stop and escalate to the owner; a 4th render needs the owner flag")
+
+
+def record_drift_step(log, step):
+    """Returns log + [step]. Each drift pass changes one variable, in DRIFT_ORDER, never repeated or skipped backwards."""
+    if step not in DRIFT_ORDER:
+        raise ValueError(f"unknown drift step {step!r}; must be one of {list(DRIFT_ORDER)}")
+    if log and DRIFT_ORDER.index(step) <= DRIFT_ORDER.index(log[-1]):
+        raise ValueError(f"drift step {step!r} out of order after {log[-1]!r}; order is {list(DRIFT_ORDER)}")
+    return list(log) + [step]
+
+
 def _render_result(render_results, groups):
     if render_results is None:
         return None  # dry run: nothing was rendered, the step stays pending

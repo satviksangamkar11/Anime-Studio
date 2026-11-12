@@ -59,7 +59,7 @@ SECRETS = Path("D:/aai work/secrets/elevenlabs")
 LEDGER = FLOW / "eleven_ledger.jsonl"                                                       # ONE ledger for the whole account: credits are shared by every story
 TEST_LINES = []                                                                              # the owner-approved test set is passed with --lines (real script lines incl. hard names)
 DEFAULT_CAP = 400                                                                           # credits for the first test; the full run passes --cap 3000
-SETTINGS = {}                                                                               # voice settings sent with every request (empty = the voice's own defaults); part of the job key
+SETTINGS = {"stability": 0.5, "similarity_boost": 0.75, "style": 0, "use_speaker_boost": True}                                                                               # voice settings sent with every request (explicit API defaults, G5, so the key cannot drift with library defaults); part of the job key
 
 
 def api_key() -> str:
@@ -89,11 +89,45 @@ def load_plan(pack: Path) -> dict:
     return {"lines": lines}
 
 
-def job_key(lang: str, voice_id: str, model: str, text: str, settings: dict | None = None) -> str:
-    return hashlib.sha256(json.dumps([lang, voice_id, model, settings or SETTINGS, text], ensure_ascii=False).encode("utf-8")).hexdigest()
+DEFAULT_FORMAT = "mp3_44100_128"
+V34 = ("eleven_v3", "eleven_v4")                                                             # language_code is unsupported on multilingual_v2 (U7)
 
 
-def build_jobs(plan: dict, ids: list, vmap: dict, model: str, models: dict | None = None, line_speed: dict | None = None) -> list:
+def job_key(lang: str, voice_id: str, model: str, text: str, settings: dict | None = None, language_code: str | None = None,
+            seed: int | None = None, locators: list | None = None, output_format: str | None = None) -> str:
+    parts = [lang, voice_id, model, settings or SETTINGS, text]
+    for x in (language_code, seed, locators, output_format if output_format != DEFAULT_FORMAT else None):
+        if x:                                                                                # optional parts join the key only when set: old keys stay valid
+            parts.append(x)
+    return hashlib.sha256(json.dumps(parts, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def pronunciation_dictionary_locators(story_dir: Path, lang: str) -> list:
+    """stories/<slug>/pronunciation_<lang>.json = {"locators": [{"pronunciation_dictionary_id", "version_id"}]}; at most 3 per request (U7)."""
+    p = Path(story_dir) / f"pronunciation_{lang}.json"
+    if not p.exists():
+        return []
+    loc = json.loads(p.read_text(encoding="utf-8")).get("locators") or []
+    if len(loc) > 3:
+        raise SystemExit(f"{p.name}: {len(loc)} pronunciation locators, ElevenLabs takes at most 3 per request")
+    return loc
+
+
+def request_body(j: dict) -> dict:
+    b = {"text": j["text"], "model_id": j["model"]}
+    if j.get("settings"):
+        b["voice_settings"] = j["settings"]
+    if j.get("language_code"):
+        b["language_code"] = j["language_code"]
+    if j.get("seed") is not None:
+        b["seed"] = j["seed"]
+    if j.get("locators"):
+        b["pronunciation_dictionary_locators"] = j["locators"]
+    return b
+
+
+def build_jobs(plan: dict, ids: list, vmap: dict, model: str, models: dict | None = None, line_speed: dict | None = None,
+               locators: dict | None = None, output_format: str = DEFAULT_FORMAT) -> list:
     """models = optional {lang: {speaker: model_id}}: a voice that is only verified for a language on another model (e.g. Hindi on eleven_multilingual_v2) gets that model; every other line uses `model`."""
     by = {l["id"]: l for l in plan["lines"]}
     missing = [i for i in ids if i not in by]
@@ -109,9 +143,13 @@ def build_jobs(plan: dict, ids: list, vmap: dict, model: str, models: dict | Non
             text = voices.prep_text(l[lang])
             mdl = ((models or {}).get(lang) or {}).get(l["voice"], model)
             spd = (line_speed or {}).get(f"{i}.{lang}")
-            st = {"speed": spd} if spd else dict(SETTINGS)                           # speed is part of the job key: a new speed is a NEW clip, an old accepted clip is never overwritten
-            jobs.append({"id": f"{i}.{lang}", "line": i, "lang": lang, "voice": l["voice"], "voice_id": vid, "model": mdl, "text": text,
-                         "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "credits": len(text), "settings": st, "key": job_key(lang, vid, mdl, text, st)})
+            st = {**SETTINGS, "speed": spd} if spd else dict(SETTINGS)                           # speed is part of the job key: a new speed is a NEW clip, an old accepted clip is never overwritten
+            lc = lang if mdl.startswith(V34) else None
+            seed = int(hashlib.sha256(i.encode("utf-8")).hexdigest()[:8], 16)
+            loc = (locators or {}).get(lang) or []
+            jobs.append({"id": f"{i}.{lang}", "language_code": lc, "seed": seed, "locators": loc, "output_format": output_format, "line": i, "lang": lang, "voice": l["voice"], "voice_id": vid, "model": mdl, "text": text,
+                         "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "credits": len(text), "settings": st,
+                         "key": job_key(lang, vid, mdl, text, st, lc, seed, loc, output_format)})
     return jobs
 
 
@@ -200,6 +238,11 @@ def _save(man: dict, path: Path):
     os.replace(tmp, path)
 
 
+def _ext(j: dict) -> str:
+    f = j.get("output_format") or DEFAULT_FORMAT
+    return "mp3" if f.startswith("mp3") else "wav" if f.startswith("wav") else "pcm"
+
+
 def run(jobs: list, out: Path, cap: int, key: str, post=http, ledger: Ledger | None = None, probe=probe_seconds) -> dict:
     led = ledger or Ledger(LEDGER, cap)
     mpath = out / "eleven_manifest.json"
@@ -211,12 +254,12 @@ def run(jobs: list, out: Path, cap: int, key: str, post=http, ledger: Ledger | N
         if j["key"] in rows:
             reused += 1
             continue
-        row = {k: j[k] for k in ("id", "line", "lang", "voice", "voice_id", "model", "text", "text_sha256", "key", "settings")}
-        f = out / "mp3" / j["lang"] / f"{j['id']}.{j['key'][:10]}.mp3"
+        row = {k: j[k] for k in ("id", "line", "lang", "voice", "voice_id", "model", "text", "text_sha256", "key", "settings", "language_code", "seed", "locators", "output_format")}
+        f = out / "mp3" / j["lang"] / f"{j['id']}.{j['key'][:10]}.{_ext(j)}"
         jid = f"{j['id']}#{time.time_ns()}"                                   # unique per attempt, so a re-take never overwrites an earlier charge
         led.reserve(jid, j["credits"])
         try:
-            data, hdr = post("POST", f"/v1/text-to-speech/{j['voice_id']}?output_format=mp3_44100_128", key, {"text": j["text"], "model_id": j["model"], **({"voice_settings": j["settings"]} if j.get("settings") else {})})
+            data, hdr = post("POST", f"/v1/text-to-speech/{j['voice_id']}?output_format={j.get('output_format') or DEFAULT_FORMAT}", key, request_body(j))
             h = {k.lower(): v for k, v in hdr.items()}
             confirmed = "character-cost" in h
             used = int(h["character-cost"]) if confirmed else j["credits"]
@@ -542,7 +585,9 @@ def main() -> int:
         return 0 if not res["problems"] else 1
     ids = [l["id"] for l in plan["lines"]] if a.lines == "ALL" else a.lines.split(",")
     cast = json.loads(Path(a.voices).read_text(encoding="utf-8"))
-    jobs = build_jobs(plan, ids, cast, a.model, cast.get("_models"), cast.get("_line_speed"))
+    story_dir = Path(a.voices).parent
+    jobs = build_jobs(plan, ids, cast, a.model, cast.get("_models"), cast.get("_line_speed"),
+                      {lg: pronunciation_dictionary_locators(story_dir, lg) for lg in LANGS}, cast.get("_output_format") or DEFAULT_FORMAT)
     if getattr(a, "only_voices", None):
         keep = set(a.only_voices.split(","))
         jobs = [j for j in jobs if j["voice_id"] in keep]

@@ -133,7 +133,7 @@ def test_spec_example_1_passes():
     # s1 30 s (line 0.0-1.0 "hi"); s2 40 s starts at 30, event t=0.4 (re-hook ok), event t=38.0 (last 5 s = 35-40, ok).
     # Total 70 s. pass True, problems [].
     shots = [
-        _shot("s1", 30.0, [], [_line(0.0, 1.0, "hi")]),
+        _shot("s1", 33.0, [], [_line(0.0, 1.0, "hi")]),
         _shot("s2", 40.0, [{"t": 0.4, "what": "entrance"}, {"t": 38.0, "what": "flash"}], []),
     ]
     result = script_pacing.inspect_pacing(shots, "en")
@@ -142,10 +142,10 @@ def test_spec_example_1_passes():
 
 
 def test_spec_example_2_one_rehook_problem():
-    # As example 1 but the t=0.4 event removed. s2 starts at 30 (window), no event or line within 1.0 s of start.
-    # Exactly one problem (re-hook). Payoff still ok at 38.0. Total 70 s.
+    # As example 1 but the t=0.4 event removed. Total 73 s: window 0.45-0.60 = 32.85-43.8 s; s2 starts at 33
+    # (inside), no event or line within 1.0 s of start. Exactly one problem (re-hook). Payoff ok at 38.0.
     shots = [
-        _shot("s1", 30.0, [], [_line(0.0, 1.0, "hi")]),
+        _shot("s1", 33.0, [], [_line(0.0, 1.0, "hi")]),
         _shot("s2", 40.0, [{"t": 38.0, "what": "flash"}], []),
     ]
     result = script_pacing.inspect_pacing(shots, "en")
@@ -169,7 +169,7 @@ def test_spec_example_4_gap_of_exactly_1_5_passes():
     # s1 30 s, lines 0.0-1.0 "hello" and 2.5-3.5 "world": gap 1.5, not > 1.5 -> ok.
     # s2 as example 1. Total 70. Pass True.
     shots = [
-        _shot("s1", 30.0, [], [_line(0.0, 1.0, "hello"), _line(2.5, 3.5, "world")]),
+        _shot("s1", 33.0, [], [_line(0.0, 1.0, "hello"), _line(2.5, 3.5, "world")]),
         _shot("s2", 40.0, [{"t": 0.4, "what": "entrance"}, {"t": 38.0, "what": "flash"}], []),
     ]
     result = script_pacing.inspect_pacing(shots, "en")
@@ -308,3 +308,86 @@ def test_nested_missing_start_s_raises():
     del shots[1]["lines"][0]["start_s"]
     with pytest.raises(ValueError):
         script_pacing.inspect_pacing(shots, "en")
+
+
+# M-07 (CHANGE_PLAN T-01 / T-02): re-hook window = core.retention.rehook_window_frac x total (reels >= 36 s);
+# length target comes from story.reel_target_s (optional), default window stays 60-75 s (warning only).
+
+def _hook_reel(hook_index, count=10, seconds=10.0):
+    # Every shot's first line starts at 1.5 s (no re-hook); shot `hook_index` starts its line at 0.5 s.
+    shots = []
+    for i in range(count):
+        start = 0.5 if i == hook_index else 1.5
+        events = [{"t": 6.0, "what": "flash"}] if i == count - 1 else []
+        shots.append(_shot("s%d" % (i + 1), seconds, events, [_line(start, start + 1.0, LINE_TEXT["en"])]))
+    return shots
+
+
+def test_rehook_uses_core_fraction_default_file():
+    # 100 s reel, default core.json [0.45, 0.60] -> window 45-60 s. Hook at 50 s passes, hook at 30 s is outside.
+    assert script_pacing.inspect_pacing(_hook_reel(5), "en")["pass"] is True
+    result = script_pacing.inspect_pacing(_hook_reel(3), "en")
+    assert result["pass"] is False
+    assert any("re-hook missing" in p for p in result["problems"])
+
+
+def test_rehook_window_end_is_inclusive():
+    # Hook at exactly 60 s (= 0.60 x 100) passes.
+    assert script_pacing.inspect_pacing(_hook_reel(6), "en")["pass"] is True
+
+
+def test_rehook_uses_passed_core_fraction():
+    # Explicit core window [0.20, 0.30] -> 20-30 s: the hook at 30 s now passes and the one at 50 s fails.
+    core = {"retention": {"rehook_window_frac": [0.20, 0.30]}}
+    assert script_pacing.inspect_pacing(_hook_reel(3), "en", core=core)["pass"] is True
+    assert script_pacing.inspect_pacing(_hook_reel(5), "en", core=core)["pass"] is False
+
+
+def test_length_target_from_story_warns_outside_10_percent():
+    # Story target 40 s, reel 70 s -> outside 36-44 s: one length warning, pass stays True.
+    result = script_pacing.inspect_pacing(_good_reel("en"), "en", story={"reel_target_s": 40.0})
+    assert result["pass"] is True
+    assert len(result["warnings"]) == 1
+    assert "length" in result["warnings"][0]
+
+
+def test_length_target_from_story_no_warning_when_on_target():
+    result = script_pacing.inspect_pacing(_good_reel("en"), "en", story={"reel_target_s": 70.0})
+    assert result["warnings"] == []
+
+
+def test_length_target_within_10_percent_no_warning():
+    # Reel 76 s vs target 70 s (+8.6%): inside tolerance. Reel 80 s (+14%): warning.
+    assert script_pacing.inspect_pacing(_good_reel("en", seconds=7.6), "en",
+                                        story={"reel_target_s": 70.0})["warnings"] == []
+    result = script_pacing.inspect_pacing(_good_reel("en", seconds=8.0), "en", story={"reel_target_s": 70.0})
+    assert len(result["warnings"]) == 1
+
+
+def test_story_without_target_uses_default_window():
+    # No reel_target_s: default 60-75 s window applies. 40 s reel warns, 70 s reel does not.
+    assert script_pacing.inspect_pacing(_good_reel("en", count=8, seconds=5.0), "en",
+                                        story={"other": 1})["warnings"]
+    assert script_pacing.inspect_pacing(_good_reel("en"), "en", story={"other": 1})["warnings"] == []
+
+
+def test_story_target_must_be_positive_finite_number():
+    for bad in (0, -5.0, True, float("nan"), "70"):
+        with pytest.raises(ValueError):
+            script_pacing.inspect_pacing(_good_reel("en"), "en", story={"reel_target_s": bad})
+
+
+# M-31: a shot's own seconds must be a positive finite number (bad input must not pass silently)
+@pytest.mark.parametrize("bad", [-1.0, 0, float("nan"), float("inf"), "7", True])
+def test_bad_shot_seconds_is_refused(bad):
+    reel = _good_reel("en")
+    reel[3]["seconds"] = bad
+    with pytest.raises(ValueError, match="seconds"):
+        script_pacing.inspect_pacing(reel, "en")
+
+
+def test_good_and_bad_reel_verdicts_differ():
+    bad = _good_reel("en")
+    bad[0]["lines"] = [_line(0.5, 1.5), _line(3.6, 4.6)]
+    assert script_pacing.inspect_pacing(_good_reel("en"), "en")["pass"] is True
+    assert script_pacing.inspect_pacing(bad, "en")["pass"] is False

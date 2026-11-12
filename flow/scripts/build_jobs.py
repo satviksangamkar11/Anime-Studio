@@ -152,14 +152,21 @@ def build_jobs(spec: dict, series: dict, adhyay: int) -> list[dict]:
         base_edit_id = shot.get("base_edit_id")
         edit_instruction = shot.get("edit_instruction")
 
-        # Validate method
-        if method not in ("generate", "edit"):
+        chip_ref_id = shot.get("chip_ref_id")
+
+        # Validate method ("edit" stays accepted for jobs already written with it)
+        if method not in ("generate", "edit", "generate_with_chip"):
             raise ValueError(f"Shot {shot_id}: invalid method '{method}'")
 
         # Edit job validation
         if method == "edit":
             if base_edit_id is None or base_edit_id == "" or "PENDING" in str(base_edit_id):
                 raise ValueError(f"Shot {shot_id}: edit job requires a valid base_edit_id")
+
+        # generate_with_chip job validation: the reference chip (e.g. "<SHOT>-A final") must be real
+        if method == "generate_with_chip":
+            if not chip_ref_id or "PENDING" in str(chip_ref_id):
+                raise ValueError(f"Shot {shot_id}: generate_with_chip job requires a valid chip_ref_id")
 
         # Validate characters
         for cid in characters:
@@ -194,6 +201,9 @@ def build_jobs(spec: dict, series: dict, adhyay: int) -> list[dict]:
                 raise ValueError(f"Prop {pid} has no chip")
             if prop["chip"] not in chips:
                 chips.append(prop["chip"])
+        # Reference chip for generate_with_chip (the previous keyframe's final picture)
+        if method == "generate_with_chip":
+            chips.append(chip_ref_id)
         # Style chip (exactly one)
         chips.append(style_chip)
 

@@ -40,13 +40,15 @@ def _cue_value(row, acts):
     return acts[row["id"]] if acts is not None else row.get("cue")
 
 
-def plan_lock(rows, wav_seconds_fn, langs, acts, min_seconds):
+def plan_lock(rows, wav_seconds_fn, langs, acts, min_seconds, edit_seconds=None, preset=None):
     """Lock rows for one reel. Pure apart from the WAV reads through wav_seconds_fn(lang, line_id).
 
     rows: [{id, audio_and_dialogue_track, bpm?, snap?, cue?}] in reel order.
     acts: None or {shot id: act name}. An act is a run of shots with the same act name
     (no acts: the same cue, else the same bpm).
     min_seconds: {shot id: seconds}; a shot with no voice line needs one. Any rule break raises SystemExit.
+    edit_seconds: {shot id: writer's edit seconds}. For a voiced shot, max over langs of the voice seconds at
+    MAX_TEMPO 1.0 must fit inside it (M-16), else SystemExit names the shot and the language.
     """
     if not isinstance(rows, list) or not rows:
         raise SystemExit("reel has no shots")
@@ -81,6 +83,12 @@ def plan_lock(rows, wav_seconds_fn, langs, acts, min_seconds):
                 per_lang[lang] = bvt.needed_sec(lines, 1.0)
         if not per_lang and sid not in min_seconds:
             raise SystemExit(f"{sid}: silent shot needs blocking min_seconds")
+        if per_lang and edit_seconds and sid in edit_seconds:
+            worst = max(per_lang, key=lambda k: per_lang[k])
+            if per_lang[worst] > edit_seconds[sid] + 1e-9:
+                raise SystemExit(
+                    f"{sid}: {worst} voice needs {per_lang[worst]:.2f} s at tempo {bvt.MAX_TEMPO} but the edit is "
+                    f"{edit_seconds[sid]:.2f} s: shorten the {worst} line or raise the writer seconds")
         if per_lang:
             voice[sid] = per_lang
 
@@ -101,7 +109,7 @@ def plan_lock(rows, wav_seconds_fn, langs, acts, min_seconds):
             "min_seconds": min_seconds.get(row["id"]),
         })
     try:
-        planned = core.plan_shots(plan_in, voice, margin_frames=0, fps=core.FPS)
+        planned = core.plan_shots(plan_in, voice, margin_frames=0, fps=core.FPS, preset=preset)
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
 
@@ -132,6 +140,9 @@ def plan_lock(rows, wav_seconds_fn, langs, acts, min_seconds):
             "cue": _cue_value(src, acts),
             "act_start_frame": p["act_start_frame"],
         })
+        for key in ("voice_rest", "silence_ok"):        # M-34: shot-relative [t0, t1] from the blocking sheet, if it has one
+            if src.get(key) is not None:
+                lock_rows[-1][key] = src[key]
     return lock_rows
 
 
@@ -182,11 +193,13 @@ def sheet_entry(sheet, row, langs):
     entry = {"bpm": sheet.get("bpm"), "snap": sheet.get("snap", False), "cue": sheet.get("cue")}
     if not any(bvt.scripted_lines(row, lang) for lang in langs):
         entry["min_seconds"] = sheet["writer_seconds"]
+    entry.update({k: sheet[k] for k in ("voice_rest", "silence_ok") if sheet.get(k) is not None})
     return entry
 
 
-def _sheet_rows(block_dir, rows, langs, min_seconds):
-    """Overlay each row with its sheet. Every row needs <SHOT-ID>.json in block_dir; a bad sheet is refused."""
+def _sheet_rows(block_dir, rows, langs, min_seconds, edit_seconds=None):
+    """Overlay each row with its sheet. Every row needs <SHOT-ID>.json in block_dir; a bad sheet is refused.
+    edit_seconds (optional dict) gets each shot's writer_seconds, the edit length plan_lock checks voice against."""
     if not block_dir.is_dir():
         raise SystemExit(f"missing blocking dir: {block_dir}")
     out, files = [], []
@@ -200,13 +213,15 @@ def _sheet_rows(block_dir, rows, langs, min_seconds):
             problems = exc.args[0] if exc.args and isinstance(exc.args[0], list) else [str(exc)]
             raise SystemExit("; ".join(str(p) for p in problems)) from exc
         files.append(path)
+        if edit_seconds is not None:
+            edit_seconds[row["id"]] = sheet["writer_seconds"]
         out.append(_overlay(row, sheet_entry(sheet, row, langs), min_seconds))
     return out, files
 
 
 def _overlay(row, entry, min_seconds):
     row = dict(row)
-    for key in ("bpm", "snap", "cue"):
+    for key in ("bpm", "snap", "cue", "voice_rest", "silence_ok"):
         if key in entry:
             row[key] = entry[key]
     if "min_seconds" in entry:
@@ -223,6 +238,7 @@ def main(argv=None):
     ap.add_argument("--langs", default="en,hi,mr")
     ap.add_argument("--acts")
     ap.add_argument("--blocking-dir")
+    ap.add_argument("--preset", choices=sorted(core.PIKA_PRESETS), help="render preset for the pixel plan (pika: 124-frame floor)")
     a = ap.parse_args(argv)
 
     langs = [x for x in a.langs.split(",") if x]
@@ -241,6 +257,7 @@ def main(argv=None):
         inputs.append(acts_file)
 
     min_seconds = {}
+    edit_seconds = {}
     if a.blocking_dir:
         block_dir = Path(a.blocking_dir)
         legacy = block_dir / "blocking.json"
@@ -249,7 +266,7 @@ def main(argv=None):
             inputs.append(legacy)
             rows = [_overlay(row, block.get(row["id"], {}), min_seconds) for row in rows]
         else:
-            rows, sheet_files = _sheet_rows(block_dir, rows, langs, min_seconds)
+            rows, sheet_files = _sheet_rows(block_dir, rows, langs, min_seconds, edit_seconds)
             inputs.extend(sheet_files)
 
     wav_root = Path(a.wav_root)
@@ -262,9 +279,11 @@ def main(argv=None):
     def wav_fn(lang, line_id):
         return bvt.wav_seconds(wav_root / lang / wav_name(line_id, lang))
 
-    lock_rows = plan_lock(rows, wav_fn, langs, acts, min_seconds)
+    lock_rows = plan_lock(rows, wav_fn, langs, acts, min_seconds, edit_seconds, a.preset)
     params = {"margin_frames": 0, "tail": bvt.TAIL, "gap": bvt.GAP, "tempo": 1.0, "fps": core.FPS,
               "langs": langs, "lattice": LATTICE_NAME}
+    if a.preset:                                        # only recorded when set, so default locks keep their hash
+        params["preset"] = a.preset
     target = write_version(a.out_dir, lock_rows, inputs, params)
     print(f"wrote {target} ({len(lock_rows)} shots)")
     return 0

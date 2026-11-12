@@ -1,6 +1,9 @@
 import math
 
-HOOK_WINDOW_S = 3.0
+HOOK_WINDOW_S = 2.0
+# First voiced word band (audio_edge lead-in): H2 needs the first spoken line to start in this window.
+VOICE_START_MIN_S = 0.3
+VOICE_START_MAX_S = 1.0
 
 MAX_FIRST_LINE_WORDS = {"en": 8, "hi": 6, "mr": 6}
 
@@ -242,7 +245,9 @@ def validate_shots(shots):
                 raise ValueError("shot " + shot_id + ": each line needs a str text")
 
 
-def inspect_hook(shots, lang):
+def inspect_hook(shots, lang, narrated=True):
+    """narrated=True (the default, every owner reel is narrated) refuses hook_type none on shot 1.
+    narrated=False (showcase use) keeps the hook rule optional: none skips H1."""
     validate_shots(shots)
     if lang not in ("en", "hi", "mr"):
         raise ValueError("unsupported language: " + str(lang))
@@ -255,29 +260,45 @@ def inspect_hook(shots, lang):
 
     events = first["events"]
     lines = first["lines"]
+    hook_type = first.get("hook_type")
 
-    # H1: visible event with t <= 1.0
-    h1_ok = False
-    for event in events:
-        if event["t"] <= 1.0:
-            h1_ok = True
-            break
-    if not h1_ok:
-        hard_fails.append("H1: no visible event within the first 1.0 s")
-        reasons.append("H1: no visible event within the first 1.0 s")
-        rewrites.append("Move the first visible event to within 1.0 s of frame 1")
+    # H0: a narrated reel must not open with hook_type none
+    if narrated and hook_type == "none":
+        hard_fails.append("H0: hook_type none is refused for shot 1 of a narrated reel")
+        reasons.append("H0: hook_type none is refused for shot 1 of a narrated reel")
+        rewrites.append("Give shot 1 a hook_type (kinetic, scale_tableau or voice_call)")
         score -= 40
 
-    # H2: first spoken line starts at <= 0.6 s; a first shot with no spoken line is a hard fail too
+    # H1: visible event within HOOK_WINDOW_S (2.0 s). Exempt: scale_tableau (the frame-0 scale contrast
+    # is the hook) and hook_type none on a non-narrated showcase reel.
+    h1_exempt = hook_type == "scale_tableau" or (hook_type == "none" and not narrated)
+    if not h1_exempt:
+        h1_ok = False
+        for event in events:
+            if event["t"] <= HOOK_WINDOW_S:
+                h1_ok = True
+                break
+        if not h1_ok:
+            hard_fails.append("H1: no visible event within the first 2.0 s")
+            reasons.append("H1: no visible event within the first 2.0 s")
+            rewrites.append("Move the first visible event to within 2.0 s of frame 1")
+            score -= 40
+
+    # H2: first spoken line starts in the voice band 0.3-1.0 s; a first shot with no spoken line is a hard fail too
     if not lines:
         hard_fails.append("H2: no spoken line in the first shot")
         reasons.append("H2: no spoken line in the first shot")
         rewrites.append("Add a spoken line to the first shot")
         score -= 40
-    elif lines[0]["start_s"] > 0.6:
-        hard_fails.append("H2: first spoken line starts after 0.6 s")
-        reasons.append("H2: first spoken line starts after 0.6 s")
-        rewrites.append("Start the first spoken line at or before 0.6 s")
+    elif lines[0]["start_s"] > VOICE_START_MAX_S:
+        hard_fails.append("H2: first spoken line starts after 1.0 s")
+        reasons.append("H2: first spoken line starts after 1.0 s")
+        rewrites.append("Start the first spoken line at or before 1.0 s")
+        score -= 40
+    elif lines[0]["start_s"] < VOICE_START_MIN_S:
+        hard_fails.append("H2: first spoken line starts before 0.3 s")
+        reasons.append("H2: first spoken line starts before 0.3 s")
+        rewrites.append("Start the first spoken line at or after 0.3 s (audio lead-in)")
         score -= 40
 
     # H3: first line is stakes or a question

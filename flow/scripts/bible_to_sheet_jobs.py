@@ -24,6 +24,22 @@ def load_bible(path):
     return data
 
 
+TURNAROUND = "Same character, four views in one row: front, three-quarter, side, back, same scale, same lighting. "
+EXPRESSIONS = "Same character, six heads in one row: calm, resolve, awe, grief, anger, joy. "
+PROP_SUFFIX = ", three views, next to a plain grey human outline for scale"
+
+
+def _make_job(shot_id, flow_title, prompt, characters, people_count):
+    return {"adhyay": 1, "shot_id": shot_id, "scene": "REF", "method": "generate", "file_version": "v01",
+            "flow_title": flow_title, "characters": characters, "people_count": people_count,
+            "props": [], "sheets": [], "chips": [],
+            "unaccepted_sheets": [], "prompt": prompt,
+            "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            "base_edit_id": None, "edit_instruction": None, "previous_shot": None, "next_shot": None,
+            "attempt_cap": 8, "neighbour_chips": [], "neighbour_sentence": "", "aspect": "16:9",
+            "model": {"name": "Nano Banana 2.1", "fallback": None, "count": "x2", "aspect": "16:9"}, "status": "TODO"}
+
+
 def sheet_jobs(bible, only=None):
     jobs = []
     for group in ORDER:
@@ -32,14 +48,29 @@ def sheet_jobs(bible, only=None):
             prompt = (item.get("sheet_prompt") or item.get("card_prompt")) if isinstance(item, dict) else None   # V4 bible: characters have sheet_prompt, places and props card_prompt
             if not isinstance(prompt, str) or not prompt.strip() or (only and sid not in only):
                 continue
-            jobs.append({"adhyay": 1, "shot_id": sid, "scene": "REF", "method": "generate", "file_version": "v01",
-                         "flow_title": f"{sid}__v01", "characters": [sid] if group == "characters" else [], "people_count": 1 if group == "characters" else 0,
-                         "props": [], "sheets": [], "chips": [],
-                         "unaccepted_sheets": [], "prompt": prompt.strip(),
-                         "prompt_sha256": hashlib.sha256(prompt.strip().encode("utf-8")).hexdigest(),
-                         "base_edit_id": None, "edit_instruction": None, "previous_shot": None, "next_shot": None,
-                         "attempt_cap": 8, "neighbour_chips": [], "neighbour_sentence": "", "aspect": "16:9",
-                         "model": {"name": "Nano Banana 2.1", "fallback": None, "count": "x2", "aspect": "16:9"}, "status": "TODO"})
+            prompt = prompt.strip()
+            if group == "props":   # 4.3: prop sheets carry a grey human outline for scale
+                prompt += PROP_SUFFIX
+            jobs.append(_make_job(sid, f"{sid}__v01", prompt, [sid] if group == "characters" else [],
+                                  1 if group == "characters" else 0))
+    return jobs
+
+
+def extra_sheet_jobs(bible, only=None):
+    """Section 4.3 sheets beyond the identity master: character turnaround and expressions, and the STYLE chip."""
+    jobs = []
+    chars = bible.get("characters") if isinstance(bible.get("characters"), dict) else {}
+    for sid, item in chars.items():
+        prompt = (item.get("sheet_prompt") or item.get("card_prompt")) if isinstance(item, dict) else None
+        if not isinstance(prompt, str) or not prompt.strip() or (only and sid not in only):
+            continue
+        prompt = prompt.strip()
+        jobs.append(_make_job(sid, f"{sid}__turnaround__v01", TURNAROUND + prompt, [sid], 1))
+        jobs.append(_make_job(sid, f"{sid}__expressions__v01", EXPRESSIONS + prompt, [sid], 1))
+    style = bible.get("style") if isinstance(bible.get("style"), dict) else {}
+    style_prompt = style.get("sheet_prompt")
+    if isinstance(style_prompt, str) and style_prompt.strip():
+        jobs.append(_make_job("STYLE", "STYLE__chip__v01", style_prompt.strip(), [], 0))
     return jobs
 
 
@@ -47,12 +78,18 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("bible"); ap.add_argument("slug"); ap.add_argument("out")
     ap.add_argument("--only", default="", help="comma list of ids to include (default: all)")
+    ap.add_argument("--section-4-3", action="store_true", help="accepted for old scripts; section 4.3 is ON by default")
+    ap.add_argument("--no-section-4-3", action="store_true", help="only the identity sheets (no turnaround, expressions, STYLE)")
     a = ap.parse_args(argv)
     out = Path(a.out)
     if out.exists():
         print(f"REFUSED: {out} exists (delete it to rebuild)")
         return 2
-    jobs = sheet_jobs(load_bible(a.bible), {x for x in a.only.split(",") if x} or None)
+    bible = load_bible(a.bible)
+    only = {x for x in a.only.split(",") if x} or None
+    jobs = sheet_jobs(bible, only)
+    if not a.no_section_4_3:   # G19: turnaround, expressions and STYLE chip are on by default
+        jobs += extra_sheet_jobs(bible, only)
     if not jobs:
         print("REFUSED: no sheet_prompt found in the bible")
         return 2

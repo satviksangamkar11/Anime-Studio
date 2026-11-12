@@ -25,6 +25,7 @@ _LANGUAGES = frozenset({"hindi", "english", "marathi"})
 CRITICAL_CODES = frozenset({
     "CORRUPT_RENDER", "MISSING_AUDIO", "BROKEN_FILE", "INVALID_DELIVERABLE", "ZERO_BYTES", "STALE_LOCK",
     "VO_MISSING", "VO_UNREADABLE", "NO_VO_FILES", "LOUDNESS_UNREADABLE", "BGM_MANIFEST_UNREADABLE",
+    "DIGITAL_SILENCE", "DROPOUT", "CHANNEL_DROP",      # NO_SILENCE v2 (h3/silence_rule.py); DEAD_AIR stays waivable
 })
 
 

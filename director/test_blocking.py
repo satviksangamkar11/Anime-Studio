@@ -128,7 +128,7 @@ def test_router_features_kfi_case():
     assert features["needs_end_pose"] is True
     assert features["cast_count"] == 1
     assert features["arc_sec"] == pytest.approx(2.0)
-    route = shot_router.route_shot(features)
+    route = shot_router.route_shot(features, allow_s=False)   # M-32: S is the default
     assert route["route"] == "KFI"
 
 
@@ -136,7 +136,7 @@ def test_router_features_soft_se_case():
     sheet = _sheet()
     sheet["arc_sec"] = 1.0
     features = blocking.router_features(sheet, 168)
-    route = shot_router.route_shot(features)
+    route = shot_router.route_shot(features, allow_s=False)   # M-32
     assert route["route"] == "SOFT_SE"
 
 

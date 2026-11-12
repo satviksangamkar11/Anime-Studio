@@ -21,6 +21,7 @@ Report shape matches h3/gate_d_audio.py: {"ok", "errors": [{"code", "where", "me
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import re
@@ -234,6 +235,27 @@ def _per_second(raw, length_s):
     return out
 
 
+def _rest_window(raw, t0, length_s, sid="", warnings=None):
+    """The shot's voice_rest [t0, t1] (shot-relative in the pack) in reel seconds, or None (with a warning when the
+    pack gave a value that could not be used: never dropped silently)."""
+    rng = parse_range(raw.get("voice_rest"))
+    if rng is None or rng[0] >= length_s:
+        if raw.get("voice_rest") is not None and warnings is not None:
+            warnings.append(_err("VOICE_REST_BAD", sid, f"voice_rest ignored (unreadable or outside the shot): "
+                                 f"{raw.get('voice_rest')!r}"))
+        return None
+    return [_r(t0 + rng[0]), _r(t0 + min(rng[1], length_s))]
+
+
+def blocking_window(blocking_sheet, shot_start_s, key="voice_rest"):
+    """G11: a blocking-sheet window (voice_rest or silence_ok, shot-relative seconds) in reel seconds, or None.
+    The one conversion every consumer (story_shape, cue rows, silence rule) must agree with."""
+    win = blocking_sheet.get(key) if isinstance(blocking_sheet, dict) else None
+    if not (isinstance(win, (list, tuple)) and len(win) == 2 and all(_is_num(v) for v in win)):
+        return None
+    return [_r(shot_start_s + win[0]), _r(shot_start_s + win[1])]
+
+
 def _shift(items, t0, keys):
     return [{**it, **{k: _r(t0 + it[k]) for k in keys if k in it}} for it in items]
 
@@ -422,6 +444,7 @@ def build_cue_sheet(shots, *, episode=None, fps=FPS, core=None, voice_windows=No
             "voice": {lang: _shift(lines, t0, ("start", "end", "scripted_end")) for lang, lines in voice.items()},
             "continuity": {"incoming": _str(handoff.get("incoming")), "outgoing": _str(handoff.get("outgoing")),
                            "loop_seam": handoff.get("loop_seam")},
+            "voice_rest": _rest_window(raw, t0, length_s, sid, warnings),
         })
         if not shot_rows[-1]["hook_type"]:
             warnings.append(_err("HOOK_TYPE_MISSING", sid, "no hook_type; the planner will treat the shot as neutral"))
@@ -552,12 +575,88 @@ def build_locked_cue_sheet(shots, lock, vo_reports, episode=None, fps=FPS):
     return sheet, report
 
 
-def write_cue_sheet(sheet, report, path):
-    """Write cue_sheet.json (the sheet plus its report under "checks"). Returns the path."""
+RISER_S = 2.0  # ponytail: fixed 2 s riser before the primary hit; per-genre length when a genre needs it
+
+
+def cue_rows(sheet, blocking=None):
+    """Ableton cue rows of a built sheet, on the reel frame clock: {"rows": [...], "notes": [...]}.
+    kind hit  = an impact, on its impact frame (tolerance_frames 1 either side);
+    kind bed  = one row per shot (source: its first beat audio_cue); role "riser" = the RISER_S ramp before the shot's
+                first hit, clamped at frame 0;
+    kind rest = a shot's voice_rest window (voice_rest = [f0, f1] frames), the music may run alone there.
+    blocking: optional {shot_id: blocking sheet} (G12): that shot's hit rows come from its sound_cues of kind hit
+    (frame = shot start + t) and its rest row from the sheet's shot-relative voice_rest; other shots are unchanged.
+    notes: "no silence" when bed rows leave no gap over MIN_GAP_S, else one note per gap."""
+    fps = sheet.get("fps", FPS)
+    rows, bed_windows = [], []
+    for sh in _list(sheet.get("shots")):
+        sid, start, frames = sh["id"], int(sh["start_frame"]), int(sh["frames"])
+        beats = [b for b in _list(sh.get("beats")) if isinstance(b, dict)]
+        bed_src = next((b.get("audio_cue") for b in beats if b.get("audio_cue")), "")
+        rows.append({"shot": sid, "t_frame": start, "kind": "bed", "source": bed_src, "voice_rest": None,
+                     "role": None, "tolerance_frames": 0, "frames": frames})
+        bed_windows.append((start / fps, (start + frames) / fps))
+        blk = (blocking or {}).get(sid)
+        if isinstance(blk, dict):
+            hits = sorted(({"at_frame": start + round(c["t"] * fps), "src": str(c.get("text", ""))}
+                           for c in _list(blk.get("sound_cues"))
+                           if isinstance(c, dict) and c.get("kind") == "hit" and _is_num(c.get("t"))),
+                          key=lambda i: i["at_frame"])
+        else:
+            hits = sorted(_list(sh.get("impacts")), key=lambda i: i["at_frame"])
+        for imp in hits:
+            src = imp["src"] if "src" in imp else next(
+                (b.get("audio_cue") for b in beats if b["t0"] <= imp["at_s"] < b["t1"] and b.get("audio_cue")), "")
+            rows.append({"shot": sid, "t_frame": imp["at_frame"], "kind": "hit", "source": src, "voice_rest": None,
+                         "role": None, "tolerance_frames": 1})
+        if hits:
+            first = hits[0]["at_frame"]
+            riser_start = max(0, first - round(RISER_S * fps))
+            rows.append({"shot": sid, "t_frame": riser_start, "kind": "bed", "source": "riser", "voice_rest": None,
+                         "role": "riser", "tolerance_frames": 0, "frames": first - riser_start})
+        rest = sh.get("voice_rest")
+        blk_rest = blocking_window(blk, start / fps)
+        if blk_rest is not None:
+            rest = blk_rest
+        if isinstance(rest, (list, tuple)) and len(rest) == 2:
+            f0, f1 = round(rest[0] * fps), round(rest[1] * fps)
+            rows.append({"shot": sid, "t_frame": f0, "kind": "rest", "source": "", "voice_rest": [f0, f1],
+                         "role": None, "tolerance_frames": 0})
+    order = {"bed": 0, "hit": 1, "rest": 2}
+    rows.sort(key=lambda r: (r["t_frame"], order[r["kind"]], r["shot"]))
+    total_s = float(sheet.get("total_s") or 0.0)
+    gaps = gaps_between(bed_windows, total_s, MIN_GAP_S)
+    if gaps:
+        notes = [f"silence {a:g}-{b:g} s: no bed row (longer than {MIN_GAP_S:g} s)" for a, b in gaps]
+    else:
+        notes = [f"no silence over {MIN_GAP_S:g} s: bed rows cover the reel"]
+    return {"rows": rows, "notes": notes}
+
+
+def timecode(frame, fps=FPS):
+    fps = int(round(fps))
+    sec, ff = divmod(int(frame), fps)
+    return f"{sec // 3600:02d}:{sec // 60 % 60:02d}:{sec % 60:02d}:{ff:02d}"
+
+
+def write_cue_rows_csv(rows, path, fps=FPS):
+    """cue_rows.csv for Ableton: frame, timecode, kind, source, voice_rest ("f0-f1" for a rest row)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["frame", "timecode", "kind", "source", "voice_rest"])
+        for r in rows:
+            vr = r.get("voice_rest")
+            w.writerow([r["t_frame"], timecode(r["t_frame"], fps), r["kind"], r.get("source") or "",
+                        f"{vr[0]}-{vr[1]}" if vr else ""])
+    return Path(path)
+
+
+def write_cue_sheet(sheet, report, path, rows=None):
+    """Write cue_sheet.json (the sheet plus its report under "checks", and "cue_rows" when given). Returns the path."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        json.dump({**sheet, "checks": report}, f, ensure_ascii=False, indent=2)
+        json.dump({**sheet, "checks": report, **({"cue_rows": rows} if rows is not None else {})}, f, ensure_ascii=False, indent=2)
         f.write("\n")
     return path
 
@@ -572,6 +671,8 @@ def main(argv=None):
                         "Real speech positions; required (at least one)")
     p.add_argument("--lock", help="timeline_lock_vN.json (required): shot lengths, bpm and snap come from it; "
                                   "its input files are checked on every run")
+    p.add_argument("--blocking-dir", help="stories/<slug>/<pack>/blocking (SHOT-NNN.json): hit rows come from the "
+                                          "blocking sound_cues, rest rows from the shot-relative voice_rest")
     p.add_argument("--out", required=True, help="output path, e.g. stories/<slug>/<pack>/score/ep1/cue_sheet.json")
     a = p.parse_args(argv)
     if not a.lock:
@@ -614,7 +715,17 @@ def main(argv=None):
         print(f"warn  {w['code']} {w['where']}: {w['message']}", file=sys.stderr)
     if sheet is None or not report["ok"]:
         return 1
-    out = write_cue_sheet(sheet, report, a.out)
+    blocking = {}
+    if a.blocking_dir:
+        for bp in sorted(Path(a.blocking_dir).glob("SHOT-*.json")):
+            try:
+                blocking[bp.stem] = json.loads(bp.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                print(f"cannot read {bp}: {exc}", file=sys.stderr)
+                return 2
+    rows = cue_rows(sheet, blocking=blocking or None)
+    out = write_cue_sheet(sheet, report, a.out, rows=rows)
+    write_cue_rows_csv(rows["rows"], Path(a.out).with_name("cue_rows.csv"), sheet.get("fps", FPS))
     s = report["stats"]
     print(f"{out}: {s['shots']} shots, {s['total_s']} s, {s['cuts']} cuts ({s['hard_cuts']} hard), "
           f"{s['acts']} acts, voice {s['voice_coverage']:.0%}, {s['voice_gaps']} gaps, {s['impacts']} impacts")

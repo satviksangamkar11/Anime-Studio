@@ -344,6 +344,9 @@ def settings_for(shot, bible=None, to_path=None, require_bible=False):
     model, loras, solver, steps, video_prompt_type = route_preset(shot, route)
     to = to_path or (lambda p: p)
     image_prompt_type = ("S" if start_of(shot) else "") + ("E" if end_of(shot) else "")
+    declared = shot.get("image_prompt_type")   # M-02: a declared mode must match the images (S = start only, no end image)
+    if declared not in (None, image_prompt_type):
+        raise ValueError(f"{sid}: image_prompt_type {declared!r} does not match its images ({image_prompt_type!r})")
     s = {"model_type": model, "settings_version": 2.82, "activated_loras": loras, "loras_multipliers": "1.0",
          "sample_solver": solver, "num_inference_steps": steps, "guidance_phases": 1, "guidance_scale": 1,
          "flow_shift": 12, "custom_sigmas": "", "skip_steps_cache_type": "", "custom_settings": {"audio_refinement": "none"},

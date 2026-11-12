@@ -269,6 +269,68 @@ def test_s55_1_rehook_around_30s_missing():
     assert any("re-hook" in e["message"] for e in c["errors"])
 
 
+def _rehook_errors(shots, ep=1):
+    return [e for e in self_check(shots, bible())["errors"] if e["where"] == "episode %d" % ep and "re-hook" in e["message"]]
+
+
+def test_rehook_window_is_core_fraction_of_reel_length():
+    # M-25: window = core.retention.rehook_window_frac [0.45, 0.60] x total, inclusive; no fixed seconds.
+    assert pv.rehook_window_s(66.0) == pytest.approx((29.7, 39.6))
+    assert pv.rehook_window_s(100.0) == pytest.approx((45.0, 60.0))
+
+
+def test_rehook_constants_match_core_json_and_pacing():
+    import json
+    import script_pacing
+    core = json.loads((ROOT / "core" / "core.json").read_text(encoding="utf-8"))
+    assert tuple(pv.REHOOK_WINDOW_FRAC) == tuple(core["retention"]["rehook_window_frac"])
+    assert pv.REHOOK_REEL_MIN_SEC == script_pacing.REHOOK_MIN_TOTAL_S == 36.0
+
+
+def test_rehook_checked_from_36_s_reel_length():
+    # ep 1 rows 3.4 s each = 40.8 s (>= 36, window 18.4-24.5 s); no row is a strong hook, so the re-hook is missing.
+    shots = valid_shots()
+    for r in episode_rows(shots):
+        r["editorial_duration_sec"] = 3.4
+        r["hook_type"] = "chase"
+    assert len(_rehook_errors(shots)) == 1
+
+
+def test_rehook_not_checked_below_36_s_reel_length():
+    # ep 1 rows 2.9 s each = 34.8 s (< 36): same all-chase rows, no re-hook message.
+    shots = valid_shots()
+    for r in episode_rows(shots):
+        r["editorial_duration_sec"] = 2.9
+        r["hook_type"] = "chase"
+    assert _rehook_errors(shots) == []
+
+
+def test_validator_and_pacing_agree_on_the_rehook_window():
+    # One 66 s example reel (12 shots x 5.5 s). Window 29.7-39.6 s: shot starts 33.0 (index 6) and 38.5 (index 7).
+    # Only shot k has a hook (validator: strong hook_type; pacing: a line within 1.0 s of its start).
+    import script_pacing
+    for k in range(12):
+        reel = []
+        for i in range(12):
+            start = 0.5 if i == k else 1.5
+            reel.append({"id": "s%d" % i, "seconds": 5.5, "action": "walk", "events": [],
+                         "lines": [{"speaker": "narrator", "text": "x", "start_s": start, "end_s": start + 1.0}]})
+        pacing_ok = not any("re-hook" in p for p in script_pacing.inspect_pacing(reel, "en")["problems"])
+        shots = valid_shots()
+        for i, r in enumerate(episode_rows(shots)):
+            r["hook_type"] = "reveal" if i == k else "chase"
+        validator_ok = _rehook_errors(shots) == []
+        assert pacing_ok == validator_ok == (k in (6, 7)), k
+
+
+def test_writer_prompt_rehook_numbers_match_the_validator():
+    import writer_prompts as wpm
+    assert (wpm.REHOOK_REEL_MIN_SEC, wpm.REHOOK_WINDOW_FRAC) == (pv.REHOOK_REEL_MIN_SEC, pv.REHOOK_WINDOW_FRAC)
+    text = wpm.stage3_text(1)
+    assert "STARTS between 45% and 60%" in text and "36 s or longer" in text
+    assert "25 s" not in text and "35 s" not in text
+
+
 def test_s55_2_duration_cap_and_lattice():
     shots = valid_shots()
     episode_rows(shots)[0]["editorial_duration_sec"] = 15.5

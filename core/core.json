@@ -1,5 +1,6 @@
 {
   "version": "1.2",
+  "_caption_note": "post.py only: safe_zone_frac / safe_zone_templates caption_band and captions.max_words are read by director/post.py only; build_final_reel.py burns its own captions and never reads them (G20).",
   "default_style_pack": "deva_neon",
   "fps": 24,
   "delivery": {"codec": "libx264", "crf": 16, "pix_fmt": "yuv420p",

@@ -334,7 +334,7 @@ def _nvidia_call(model_id, env_path, prompt):
     keys = load_env_keys(pathlib.Path(env_path))
     pool = key_pool.KeyPool(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ledgers', 'nvidia_pool.json'))
     body = {'model': model_id, 'messages': [{'role': 'user', 'content': prompt}], 'temperature': 0.2,
-            'max_tokens': 24000, 'stream': False}
+            'max_tokens': 48000, 'stream': False}
     for _ in range(12):
         idx = pool.acquire()
         try:

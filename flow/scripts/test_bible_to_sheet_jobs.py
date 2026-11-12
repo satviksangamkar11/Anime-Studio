@@ -22,7 +22,8 @@ def test_cli_writes_once_and_refuses_overwrite(tmp_path):
     src = tmp_path / "bible.json"
     src.write_text(json.dumps(BIBLE), encoding="utf-8")
     out = tmp_path / "g" / "s_flow_jobs_sheets.json"
-    assert b.main([str(src), "s", str(out)]) == 0 and len(json.loads(out.read_text(encoding="utf-8"))) == 3
+    assert b.main([str(src), "s", str(out), "--no-section-4-3"]) == 0   # G19: default is 5 now
+    assert len(json.loads(out.read_text(encoding="utf-8"))) == 3
     assert b.main([str(src), "s", str(out)]) == 2
 
 

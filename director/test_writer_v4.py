@@ -514,9 +514,9 @@ def test_the_stage_3_example_row_passes_the_pack_checker(tmp_path):
 def test_stage_3_brief_states_the_rehook_rule_the_validator_enforces():
     import pack_validator as pv
     import writer_prompts as wpm
-    assert (wpm.REHOOK_REEL_MIN_SEC, wpm.REHOOK_WINDOW) == (pv.REHOOK_REEL_MIN_SEC, pv.REHOOK_WINDOW_SEC)
+    assert (wpm.REHOOK_REEL_MIN_SEC, wpm.REHOOK_WINDOW_FRAC) == (pv.REHOOK_REEL_MIN_SEC, pv.REHOOK_WINDOW_FRAC)
     text = wpm.stage3_text(1)
-    assert "STARTS between 25 s and 35 s" in text and "45 s or longer" in text
+    assert "STARTS between 45% and 60%" in text and "36 s or longer" in text
 
 
 def test_plan_errors_catch_a_broken_stage_1_plan():

@@ -5,7 +5,8 @@ import os
 import pytest
 
 from h3.compile_h3_sing8 import compile_comfyui_workflow, compile_episode, compile_fl2va_prompt
-from h3.schema_and_linter import MOUTH_LOCK_PHRASE, PROMPT_RE, PromptRefused, lint_story, lint_workflow, resolve_keyframes
+from h3.schema_and_linter import (MOUTH_LOCK_PHRASE, MOUTH_PERSON_RE, PROMPT_RE, PromptRefused, lint_story, lint_workflow,
+                                  resolve_keyframes)
 from h3.tests.synth import A_START, A_END, SPEECH_UTTERANCE, codes
 
 
@@ -49,12 +50,13 @@ def test_speech_pattern_in_stage_text_is_refused(story):
     assert e.value.code == "SL-01"
 
 
-def test_mouth_lock_phrase_is_in_description_of_every_shot(story):
+def test_mouth_sentence_is_in_description_of_every_shot(story):
+    # M-01b: was "mouth lock phrase is in every description" (one fixed phrase). MO-01 is now per person.
     shots, reg, _ = _ctx(story)
     for shot in shots:
         text = compile_fl2va_prompt(shot, reg)["compiled_prompt"]
         imd = PROMPT_RE.match(text).group("imd")
-        assert MOUTH_LOCK_PHRASE in imd
+        assert MOUTH_PERSON_RE.search(imd) or MOUTH_LOCK_PHRASE in imd
 
 
 def test_flow_chips_and_storyboard_tags_are_stripped_before_emission(story):

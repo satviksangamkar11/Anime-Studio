@@ -26,30 +26,29 @@ FLAT_SHA256 = "cc67d5f018b2852b88281facacf83de0e5435663aeaeb0fcf93145fcfe8f82bf"
 #   KF-02  the keyframes/SHOT-xx-FRAME-*.png files named by the template are not in the repo (asset_root is empty)
 #   SD-01  the template's `sound` text is 37 characters on SHOT-01 and SHOT-02 (linter needs at least 40)
 #   CM-01  SHOT-03 camera text "snap zoom to eye, then hold as dust clears" names no official camera motion
-#   PR-05  the compiled prompt body is 367-398 chars; the linter needs at least 600 (the template is thin, and the
+#   PR-05  the compiled prompt body is 328-359 chars; the linter needs at least 450 (the template is thin, and the
 #          registry style_lock prefix below is a placeholder, so this count is for the test registry only)
-#   SX-01  V4 rule (merge 2026-11-07): every action sentence needs a synchronized sound cue; the template has none
+#   SX-01  retired per stage (M-01, 2026-11-12): sound cues live in overall_soundscape; no longer an error here
+#   CM-05  SHOT-03 has no mappable camera motion, so its description has 0 camera sentences (M-03; same root cause as CM-01)
+#   (M-31: PR-05 min is the interim 450 and the body is 328-359 chars after M-01b/M-03; 600 breaks h3 test_h3_author)
 #          (MO-01 is satisfied by the converter: narrator_mouth_closed true, mouth_state closed)
 KNOWN_ERRORS = sorted([
     "SHOT-01: KF-02 picture_1 file missing: keyframes/SHOT-01-FRAME-A.png",
     "SHOT-01: KF-02 picture_2 file missing: keyframes/SHOT-01-FRAME-B.png",
-    "SHOT-01: PR-05 description length 375 outside [600, 4000]",
+    "SHOT-01: PR-05 description length 336 outside [450, 4000]",
     "SHOT-01: SD-01 sound_plan.overall_soundscape too short (37 chars), need at least 40",
-    "SHOT-01: SX-01 only 0 of 7 action sentences carry a synchronized sound cue, need 7",
     "SHOT-02: KF-02 picture_1 file missing: keyframes/SHOT-02-FRAME-A.png",
     "SHOT-02: KF-02 picture_2 file missing: keyframes/SHOT-02-FRAME-B.png",
-    "SHOT-02: PR-05 description length 372 outside [600, 4000]",
+    "SHOT-02: PR-05 description length 333 outside [450, 4000]",
     "SHOT-02: SD-01 sound_plan.overall_soundscape too short (37 chars), need at least 40",
-    "SHOT-02: SX-01 only 0 of 7 action sentences carry a synchronized sound cue, need 7",
     "SHOT-03: CM-01 motion_type None is not an official camera motion",
+    "SHOT-03: CM-05 the description has 0 camera sentences, need exactly 1",
     "SHOT-03: KF-02 picture_1 file missing: keyframes/SHOT-03-FRAME-A.png",
     "SHOT-03: KF-02 picture_2 file missing: keyframes/SHOT-03-FRAME-B.png",
-    "SHOT-03: PR-05 description length 367 outside [600, 4000]",
-    "SHOT-03: SX-01 only 0 of 7 action sentences carry a synchronized sound cue, need 7",
+    "SHOT-03: PR-05 description length 328 outside [450, 4000]",
     "SHOT-04: KF-02 picture_1 file missing: keyframes/SHOT-04-FRAME-A.png",
     "SHOT-04: KF-02 picture_2 file missing: keyframes/SHOT-04-FRAME-B.png",
-    "SHOT-04: PR-05 description length 398 outside [600, 4000]",
-    "SHOT-04: SX-01 only 0 of 7 action sentences carry a synchronized sound cue, need 7",
+    "SHOT-04: PR-05 description length 359 outside [450, 4000]",
 ])
 
 

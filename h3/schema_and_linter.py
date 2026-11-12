@@ -22,15 +22,28 @@ LATTICE_CUT_BOUNDS = {6: ((45, 75), (32, 62)), 7: ((64, 92), (32, 60)),
                       8: ((81, 109), (32, 60)), 10: ((115, 143), (32, 60))}
 OFFICIAL_CAMERA_MOTION_PHRASES = {
     "Zoom In": ("zooms in",), "Zoom Out": ("zooms out",), "Push In": ("pushes in",),
-    "Pull Out": ("pulls out",), "Pan Left": ("pans left",), "Pan Right": ("pans right",),
+    "Pull Out": ("pulls out", "pulls back"), "Pan Left": ("pans left",), "Pan Right": ("pans right",),
     "Truck Left": ("trucks left",), "Truck Right": ("trucks right",),
     "Tilt Up": ("tilts up",), "Tilt Down": ("tilts down",),
-    "Pedestal Up": ("pedestals up",), "Pedestal Down": ("pedestals down",),
-    "Arc Shot": ("arcs", "moves in an arc"), "Tracking Shot": ("tracks",),
-    "Static Shot": ("holds a static shot", "remains static"),
-    "Shake Slightly": ("shakes slightly",), "Shake Strongly": ("shakes strongly",),
+    "Pedestal Up": ("pedestals up", "rises slowly"), "Pedestal Down": ("pedestals down", "descends slowly"),
+    "Arc Shot": ("arcs", "moves in an arc", "circles"), "Tracking Shot": ("tracks",),
+    "Static Shot": ("holds a static shot", "remains static", "stays locked"),
+    "Shake Slightly": ("shakes slightly", "drifts very slightly"), "Shake Strongly": ("shakes strongly",),
     "POV": ("point of view", "pov"), "Roll Clockwise": ("rolls clockwise",),
     "Roll Counterclockwise": ("rolls counterclockwise",)}
+# M-03: blocking camera.move enum -> (official motion_type, sentence start). One sentence per shot (Opus section 6.2).
+CAMERA_MOVE_CLAUSES = {
+    None: ("Static Shot", "The camera stays locked"), "locked": ("Static Shot", "The camera stays locked"),
+    "push_in": ("Push In", "The camera pushes in slowly"), "pull_back": ("Pull Out", "The camera pulls back slowly"),
+    "pan_left": ("Pan Left", "The camera pans left slowly"), "pan_right": ("Pan Right", "The camera pans right slowly"),
+    "tilt_up": ("Tilt Up", "The camera tilts up slowly"), "tilt_down": ("Tilt Down", "The camera tilts down slowly"),
+    "track_left": ("Tracking Shot", "The camera tracks left slowly"),
+    "track_right": ("Tracking Shot", "The camera tracks right slowly"),
+    "orbit_left": ("Arc Shot", "The camera circles slowly left around the subjects"),
+    "orbit_right": ("Arc Shot", "The camera circles slowly right around the subjects"),
+    "crane_up": ("Pedestal Up", "The camera rises slowly above the scene"),
+    "crane_down": ("Pedestal Down", "The camera descends slowly over the scene"),
+    "handheld_drift": ("Shake Slightly", "The camera drifts very slightly, as if held by hand")}
 AMPLITUDES = {"with small amplitude", "with large amplitude"}
 SPEEDS = {"at slow speed", "at fast speed"}
 SEC_FRAMES = {"generation_duration_sec": "pixel_frames", "exact_generation_duration_sec": "pixel_frames",
@@ -77,6 +90,8 @@ PROFILE_KEYS = {"route_id", "checkpoint_name", "mode_to_lora_map", "checkpoint_a
                 "max_total_prompt_chars", "valid_lattice_n_range"}
 PROMPT_RE = re.compile(
     r"""\AHow the reference pictures align with the target video — Picture 1 \(from Shot 1\) aligns with the 0\.00-second mark of the target video; Picture 2 \(from Shot 1\) aligns with the (?P<sec>\d+\.\d{2})-second mark of the target video\.\nintegrated_multimodal_description: (?P<imd>[^\n]+)\noverall_soundscape: (?P<snd>[^\n]*)\nnon_diegetic_music: (?P<music>[^\n]*)\Z""")
+PROMPT_I2VA_RE = re.compile(   # start-only (M-02): one picture, no end-anchor sentence
+    r"""\AFor the target video, at 0\.00 seconds into the target video, <Picture 1> \(from \[Shot 1\]\) is fully referenced\.\nintegrated_multimodal_description: (?P<imd>[^\n]+)\noverall_soundscape: (?P<snd>[^\n]*)\nnon_diegetic_music: (?P<music>[^\n]*)\Z""")
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
 # ID safety pattern: alphanumeric start, then alphanumeric/underscore/hyphen up to 64 chars total
@@ -109,7 +124,11 @@ SFX_CUE_RE = re.compile(r"\b(?:sound|hiss|rustle|splash|wind|water|step|breath|h
                         r"ring|voice|pop|click|tick|knock|snap|slam|scrape|tap|clink|creak|crunch|rain|spray|swish|"
                         r"thump|buzz|chime|bell|bird|song|stream|breeze|murmur|whisper|crackle|rumble|echo|tone|chant|drone|gust|sigh|"
                         r"flutter|patter|ripple|trickle|clang|rush|swell|twang|clasp|conch|thunk)\w*", re.I)                    # SX-01 synchronized physical sound
-SX_MIN_STAGE_CUES = 7        # SX-01 (owner 2026-11-07: more sound effects hit harder): every one of the 7 action sentences carries a sound cue
+SX_MIN_STAGE_CUES = 0        # SX-01 retired per stage (D1 = B, M-01): sound cues live in overall_soundscape, checked by SX-02
+MOUTH_PERSON_RE = re.compile(r"\b(?:keeps?|keep) (?:their|his|her) lips (?:completely )?closed\b|\bspeaks? with moving lips\b",
+                             re.I)                                             # MO-01 per-person mouth sentence (prompt_hygiene)
+SX02_STOP = frozenset("a an the and or of as in on at to from with by into its his her their some soft low high faint sharp "
+                      "short quick light deep dry heavy loud distant then".split())
 SX_MAX_SENTENCES = 4         # SX-01: overall_soundscape is 1-4 English sentences
 REF2VA_RE = re.compile(
     r"\Asubject_definitions: (?P<subj>[^\n]+)\nsummary: (?P<summary>[^\n]+)\nretention_analysis: (?P<ret>[^\n]+)\n"
@@ -260,7 +279,7 @@ def prompt_lock_problems(text, text_events=0, voice=None):
         out.append(("TX-01", f"{len(quotes)} double-quoted on-screen text span(s), {text_events} typography event(s) requested"))
     if len(text) > PROMPT_CHAR_LIMIT:
         out.append(("LEN-01", f"prompt is {len(text)} characters, the hard limit is {PROMPT_CHAR_LIMIT}"))
-    if MOUTH_LOCK_PHRASE not in text and (voice is None or voice["silent"]):
+    if MOUTH_LOCK_PHRASE not in text and not MOUTH_PERSON_RE.search(text) and (voice is None or voice["silent"]):
         out.append(("MO-01", f"positive mouth lock {MOUTH_LOCK_PHRASE!r} is missing from the description"))
     m = re.search(r"^overall_soundscape: (.*)$", text, re.M)
     if m is None:
@@ -272,6 +291,32 @@ def prompt_lock_problems(text, text_events=0, voice=None):
             out.append(("SX-01", f"overall_soundscape has {n} sentences, need 1-{SX_MAX_SENTENCES}"))
         if re.search(r"[^\x00-\x7f–—‘’“”]", snd):
             out.append(("SX-01", "overall_soundscape must be English (ASCII)"))
+    return out
+
+
+def cue_head_noun(text):
+    """First content word of a sound cue ('a veil snaps' -> 'veil'). Articles, prepositions and plain adjectives are skipped."""
+    for word in re.findall(r"[a-z]+", text.lower()):
+        if len(word) > 2 and word not in SX02_STOP:
+            return word
+    return None
+
+
+def sx02_problems(soundscape, sound_cues):
+    """SX-02 (D1 = B): the head noun of every blocking sound cue appears in the soundscape, in t order.
+    soundscape: the overall_soundscape text; sound_cues: blocking [{t, text}]. Returns problem strings (empty = pass).
+    Heuristic: a plural 's'/'es' is accepted; each cue is searched after the previous cue's match."""
+    text, out, last = soundscape.lower(), [], 0
+    cues = [c for c in sound_cues if isinstance(c, dict) and isinstance(c.get("text"), str)]
+    for cue in sorted(cues, key=lambda c: c.get("t") if isinstance(c.get("t"), (int, float)) else 0):
+        noun = cue_head_noun(cue["text"])
+        if noun is None:
+            continue
+        m = re.compile(r"\b" + re.escape(noun) + r"(?:s|es)?\b").search(text, last)
+        if m is None:
+            out.append(f"SX-02 cue {cue['text']!r} (head noun {noun!r}) is missing from the soundscape or out of t order")
+        else:
+            last = m.end()
     return out
 
 
@@ -602,6 +647,19 @@ def _check_camera(log, shot):
             log.err("CM-03", f"clause lacks {key} phrase {v!r}")
 
 
+def _check_stage_words(log, shot, imd):
+    """M-03 on the emitted description: exactly one camera sentence (CM-05), shake only as 'a short shake at second N'
+    (CM-06), a time point is never a range (TP-02). Old stories carry no time points, so a missing one is not a rule."""
+    n = len(re.findall(r"\bthe camera\b", imd, re.I))
+    if n != 1:
+        log.err("CM-05", f"the description has {n} camera sentences, need exactly 1")
+    rest = re.sub(r"a short shake at second \d+(?:\.\d+)?", "", imd)
+    if re.search(r"\bshak", rest, re.I) and not str(shot["camera"].get("motion_type")).startswith("Shake"):
+        log.err("CM-06", "shake must be written 'a short shake at second N'")
+    if re.search(r"\b(?:At|By) second \d+(?:\.\d+)?\s*(?:-|–|to)\s*\d", imd):
+        log.err("TP-02", "a stage names a time range; use a single time point ('At second 2.5,')")
+
+
 def _check_dialogue(log, shot, reg):
     d, chars = shot["dialogue_and_lip_lock"], reg["characters"]
     if bool(d["has_dialogue"]) != bool(d["utterances"]):
@@ -643,7 +701,8 @@ def _check_keyframes(log, shot, prof, root, prev):
     if not isinstance(refs, list):
         log.err("KF-08", "reference_images must be a list of picture paths")
         refs = []
-    if not refs and not (kf.get("picture_1") and kf.get("picture_2")):   # the resolved frames: a REUSED picture_1 counts (Q-R4-5)
+    start_only = route_shot(shot) == "I2VA"   # M-02: a start-only shot needs picture_1 only
+    if not refs and not (kf.get("picture_1") and (kf.get("picture_2") or start_only)):   # the resolved frames: a REUSED picture_1 counts (Q-R4-5)
         log.err("KF-06", "both boundary frames are required unless reference_images are given")
     # KF-07 on picture paths and optional flow sources; unsafe paths never reach the disk checks
     pics = [("picture_1", kf.get("picture_1")), ("picture_2", k.get("picture_2_path"))]
@@ -776,18 +835,20 @@ def _check_prompt(log, shot, prof, reg, compiled):
                 if not 1 <= int(num) <= limits[kind]:
                     log.err("RF-03", f"<{kind} {num}> has no matching reference ({limits[kind]} available)")
     else:
-        m = PROMPT_RE.match(text)
+        start_only = route_shot(shot) == "I2VA"   # M-02 S profile: no Picture 2 header, no end-frame mark
+        m = (PROMPT_I2VA_RE if start_only else PROMPT_RE).match(text)
         if not m:
             log.err("PR-01", "prompt does not match the 4-part layout")
             imd = text
         else:
             imd = m.group("imd")
             pf, fps = shot["timing_and_lattice"]["pixel_frames"], prof["fps"]
-            if m.group("sec") != f"{pf / fps:.2f}":
+            if not start_only and m.group("sec") != f"{pf / fps:.2f}":
                 log.err("PR-01", f"header second mark {m.group('sec')} != {pf / fps:.2f}")
             if not imd.startswith(f"[Shot 1] {clean_text(style['mandatory_prefix'])}, preserving the exact character design"):
                 log.err("PR-01", "description does not start with the mandatory prefix")
-    if re.findall(r"\[Shot (\d+)\]", text) != ([] if ref else ["1"]):
+    # the S header "(from [Shot 1])" is the official I2VA line, not a body tag
+    if re.findall(r"\[Shot (\d+)\]", re.sub(r"\(from \[Shot 1\]\)", "", text)) != ([] if ref else ["1"]):
         log.err("PR-02", "the only [Shot N] tag must be [Shot 1] (none in Ref2VA)")
     for code, msg in prompt_lock_problems(text, text_events=diegetic_text_events(shot), voice=voice_context(shot, reg)):
         log.err(code, msg)
@@ -801,12 +862,13 @@ def _check_prompt(log, shot, prof, reg, compiled):
     if len(text) > prof["max_total_prompt_chars"]:
         log.err("PR-06", f"prompt length {len(text)} > {prof['max_total_prompt_chars']}")
     d = shot["dialogue_and_lip_lock"]
+    # M-01: mouth_state_rule is no longer emitted (per-person mouth sentence; MO-01 checks it), so it is not a piece here
     pieces = [clean_text(shot["anime_timing_cadence"]["cadence_clause"]),
-              clean_text(d["mouth_state_rule"]),
               clean_text(shot["camera"]["compiled_clause"])]
     for p in pieces:
         if p not in imd:
             log.err("PR-07", f"{p[:60]!r} is not a substring of the description")
+    _check_stage_words(log, shot, imd)
     rx = style.get("banned_negative_words_regex")
     if rx:
         try:
@@ -831,8 +893,8 @@ def _check_workflow(log, workflow, shot, prof):
         log.err("WF-08", "workflow must carry _unverified_node_classes: true")
     mode = shot["fl2va_keyframes"].get("mode")
     route = route_shot(shot)
-    if route not in ("FL2VA", REF2VA):
-        log.err("WF-09", f"route {route} has no sing8 workflow (only FL2VA and Ref2VA)")
+    if route not in ("FL2VA", REF2VA, "I2VA"):
+        log.err("WF-09", f"route {route} has no sing8 workflow (only FL2VA, Ref2VA and I2VA)")
         return
     lora = prof["mode_to_lora_map"].get(f"{workflow_mode(route)}_{prof['checkpoint_architecture_namespace']}")
     if sum(1 for n in nodes.values() if n.get("class_type") == "LoraLoaderModelOnly") != 1:
@@ -870,10 +932,6 @@ def _check_pure_foley(log, shot, prof, reg=None):
     voice anchors of the shot's speakers (VA-05..07)."""
     voice = voice_mode(reg)
     _run(log, _check_mouth_lock, shot, prof, reg)  # own _run: a malformed mouth block must not hide SX-01 and the VA rules
-    stages = [shot["motion_7_stage"][k] for k in STAGES]
-    cues = sum(1 for s in stages if SFX_CUE_RE.search(s))
-    if cues < SX_MIN_STAGE_CUES:
-        log.err("SX-01", f"only {cues} of 7 action sentences carry a synchronized sound cue, need {SX_MIN_STAGE_CUES}")
     if route_shot(shot) == REF2VA:  # any audio ref routes the shot here, so AU-01 is reported by this call only
         for code, msg in ref2va_limit_problems(shot, voice):
             log.err(code, msg)
@@ -939,8 +997,28 @@ def lint_workflow(workflow, shot, profile):
     return {"errors": log.errors, "warnings": log.warnings}
 
 
-def lint_story(story, compiled=None, asset_root_override=None):
+def _routed_s(routes, sid):
+    row = routes.get(sid) if isinstance(routes, dict) and isinstance(sid, str) else None
+    if isinstance(row, dict):
+        return row.get("image_prompt_type") == "S" or row.get("route") == "S"
+    return row == "S"
+
+
+def _start_only_copy(shot):
+    """A copy of the shot as the S route sees it: no end picture (so route_shot gives I2VA and the linter uses the
+    start-only layout)."""
+    import copy
+    out = copy.deepcopy(shot)
+    kf = out.get("fl2va_keyframes")
+    if isinstance(kf, dict):
+        kf.pop("picture_2_path", None)
+    return out
+
+
+def lint_story(story, compiled=None, asset_root_override=None, routes=None):
     """Lint every episode. compiled: optional {shot_id: prompt text or compile dict} to check instead of recompiling.
+    routes (M-03): optional {shot_id: route row} (the routes file's "routes" map, or a plain id -> "S"); a shot whose row says
+    image_prompt_type "S" (or route "S") is linted as start-only, even though the story still carries its picture_2.
     Story-level structure errors (no registry/episodes) raise KeyError; profile errors are attributed to the first shot."""
     from h3.compile_h3_sing8 import compile_fl2va_prompt, compile_comfyui_workflow  # lazy: avoids import cycle
     reg = story["registry"]
@@ -990,6 +1068,8 @@ def lint_story(story, compiled=None, asset_root_override=None):
             c = compiled_map.get(sid) if isinstance(sid, str) else None
             if isinstance(c, dict):
                 c = c["compiled_prompt"]
+            if _routed_s(routes, sid):   # M-03: lint what build_h3_batch compiles: the start-only shot, no picture_2
+                shot = _start_only_copy(shot)
             r = lint_shot(shot, prof, reg, root, prev=prev, compiled_prompt=c)
             out["errors"] += r["errors"]
             out["warnings"] += r["warnings"]

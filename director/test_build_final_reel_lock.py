@@ -173,6 +173,7 @@ def dead_air_run(tmp_path, monkeypatch, waivers_text=None):
         raise Reached()
     monkeypatch.setattr(b, "assemble_video", lambda *a, **k: {"total_frames": 432, "total_duration_sec": 18.0, "fps": 24})
     monkeypatch.setattr(b, "probe_size", lambda path: (768, 1344))
+    monkeypatch.setattr(b, "master_audio_check", lambda *a, **k: ([], []))      # M-26: no ffmpeg decode of the stub video
     monkeypatch.setattr(b, "mux_argv", fake_mux)
     monkeypatch.setattr(gd, "build_captions", lambda *a, **k: ("", []))
     monkeypatch.setattr(gd, "plan_language_outputs",

@@ -13,6 +13,7 @@ import blocking  # noqa: E402,F401
 import blocking_lint  # noqa: E402,F401
 import script_inspect  # noqa: E402,F401
 import source_check  # noqa: E402,F401
+import story_shape  # noqa: E402,F401
 
 _ID_RE = re.compile(r'SHOT-[0-9]{3}')
 
@@ -90,7 +91,7 @@ def _answer_text(text):
 
 def parse_repair(text):
     body = _answer_text(text)
-    fenced = re.search(r'```(?:json)?\s*\n(.*?)\n```', body, re.DOTALL)
+    fenced = re.search(r'```(?:json)?[^\n]*\n(.*?)\n```', body, re.DOTALL)   # also a tagged fence (```json shots)
     if fenced is not None:
         candidate = fenced.group(1)
     else:
@@ -140,7 +141,7 @@ def write_blocking_files(out, rows):
     return paths
 
 
-def writer_gate(out, rows, source_text, lang='en', lock=None, est_note=''):
+def writer_gate(out, rows, source_text, lang='en', lock=None, est_note='', story=None):
     problems = []
     try:
         problems.extend(writer_guard.validate_pack(rows, os.path.join(out, 'blocking')))
@@ -168,13 +169,19 @@ def writer_gate(out, rows, source_text, lang='en', lock=None, est_note=''):
 
     try:
         shots = script_inspect.from_pack(rows, lang)
-        result = script_inspect.inspect_script(shots, lang)
+        result = script_inspect.inspect_script(shots, lang, story=story)
         if not result.get('pass', False):
-            reasons = result.get('reasons', [])
-            if isinstance(reasons, list):
-                reasons = [str(r) for r in reasons]
-            else:
-                reasons = [str(reasons)]
+            # inspect_script nests the hook verdict under 'hook' and pacing under 'pacing'
+            reasons = []
+            hook = result.get('hook') if isinstance(result.get('hook'), dict) else {}
+            pacing = result.get('pacing') if isinstance(result.get('pacing'), dict) else {}
+            for source in (result.get('reasons'), hook.get('reasons'), pacing.get('problems')):
+                if isinstance(source, list):
+                    reasons.extend(str(r) for r in source)
+                elif source:
+                    reasons.append(str(source))
+            if not reasons:
+                reasons = ['no reason given']
             problems.append('script_inspect: FAIL ' + '; '.join(reasons))
     except ValueError as exc:
         problems.append('script_inspect: ' + str(exc))
@@ -188,11 +195,19 @@ def writer_gate(out, rows, source_text, lang='en', lock=None, est_note=''):
     except Exception as exc:
         problems.append('source_check: ' + str(exc))
 
+    shape_warnings = []
+    try:   # M-23: story shape. Old packs (no premise, no arc_beat) get warnings only.
+        shape_errors, shape_warnings = story_shape.lint(rows, story)
+        problems.extend(shape_errors)
+    except Exception as exc:
+        problems.append('story_shape: ' + str(exc))
+
     shots_sha256 = hashlib.sha256(json.dumps(rows, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest()
     result_dict = {
         'shots_sha256': shots_sha256,
         'ok': len(problems) == 0,
         'problems': problems,
+        'warnings': shape_warnings,
     }
     try:
         gate_path = Path(out) / 'writer_gate.json'

@@ -11,6 +11,7 @@ Real gaps found while writing this file are marked xfail(strict=True) with the m
 import array
 import copy
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -44,7 +45,8 @@ import write_timeline_lock as wtl  # noqa: E402
 from h3 import gate_d_audio as gd  # noqa: E402
 from h3 import render_controller as rc  # noqa: E402
 from h3 import v4_to_h3 as v4  # noqa: E402
-from h3.schema_and_linter import write_minimal_valid_png  # noqa: E402
+from h3.compile_h3_sing8 import compile_fl2va_prompt  # noqa: E402
+from h3.schema_and_linter import lint_story, write_minimal_valid_png  # noqa: E402
 from h3.tests.test_v4_to_h3 import _row  # noqa: E402
 from core.style_pack import load_core  # noqa: E402
 from score import cue_sheet as cs  # noqa: E402
@@ -185,7 +187,8 @@ def _story(reel_fx):
 
 
 def _routes(reel_fx, sheets=None):
-    return shot_router.plan_from_blocking(sheets or reel_fx.sheets, reel_fx.lock)
+    # M-32: S is the default now; these tests pin the SE-family routes, so they switch the S gate off
+    return shot_router.plan_from_blocking(sheets or reel_fx.sheets, reel_fx.lock, allow_s=False)
 
 
 def _cast_lock_cast(reel_fx, sheets, folder, sid):
@@ -495,9 +498,10 @@ def test_one_sheet_drives_router_prompt_gate_clip(reel, monkeypatch, tmp_path):
     flow.mkdir(parents=True)
     write_minimal_valid_png(str(flow / "hall.png"), 64, 64)
     (flow / "plates.json").write_text(json.dumps({"PLATE-hall": {"path": "hall.png"}}), encoding="utf-8")
-    job_a, job_b = kj.jobs_for_shot(less["SHOT-002"], "PLATE-hall", [])
+    job_a, job_b = kj.jobs_for_shot(dict(less["SHOT-002"], route="SE"), "PLATE-hall", [])   # M-32: B only for an explicit SE
     assert job_a["people_count"] == 1 and job_b["base_edit_id"] == "SHOT-002-A"
-    assert job_b["edit_instruction"].startswith("same picture, make these exact changes only")
+    assert job_b["edit_instruction"].startswith("Same picture, same framing, same light, same background.")
+    assert "Change only:" in job_b["edit_instruction"] or "Change nothing." in job_b["edit_instruction"]
     # the clip QA known classes come from the sheet's props (and 'person'), not from the cast names
     assert blocking.known_classes(less["SHOT-002"]) == blocking.known_classes(base["SHOT-002"]) == {"person", "throne"}
     # removing the last cast member removes 'person' from the allowed clip classes: clip QA then flags it
@@ -804,3 +808,69 @@ def test_sheet_folder_is_wired_through_the_lock_cli(reel, tmp_path):
         wtl.main(["--pack", str(reel.pack), "--wav-root", str(reel.raw), "--manifest", str(reel.pack / "bible.json"),
                   "--out-dir", str(tmp_path / "lock_cli"), "--langs", ",".join(LANGS), "--blocking-dir", str(blk)])
     assert not (blk / "blocking.json").exists()
+
+
+# ================================================================ blocking/1.1 whole chain (M-20a)
+
+def _sheets_11():
+    """Three blocking/1.1 sheets: beats + hook + premise-style fields on 1, chain_from + S route on 2, camera move on 3."""
+    s1 = _sheet("SHOT-001", [_member("CHAR-RAJ", "Raj", 0.3), _member("CHAR-SATI", "Sati", 0.7)], arc=0.0)
+    s2 = _sheet("SHOT-002", [_member("CHAR-RAJ", "Raj", 0.3)], arc=0.0)
+    s3 = _sheet("SHOT-003", [_member("CHAR-SATI", "Sati", 0.5)], arc=0.0)
+    for s in (s1, s2, s3):
+        s["schema"] = "blocking/1.1"
+        s["camera"].update(angle="eye_level", lens="normal", motivation=None, shake=None)
+        s["emotion"], s["composition"] = "awe", "centred"
+    s1["hook_type"] = "scale_tableau"
+    s1["cut_to_next"] = "match"
+    s1["beats"] = [{"t": 0, "label": "LAMP LIT", "action": "Raj lifts the lamp", "physics": "the flame steadies",
+                    "primary": False},
+                   {"t": 3.0, "label": "SATI TURNS", "action": "Sati turns to the door", "physics": "her scarf swings",
+                    "primary": True}]
+    s2.update(chain_from="SHOT-001", route="S", chain_state="Raj stands by the lamp, flame steady")
+    s3["camera"].update(mode="move", move="push_in", motivation="to follow her eyes")
+    return {"SHOT-001": s1, "SHOT-002": s2, "SHOT-003": s3}
+
+
+def test_blocking_11_chain_router_jobs_compile_lint(reel, monkeypatch, tmp_path):
+    sheets = _sheets_11()
+    folder = tmp_path / "blk11"
+    folder.mkdir()
+    for sid, sh in sheets.items():
+        assert blocking.validate(sh) == []
+        (folder / (sid + ".json")).write_text(json.dumps(sh), encoding="utf-8")
+    assert blocking_lint.lint([sheets[i] for i in IDS], reel.lock) == []
+    # a new lock over the 1.1 sheets (same shots and clock)
+    inputs = sorted(folder.glob("*.json")) + [reel.pack / "shots.json"] + sorted(reel.raw.rglob("*.wav"))
+    lock = tli.write_lock(tmp_path / "lock11" / "timeline_lock_v1.json", _lock_shots(), [str(p) for p in inputs],
+                          PARAMS)
+    # router: the chained shot is S (start-only) when the S gate is on, and refused when it is off
+    routes = shot_router.plan_from_blocking(sheets, lock, allow_s=True)
+    assert routes["SHOT-002"]["route"] == "S" and any("chain_from" in r for r in routes["SHOT-002"]["reasons"])
+    with pytest.raises(shot_router.RouterError, match="chain_from"):
+        shot_router.plan_from_blocking(sheets, lock, allow_s=False)   # M-32: explicit off (default is on)
+    # keyframe jobs: S has no B picture, the others have both
+    monkeypatch.setattr(kj, "FLOW_ROOT", str(tmp_path / "flow"))
+    flow = tmp_path / "flow" / "plates"
+    flow.mkdir(parents=True)
+    write_minimal_valid_png(str(flow / "hall.png"), 64, 64)
+    (flow / "plates.json").write_text(json.dumps({"PLATE-hall": {"path": "hall.png"}}), encoding="utf-8")
+    assert kj.jobs_for_shot(sheets["SHOT-002"], "PLATE-hall", [])[1] is None
+    assert all(j is not None for j in kj.jobs_for_shot(dict(sheets["SHOT-003"], route="SE"), "PLATE-hall", []))
+    # compile: convert_pack reads the 1.1 sheets, writes the chain header and one camera sentence, and lints clean
+    shots = json.loads((reel.pack / "shots.json").read_text(encoding="utf-8"))
+    res = v4.convert_pack({"shots": shots, "bible": copy.deepcopy(BIBLE), "stage": copy.deepcopy(STAGE),
+                           "asset_root": str(reel.root)}, languages=list(LANGS), lock=lock,
+                          blocking_dir=str(folder))
+    story = res["story"]
+    assert story is not None, res.get("problems")
+    by_id = {s["shot_id"]: s for s in story["episodes"][0]["shots"]}
+    assert by_id["SHOT-002"]["cast_lock"].get("chain_header")
+    assert "chain_header" not in by_id["SHOT-001"]["cast_lock"] or not by_id["SHOT-001"]["cast_lock"]["chain_header"]
+    text = compile_fl2va_prompt(by_id["SHOT-003"], story["registry"])["compiled_prompt"]
+    body = re.search(r"^integrated_multimodal_description: (.*)$", text, re.M).group(1)
+    assert len(re.findall("the camera", body, re.I)) == 1, body
+    # the synthetic story has unrelated schema noise (extra keys, cadence); only the prompt-text rules must be clean
+    errors = lint_story(story, asset_root_override=str(reel.root), routes=routes)["errors"]
+    prompt_rules = [e for e in errors if re.search("(CM-|TG-|TX-|TP-|MO-|SX-|PR-02|PR-07)", e)]
+    assert prompt_rules == [], prompt_rules

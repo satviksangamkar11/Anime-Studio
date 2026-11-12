@@ -13,6 +13,8 @@ if str(_ROOT) not in sys.path:
 from h3.shot_table_spec import LATTICE_N_MAX, LATTICE_N_MIN  # noqa: E402
 
 FPS = 24
+PIKA_PRESETS = ("pika", "pika6")
+PIKA_MIN_N = 7   # Pika H3 Flex preset: 124-362 frames (17*7+5 = 124), research/OPUS_FINAL_REVIEW_2026-11-12.md B-13
 
 
 def lattice_frames(n: int) -> int:
@@ -131,9 +133,10 @@ def choose(
     return best
 
 
-def plan_pixels(ids: list, edit_frames: list, fps: int = FPS) -> list:
+def plan_pixels(ids: list, edit_frames: list, fps: int = FPS, preset=None) -> list:
     """Lattice size and cut handles per shot, from the H3 rules in h3/v4_to_h3.py (the one lattice picker).
 
+    preset "pika"/"pika6": a shot the picker fits below n = 7 is raised to 124 frames (the preset floor).
     Raises ValueError for a one-shot list (fit_lattice skips it), a shot that fits no lattice size, or a cut
     that breaks the handle rules.
     """
@@ -153,6 +156,8 @@ def plan_pixels(ids: list, edit_frames: list, fps: int = FPS) -> list:
     out = []
     for i, row in enumerate(fitted):
         ed, pf, n = edit_frames[i], row["pixel_frames"], row["lattice_n"]
+        if preset in PIKA_PRESETS and n < PIKA_MIN_N:
+            n, pf = PIKA_MIN_N, lattice_frames(PIKA_MIN_N)
         inc, outg = v._seam_defaults(i == 0, i == last, ed, pf)
         plan, probs = v._plan_handles(row["id"], pf, ed, inc, outg, n)
         if probs:
@@ -171,7 +176,7 @@ def plan_pixels(ids: list, edit_frames: list, fps: int = FPS) -> list:
     return out
 
 
-def plan_shots(shots: list, voice_seconds: dict, margin_frames: int = 6, fps: int = FPS) -> list:
+def plan_shots(shots: list, voice_seconds: dict, margin_frames: int = 6, fps: int = FPS, preset=None) -> list:
     """Plan every shot in reel order. Shot keys: id, bpm (optional), snap (default False), cue, min_seconds.
 
     The act restarts when (bpm, cue) differs from the previous shot. A shot with no entry in voice_seconds
@@ -215,7 +220,7 @@ def plan_shots(shots: list, voice_seconds: dict, margin_frames: int = 6, fps: in
         absolute_start += edit_frames
         start_in_act += edit_frames
 
-    pixels = plan_pixels([r["id"] for r in rows], [r["edit_frames"] for r in rows], fps)
+    pixels = plan_pixels([r["id"] for r in rows], [r["edit_frames"] for r in rows], fps, preset)
     for row, pix in zip(rows, pixels):
         row.update(pix)
     return rows

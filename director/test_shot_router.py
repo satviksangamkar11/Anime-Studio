@@ -11,6 +11,12 @@ import pytest
 from shot_router import RouterError, ROUTES, route_shot, plan_reel
 
 
+
+@pytest.fixture(autouse=True)
+def _s_gate_off(monkeypatch):
+    # M-32: S is the default route now; this file pins the SE-family behaviour, so it switches the S gate off
+    monkeypatch.setenv("SHOT_MODE_S_ALLOW", "0")
+
 def feat(**over):
     base = {
         "kind": "acting",
@@ -343,10 +349,11 @@ def mixed_reel():
 def test_plan_reel_mixed_totals():
     res = plan_reel(mixed_reel(), allow_s=True)
     assert set(res.keys()) == {"routes", "total_est_units", "keyframe_count", "gpu_shots", "needs_owner_flag"}
-    assert res["total_est_units"] == pytest.approx(5.1)
-    assert res["keyframe_count"] == 9
+    # M-32: with S on, an end pose no longer forces KFI/SOFT_SE: s3 and s5 are S too (1.1+0+1.1+1.4+1.1 = 4.7)
+    assert res["total_est_units"] == pytest.approx(4.7)
+    assert res["keyframe_count"] == 6
     assert res["gpu_shots"] == 4
-    assert res["needs_owner_flag"] == ["s1", "s4"]
+    assert res["needs_owner_flag"] == ["s1", "s3", "s4", "s5"]
 
 
 def test_plan_reel_routes_per_shot():
@@ -355,9 +362,11 @@ def test_plan_reel_routes_per_shot():
     assert set(routes.keys()) == {"s1", "s2", "s3", "s4", "s5"}
     assert routes["s1"] == EXPECTED_S
     assert routes["s2"] == EXPECTED_POST
-    assert routes["s3"] == EXPECTED_KFI
+    assert routes["s3"] == EXPECTED_S   # M-32: S default; KFI/SOFT_SE only with the gate off or an explicit route
     assert routes["s4"] == EXPECTED_REF_S
-    assert routes["s5"] == EXPECTED_SOFT_SE
+    assert routes["s5"] == EXPECTED_S
+    off = plan_reel(mixed_reel(), allow_s=False)["routes"]
+    assert off["s3"]["route"] == "KFI" and off["s5"]["route"] == "SOFT_SE"
 
 
 def test_plan_reel_duplicate_ids_raise():

@@ -140,7 +140,8 @@ _ROUTE_TABLE = {
 }
 
 
-def route_shot(features, allow_s=False):
+def route_shot(features, allow_s=None):
+    allow_s = s_allowed() if allow_s is None else allow_s
     _validate(features)
     kind = features["kind"]
     needs_end_pose = features["needs_end_pose"]
@@ -155,9 +156,9 @@ def route_shot(features, allow_s=False):
         if cast_count > 3:
             result["reasons"].append("more than 3 moving people")
         return result
-    elif needs_end_pose and arc_sec > 1.5:
+    elif needs_end_pose and not allow_s and arc_sec > 1.5:   # M-32: with S on, an exact end pose is a per-shot SE override
         route = "KFI"
-    elif needs_end_pose:
+    elif needs_end_pose and not allow_s:
         route = "SOFT_SE"
     elif kind == "close_up" or multi_arm:
         route = "REF_S"
@@ -178,7 +179,7 @@ def route_shot(features, allow_s=False):
     return result
 
 
-def plan_reel(shots, allow_s=False):
+def plan_reel(shots, allow_s=None):
     if not isinstance(shots, list):
         raise RouterError("shots")
     seen_ids = set()
@@ -221,7 +222,14 @@ def plan_reel(shots, allow_s=False):
     }
 
 
-def plan_from_blocking(sheets, lock, allow_s=False):
+def s_allowed(env=None):
+    """Gate for start-only (S), M-32: on by default; only SHOT_MODE_S_ALLOW=0 switches it off (same rule as h3/shot_mode.py)."""
+    import os
+    return (os.environ if env is None else env).get("SHOT_MODE_S_ALLOW") != "0"
+
+
+def plan_from_blocking(sheets, lock, allow_s=None):
+    allow_s = s_allowed() if allow_s is None else allow_s
     # blocking is imported here, not at top: blocking.py imports shot_router at load time
     import blocking
 
@@ -237,7 +245,15 @@ def plan_from_blocking(sheets, lock, allow_s=False):
     routes = {}
     for shot_id in lock_ids:
         features = blocking.router_features(sheets[shot_id], frames_for(lock, shot_id))
-        result = route_shot(features, allow_s=allow_s)
+        if sheets[shot_id].get("chain_from"):   # M-03: a continuation starts from the previous last frame: start-only S, no B
+            if not allow_s:
+                raise RouterError(f"{shot_id}: chain_from needs the start-only route S (SHOT_MODE_S_ALLOW=1 not set)")
+            result = copy.deepcopy(_ROUTE_TABLE["S"])
+            result["reasons"].append("chain_from: continues from the previous clip's last kept frame")
+        elif sheets[shot_id].get("route") in _ROUTE_TABLE:   # M-32: an explicit per-shot route (e.g. "SE") wins over the default
+            result = copy.deepcopy(_ROUTE_TABLE[sheets[shot_id]["route"]])
+        else:
+            result = route_shot(features, allow_s=allow_s)
         result["h3_mode"] = H3_MODE[result["route"]]
         routes[shot_id] = result
     return routes
@@ -256,7 +272,7 @@ def main(argv=None):
     lock = load_lock(args.lock)
     shot_ids = [shot["id"] for shot in lock["shots"]]
     sheets = blocking.load_reel(args.blocking, shot_ids)
-    routes = plan_from_blocking(sheets, lock)
+    routes = plan_from_blocking(sheets, lock, allow_s=s_allowed())
     payload = {"lock_sha256": lock["input_sha256"], "routes": routes}
     with open(args.out, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=1)

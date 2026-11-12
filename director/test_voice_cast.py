@@ -101,7 +101,7 @@ def test_speed_is_in_the_key_and_the_newest_clip_wins(tmp_path):
     lid = plan["lines"][0]["id"]
     j0 = v.build_jobs(plan, [lid], vmap(plan), "eleven_v4")
     j1 = v.build_jobs(plan, [lid], vmap(plan), "eleven_v4", None, {lid + ".en": 1.15})
-    assert j0[0]["key"] != j1[0]["key"] and j0[1]["key"] == j1[1]["key"] and j1[0]["settings"] == {"speed": 1.15}
+    assert j0[0]["key"] != j1[0]["key"] and j0[1]["key"] == j1[1]["key"] and j1[0]["settings"] == {**v.SETTINGS, "speed": 1.15}
     bodies = []
 
     def post(method, path, key, body=None):
@@ -110,7 +110,7 @@ def test_speed_is_in_the_key_and_the_newest_clip_wins(tmp_path):
     led = v.Ledger(tmp_path / "l.jsonl", 10_000)
     v.run(j0, tmp_path, 10_000, "k" * 20, post=post, ledger=led, probe=lambda p: 5.0)
     m = v.run(j1, tmp_path, 10_000, "k" * 20, post=post, ledger=led, probe=lambda p: 4.0)
-    assert len(bodies) == 4 and bodies[-1]["voice_settings"] == {"speed": 1.15}       # only the changed line was bought again
+    assert len(bodies) == 4 and bodies[-1]["voice_settings"] == {**v.SETTINGS, "speed": 1.15}       # only the changed line was bought again
     newest = {r["id"]: r for r in v.latest_ok(m)}
     assert newest[lid + ".en"]["seconds"] == 4.0 and len(v.latest_ok(m)) == 3
 

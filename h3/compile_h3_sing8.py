@@ -9,7 +9,7 @@ import json
 import traceback
 import os
 
-from h3.prompt_hygiene import cast_line, check_sound_cue
+from h3.prompt_hygiene import cast_line, check_sound_cue, find_cue_glue, find_duplicate_sentences, mouth_sentence
 from h3.router import REF2VA, ref_inventory, route_shot, video_shift_for, workflow_mode
 from h3.schema_and_linter import (MOUTH_LOCK_SENTENCE, STAGES, clean_text, compiled_soundscape, lint_story,
                                   lint_workflow, refuse_speech_in_source, resolve_keyframes, sanitize_single_line as san,
@@ -25,27 +25,37 @@ def _tail(st):
     return [st["6_impact_result"]] + ([st["7_settled_end_state"]] if st["7_settled_end_state"] != st["6_impact_result"] else [])
 
 
-def _mouth_lock(dlg, silent=True):
-    """The mouth-state rule, plus the positive lock sentence when nobody on screen speaks (English voice mode)."""
-    return f"{clean_text(dlg['mouth_state_rule'])} {MOUTH_LOCK_SENTENCE}" if silent else clean_text(dlg["mouth_state_rule"])
+def _cast_names(shot, registry):
+    """Names of the shot's cast, [] when the shot has no subject. From registry.cast_names (the blocking sheet, set by
+    convert_pack); without stored names the short disambiguators are used. A subject the registry does not hold gives
+    no names (the previous behaviour, never a KeyError)."""
+    cont = shot["continuity_and_seam_lock"]
+    if not cont.get("subjects_present"):
+        return []
+    names = (registry.get("cast_names") or {}).get(shot["shot_id"])
+    if names:
+        return [clean_text(n) for n in names]
+    by_low = {str(k).lower(): v for k, v in (registry.get("characters") or {}).items()}
+    found = [by_low.get(str(cid).lower()) for cid in cont["subjects_present"]]
+    if not all(isinstance(ch, dict) and ch.get("short_disambiguator") for ch in found):
+        return []
+    return [clean_text(ch["short_disambiguator"]) for ch in found]
+
+
+def _mouth_sentence(shot, registry):
+    """MO-01 per person (M-01): prompt_hygiene.mouth_sentence over the cast, speakers from the blocking speaks flags
+    (cast_lock.speaking). MOUTH_LOCK_SENTENCE only for a zero-cast shot."""
+    names = _cast_names(shot, registry)
+    if not names:
+        return MOUTH_LOCK_SENTENCE
+    speaking = [clean_text(n) for n in (shot.get("cast_lock") or {}).get("speaking") or []]
+    return mouth_sentence(names, speaking)
 
 
 def _cast_sentence(shot, registry):
-    """'Only A and B appear in this shot...' from the blocking cast (registry.cast_names, set by convert_pack from the
-    blocking sheet). Empty when the shot has no subject. Without stored names the short disambiguators are used."""
-    cont = shot["continuity_and_seam_lock"]
-    if not cont.get("subjects_present"):
-        return ""
-    names = (registry.get("cast_names") or {}).get(shot["shot_id"])
-    if not names:
-        # registry lookup by id, ignoring case; a subject the registry does not hold (no blocking sheet, short
-        # character list) gives no cast line, the previous behaviour, never a KeyError
-        by_low = {str(k).lower(): v for k, v in (registry.get("characters") or {}).items()}
-        found = [by_low.get(str(cid).lower()) for cid in cont["subjects_present"]]
-        if not all(isinstance(ch, dict) and ch.get("short_disambiguator") for ch in found):
-            return ""
-        names = [ch["short_disambiguator"] for ch in found]
-    return cast_line([clean_text(n) for n in names])
+    """'Only A and B appear in this shot...' from the blocking cast. Empty when the shot has no subject."""
+    names = _cast_names(shot, registry)
+    return cast_line(names) if names else ""
 
 
 def _sound_check(shot, registry, snd):
@@ -85,7 +95,7 @@ def _speech_sentences(shot, registry):
     return " ".join(out)
 
 
-def _fl2va(shot, registry):
+def _fl2va(shot, registry, start_only=False):
     prof, style = registry["execution_profile"], registry.get("style_lock")
     if not style:
         raise ValueError("registry has no style_lock (the prompt prefix); lint_story reports it as PO-05")
@@ -95,20 +105,27 @@ def _fl2va(shot, registry):
     cam = clean_text(shot["camera"]["compiled_clause"])
     ctx = voice_context(shot, registry)
     speech = _speech_sentences(shot, registry) if ctx else ""
+    pics = "Picture 1" if start_only else "Picture 1 and Picture 2"
+    chain = clean_text((shot.get("cast_lock") or {}).get("chain_header") or "")   # M-03: chained clip (chain_step.chain_header)
     body = san(" ".join([
         f"[Shot 1] {clean_text(style['mandatory_prefix'])}, preserving the exact character design, "
-        "color palette, lighting, and environment in Picture 1 and Picture 2.",
+        f"color palette, lighting, and environment in {pics}.",
+        *([chain] if chain else []),
         stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
         stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
         *([_cast_sentence(shot, registry)] if shot["continuity_and_seam_lock"].get("subjects_present") else []),
-        _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
+        _mouth_sentence(shot, registry),
         *_tail(stage)]))
     snd = compiled_soundscape(shot, registry)  # shared with the linter (SD-03)
     _sound_check(shot, registry, snd)
     music = clean_text(shot["sound_plan"]["non_diegetic_music"])
-    header = (f"How the reference pictures align with the target video — Picture 1 (from Shot 1) "
-              f"aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns "
-              f"with the {pf / fps:.2f}-second mark of the target video.")
+    if start_only:   # start-only (S, M-02): one picture, no end anchor
+        header = ("For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) "
+                  "is fully referenced.")   # official I2VA first-frame line (B-02; MiniMax HF guide, U1/U3)
+    else:
+        header = (f"How the reference pictures align with the target video — Picture 1 (from Shot 1) "
+                  f"aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 1) aligns "
+                  f"with the {pf / fps:.2f}-second mark of the target video.")
     prompt = (f"{header}\nintegrated_multimodal_description: {body}\n"
               f"overall_soundscape: {snd}\nnon_diegetic_music: {music}")
     return prompt, body
@@ -139,7 +156,7 @@ def _ref2va(shot, registry):
     body = san(" ".join([stage["1_starting_state"], stage["2_anticipation"], stage["3_initiation"],
                          stage["4_drive"], stage["5_contact_approach"], cadence, cam, speech,
                          *([_cast_sentence(shot, registry)] if cont.get("subjects_present") else []),
-                         _mouth_lock(shot["dialogue_and_lip_lock"], ctx["silent"] if ctx else True),
+                         _mouth_sentence(shot, registry),
                          *_tail(stage)]))
     _sound_check(shot, registry, compiled_soundscape(shot, registry))
     sections = [
@@ -156,8 +173,9 @@ def _ref2va(shot, registry):
     return text, body
 
 
-def compile_fl2va_prompt(shot, registry):
+def compile_fl2va_prompt(shot, registry, start_only=False):
     """The prompt of one shot (FL2VA layout, or the Ref2VA 6-section layout for Ref2VA-routed shots).
+    start_only (M-02): the start-only layout; a shot routed I2VA (no picture_2) gets it too.
     Raises PromptRefused (SL-01..SL-04) when speech is present in the source, ValueError when the shot has no shot_id."""
     if not isinstance(shot.get("shot_id"), str) or not shot["shot_id"]:
         raise ValueError("shot has no shot_id; the prompt cannot be named or saved")
@@ -165,7 +183,15 @@ def compile_fl2va_prompt(shot, registry):
     if route_shot(shot) == REF2VA:
         prompt, body = _ref2va(shot, registry)
     else:
-        prompt, body = _fl2va(shot, registry)
+        if start_only or route_shot(shot) == "I2VA":   # FL2VA keeps the two-argument call
+            prompt, body = _fl2va(shot, registry, True)
+        else:
+            prompt, body = _fl2va(shot, registry)
+    if find_cue_glue(body):   # D1 = B: no sound cue is glued onto an action sentence
+        raise ValueError(f"{shot['shot_id']}: cue glue in the description: {find_cue_glue(body)[0]!r}")
+    dups = find_duplicate_sentences(body)
+    if dups:
+        raise ValueError(f"{shot['shot_id']}: duplicate sentence in the description: {dups[0]!r}")
     if "\n\n" in prompt:
         raise ValueError(f"{shot['shot_id']}: blank line in compiled prompt")
     return {"shot_id": shot["shot_id"], "compiled_prompt": prompt,
@@ -173,14 +199,17 @@ def compile_fl2va_prompt(shot, registry):
             "stripped_tags": stripped_tags_of(shot)}
 
 
-def compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_pass=False, keyframes=None):
+def compile_comfyui_workflow(shot, registry, compiled_prompt, enable_2k_second_pass=False, keyframes=None, start_only=False):
+    """start_only (M-02): the I2VA workflow, the same conditioning node with the end picture left empty (None)."""
     prof = registry["execution_profile"]
     k, t = shot["fl2va_keyframes"], shot["timing_and_lattice"]
-    route = route_shot(shot)
-    if route not in ("FL2VA", REF2VA):
-        raise ValueError(f"route {route} has no sing8 workflow (only FL2VA and Ref2VA)")
+    route = "I2VA" if start_only else route_shot(shot)
+    if route not in ("FL2VA", REF2VA, "I2VA"):
+        raise ValueError(f"route {route} has no sing8 workflow (only FL2VA, Ref2VA and I2VA)")
     ns = prof["checkpoint_architecture_namespace"]
     kf = keyframes or {"picture_1": k.get("picture_1_path"), "picture_2": k.get("picture_2_path")}
+    if route == "I2VA":
+        kf = {**kf, "picture_2": None}
     w, h = prof["base_resolution"]
     ms = prof["model_sampling_av"]
     refs = ref_inventory(shot)["images"]

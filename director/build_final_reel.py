@@ -37,6 +37,8 @@ from core.captions import ass_time  # noqa: E402
 from core.style_pack import load_core  # noqa: E402
 from h3 import assemble_reel as ar  # noqa: E402
 from h3 import gate_d_audio as gd  # noqa: E402
+from h3 import silence_rule as sr  # noqa: E402
+import text_card_qa as tcq  # noqa: E402
 import caption_fields as cf  # noqa: E402
 import voice_manifest as vm  # noqa: E402
 import clip_qa  # noqa: E402
@@ -83,6 +85,31 @@ def has_lines(row, lang):
     a = row.get("audio_and_dialogue_track") or {}
     narration = ((a.get("narration_by_lang") or {}).get(lang) or {}).get("text")
     return bool(narration) or bool((a.get("dialogue_by_lang") or {}).get(lang))
+
+
+def clean_argv(argv, pre_vf=None):
+    """G15: the same mux argv without the caption burn: the video goes through the delivery crop (pre_vf, else null) and the
+    same libx264 settings, the audio graph is untouched, so the audio is the same as the burned export's."""
+    if "-filter_complex" not in argv:                   # a stubbed or draft argv has no graph to strip
+        return list(argv)
+    i = argv.index("-filter_complex")
+    out = list(argv)
+    out[i + 1] = f"{argv[i + 1].rsplit(';[0:v]', 1)[0]};[0:v]{pre_vf or 'null'}[vsub]"
+    return out
+
+
+def burned_from_clean_argv(clean, burned, ass, fonts_dir):
+    """Optional burned export, cut from the finished clean export: audio stream copied (same bytes), video gets the ass burn."""
+    return ["ffmpeg", "-y", "-i", str(clean), "-vf", gd.build_subtitles_filter(ass, fonts_dir), "-c:v", "libx264", "-crf", "14",
+            "-preset", "slow", "-pix_fmt", "yuv420p", "-r", str(gd.FPS), "-c:a", "copy", "-movflags", "+faststart", str(burned)]
+
+
+def audio_sha256(path):
+    """sha256 of the audio stream alone (copied out as ADTS), so two files with different video can be compared."""
+    done = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-vn", "-c:a", "copy", "-f", "adts", "-"], capture_output=True)
+    if done.returncode != 0 or not done.stdout:
+        raise SystemExit(f"audio sha: cannot read the audio of {path}")
+    return hashlib.sha256(done.stdout).hexdigest()
 
 
 def mux_argv(rows, lang, vo_dir, video, export, ass, fonts_dir, pre_vf=None, sfx_policy=None):
@@ -216,10 +243,11 @@ def manifest_by_id(manifest):
     return by_id
 
 
-def spoken_cues_real(rows, report, lang, manifest, font_file=None):
-    """Caption cues from the REAL packed voice timings (vo_tracks_report.json of the language). spoken_text is the voice manifest
-    text of "<line>.<lang>" (its sha256 must equal text_sha256). Caption text comes from the shots.json line keys caption_text and
-    caption_diff_approved, resolved by caption_fields (a caption difference needs the owner's approval and the same word count)."""
+def line_captions(rows, report, lang, manifest):
+    """[(caption_text, start, end)] on the reel clock, one per spoken line of `lang`, in report order (the voice report times).
+    spoken_text is the voice manifest text of "<line>.<lang>" (its sha256 must equal text_sha256). Caption text comes from the
+    shots.json line keys caption_text and caption_diff_approved, resolved by caption_fields (a caption difference needs the
+    owner's approval and the same word count)."""
     offsets, t = {}, 0.0
     for r in rows:
         offsets[r["id"]] = t
@@ -251,14 +279,72 @@ def spoken_cues_real(rows, report, lang, manifest, font_file=None):
         captions = {c["id"]: c["text"] for c in cf.caption_lines(lines)}
     except cf.CaptionError as exc:
         raise SystemExit(f"{lang} captions: {exc}") from exc
+    return [(captions[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"])
+            for sh in report if sh["lang"] == lang for ln in sh["lines"]]
+
+
+def spoken_cues_real(rows, report, lang, manifest, font_file=None):
+    """Caption cues from the REAL packed voice timings (see line_captions): spec-v2 word cards per spoken line."""
     fits = caption_fits(font_file, lang) if font_file else None
     cues = []
-    for sh in report:
-        if sh["lang"] != lang:
-            continue
-        for ln in sh["lines"]:
-            cues += word_cues(captions[ln["id"]], offsets[sh["shot"]] + ln["start"], offsets[sh["shot"]] + ln["end"], lang, fits)
+    for text, t0, t1 in line_captions(rows, report, lang, manifest):
+        cues += word_cues(text, t0, t1, lang, fits)
     return sorted(cues, key=lambda c: c["t0"])
+
+
+SRT_LINE_CHARS, SRT_MAX_LINES, SRT_MIN_SEC = 42, 2, 1.0       # B-07: YouTube line mode (Netflix 42 x 2; code points)
+
+
+def _srt_wrap(words):
+    """Greedy wrap into lines of at most SRT_LINE_CHARS code points; returns a list of cue texts of at most SRT_MAX_LINES lines."""
+    cues, lines, cur = [], [], ""
+    for w in words:
+        if cur and len(cur) + 1 + len(w) > SRT_LINE_CHARS:
+            lines.append(cur)
+            cur = ""
+            if len(lines) == SRT_MAX_LINES:
+                cues.append("\n".join(lines))
+                lines = []
+        cur = f"{cur} {w}" if cur else w
+    if cur:
+        lines.append(cur)
+    if lines:
+        cues.append("\n".join(lines))
+    return cues
+
+
+def srt_line_cues(lines):
+    """YouTube SRT cues, one block per spoken line: [(text, start, end)] -> [{"t0", "t1", "text"}]. A line is split at sentence
+    ends, each piece wrapped to at most 42 characters x 2 lines (more cues when it does not fit); the line's own time span is shared
+    by letters, so the first cue starts and the last ends exactly at the voice report times. A cue shorter than 1.0 s is stretched
+    to 1.0 s when the next cue starts later (never past it)."""
+    cues = []
+    for text, t0, t1 in lines:
+        pieces = []
+        for sent in re.split(r"(?<=[.?!।])\s+", " ".join(text.split())):
+            pieces += _srt_wrap(sent.split()) if sent else []
+        weights = [max(1, len(p.replace("\n", " "))) for p in pieces]
+        cur = t0
+        for i, (p, wt) in enumerate(zip(pieces, weights)):
+            end = t1 if i == len(pieces) - 1 else cur + (t1 - t0) * wt / sum(weights)
+            cues.append({"t0": round(cur, 3), "t1": round(end, 3), "text": p})
+            cur = end
+    for a, nxt in zip(cues, cues[1:] + [None]):
+        want = a["t0"] + SRT_MIN_SEC
+        if a["t1"] < want:
+            a["t1"] = round(want if nxt is None else max(a["t1"], min(want, nxt["t0"])), 3)
+    return cues
+
+
+def write_srt(cues, path):
+    """UTF-8 without BOM, LF, HH:MM:SS,mmm (core.caption_export.to_srt). Returns the sha256 of the file."""
+    from core import caption_export as cx
+    srt, entries = cx.to_srt(cues)
+    fails = [e["message"] for e in entries if e["level"] == "FAIL"]
+    if fails or not srt:
+        raise SystemExit(f"SRT {path}: " + ("; ".join(fails) or "no cues"))
+    Path(path).write_text(srt, encoding="utf-8", newline="\n")
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def caption_ass(cues, lang, fonts_dir):
@@ -363,7 +449,7 @@ def _rms_db_ratio(num, den):
     return 20.0 * math.log10(rms(num) / rms(den))
 
 
-def intake(mix, voice, total_frames, report_rows, work_dir=None):
+def intake(mix, voice, total_frames, report_rows, work_dir=None, voice_rest=(), silence_ok=(), waived=frozenset()):
     """Check a DAW mix of the whole reel against its voice-only render (rules 48, 50(3)). Length: the mix must hold the lock's
     total (total_frames x 2000 samples at 48 kHz / 24 fps); longer is trimmed to exactly that. Bus = mix - voice. Voice over bus
     per speech window: median in [15, 21.5] dB and minimum >= 12 dB. report_rows: [{offset_sec, lines: [{start, end}]}] (the
@@ -401,6 +487,10 @@ def intake(mix, voice, total_frames, report_rows, work_dir=None):
     work.mkdir(parents=True, exist_ok=True)
     trimmed = work / f"{Path(mix).stem}_trim{need}.wav"
     write_wav_pcm16(trimmed, m, MIX_RATE)
+    rule = sr.check_wav(trimmed, voice_rest, silence_ok)           # NO_SILENCE v2 on the mix, before muxing
+    bad = [e for e in rule["errors"] if e["code"] not in waived or e["code"] in sr.CRITICAL]
+    if bad:
+        raise SystemExit("mix fails NO_SILENCE v2: " + "; ".join(sr.fail_text(e) for e in bad))
     return {"trimmed_path": str(trimmed), "median_db": round(med, 2), "min_db": round(low, 2), "samples": need}
 
 
@@ -478,6 +568,11 @@ def build_arg_parser():
     ap.add_argument("--title-cards", action="store_true", help="burn the writer's title cards instead of the spoken words (old behaviour)")
     ap.add_argument("--story-id", help="story id that scoped waivers name (default: the story json's story_id, else the pack folder name)")
     ap.add_argument("--render-version", help="render version that version-scoped waivers name (default: none; only unversioned waivers match)")
+    ap.add_argument("--ocr", help="JSON of OCR read from card frames: [{\"lang\", \"expected_text\", \"title\", \"items\": "
+                    "[{\"text\", \"box\": [x0, y0, x1, y1]}]}]; when given, text-card QA runs and a problem blocks the language")
+    ap.add_argument("--burned-captions", action="store_true",
+                    help="G15: also write a burned-caption export (<export stem>_burned.mp4). Default: only the clean export (no burned "
+                    "captions) for every language, for Instagram and YouTube; the SRT is written either way")
     ap.add_argument("--mix", action="append", type=lang_path, default=[], metavar="LANG=WAV",
                     help="the DAW mix of the whole reel for LANG (X-17): trimmed to the lock length, used as the language's audio")
     ap.add_argument("--mix-voice", action="append", type=lang_path, default=[], metavar="LANG=WAV",
@@ -542,7 +637,8 @@ def lock_rows_for_pack(lock_path, pack):
     pack_rows = {r["id"]: r for r in json.loads((Path(pack) / "shots.json").read_text(encoding="utf-8"))}
     if [r["id"] for r in rows] != list(pack_rows):
         raise SystemExit("lock shots and pack shots.json differ in id or order")
-    return [{**pack_rows[r["id"]], **r} for r in rows]
+    extra = {sh["id"]: {k: sh[k] for k in ("voice_rest", "silence_ok") if sh.get(k) is not None} for sh in lock["shots"]}
+    return [{**pack_rows[r["id"]], **extra[r["id"]], **r} for r in rows]    # M-34: lock_rows drops these two keys
 
 
 def check_story_trims(h3_shots, rows):
@@ -554,6 +650,69 @@ def check_story_trims(h3_shots, rows):
         if (t.get("trim_in_frame"), t.get("trim_out_frame")) != (r["trim_in_frame"], r["trim_out_frame"]):
             raise SystemExit(f"{r['id']}: H3 story trims {t.get('trim_in_frame')}..{t.get('trim_out_frame')} "
                              f"differ from the lock {r['trim_in_frame']}..{r['trim_out_frame']}")
+
+
+def master_wav_argv(video, wav):
+    """ffmpeg argv: the audio of the reel master as 16-bit 48 kHz stereo WAV (gate_d.check_no_silence reads PCM16)."""
+    return ["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vn", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", str(wav)]
+
+
+def lra_warnings(lra):
+    """LRA above the core delivery limit is a warning only (M-09)."""
+    if lra is not None and lra > gd.LOUDNESS["lra"] + 1e-9:
+        return [f"LRA {lra} LU above {gd.LOUDNESS['lra']} LU (warn only)"]
+    return []
+
+
+def audio_gate_from_wav(wav):
+    """(errors, warnings) of the PRE-MIX clip audio. Errors is always empty: the model's own sound is muted or ducked later (rule
+    50(6)), so a quiet clip is not a defect. Every silence finding becomes a CLIP_AUDIO_QUIET warning string."""
+    rep = sr.check_wav(wav)
+    return [], [f"CLIP_AUDIO_QUIET: {sr.fail_text(f)}" for f in rep["errors"] + rep["warnings"]]
+
+
+def export_silence_check(export, work_dir, voice_rest=(), silence_ok=(), waived=frozenset()):
+    """NO_SILENCE v2 on the REAL per-language master: decode the finished export and run the rule. Returns (blocking, report):
+    blocking = findings whose code is not in `waived` (only DEAD_AIR can ever be waived); report is the rule's own dict plus
+    "waived". A decode failure blocks."""
+    work = Path(work_dir)
+    work.mkdir(parents=True, exist_ok=True)
+    wav = work / (Path(export).stem + "_master.wav")
+    done = subprocess.run(master_wav_argv(export, wav), capture_output=True, text=True)
+    if done.returncode != 0 or not wav.is_file():
+        err = {"code": "MASTER_DECODE", "where": str(export), "message": f"decode failed: {done.stderr.strip()[:200]}"}
+        return [err], {"ok": False, "errors": [err], "warnings": [], "stats": {}, "waived": []}
+    rep = sr.check_wav(wav, voice_rest, silence_ok)
+    blocking = [e for e in rep["errors"] if e["code"] not in waived or e["code"] in sr.CRITICAL]
+    rep["waived"] = [e for e in rep["errors"] if e not in blocking]
+    return blocking, rep
+
+
+def rest_windows(rows):
+    """(voice_rest, silence_ok) on the REEL clock from the lock rows: shot-relative [a, b] lists in row["voice_rest"] and
+    row["silence_ok"] (blocking sheet, B-10) moved by the row's offset_sec. Rows without the fields give nothing."""
+    out = ([], [])
+    for r in rows:
+        for k, key in enumerate(("voice_rest", "silence_ok")):
+            val = r.get(key) or []
+            if val and not isinstance(val[0], (list, tuple)):    # the sheet's one [t0, t1] pair, or a list of pairs
+                val = [val]
+            out[k].extend(sr.reel_windows([tuple(w) for w in val], float(r["offset_sec"])))
+    return out
+
+
+def master_audio_check(video, work_dir):
+    """Decodes the reel master's audio to WAV, then runs NO_SILENCE (errors) and the LRA warning (warnings)."""
+    work = Path(work_dir)
+    work.mkdir(parents=True, exist_ok=True)
+    wav = work / "master_audio.wav"
+    done = subprocess.run(master_wav_argv(video, wav), capture_output=True, text=True)
+    if done.returncode != 0 or not wav.is_file():
+        return [f"master audio decode failed: {done.stderr.strip()[:200]}"], []
+    errors, warnings = audio_gate_from_wav(wav)
+    loud = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(wav), "-af", "ebur128=peak=true", "-f", "null", "-"],
+                          capture_output=True, text=True)
+    return errors, warnings + lra_warnings(gd.parse_lra(loud.stderr))
 
 
 def main(argv=None):
@@ -581,6 +740,9 @@ def main(argv=None):
     (out / "captions").mkdir(parents=True, exist_ok=True)
     video = out / f"{a.reel}_video.mp4"
     plan = assemble_video(h3_shots, clips, video, out / "assembly")
+    audio_errors, audio_warnings = master_audio_check(video, out / "audio_check")
+    if audio_errors:
+        raise SystemExit("master audio blocks the build:\n  " + "\n  ".join(audio_errors))
     pre_vf = delivery_vf(probe_size(video))
     langs = a.langs.split(",")
     mix, mix_voice = dict(a.mix), dict(a.mix_voice)
@@ -588,11 +750,14 @@ def main(argv=None):
         raise SystemExit("--mix and --mix-voice must name the same languages, each one listed in --langs")
     res = gd.plan_language_outputs(a.reel, langs, a.vo, None, shots=rows, video_path=str(video), video_has_audio=True, burn_captions=True,
                                    captions_dir=str(out / "captions"), export_dir=str(out / "export"), fonts_dir=a.fonts,
-                                   voice_engines={lg: "elevenlabs" for lg in langs})
+                                   voice_engines={lg: "elevenlabs" for lg in langs},
+                                   story_gate_checks=story.get("story_gate_checks"))   # absent = closing gate blocks (fail closed)
     report = {"reel": a.reel, "video": str(video), "frames": plan["total_frames"], "seconds": plan["total_duration_sec"],
               "story_id": story_id, "render_version": a.render_version,
               "waiver_problems": [{"waiver_id": wid, "reason": why} for wid, why in waiver_problems], "languages": {}}
+    report["master_audio"] = {"errors": audio_errors, "warnings": audio_warnings}
     stop = False
+    ocr_cards = json.loads(Path(a.ocr).read_text(encoding="utf-8")) if a.ocr else None
     for lg in langs:
         rep, lp = res["reports"][lg], res["languages"][lg]
         codes = [e["code"] for e in rep["errors"]]
@@ -608,8 +773,11 @@ def main(argv=None):
         report_path = Path(a.vo) / "vo_tracks_report.json"      # one report for all languages (build_vo_tracks --out <vo>)
         if a.title_cards:
             cues = lp["captions"]                       # the writer's title cards (old behaviour, only on request)
+            srt_cues = cues
         else:
-            cues = spoken_cues_real(rows, json.loads(report_path.read_text(encoding="utf-8")), lg, load_manifest_rows(a.manifest, lg), Path(a.fonts) / CAPTION_FONT_FILE)   # captions = the spoken words, hash-checked (D-VOICE)
+            vo_json, mrows = json.loads(report_path.read_text(encoding="utf-8")), load_manifest_rows(a.manifest, lg)
+            cues = spoken_cues_real(rows, vo_json, lg, mrows, Path(a.fonts) / CAPTION_FONT_FILE)   # captions = the spoken words, hash-checked (D-VOICE)
+            srt_cues = srt_line_cues(line_captions(rows, vo_json, lg, mrows))     # YouTube SRT: one block per spoken line (B-07)
         for msg in gd.script_problems(cues, lg) if hasattr(gd, "script_problems") else []:
             raise SystemExit(f"{lg}: {msg}")
         ass_text, entries = gd.build_captions(cues, lang=lg, pack=CAPTION_PACK, fonts_dir=a.fonts)
@@ -617,17 +785,25 @@ def main(argv=None):
         if fails:
             raise SystemExit(f"{lg} captions: " + "; ".join(fails))
         ass.write_text(ass_text if cues is lp["captions"] else caption_ass(cues, lg, a.fonts), encoding="utf-8", newline="\n")
-        from core import caption_export as cx
         entry["caption_warnings"] = sorted({e["message"] for e in entries if e["level"] == "WARN"})[:6]
         entry["captions"] = {"cues": len(cues), "mode": "title cards" if cues is lp["captions"] else "spoken words"}
-        cx.write_sidecars({lg: cues}, str(out / "captions"), a.reel)
+        if ocr_cards is not None:                      # G22: text-card QA, only when the OCR of the card frames is given
+            card_problems = tcq.check_cards(ocr_cards, lg)
+            entry["text_card_qa"] = {"ok": not card_problems, "problems": card_problems}
+            if card_problems:
+                entry["blocking_errors"].append({"code": "TEXT_CARD_QA", "where": lg, "message": "; ".join(card_problems)[:300]})
+                stop = True
+                continue
         export = next_export(out / "export", a.reel, lg)
+        waived_map, _ = wv.split_waived(["DEAD_AIR"], waiver_records, story_id, a.reel, LANG_NAME.get(lg, lg), a.render_version)
+        silence_waived, rest = frozenset(waived_map), rest_windows(rows)
         if lg in mix:
             offs = {r["id"]: float(r["offset_sec"]) for r in rows}
             vo_report = json.loads(report_path.read_text(encoding="utf-8"))
             windows = [{"offset_sec": offs[r["shot"]], "lines": r["lines"]} for r in vo_report if r["lang"] == lg and r["shot"] in offs]
             total_frames = round(sum(float(r["editorial_duration_sec"]) for r in rows) * gd.FPS)
-            info = intake(mix[lg], mix_voice[lg], total_frames, windows, work_dir=out / "mix")
+            info = intake(mix[lg], mix_voice[lg], total_frames, windows, work_dir=out / "mix", voice_rest=rest[0],
+                          silence_ok=rest[1], waived=silence_waived)
             entry["mix"] = info
             total = info["samples"] / MIX_RATE
             argv_ = gd.build_final_mux_argv(video, [info["trimmed_path"]], mix_filter_text(info["samples"]), export, burn_captions=True,
@@ -639,10 +815,34 @@ def main(argv=None):
             if bed_errors:
                 raise SystemExit(f"{lg} SFX beds: " + "; ".join(e["message"] for e in bed_errors))
             argv_, total = mux_argv(rows, lg, a.vo, video, export, ass, a.fonts, pre_vf=pre_vf, sfx_policy=policy)
+        argv_ = clean_argv(argv_, pre_vf)                # G15: the default export carries no burned captions
         check_free_disk(out / "export")
         subprocess.run(argv_, check=True, cwd=str(HERE.parent))
         loud = correct_loudness(export, measure(export))
         entry.update(export=str(export), seconds=round(total, 2), loudness=loud["stats"], loudness_ok=loud["ok"], loudness_errors=loud["errors"])
+        # NO_SILENCE v2 on what the viewer hears: the finished export, decoded (E5)
+        bad, silence = export_silence_check(export, out / "audio_check", rest[0], rest[1], silence_waived)
+        entry["silence"] = silence
+        if bad:
+            rejected = export.with_name(export.stem + "_REJECTED" + export.suffix)
+            export.replace(rejected)
+            entry["export"] = str(rejected)
+            entry["blocking_errors"] += bad
+            stop = True
+            continue
+        if a.burned_captions:                           # explicit flag only: burned copy, same audio stream
+            burned = export.with_name(export.stem + "_burned" + export.suffix)
+            subprocess.run(burned_from_clean_argv(export, burned, ass, a.fonts), check=True, cwd=str(HERE.parent))
+            entry["burned_export"] = str(burned)
+            entry["audio_sha256"], burned_sha = audio_sha256(export), audio_sha256(burned)
+            if burned_sha != entry["audio_sha256"]:
+                entry["blocking_errors"].append({"code": "AUDIO_SHA_MISMATCH", "where": lg,
+                                                 "message": "burned export audio differs from the clean export"})
+                stop = True
+                continue
+        if srt_cues:                                    # next to the export, same name and version, written only after success
+            srt = export.with_suffix(".srt")
+            entry["srt_path"], entry["srt_sha256"] = str(srt), write_srt(srt_cues, srt)
     (out / f"{a.reel}_build_report.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
     for lg, e in report["languages"].items():
         print(lg, "BLOCKED" if e["blocking_errors"] else "built", "| waived:", sorted({w["code"] for w in e["waived_findings"]}),

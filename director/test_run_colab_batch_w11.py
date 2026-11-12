@@ -312,7 +312,7 @@ def test_canary_right_proof_reaches_batch_with_frames(tmp_path, monkeypatch):
     monkeypatch.setattr(r, "batch", fake_batch)
     p = _proof(tmp_path, _sha_of(folder))
     code = r.main(["synth", "--results", str(tmp_path / "res"), "--go", *_margs(tmp_path),
-                   "--canary-proof", str(p)])
+                   "--canary-proof", str(p), "--no-qa"])
     assert code == 0 and seen == {"expected": {"SHOT-001": PF, "SHOT-002": PF}, "gpu": "G4"}
 
 
@@ -528,3 +528,46 @@ def test_deadman_limit_is_applied(tmp_path, monkeypatch, capsys):
 def test_batch_refuses_without_expected(tmp_path):
     with pytest.raises(ValueError):
         r.batch("n", "G4", tmp_path / "run.py", tmp_path / "res", expected={})
+
+
+# ---- G8: post-fetch QA fails closed ---------------------------------------------------------------
+
+def _g8(tmp_path, monkeypatch, extra=()):
+    _batch(tmp_path)
+    monkeypatch.setattr(r, "HERE", tmp_path)
+    monkeypatch.setattr(r, "free_checks", lambda *a, **k: [])
+    monkeypatch.setattr(r, "run_cli", _cli([]))
+    ran = []
+
+    def fake_batch(name, gpu, run_py, results, expected=None, **k):
+        ran.append(1)
+        d = Path(results) / "SHOT-001"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "SHOT-001.mp4").write_bytes(b"x" * 60000)
+    monkeypatch.setattr(r, "batch", fake_batch)
+    return r.main(["synth", "--results", str(tmp_path / "res"), "--go", *_margs(tmp_path), *extra]), ran
+
+
+def test_go_without_qa_plan_refused(tmp_path, monkeypatch, capsys):
+    code, ran = _g8(tmp_path, monkeypatch)
+    out = capsys.readouterr().out
+    assert code == 1 and ran == [] and "REFUSED" in out and "--qa-plan" in out
+
+
+def test_no_qa_flag_recorded_in_history(tmp_path, monkeypatch):
+    code, ran = _g8(tmp_path, monkeypatch, ["--no-qa"])
+    assert code == 0 and ran == [1]
+    doc = json.loads((tmp_path / "res" / "fallback_history.json").read_text(encoding="utf-8"))
+    assert doc["qa_skipped"] is True and doc["shots"]["SHOT-001"][0]["qa_skipped"] is True
+
+
+def test_no_qa_flag_with_plan_is_refused(tmp_path, monkeypatch):
+    code, ran = _g8(tmp_path, monkeypatch, ["--no-qa", "--qa-plan", "p.json", "--routes", "r.json", "--pack", "pk"])
+    assert code == 1 and ran == []
+
+
+def test_dry_run_needs_no_qa_plan(tmp_path, monkeypatch):
+    _batch(tmp_path)
+    monkeypatch.setattr(r, "HERE", tmp_path)
+    monkeypatch.setattr(r, "free_checks", lambda *a, **k: [])
+    assert r.main(["synth", "--results", str(tmp_path / "res"), *_margs(tmp_path)]) == 0

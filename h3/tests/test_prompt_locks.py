@@ -4,8 +4,8 @@ import copy
 import pytest
 
 from h3.compile_h3_sing8 import compile_fl2va_prompt
-from h3.schema_and_linter import (MOUTH_LOCK_PHRASE, PromptRefused, STAGES, lint_story, mouth_state_problems,
-                                  prompt_lock_problems)
+from h3.schema_and_linter import (MOUTH_LOCK_PHRASE, MOUTH_PERSON_RE, PromptRefused, STAGES, lint_story,
+                                  mouth_state_problems, prompt_lock_problems)
 from h3.shot_table_spec import PROMPT_CHAR_LIMIT
 from h3.tests.synth import SPEECH_UTTERANCE, build_story, codes
 
@@ -144,7 +144,7 @@ TAMPERS = {
     "TG-01": lambda t: _emit_tamper(t, "@CHAR-01 here."),
     "TX-01": lambda t: _emit_tamper(t, 'A sign "OPEN" here.'),
     "LEN-01": lambda t: _emit_tamper(t, "x" * PROMPT_CHAR_LIMIT),
-    "MO-01": lambda t: t.replace(MOUTH_LOCK_PHRASE, "lips move"),
+    "MO-01": lambda t: MOUTH_PERSON_RE.sub("lips move", t.replace(MOUTH_LOCK_PHRASE, "lips move")),
     "SX-01": lambda t: t.replace("Sound effects only:", "Sound effects only: One. Two. Three. Four. Five."),
 }
 
@@ -176,11 +176,19 @@ def test_compiler_refuses_speech_with_its_code(tmp_path):
 
 # ---- SX-01 source rule: a sound cue in all 7 action sentences (owner 2026-11-07) ----
 
-@pytest.mark.parametrize("cue_stages, ok", [(7, True), (6, False)])
-def test_sx01_stage_cue_count(tmp_path, cue_stages, ok):
+@pytest.mark.parametrize("cue_stages", [7, 6, 0])
+def test_sx_min_zero_no_stage_error(tmp_path, cue_stages):
+    """M-01 (D1 = B): sound cues left the action sentences, so no per-stage cue count is required any more."""
     story = build_story(str(tmp_path))
     story["registry"]["execution_profile"]["min_imd_body_chars"] = 50  # the short test stages are below the 600 default
     shot = story["episodes"][0]["shots"][0]
     for i, key in enumerate(STAGES):
         shot["motion_7_stage"][key] = "A sharp thud lands." if i < cue_stages else "The figure stands still."
-    assert ("SX-01" not in codes(lint_story(story)["errors"])) is ok
+    assert "SX-01" not in codes(lint_story(story)["errors"])
+
+
+@pytest.mark.parametrize("replacement", ["Sati keeps their lips completely closed", "Sati speaks with moving lips",
+                                         "Sati keeps their lips closed"])
+def test_mo01_accepts_mouth_sentence(replacement):
+    """M-01: the per-person mouth sentence from prompt_hygiene satisfies MO-01 without the positive lock phrase."""
+    assert "MO-01" not in _codes_of(_prompt().replace(MOUTH_LOCK_PHRASE, replacement))

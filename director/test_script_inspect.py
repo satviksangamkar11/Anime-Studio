@@ -339,9 +339,10 @@ def test_from_pack_runs_inspect():
     assert [s["id"] for s in shots] == ["R2-01", "R2-02"]
 
 
-def test_pack_line_at_0_7_fails_h2():
+def test_pack_line_at_1_2_fails_h2():
+    # H2 voice band is 0.3-1.0 s (M-08): a line at 1.2 s is outside it.
     row = pack_row("R2-03", 5.0, [{"t0": 0.0, "t1": 1.0, "action_pose_expression": "Rama turns"}],
-                   {"text": "late line", "time_range": "0.7-2.0s"}, [])
+                   {"text": "late line", "time_range": "1.2-2.0s"}, [])
     res = script_inspect.inspect_script(script_inspect.from_pack([row], "en"), "en")
     assert res["hook"]["pass"] is False
     assert any(text.startswith("H2") for text in res["hook"]["hard_fails"])

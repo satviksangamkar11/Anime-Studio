@@ -29,6 +29,12 @@ SHIVA_SEATED_TO_STANDING = {
 }
 
 
+
+@pytest.fixture(autouse=True)
+def _s_gate_off(monkeypatch):
+    # M-32: S is the default route now; this file pins the SE behaviour (A and B jobs), so it switches the S gate off
+    monkeypatch.setenv("SHOT_MODE_S_ALLOW", "0")
+
 def create_flow_root(tmp_path):
     """Create a mock flow root with plates directory and plates.json."""
     flow_root = tmp_path / "flow"
@@ -109,7 +115,7 @@ def test_job_keys_match_build_jobs(tmp_path, monkeypatch):
     fixture_job = _build_jobs_fixture()
     job_a, job_b = keyframe_jobs.jobs_for_shot(FakeSheet(SHOT_NAME), PLATE_ID, BIBLE_NAMES)
     assert set(job_a) == JOB_KEYS
-    assert set(job_b) == JOB_KEYS
+    assert set(job_b) == JOB_KEYS | {"chip_ref_id"}  # B is generate_with_chip (M-06b)
     # Every key we emit is a key the real build_jobs job carries (same names, same schema)
     assert JOB_KEYS <= set(fixture_job)
 
@@ -122,7 +128,8 @@ def test_b_is_edit_of_a(tmp_path, monkeypatch):
     assert job_b["base_edit_id"] == f"{SHOT_NAME}-A"
     assert job_b["chips"] == [f"{SHOT_NAME}-A final"]
     assert len(job_b["chips"]) == 1
-    assert job_a["method"] == "edit" and job_b["method"] == "edit"
+    assert job_a["method"] == "edit" and job_b["method"] == "generate_with_chip"
+    assert job_b["chip_ref_id"] == f"{SHOT_NAME}-A final"
 
 
 def test_a_chip_is_plate_under_flow_root_plates(tmp_path, monkeypatch):
@@ -145,8 +152,7 @@ def test_b_instruction_from_change_list(tmp_path, monkeypatch):
     jobs = keyframe_jobs.jobs_for_shot(sheet_with([SHIVA_SEATED_TO_STANDING]), PLATE_ID, BIBLE_NAMES)
     job_b = jobs[1]
     expected_instruction = (
-        "same picture, make these exact changes only: 1) SHIVA: seated -> standing "
-        "2) keep everything else exactly the same"
+        "Same picture, same framing, same light, same background. Change only: 1) SHIVA now stands."
     )
     assert job_b["edit_instruction"] == expected_instruction
 

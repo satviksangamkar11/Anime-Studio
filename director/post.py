@@ -3,7 +3,7 @@
 CLI:
   python director/post.py EPISODE_BUILD_DIR --story stories/<slug>/story.json [--episode-json PATH]
       [--styles-dir DIR] [--fonts-dir DIR] [--upscale-cmd "CMD {in} {out}"] [--out FILE]
-      [--no-captions] [--no-sidecars] [--platform reels|shorts|youtube] [--language en|hi|mr] [--voice elevenlabs|h3] [--vo-dir DIR] [--dry-run]
+      [--no-captions] [--sidecars] [--platform reels|shorts|youtube] [--language en|hi|mr] [--voice elevenlabs|h3] [--vo-dir DIR] [--dry-run]
 
 EPISODE_BUILD_DIR layout:
   episode.json          h3 episode {"episode_id", "shots": [h3 shots]}; --episode-json overrides the path
@@ -32,7 +32,8 @@ Grading: an act with neither a LUT file nor grade numbers exports ungraded; this
 colour_report.json carries graded: false (and graded_by_act).
 Captions: --platform picks core.safe_zone_templates (default: core.safe_zone_frac); the fonts dir is used to measure and
 wrap the text (at most 2 lines) and to check every glyph; a real run first checks that ffmpeg has libass and HarfBuzz and,
-after the final file is written, writes <final>.<lang>.srt and .vtt next to it (--no-sidecars turns that off).
+after the final file is written, writes <final>.<lang>.srt and .vtt next to it only with --sidecars (OFF by default:
+reels take the SRT from build_final_reel).
 
 run_post() never raises: bad input becomes a POST FAIL entry. A dry run starts no subprocess and writes no file.
 """
@@ -283,7 +284,7 @@ def _write_colour_report(build, report):
 
 
 def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts_dir=None, upscale_cmd=None,
-             out=None, captions=True, dry_run=False, platform=None, sidecars=True, language=None, voice=None,
+             out=None, captions=True, dry_run=False, platform=None, sidecars=False, language=None, voice=None,
              vo_dir=None):
     """Grade, insert impacts, caption, encode and gate one episode. Returns the report dict."""
     report = {"episode": None, "fail": False, "written": False, "output": None, "steps": [], "entries": [],
@@ -301,7 +302,7 @@ def run_post(build_dir, story_path, *, episode_json=None, styles_dir=None, fonts
 
 
 def _run(build, report, story_path, episode_json, styles_dir, fonts_dir, upscale_cmd, out, captions, dry_run,
-         platform=None, sidecars=True, language_override=None, voice_arg=None, vo_dir=None):
+         platform=None, sidecars=False, language_override=None, voice_arg=None, vo_dir=None):
     entries, steps = report["entries"], report["steps"]
 
     def fail(msg, shot=None):
@@ -693,7 +694,8 @@ def main(argv=None):
     p.add_argument("--upscale-cmd")
     p.add_argument("--out")
     p.add_argument("--no-captions", action="store_true")
-    p.add_argument("--no-sidecars", action="store_true")
+    p.add_argument("--sidecars", action="store_true", help="write YouTube SRT/VTT (off: SRT comes from build_final_reel)")
+    p.add_argument("--no-sidecars", action="store_true", help="accepted for old scripts; sidecars are off by default")
     p.add_argument("--platform", choices=("reels", "shorts", "youtube"))
     p.add_argument("--language", choices=("en", "hi", "mr"))
     p.add_argument("--voice", choices=("elevenlabs", "h3"))
@@ -703,7 +705,7 @@ def main(argv=None):
     report = run_post(args.build_dir, args.story, episode_json=args.episode_json, styles_dir=args.styles_dir,
                       fonts_dir=args.fonts_dir, upscale_cmd=args.upscale_cmd, out=args.out,
                       captions=not args.no_captions, dry_run=args.dry_run, platform=args.platform,
-                      sidecars=not args.no_sidecars, language=args.language, voice=args.voice,
+                      sidecars=args.sidecars and not args.no_sidecars, language=args.language, voice=args.voice,
                       vo_dir=args.vo_dir)
     print(json.dumps(report, indent=1, ensure_ascii=False))
     return 1 if report["fail"] else 0

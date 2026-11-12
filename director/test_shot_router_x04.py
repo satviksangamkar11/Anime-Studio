@@ -87,7 +87,7 @@ def test_plan_from_blocking_uses_lock_seconds(monkeypatch):
 
 
 def test_kfi_case_routes_to_fl2va():
-    routes = plan_from_blocking({"SHOT-001": _sheet(arc_sec=2.0)}, _lock(168))
+    routes = plan_from_blocking({"SHOT-001": _sheet(arc_sec=2.0)}, _lock(168), allow_s=False)   # M-32: S default
     res = routes["SHOT-001"]
     assert res["route"] == "KFI"
     assert res["h3_mode"] == "FL2VA"
@@ -95,7 +95,7 @@ def test_kfi_case_routes_to_fl2va():
 
 
 def test_soft_se_case_short_arc():
-    routes = plan_from_blocking({"SHOT-001": _sheet(arc_sec=1.0)}, _lock(168))
+    routes = plan_from_blocking({"SHOT-001": _sheet(arc_sec=1.0)}, _lock(168), allow_s=False)   # M-32
     assert routes["SHOT-001"]["route"] == "SOFT_SE"
 
 
@@ -181,7 +181,8 @@ def test_every_gpu_route_has_h3_mode():
     assert H3_MODE["SE"] == "FL2VA"
 
 
-def test_routes_json_carries_lock_sha(tmp_path):
+def test_routes_json_carries_lock_sha(tmp_path, monkeypatch):
+    monkeypatch.setenv("SHOT_MODE_S_ALLOW", "0")   # M-32: S is on by default; this test pins the SE-family routes
     blocking_dir = tmp_path / "blocking"
     blocking_dir.mkdir()
     for shot_id, arc in (("SHOT-001", 2.0), ("SHOT-002", 0.0)):
@@ -210,6 +211,6 @@ def test_routes_json_carries_lock_sha(tmp_path):
 def test_existing_route_shot_unchanged_by_x04():
     # guard: X-04 adds code only; the plain rule path still gives SE with the fallback reason
     res = route_shot({"kind": "acting", "duration_sec": 4.0, "needs_end_pose": False,
-                      "cast_count": 1, "multi_arm": False, "arc_sec": 0.0})
+                      "cast_count": 1, "multi_arm": False, "arc_sec": 0.0}, allow_s=False)   # M-32
     assert res["route"] == "SE"
     assert res["reasons"][-1] == "S not approved: SE fallback"

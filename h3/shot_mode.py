@@ -11,6 +11,11 @@ from h3.shot_table_spec import LATTICE_N_MAX, LATTICE_N_MIN  # noqa: E402
 VALID_MODES = ("SE", "S")
 
 
+def s_allowed(env: dict | None = None) -> bool:
+    """M-32: start-only S is on by default; SHOT_MODE_S_ALLOW=0 switches it off."""
+    return (os.environ if env is None else env).get("SHOT_MODE_S_ALLOW") != "0"
+
+
 class ShotModeError(ValueError):
     """Raised when a shot mode or frame count is invalid."""
 
@@ -23,11 +28,8 @@ def image_prompt_type(shot: dict, env: dict | None = None) -> str:
     if mode not in VALID_MODES:
         raise ShotModeError(f"unknown image_prompt_type {mode!r}; valid modes are {VALID_MODES}")
     if mode == "S":
-        actual_env = env if env is not None else os.environ
-        if actual_env.get("SHOT_MODE_S_ALLOW") != "1":
-            raise ShotModeError(
-                "start-only mode 'S' is not approved; owner must set SHOT_MODE_S_ALLOW=1"
-            )
+        if not s_allowed(env):
+            raise ShotModeError("start-only mode 'S' is switched off (SHOT_MODE_S_ALLOW=0)")
     return mode
 
 
@@ -108,7 +110,7 @@ def frame_row(shot: dict, env=None) -> dict:
         row["end"] = shot["end"]
         if "end_frame_position" not in shot:
             raise ShotModeError(f"shot {shot_id!r} is missing required 'end_frame_position' for mode 'SE'")
-    if "end_frame_position" in shot:
+    if "end_frame_position" in shot and mode == "SE":   # S has no end anchor: the key is dropped, not sent
         row["end_frame_position"] = _check_end_frame_position(shot["end_frame_position"], checked)
     if shot.get("route") == "KFI":
         if "mid" not in shot or shot["mid"] is None:

@@ -22,7 +22,11 @@ try:  # director is a package
 except ImportError:  # pragma: no cover - fallback for flat layouts
     from plate_composite import composite, diff_mask, plan  # type: ignore
     from image_gates import GateError, background_lock  # type: ignore
+from core.style_pack import delta_e_2000, srgb_to_lab  # type: ignore
 
+KEYFRAME_MIN_SSIM = 0.80  # M-24: background SSIM outside the cast boxes (image_gates default is 0.97)
+KEYFRAME_MAX_DE2000 = 6.0  # core/core.json gates.g1_de2000_max
+PALETTE_SAMPLES = 2000  # ponytail: strided sample of the background pixels, not every pixel; raise if the palette check gets noisy
 MIN_AREA = 0.25
 MAX_SPEED_H = 256.0
 FEATHER_PX = 4
@@ -56,6 +60,36 @@ def _sha256_json(obj) -> str:
 
 def _is_count(value) -> bool:
     return isinstance(value, (int, np.integer)) and not isinstance(value, bool) and value >= 0
+
+
+def _rgb8(img):
+    arr = np.asarray(img)
+    if arr.dtype.kind == "f" and arr.size and float(arr.max()) <= 1.0:
+        arr = arr * 255.0
+    return np.clip(np.rint(arr[..., :3]), 0, 255).astype(np.int64)
+
+
+def _valid_lab_mean(img, valid):
+    ys, xs = np.nonzero(np.asarray(valid, dtype=bool))
+    if ys.size == 0:
+        return None
+    px = _rgb8(img)
+    step = max(1, ys.size // PALETTE_SAMPLES)
+    labs = [srgb_to_lab(tuple(int(v) for v in px[y, x])) for y, x in zip(ys[::step], xs[::step])]
+    return tuple(sum(lab[i] for lab in labs) / len(labs) for i in range(3))
+
+
+def palette_de2000(img_a, img_b, valid):
+    """dE2000 between the mean Lab of the valid (background) pixels of A and B. None when there are no valid pixels."""
+    la, lb = _valid_lab_mean(img_a, valid), _valid_lab_mean(img_b, valid)
+    if la is None or lb is None:
+        return None
+    return delta_e_2000(la, lb)
+
+
+def palette_ok(img_a, img_b, valid, limit=KEYFRAME_MAX_DE2000):
+    de = palette_de2000(img_a, img_b, valid)
+    return de is not None and de <= limit
 
 
 def _centroid(mask):
@@ -203,7 +237,7 @@ def gate(plate, img_a, img_b, sheet, review, lock) -> bool:
 
     # Background lock + area fraction (stable area must be >= MIN_AREA).
     try:
-        bg_result = background_lock(img_a, img_b, ma, mb)
+        bg_result = background_lock(img_a, img_b, ma, mb, min_ssim=KEYFRAME_MIN_SSIM)
     except GateError as exc:  # no comparable area: fail the gate, keep the record
         bg_result = {"pass": False, "area_fraction": 0.0, "reasons": [str(exc)]}
     bg_ok = bool(bg_result["pass"])
@@ -212,6 +246,11 @@ def gate(plate, img_a, img_b, sheet, review, lock) -> bool:
     area_fraction = float(bg_result["area_fraction"])
     checks["area_fraction"] = area_fraction
     checks["area_ok"] = bool(area_fraction >= MIN_AREA)
+
+    # M-24: palette dE2000 of the background (outside both masks) must stay <= 6.
+    de_bg = palette_de2000(img_a, img_b, ~(np.asarray(ma, bool) | np.asarray(mb, bool)))
+    checks["palette_de2000"] = None if de_bg is None else float(de_bg)
+    checks["palette_ok"] = bool(de_bg is not None and de_bg <= KEYFRAME_MAX_DE2000)
 
     # Plan -> composite or keep B.
     plan_result = plan(img_a, img_b, ma, mb)
@@ -267,6 +306,7 @@ def gate(plate, img_a, img_b, sheet, review, lock) -> bool:
         review_ok
         and bg_ok
         and checks["area_ok"]
+        and checks["palette_ok"]
         and checks["cast_parity"]
         and checks["limb_parity"]
         and checks["posture_matches"]

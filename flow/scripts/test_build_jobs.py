@@ -130,6 +130,52 @@ def test_edit_job_with_pending_base_edit_id_refusal():
         assert "edit job requires a valid base_edit_id" in str(e)
 
 
+def test_generate_with_chip_accepted_and_chip_attached():
+    """generate_with_chip is accepted; the reference chip id goes into chips before the style chip."""
+    spec = load_json(SPEC_PATH)
+    series = load_json(SERIES_PATH)
+
+    spec_copy = json.loads(json.dumps(spec))
+    spec_copy["shots"][0]["method"] = "generate_with_chip"
+    spec_copy["shots"][0]["chip_ref_id"] = "LEAP-01A final"
+
+    job = build_jobs(spec_copy, series, adhyay=1)[0]
+    assert job["method"] == "generate_with_chip"
+    assert "LEAP-01A final" in job["chips"]
+    assert job["chips"][-1] == series["style"]["chip"]
+
+
+def test_generate_with_chip_without_chip_ref_id_refusal():
+    """generate_with_chip with no (or PENDING) chip_ref_id raises ValueError naming the shot."""
+    spec = load_json(SPEC_PATH)
+    series = load_json(SERIES_PATH)
+
+    for bad in (None, "", "PENDING_9"):
+        spec_copy = json.loads(json.dumps(spec))
+        spec_copy["shots"][0]["method"] = "generate_with_chip"
+        spec_copy["shots"][0]["chip_ref_id"] = bad
+        try:
+            build_jobs(spec_copy, series, adhyay=1)
+            assert False, f"Expected ValueError for chip_ref_id={bad!r}"
+        except ValueError as e:
+            assert "generate_with_chip job requires a valid chip_ref_id" in str(e)
+            assert "LEAP-01A" in str(e)
+
+
+def test_edit_method_still_accepted_for_existing_jobs():
+    """Old 'edit' jobs with a real base_edit_id still build (no rename break for existing packs)."""
+    spec = load_json(SPEC_PATH)
+    series = load_json(SERIES_PATH)
+
+    spec_copy = json.loads(json.dumps(spec))
+    spec_copy["shots"][0]["method"] = "edit"
+    spec_copy["shots"][0]["base_edit_id"] = "LEAP-01A-base"
+
+    job = build_jobs(spec_copy, series, adhyay=1)[0]
+    assert job["method"] == "edit"
+    assert job["base_edit_id"] == "LEAP-01A-base"
+
+
 def test_unknown_character_refusal():
     """Test that unknown character ID raises ValueError."""
     spec = load_json(SPEC_PATH)

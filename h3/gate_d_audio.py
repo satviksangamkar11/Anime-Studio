@@ -10,10 +10,12 @@ would collect a `test_*` function imported into a test module.
 """
 from __future__ import annotations
 
+import array
 import json
 import math
 import re
 import statistics
+import sys
 import wave
 from pathlib import Path
 
@@ -47,6 +49,11 @@ _LN_I = re.compile(r"Input Integrated:\s*(-?\d+(?:\.\d+)?)\s*LUFS")
 _LN_TP = re.compile(r"Input True Peak:\s*(-?\d+(?:\.\d+)?)\s*dB")
 _LN_JSON_I = re.compile(r'"input_i"\s*:\s*"(-?\d+(?:\.\d+)?)"')
 _LN_JSON_TP = re.compile(r'"input_tp"\s*:\s*"(-?\d+(?:\.\d+)?)"')
+_EBUR_LRA = re.compile(r"\bLRA:\s*(-?\d+(?:\.\d+)?)\s*LU\b")
+_LN_JSON_LRA = re.compile(r'"input_lra"\s*:\s*"(-?\d+(?:\.\d+)?)"')
+SILENCE_FLOOR_DB = -50.0          # M-09 / T-06: a quiet span is a run of 10 ms windows below this level
+SILENCE_MAX_SPAN_SEC = 0.3        # a quiet span longer than this fails NO_SILENCE (continuous bed rule)
+SILENCE_WINDOW_SEC = 0.01
 
 
 def _report(errors, warnings=(), stats=None):
@@ -427,9 +434,20 @@ def parse_loudness_text(text):
     return {"integrated_lufs": last([_EBUR_I, _LN_I, _LN_JSON_I]), "true_peak_dbtp": last([_EBUR_TP, _LN_TP, _LN_JSON_TP])}
 
 
+def parse_lra(text):
+    """Loudness range in LU from ffmpeg ebur128 or loudnorm output. None when no LRA line is found."""
+    found = None
+    for p in (_EBUR_LRA, _LN_JSON_LRA):
+        hits = p.findall(text)
+        if hits:
+            found = float(hits[-1])
+            break
+    return found
+
+
 def check_post_aac_loudness(ffmpeg_text):
     """Gate D final audio: integrated loudness within LOUDNESS (core.json delivery.audio: -14 LUFS +-0.5) and true peak at
-    most the ceiling (-1 dBTP), measured on the AAC mp4."""
+    most the ceiling (-1 dBTP), measured on the AAC mp4. LRA above LOUDNESS['lra'] (11 LU) is a warning only."""
     m = parse_loudness_text(ffmpeg_text)
     errors = []
     if m["integrated_lufs"] is None or m["true_peak_dbtp"] is None:
@@ -442,7 +460,39 @@ def check_post_aac_loudness(ffmpeg_text):
         if m["true_peak_dbtp"] > LOUDNESS["tp_ceiling_dbtp"] + 1e-9:
             errors.append(_err("TRUE_PEAK_OVER", "aac_mp4",
                                f"true peak {m['true_peak_dbtp']} dBTP, must be <= {LOUDNESS['tp_ceiling_dbtp']}"))
-    return _report(errors, stats=m)
+    lra = parse_lra(ffmpeg_text)
+    warnings = []
+    if lra is not None and lra > LOUDNESS["lra"] + 1e-9:
+        warnings.append(f"LRA {lra} LU above {LOUDNESS['lra']} LU (warn only; delivery stays -14 LUFS / -1 dBTP)")
+    return _report(errors, warnings=warnings, stats=dict(m, lra=lra))
+
+
+def window_levels_db(wav_path, window_sec=SILENCE_WINDOW_SEC):
+    """RMS level in dBFS of each window of a 16-bit PCM WAV (all channels together). Digital silence is -inf."""
+    with wave.open(str(wav_path), "rb") as w:
+        ch, sw, rate, n = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+        raw = w.readframes(n)
+    if sw != 2:
+        raise ValueError("NO_SILENCE check reads 16-bit PCM WAV only, got sample width " + str(sw))
+    samples = array.array("h")
+    samples.frombytes(raw)
+    if sys.byteorder == "big":
+        samples.byteswap()
+    step = max(1, int(round(rate * window_sec))) * ch
+    levels = []
+    for i in range(0, len(samples), step):
+        seg = samples[i:i + step]
+        ms = sum(v * v for v in seg) / len(seg)
+        levels.append(10.0 * math.log10(ms / 32768.0 ** 2) if ms > 0 else -math.inf)
+    return levels
+
+
+def check_no_silence(wav_path, voice_rest=(), silence_ok=()):
+    """Old entry point, now NO_SILENCE v2 (h3/silence_rule.py): digital silence, dropout, channel drop and dead air are
+    errors; a quiet span (the old 0.3 s / -50 dBFS rule) is only a warning. Warnings are 'CODE: message' strings."""
+    from h3 import silence_rule as sr
+    rep = sr.check_wav(wav_path, voice_rest, silence_ok)
+    return _report(rep["errors"], warnings=[f"{w['code']}: {w['message']}" for w in rep["warnings"]], stats=rep["stats"])
 
 
 # ---------------------------------------------------------------- .ass captions

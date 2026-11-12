@@ -220,27 +220,31 @@ def test_seven_stages_are_contiguous_and_end_at_pixel_frames(pack):
     assert spans[STAGES[-1]][1] == 175
 
 
-def test_every_stage_keeps_a_sound_cue(pack):
+def test_every_stage_has_an_action_and_no_duplicate(pack):
+    # M-01b: was "every stage keeps a sound cue". Cues now live in overall_soundscape, not in the stages.
     m = _shot(convert_pack(pack)["story"], SHOT_A)["motion_7_stage"]
     for k in STAGES:
-        assert v4_to_h3.SFX_CUE_RE.search(m[k]), k
+        assert m[k].strip(), k
+    assert len({m[k] for k in STAGES}) == len(STAGES)
 
 
-def test_stage_sentence_uses_the_cues_of_the_seconds_it_covers(pack):
+def test_stage_cues_are_in_soundscape_in_time_order(pack):
+    # M-01b: was "stage sentence uses the cues of the seconds it covers" (cues glued into each stage).
     m = _shot(convert_pack(pack)["story"], SHOT_A)["motion_7_stage"]
-    assert "a page rustles" in m[STAGES[0]]          # second 0 (frames 0-24) -> stage 1 (0-24)
-    assert "wooden hinge creaks" in m[STAGES[1]]     # second 1 (24-48, midpoint 36) -> stage 2 (25-49)
-    assert "cloth sleeve swish" in m[STAGES[2]]      # second 2 (48-72, midpoint 60) -> stage 3 (50-74)
-    assert "door creak" in m[STAGES[6]] and "shutter thud" in m[STAGES[6]]   # seconds 6 and the 7.00-7.29 s bracket
+    snd = _shot(convert_pack(pack)["story"], SHOT_A)["sound_plan"]["overall_soundscape"]
+    assert not any("a page rustles" in m[k] for k in STAGES)
+    assert snd.index("a page rustles") < snd.index("wooden hinge creaks") < snd.index("cloth sleeve swish")
+    assert "door creak" in snd and "shutter thud" in snd
 
 
-def test_stage_without_a_sound_word_is_a_problem(pack):
+def test_stage_without_a_sound_word_is_not_a_problem(pack):
+    # M-01b: was "stage without a sound word is a problem" (SX-01 stage check removed, SX_MIN_STAGE_CUES = 0).
     shots = json.load(open(os.path.join(pack, "shots.json"), encoding="utf-8"))
     shots[0]["per_second_directives"][0]["audio_cue"] = "the lamp glows"
     shots[0]["per_second_directives"][0]["action_pose_expression"] = "Raj smiles"
     json.dump(shots, open(os.path.join(pack, "shots.json"), "w", encoding="utf-8"))
     res = convert_pack(pack)
-    assert any("stage 1_starting_state has no sound word" in p for p in res["problems"])
+    assert not any("has no sound word" in p for p in res["problems"])
 
 
 def test_camera_motion_is_one_official_motion(pack):
@@ -259,10 +263,11 @@ def test_camera_change_inside_a_shot_is_a_problem(pack):
 
 
 def test_sound_plan_from_sfx_cues(pack):
+    # M-01b: was startswith("A small pop...") and count(".") == 3 (no "First" label, 3 sentences).
     snd = _shot(convert_pack(pack)["story"], SHOT_A)["sound_plan"]
     assert snd["non_diegetic_music"] == "N/A"
-    assert snd["overall_soundscape"].startswith("A small pop as the flame bends.")
-    assert snd["overall_soundscape"].count(".") == 3
+    assert snd["overall_soundscape"].startswith("First a page rustles; then wooden hinge creaks; then a small pop")
+    assert 1 <= snd["overall_soundscape"].count(".") <= 4
 
 
 # ---- mouth fields and the speech rule ----
@@ -273,7 +278,7 @@ def test_mouth_fields_follow_performance_notes(pack):
     assert d["narrator_mouth_closed"] is True
     assert d["mouth_state"]["3"] == "open_non_verbal_breath"
     assert len(d["mouth_state"]) == 8                # seconds 0..7 for 175 frames
-    assert "non-verbal breaths at second 3" in d["mouth_state_rule"]
+    assert "non-verbal breaths" not in d["mouth_state_rule"]   # M-01b: was "...breaths at second 3" (breath exception deleted)
 
 
 def test_narration_and_dialogue_never_reach_the_prompt(pack):
